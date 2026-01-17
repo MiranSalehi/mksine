@@ -1,0 +1,78 @@
+{
+    "name": "miran/mksine",
+    "description": "A headless CMS core package built with Filament for the MKS project",
+    "keywords": [
+        "miran",
+        "laravel",
+        "mksine",
+        "cms",
+        "filament"
+    ],
+    "homepage": "https://github.com/miransalehi/mksine",
+    "support": {
+        "issues": "https://github.com/miransalehi/mksine/issues",
+        "source": "https://github.com/miransalehi/mksine"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "miran",
+            "email": "miransalehi.ms@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0",
+        "spatie/laravel-package-tools": "^1.15.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.0",
+        "nunomaduro/collision": "^7.9",
+        "nunomaduro/larastan": "^2.0.1",
+        "orchestra/testbench": "^8.0",
+        "pestphp/pest": "^2.1",
+        "pestphp/pest-plugin-arch": "^2.0",
+        "pestphp/pest-plugin-laravel": "^2.0",
+        "phpstan/extension-installer": "^1.1",
+        "phpstan/phpstan-deprecation-rules": "^1.0",
+        "phpstan/phpstan-phpunit": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Miran\\Mksine\\": "src/",
+            "Miran\\Mksine\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Miran\\Mksine\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Miran\\Mksine\\MksineServiceProvider"
+            ],
+            "aliases": {
+                "Mksine": "Miran\\Mksine\\Facades\\Mksine"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

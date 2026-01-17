@@ -1,0 +1,23 @@
+<?php
+
+namespace {{ namespace }}\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class {{ modelName }} extends Model
+{
+    use SoftDeletes;
+
+    protected $table = '{{ tableName }}';
+
+    protected $fillable = [
+        'name',
+        // Add your fillable fields here
+    ];
+
+    protected $casts = [
+        // Add your casts here
+    ];
+}
+

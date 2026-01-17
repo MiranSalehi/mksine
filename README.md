@@ -1,0 +1,1693 @@
+# MKS CMS - Complete Documentation
+
+MKS CMS is a powerful, extensible Content Management System built as a Filament plugin for Laravel. It provides a robust foundation for content management with a sophisticated hook system that allows deep customization without modifying core code.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Installation](#installation)
+3. [Architecture](#architecture)
+4. [Hook System Deep Dive](#hook-system-deep-dive)
+5. [Creating Events](#creating-events)
+6. [Creating Listeners](#creating-listeners)
+7. [Hook Types](#hook-types)
+8. [Data Mutations](#data-mutations)
+9. [Event Prevention](#event-prevention)
+10. [Priority System](#priority-system)
+11. [Discovery System](#discovery-system)
+12. [State Management](#state-management)
+13. [Hook Visibility & Plugin Ownership](#hook-visibility--plugin-ownership)
+14. [Performance & Caching](#performance--caching)
+15. [Best Practices](#best-practices)
+16. [API Reference](#api-reference)
+17. [Examples](#examples)
+18. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+MKS CMS is designed with extensibility and developer experience in mind. It features a comprehensive hook system that enables developers to extend and customize functionality at every level, from content lifecycle events to Filament form and table structures.
+
+### Key Features
+
+- **Filament-First Design**: Built specifically for Filament 4 with deep integration into forms, tables, and resources
+- **Deterministic Execution**: All hook executions follow a strict, immutable 8-phase lifecycle that cannot be bypassed
+- **System Hook Enforcement**: System-critical hooks cannot be disabled, ensuring core functionality integrity
+- **Database-Driven State Management**: Hook state (enabled/disabled, priority overrides) is managed via database
+- **Event-Driven Architecture**: Comprehensive event system with BEFORE and AFTER lifecycle events
+- **Priority-Based Execution**: Control listener execution order with integer priorities
+- **Data Mutation Tracking**: All data changes are tracked and traceable
+- **Event Prevention**: BEFORE events can be prevented with custom reasons
+- **Filament Integration Hooks**: Extend forms, tables, resources, and pages dynamically
+- **Automatic Discovery**: Discover and register hooks via `mks:discover` command
+- **Hook Visibility Control**: Public, private, and system-level hook visibility with plugin ownership
+- **Plugin Ownership Metadata**: Explicit plugin ownership tracking for all listeners
+- **Error Isolation Policy**: Comprehensive error handling with plugin context and mutation reversion
+
+---
+
+## Installation
+
+### Requirements
+
+- PHP 8.1 or higher
+- Laravel 11 or higher
+- Filament 4
+- MySQL 5.7+, PostgreSQL 10+, or SQLite 3.8+
+
+### Install via Composer
+
+```bash
+composer require miransalehi/mksine
+```
+
+### Publish and Run Migrations
+
+```bash
+php artisan mksine:install --migrate
+```
+
+Or manually:
+
+```bash
+php artisan vendor:publish --provider="MiranSalehi\MksCms\MksCmsServiceProvider" --tag="mksine-config"
+php artisan vendor:publish --provider="MiranSalehi\MksCms\MksCmsServiceProvider" --tag="mksine-migrations"
+php artisan migrate
+```
+
+### Register the Plugin
+
+In your `app/Providers/Filament/AdminPanelProvider.php`:
+
+```php
+use MiranSalehi\MksCms\MksCmsPlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        ->plugins([
+            MksCmsPlugin::make(),
+        ]);
+}
+```
+
+### Discover Hooks
+
+After installation, discover and register hooks:
+
+```bash
+php artisan mks:discover
+```
+
+---
+
+## Architecture
+
+### Core Components
+
+The hook system consists of four main components:
+
+#### 1. HookManager
+**Central coordinator** for the hook system. Provides the unified public API.
+
+**Responsibilities:**
+- Coordinate registry + state + dispatcher
+- Provide public API for registration and dispatch
+- Merge listener definitions with runtime state
+- Sort listeners by effective priority
+
+#### 2. HookRegistry
+**Stores hook definitions** discovered from code.
+
+**Responsibilities:**
+- Store listener definitions (event name, listener class, priority)
+- Provide lookup by event name
+- No database awareness
+- Immutable and final (cannot be extended)
+
+#### 3. HookStateRepository
+**Manages runtime state** from database.
+
+**Responsibilities:**
+- Read enabled/disabled state for listeners
+- Read priority overrides
+- Read system flags
+- Prioritize cache file over database for performance
+- Thread-safe state loading with locks
+
+#### 4. HookDispatcher
+**Executes hooks** in priority order.
+
+**Responsibilities:**
+- Execute listeners in strict priority order
+- Handle sync vs async listeners
+- Stop execution on prevent
+- Collect mutations and async listeners
+- Enforce system hooks (MUST execute even if disabled)
+- Performance metrics (execution timing)
+- Revert mutations from failed listeners
+
+### Database Schema
+
+#### `mks_hooks` Table
+
+```sql
+- id (primary key)
+- hook_type (string) - 'event', 'form', 'table', 'resource', 'page'
+- event_name (string, nullable) - Event name for event hooks
+- hook_name (string, nullable) - Hook identifier for form/table hooks
+- listener_class (string, unique) - Fully qualified class name
+- priority (integer, default: 0) - Execution priority
+- is_enabled (boolean, default: true) - Whether hook is enabled
+- is_system (boolean, default: false) - Whether hook is system-critical
+- created_at, updated_at (timestamps)
+```
+
+---
+
+## Hook System Deep Dive
+
+### The 8-Phase Execution Lifecycle
+
+All hook executions follow a strict, immutable 8-phase lifecycle:
+
+#### Phase 1: Event Dispatch
+The initial event is created and dispatched to `HookManager`.
+
+```php
+$event = new PostCreating($data, $context);
+$result = $hookManager->dispatch($event);
+```
+
+#### Phase 2: Load Hook Definitions
+`HookRegistry` provides listener definitions for the event name. Each definition contains:
+- Listener class name
+- Default priority (from code)
+
+#### Phase 3: Merge Runtime State
+`HookStateRepository` reads state from database:
+- **Enabled/disabled state**: Is the listener enabled?
+- **Priority overrides**: Has priority been overridden in database?
+- **System flags**: Is this a system hook?
+
+#### Phase 4: Sort Listeners by Final Priority
+- Filter out disabled listeners (system hooks are never filtered)
+- Sort by effective priority (**lower numbers execute first**, e.g., 0 before 10)
+- Stable sort ensures deterministic order for equal priorities
+
+#### Phase 5: Execute Synchronous Listeners
+For each listener in sorted order:
+1. Check if should queue (skip, collect for async)
+2. Check if should handle (skip if false)
+3. Take snapshot of mutations and data
+4. Execute listener
+5. If listener fails, revert mutations and continue
+6. Check prevention (stop immediately if prevented)
+
+#### Phase 6: Stop Execution Immediately on Prevent
+If `event->prevent()` was called:
+- All remaining listeners are skipped
+- Execution breaks immediately
+- No further mutations are allowed
+
+#### Phase 7: Dispatch Async Listeners (If Event Allows)
+If `event->isAsyncAllowed()` returns true:
+- Process `pendingAsyncListeners` array
+- Queue for async execution (handled by external queue system)
+
+#### Phase 8: Return Execution Result
+`EventResult` contains:
+- `wasPrevented`: Boolean
+- `preventReason`: String or null
+- `mutations`: Array of all mutations applied
+- `pendingAsyncListeners`: Array of listener class names
+- `executionTime`: Total execution time in milliseconds
+
+### Lifecycle Guarantees
+
+- **IMMUTABLE**: The lifecycle cannot be bypassed or modified
+- **DETERMINISTIC**: Same inputs always produce same execution order
+- **THREAD-SAFE**: Concurrent requests are handled safely
+- **ERROR-RESILIENT**: Failed listeners don't crash the system
+
+---
+
+## Creating Events
+
+### Event Structure
+
+All events must extend `MksCmsEvent`:
+
+```php
+<?php
+
+namespace App\Hooks\Events;
+
+use MiranSalehi\MksCms\Core\Events\MksCmsEvent;
+
+class PostPublishing extends MksCmsEvent
+{
+    /**
+     * Get the event name.
+     * Convention: resource.action (e.g., 'post.creating', 'post.created')
+     */
+    public function name(): string
+    {
+        return 'post.publishing';
+    }
+
+    /**
+     * Check if this event can be prevented.
+     * BEFORE events (creating, updating, deleting) can be prevented.
+     * AFTER events (created, updated, deleted) cannot be prevented.
+     */
+    public function canBePrevented(): bool
+    {
+        return true; // BEFORE event
+    }
+
+    /**
+     * Override this method to allow async execution.
+     * Default is false (synchronous execution).
+     */
+    protected function allowAsync(): bool
+    {
+        return false; // Must run synchronously
+    }
+}
+```
+
+### Event Naming Convention
+
+- **BEFORE events**: Use present continuous tense (e.g., `post.creating`, `post.updating`)
+- **AFTER events**: Use past tense (e.g., `post.created`, `post.updated`)
+
+### Event Data
+
+Events receive data and context:
+
+```php
+$event = new PostCreating(
+    data: [
+        'title' => 'My Post',
+        'content' => 'Post content...',
+        'status' => 'draft',
+    ],
+    context: [
+        'user_id' => Auth::id(),
+        'ip' => request()->ip(),
+        'user_agent' => request()->userAgent(),
+    ]
+);
+```
+
+### Available Event Methods
+
+```php
+// Read-only access to event data
+$event->data()->get('title');
+$event->data()->has('slug');
+$event->data()->all();
+
+// Get event context
+$event->context(); // Returns array
+
+// Update event data (creates mutation)
+$event->updateData('title', 'New Title');
+
+// Prevent event (only for BEFORE events)
+$event->prevent('Validation failed');
+
+// Check prevention status
+$event->isPrevented();
+$event->preventReason();
+
+// Get all mutations
+$event->mutations();
+```
+
+---
+
+## Creating Listeners
+
+### Listener Interface
+
+All listeners must implement `MksCmsListenerInterface`:
+
+```php
+<?php
+
+namespace App\Hooks\Listeners;
+
+use MiranSalehi\MksCms\Core\Events\MksCmsEvent;
+use MiranSalehi\MksCms\Core\Hooks\MksCmsListenerInterface;
+
+class GenerateSlugListener implements MksCmsListenerInterface
+{
+    /**
+     * Handle the event.
+     */
+    public function handle(MksCmsEvent $event): void
+    {
+        $title = $event->data()->get('title');
+        
+        if ($title && empty($event->data()->get('slug'))) {
+            $event->updateData('slug', \Illuminate\Support\Str::slug($title));
+        }
+    }
+
+    /**
+     * Determine if this listener should handle the given event.
+     * Useful for conditional execution based on event data or context.
+     */
+    public function shouldHandle(MksCmsEvent $event): bool
+    {
+        // Only handle if title exists and slug is empty
+        return $event->data()->has('title') && empty($event->data()->get('slug'));
+    }
+
+    /**
+     * Determine if this listener should be queued for async execution.
+     */
+    public function shouldQueue(): bool
+    {
+        return false; // Run synchronously
+    }
+
+    /**
+     * Get the priority of this listener.
+     * Lower numbers execute first (e.g., 0 before 10).
+     * 
+     * Common priorities:
+     * - 0-9: System-critical (validations, security checks) - Run first
+     * - 10-49: Core functionality (slug generation, defaults) - Run early
+     * - 50-99: Feature enhancements - Run mid-way
+     * - 100+: Nice-to-have features - Run later
+     * - 200+: Cleanup, logging, notifications - Run last
+     */
+    public function priority(): int
+    {
+        return 10; // Lower number = runs earlier
+    }
+}
+```
+
+### Registering Listeners
+
+#### Method 1: Automatic Discovery
+
+Place listeners in `app/Hooks/Listeners/` and run:
+
+```bash
+php artisan mks:discover
+```
+
+The discovery system will:
+1. Scan for classes implementing `MksCmsListenerInterface`
+2. Extract event name from class name or interface method
+3. Sync with database
+4. Register with `HookManager`
+
+#### Method 2: Manual Registration
+
+In your `AppServiceProvider`:
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookManager;
+
+public function boot(): void
+{
+    $hookManager = app(HookManager::class);
+    $hookManager->register('post.creating', GenerateSlugListener::class, 50);
+}
+```
+
+Or using the `Hooks` helper:
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\Hooks;
+
+public function boot(): void
+{
+    Hooks::register('post.creating', GenerateSlugListener::class, 50);
+}
+```
+
+---
+
+## Hook Types
+
+### 1. Event Hooks
+
+Event hooks listen to content lifecycle events (creating, created, updating, updated, etc.).
+
+**Example: Auto-generate slug**
+
+```php
+class GenerateSlugListener implements MksCmsListenerInterface
+{
+    public function handle(MksCmsEvent $event): void
+    {
+        $title = $event->data()->get('title');
+        if ($title && empty($event->data()->get('slug'))) {
+            $event->updateData('slug', Str::slug($title));
+        }
+    }
+    
+    // ... other required methods
+}
+```
+
+### 2. Form Hooks
+
+Form hooks extend Filament forms dynamically.
+
+#### Using Interface
+
+Create a listener implementing `FormHookListenerInterface`:
+
+```php
+<?php
+
+namespace App\Hooks\Listeners;
+
+use Filament\Schemas\Schema;
+use MiranSalehi\MksCms\Core\Hooks\FormHookListenerInterface;
+
+class AddCustomFieldsToPostForm implements FormHookListenerInterface
+{
+    public static function getFormName(): string
+    {
+        return 'post.form';
+    }
+
+    public static function getPriority(): int
+    {
+        return 0;
+    }
+
+    public static function extend(Schema $schema): Schema
+    {
+        $existingComponents = method_exists($schema, 'getComponents') 
+            ? $schema->getComponents() 
+            : [];
+        
+        return $schema->components([
+            ...$existingComponents,
+            Section::make('Custom Fields')
+                ->schema([
+                    TextInput::make('custom_field')
+                        ->label('Custom Field')
+                        ->maxLength(255),
+                ])
+                ->collapsible()
+                ->collapsed(),
+        ]);
+    }
+}
+```
+
+#### Using Helper
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\Hooks;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
+
+Hooks::extendForm('post.form', function (Schema $schema) {
+    $existingComponents = $schema->getComponents() ?? [];
+    
+    return $schema->components([
+        ...$existingComponents,
+        Section::make('Custom Fields')
+            ->schema([
+                TextInput::make('custom_field')
+                    ->label('Custom Field'),
+            ]),
+    ]);
+}, priority: 10); // Optional priority
+```
+
+### 3. Table Hooks
+
+Table hooks extend Filament tables dynamically.
+
+#### Using Interface
+
+```php
+<?php
+
+namespace App\Hooks\Listeners;
+
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use MiranSalehi\MksCms\Core\Hooks\TableHookListenerInterface;
+
+class AddCustomColumnToPostTable implements TableHookListenerInterface
+{
+    public static function getTableName(): string
+    {
+        return 'post.table';
+    }
+
+    public static function getPriority(): int
+    {
+        return 0;
+    }
+
+    public static function extend(Table $table): Table
+    {
+        $existingColumns = method_exists($table, 'getColumns') 
+            ? $table->getColumns() 
+            : [];
+        
+        return $table->columns([
+            ...$existingColumns,
+            TextColumn::make('custom_field')
+                ->label('Custom Field')
+                ->searchable()
+                ->sortable(),
+        ]);
+    }
+}
+```
+
+#### Using Helper
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\Hooks;
+use Filament\Tables\Columns\TextColumn;
+
+// Extend entire table
+Hooks::extendTable('post.table', function (Table $table) {
+    return $table->columns([...]);
+});
+
+// Extend columns only
+Hooks::extendTableColumns('post.table', function (Table $table) {
+    return $table->columns([...]);
+});
+
+// Extend actions
+Hooks::extendTableActions('post.table', function (Table $table) {
+    return $table->actions([...]);
+});
+
+// Extend bulk actions
+Hooks::extendTableBulkActions('post.table', function (Table $table) {
+    return $table->bulkActions([...]);
+});
+
+// Extend filters
+Hooks::extendTableFilters('post.table', function (Table $table) {
+    return $table->filters([...]);
+});
+```
+
+### 4. Resource Hooks
+
+Resource hooks extend Filament resources (relations, widgets).
+
+```php
+// Extend relations
+Hooks::extendResourceRelations('post.resource', function (array $relations) {
+    return [
+        ...$relations,
+        'customRelation' => RelationManager::make(),
+    ];
+});
+
+// Extend widgets
+Hooks::extendResourceWidgets('post.resource', function (array $widgets) {
+    return [
+        ...$widgets,
+        PostStatsWidget::class,
+    ];
+});
+```
+
+### 5. Page Hooks
+
+Page hooks extend Filament pages (header actions).
+
+```php
+use Filament\Actions\Action;
+
+Hooks::extendPageHeaderActions('post.edit', function (array $actions) {
+    return [
+        ...$actions,
+        Action::make('export')
+            ->label('Export')
+            ->action(fn () => $this->export()),
+    ];
+});
+```
+
+---
+
+## Data Mutations
+
+### Understanding Mutations
+
+Mutations track all changes made to event data by listeners.
+
+```php
+$event->updateData('title', 'New Title');
+// Creates a mutation:
+// [
+//     'key' => 'title',
+//     'old' => 'Old Title',
+//     'new' => 'New Title'
+// ]
+```
+
+### Accessing Mutations
+
+```php
+$result = $hookManager->dispatch($event);
+
+foreach ($result->mutations() as $mutation) {
+    echo "Field '{$mutation['key']}' changed from '{$mutation['old']}' to '{$mutation['new']}'";
+}
+```
+
+### Applying Mutations
+
+In Filament pages, mutations are automatically applied:
+
+```php
+// In CreatePost::mutateFormDataBeforeCreate()
+$result = $hookManager->dispatch($event);
+
+// Apply only mutations (prevents data loss)
+foreach ($result->mutations() as $mutation) {
+    $data[$mutation['key']] = $mutation['new'];
+}
+```
+
+### Mutation Safety
+
+- **Automatic Revert**: If a listener fails after making mutations, those mutations are automatically reverted
+- **Only Successful Mutations**: Only mutations from successfully executed listeners are included in `EventResult`
+- **Data Integrity**: Original data is preserved if all listeners fail
+
+---
+
+## Event Prevention
+
+### Preventing Events
+
+BEFORE events (creating, updating, deleting) can be prevented:
+
+```php
+class ValidatePostListener implements MksCmsListenerInterface
+{
+    public function handle(MksCmsEvent $event): void
+    {
+        $title = $event->data()->get('title');
+        
+        if (empty($title)) {
+            $event->prevent('Title is required');
+        }
+    }
+    
+    public function priority(): int
+    {
+        return 100; // Run early
+    }
+    
+    // ... other methods
+}
+```
+
+### Handling Prevention
+
+In Filament pages:
+
+```php
+$result = $hookManager->dispatch($event);
+
+if ($result->wasPrevented()) {
+    $validator = Validator::make([], []);
+    $validator->errors()->add('post', $result->preventReason());
+    throw new ValidationException($validator);
+}
+```
+
+### Prevention Behavior
+
+- **Immediate Stop**: When `prevent()` is called, all remaining listeners are skipped
+- **No Mutations After Prevent**: Once prevented, no further mutations are allowed
+- **Prevention Reason**: Always provide a clear reason for prevention
+
+---
+
+## Priority System
+
+### How Priority Works
+
+- **Lower numbers execute first**: Priority 0 executes before priority 10 (Laravel standard)
+- **Consistent Across All Hook Types**: Event hooks, form hooks, table hooks all use the same priority system
+- **Ascending Order**: All hooks are sorted in ascending order (0, 10, 50, 100)
+- **Database Override**: Priority can be overridden in database (via `mks_hooks` table)
+
+### Priority Guidelines
+
+**Lower numbers execute first** - This follows Laravel's standard priority system.
+
+```php
+// System-critical (validations, security) - Run first
+public function priority(): int
+{
+    return 0; // Executes first
+}
+
+// Core functionality (slug generation, defaults) - Run early
+public function priority(): int
+{
+    return 10;
+}
+
+// Feature enhancements - Run mid-way
+public function priority(): int
+{
+    return 50;
+}
+
+// Nice-to-have features - Run later
+public function priority(): int
+{
+    return 100;
+}
+
+// Cleanup, logging, notifications (run last) - Run at the end
+public function priority(): int
+{
+    return 200; // Executes last
+}
+```
+
+**Execution Order Example:**
+- Priority 0 → Executes first
+- Priority 10 → Executes second
+- Priority 50 → Executes third
+- Priority 100 → Executes fourth
+- Priority 200 → Executes last
+
+### Setting Priority
+
+#### In Code
+
+```php
+public function priority(): int
+{
+    return 50;
+}
+```
+
+#### Via Database
+
+```php
+DB::table('mks_hooks')
+    ->where('listener_class', GenerateSlugListener::class)
+    ->update(['priority' => 75]);
+```
+
+#### Via Helper (Deprecated)
+
+```php
+// This is deprecated - use database instead
+Hooks::setPriority(GenerateSlugListener::class, 75);
+```
+
+---
+
+## Discovery System
+
+### Automatic Discovery
+
+The discovery system automatically finds and registers hooks:
+
+```bash
+php artisan mks:discover
+```
+
+### Discovery Process
+
+1. **Scan Files**: Recursively scan for PHP files in specified directories
+2. **Parse Classes**: Extract class names and check interfaces
+3. **Extract Metadata**: Extract event names, hook names, priorities
+4. **Sync with Database**: Update `mks_hooks` table
+5. **Cache Results**: Cache discovery results for performance
+
+### Discovery Configuration
+
+By default, discovery scans:
+- `app/Hooks/Listeners/`
+- Package's `Core/Listeners/`
+
+### Manual Discovery
+
+```php
+use MiranSalehi\MksCms\Core\Services\DiscoveryService;
+
+$discoveryService = app(DiscoveryService::class);
+$listeners = $discoveryService->discoverListeners(app_path('Hooks/Listeners'));
+$discoveryService->syncListeners($listeners);
+```
+
+---
+
+## State Management
+
+### Database-Driven State
+
+Hook state is managed via the `mks_hooks` table:
+
+- **Enabled/Disabled**: Control whether a hook executes
+- **Priority Overrides**: Override priority from database
+- **System Flags**: Mark hooks as system-critical
+
+### Enabling/Disabling Hooks
+
+```php
+// Disable a hook
+DB::table('mks_hooks')
+    ->where('listener_class', GenerateSlugListener::class)
+    ->update(['is_enabled' => false]);
+
+// Enable a hook
+DB::table('mks_hooks')
+    ->where('listener_class', GenerateSlugListener::class)
+    ->update(['is_enabled' => true]);
+```
+
+### System Hooks
+
+System hooks **cannot be disabled**:
+
+```php
+DB::table('mks_hooks')
+    ->where('listener_class', ValidatePostListener::class)
+    ->update(['is_system' => true]);
+```
+
+### State Cache
+
+State is cached for performance:
+- **Production**: Reads from `bootstrap/cache/mks_hook_state.php` (zero database queries)
+- **Development**: Falls back to database if cache doesn't exist
+- **Cache Invalidation**: Cache invalidates when database is updated
+
+---
+
+## Hook Visibility & Plugin Ownership
+
+### Overview
+
+The hook system now supports explicit hook visibility control and plugin ownership metadata. This allows for fine-grained access control and better error isolation.
+
+### Hook Visibility Levels
+
+Hooks can have three visibility levels:
+
+#### 1. Public Hooks
+**Accessible by:** All listeners from any plugin
+
+Public hooks can be accessed by any listener regardless of plugin ownership. This is useful for hooks that are meant to be extended by third-party plugins.
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+
+$definition = new HookDefinition(
+    hookName: 'post.created',
+    ownerPluginId: 'my-plugin',
+    visibility: HookDefinition::VISIBILITY_PUBLIC
+);
+
+HookManager::registerHookDefinition($definition);
+```
+
+#### 2. Private Hooks
+**Accessible by:** Only listeners from the owner plugin
+
+Private hooks can only be accessed by listeners that belong to the same plugin as the hook owner. This is the **default visibility** for all hooks.
+
+```php
+$definition = new HookDefinition(
+    hookName: 'post.creating',
+    ownerPluginId: 'my-plugin',
+    visibility: HookDefinition::VISIBILITY_PRIVATE // Default
+);
+```
+
+#### 3. System Hooks
+**Accessible by:** Only core system or the owner plugin
+
+System hooks can only be accessed by core system listeners or listeners from the owner plugin. This is used for critical system functionality.
+
+```php
+$definition = new HookDefinition(
+    hookName: 'post.validating',
+    ownerPluginId: HookDefinition::PLUGIN_CORE,
+    visibility: HookDefinition::VISIBILITY_SYSTEM
+);
+```
+
+### Registering Hook Definitions
+
+Hook definitions must be registered before listeners attempt to access them:
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+use MiranSalehi\MksCms\Core\Hooks\HookManager;
+
+// In your ServiceProvider
+public function boot(): void
+{
+    $hookManager = app(HookManager::class);
+    
+    // Register a private hook
+    $definition = new HookDefinition(
+        hookName: 'post.creating',
+        ownerPluginId: 'my-plugin',
+        visibility: HookDefinition::VISIBILITY_PRIVATE
+    );
+    $hookManager->registerHookDefinition($definition);
+    
+    // Register a public hook
+    $publicDefinition = new HookDefinition(
+        hookName: 'post.created',
+        ownerPluginId: 'my-plugin',
+        visibility: HookDefinition::VISIBILITY_PUBLIC
+    );
+    $hookManager->registerHookDefinition($publicDefinition);
+}
+```
+
+### Plugin Ownership
+
+Every listener must be associated with a plugin identifier. This metadata is used for:
+- Visibility enforcement
+- Error isolation (future use)
+
+#### Registering Listeners with Plugin Ownership
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookManager;
+
+$hookManager = app(HookManager::class);
+
+// Register listener with plugin ID
+$hookManager->register(
+    eventName: 'post.creating',
+    listenerClass: MyListener::class,
+    priority: 10, // Lower number = runs earlier
+    pluginId: 'my-plugin' // Explicit plugin ownership
+);
+
+// Without plugin ID (defaults to 'core' for backward compatibility)
+$hookManager->register(
+    eventName: 'post.creating',
+    listenerClass: CoreListener::class,
+    priority: 0 // Lower number = runs first (system-critical)
+    // pluginId defaults to 'core'
+);
+```
+
+#### Core Plugin Identifier
+
+Use `HookDefinition::PLUGIN_CORE` for core/system listeners:
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+
+// Core listener
+$hookManager->register(
+    'post.creating',
+    CoreValidationListener::class,
+    100,
+    HookDefinition::PLUGIN_CORE
+);
+```
+
+### Visibility Enforcement
+
+Visibility is enforced at **dispatch time** (the earliest safe enforcement point):
+
+1. **Hook Definition Check**: If a hook definition exists, visibility rules are applied
+2. **Private Hook Access**: Only listeners from the owner plugin can access private hooks
+3. **System Hook Access**: Only core or owner plugin listeners can access system hooks
+4. **Violation Exception**: If a listener attempts to access a hook it doesn't have permission for, `HookVisibilityViolationException` is thrown
+
+#### Example: Visibility Violation
+
+```php
+// Plugin A registers a private hook
+$definition = new HookDefinition(
+    hookName: 'post.creating',
+    ownerPluginId: 'plugin-a',
+    visibility: HookDefinition::VISIBILITY_PRIVATE
+);
+HookManager::registerHookDefinition($definition);
+
+// Plugin B tries to listen to the hook
+HookManager::register(
+    'post.creating',
+    PluginBListener::class,
+    10, // Priority value doesn't matter for visibility check
+    'plugin-b' // Different plugin!
+);
+
+// When dispatched, this will throw HookVisibilityViolationException
+// because Plugin B is not the owner of this private hook
+```
+
+### Error Isolation Policy
+
+The hook system implements a comprehensive error isolation policy:
+
+#### Policy Rules
+
+1. **Fatal/Throwable Errors**:
+   - ✅ **Logged** with plugin + hook context
+   - ✅ **Mutations reverted** automatically
+   - ✅ **System hooks re-throw** (critical functionality)
+   - ✅ **Non-system hooks continue** execution
+
+2. **Error Context**:
+   All errors include:
+   - Listener class name
+   - Plugin identifier (`plugin_id`)
+   - Hook name (`hook_name`)
+   - Hook owner (`hook_owner`)
+   - Event name
+   - Error message and trace
+   - Number of mutations reverted
+
+3. **System Hook Protection**:
+   - System hooks that fail **MUST re-throw** the exception
+   - This ensures critical functionality is not silently skipped
+
+4. **Non-System Hook Isolation**:
+   - Non-system hooks are isolated
+   - One faulty listener does not break the entire hook chain
+   - Execution continues with remaining listeners
+
+#### Example Error Log
+
+```json
+{
+  "listener": "App\\Hooks\\Listeners\\MyListener",
+  "plugin_id": "my-plugin",
+  "hook_name": "post.creating",
+  "hook_owner": "my-plugin",
+  "event": "post.creating",
+  "error": "Undefined variable: $undefinedVar",
+  "trace": "...",
+  "mutations_reverted": 2
+}
+```
+
+### Best Practices
+
+1. **Always Register Hook Definitions**:
+   - Register hook definitions before registering listeners
+   - Use appropriate visibility levels
+
+2. **Plugin Ownership**:
+   - Always specify plugin ID when registering listeners
+   - Use `HookDefinition::PLUGIN_CORE` for core/system listeners
+   - Keep plugin IDs consistent across your application
+
+3. **Visibility Levels**:
+   - Use **private** for internal hooks (default)
+   - Use **public** for hooks meant to be extended by others
+   - Use **system** for critical core functionality
+
+4. **Error Handling**:
+   - System hooks should be extremely robust
+   - Non-system hooks should handle errors gracefully
+   - Always test error scenarios
+
+### API Reference
+
+#### HookDefinition
+
+```php
+class HookDefinition
+{
+    public const VISIBILITY_PUBLIC = 'public';
+    public const VISIBILITY_PRIVATE = 'private';
+    public const VISIBILITY_SYSTEM = 'system';
+    public const PLUGIN_CORE = 'core';
+
+    public function __construct(
+        string $hookName,
+        string $ownerPluginId,
+        string $visibility = self::VISIBILITY_PRIVATE
+    );
+
+    public function hookName(): string;
+    public function ownerPluginId(): string;
+    public function visibility(): string;
+    public function isPublic(): bool;
+    public function isPrivate(): bool;
+    public function isSystem(): bool;
+    public function isCoreOwned(): bool;
+}
+```
+
+#### HookManager
+
+```php
+// Register hook definition
+$hookManager->registerHookDefinition(HookDefinition $definition): void;
+
+// Register listener with plugin ownership
+$hookManager->register(
+    string $eventName,
+    string $listenerClass,
+    int $priority = 0,
+    ?string $pluginId = null
+): void;
+```
+
+#### Exceptions
+
+```php
+// Thrown when visibility violation occurs
+HookVisibilityViolationException extends \RuntimeException
+```
+
+---
+
+## Performance & Caching
+
+### Performance Optimizations
+
+1. **Lazy Loading**: Listeners are instantiated only when their event is dispatched
+2. **State Caching**: Hook state is cached in production (zero database queries)
+3. **Discovery Caching**: Discovery results are cached
+4. **Performance Monitoring**: Slow hooks (>100ms) are logged
+
+### Cache Management
+
+```bash
+# Clear hook state cache
+php artisan cache:clear
+
+# Clear discovery cache
+# Cache is automatically invalidated when running mks:discover
+```
+
+### Performance Monitoring
+
+Slow hooks are automatically logged:
+
+```
+[warning] Slow hook detected for 'post.form'
+- execution_time_ms: 125.5
+```
+
+---
+
+## Best Practices
+
+### 1. Event Naming
+
+- Use consistent naming: `resource.action` (e.g., `post.creating`, `post.created`)
+- BEFORE events: present continuous (creating, updating)
+- AFTER events: past tense (created, updated)
+
+### 2. Priority Management
+
+- Use clear priority ranges (100+, 50-99, 10-49, 0-9, negative)
+- Document priority choices in code comments
+- Avoid priority conflicts when possible
+
+### 3. Error Handling
+
+- Always validate data before mutations
+- Use `shouldHandle()` for conditional execution
+- Don't throw exceptions unless necessary (use prevention instead)
+
+### 4. Mutations
+
+- Only mutate data when necessary
+- Provide clear mutation reasons in comments
+- Test mutation behavior thoroughly
+
+### 5. Performance
+
+- Keep listeners lightweight
+- Use `shouldHandle()` to skip unnecessary processing
+- Consider async execution for heavy operations
+
+### 6. Testing
+
+```php
+// Test listener execution
+$event = new PostCreating(['title' => 'Test']);
+$listener = new GenerateSlugListener();
+$listener->handle($event);
+$this->assertEquals('test', $event->data()->get('slug'));
+
+// Test prevention
+$event = new PostCreating(['title' => '']);
+$listener = new ValidatePostListener();
+$listener->handle($event);
+$this->assertTrue($event->isPrevented());
+```
+
+---
+
+## API Reference
+
+### HookManager
+
+```php
+// Register a listener
+$hookManager->register(string $eventName, string $listenerClass, int $priority = 0): void
+
+// Dispatch an event
+$hookManager->dispatch(MksCmsEvent $event): EventResult
+
+// Check if listener is enabled
+$hookManager->isListenerEnabled(string $listenerClass): bool
+
+// Get all registered listeners
+$hookManager->getRegisteredListeners(): array
+```
+
+### Hooks Helper
+
+```php
+// Event hooks
+Hooks::register(
+    string $eventName,
+    string $listenerClass,
+    int $priority = 0,
+    ?string $pluginId = null
+): void
+
+// Register hook definition
+Hooks::registerHookDefinition(HookDefinition $definition): void
+
+// Form hooks
+Hooks::extendForm(string $formName, callable $callback, int $priority = 0): void
+
+// Table hooks
+Hooks::extendTable(string $tableName, callable $callback, int $priority = 0): void
+Hooks::extendTableColumns(string $tableName, callable $callback, int $priority = 0): void
+Hooks::extendTableActions(string $tableName, callable $callback, int $priority = 0): void
+Hooks::extendTableBulkActions(string $tableName, callable $callback, int $priority = 0): void
+Hooks::extendTableFilters(string $tableName, callable $callback, int $priority = 0): void
+
+// Resource hooks
+Hooks::extendResourceRelations(string $resourceName, callable $callback, int $priority = 0): void
+Hooks::extendResourceWidgets(string $resourceName, callable $callback, int $priority = 0): void
+
+// Page hooks
+Hooks::extendPageHeaderActions(string $pageName, callable $callback, int $priority = 0): void
+```
+
+### MksCmsEvent
+
+```php
+// Data access
+$event->data(): EventDataBag
+$event->data()->get(string $key): mixed
+$event->data()->has(string $key): bool
+$event->data()->all(): array
+
+// Context
+$event->context(): array
+
+// Mutations
+$event->updateData(string $key, mixed $value): void
+$event->mutations(): array
+
+// Prevention
+$event->prevent(string $reason): void
+$event->isPrevented(): bool
+$event->preventReason(): ?string
+```
+
+### EventResult
+
+```php
+$result->wasPrevented(): bool
+$result->preventReason(): ?string
+$result->mutations(): array
+$result->pendingAsyncListeners(): array
+$result->executionTime(): float
+```
+
+---
+
+## Examples
+
+### Example 1: Auto-generate Slug
+
+```php
+class GenerateSlugListener implements MksCmsListenerInterface
+{
+    public function handle(MksCmsEvent $event): void
+    {
+        $title = $event->data()->get('title');
+        if ($title && empty($event->data()->get('slug'))) {
+            $event->updateData('slug', Str::slug($title));
+        }
+    }
+
+    public function shouldHandle(MksCmsEvent $event): bool
+    {
+        return $event->data()->has('title');
+    }
+
+    public function shouldQueue(): bool
+    {
+        return false;
+    }
+
+    public function priority(): int
+    {
+        return 10; // Lower number = runs earlier
+    }
+}
+```
+
+### Example 2: Validate Before Create
+
+```php
+class ValidatePostListener implements MksCmsListenerInterface
+{
+    public function handle(MksCmsEvent $event): void
+    {
+        $title = $event->data()->get('title');
+        
+        if (empty($title)) {
+            $event->prevent('Title is required');
+            return;
+        }
+        
+        if (strlen($title) > 255) {
+            $event->prevent('Title cannot exceed 255 characters');
+        }
+    }
+    
+    public function priority(): int
+    {
+        return 0; // Lower number = runs first (system-critical validation)
+    }
+    
+    // ... other methods
+}
+```
+
+### Example 3: Send Notification After Create
+
+```php
+class NotifyPostCreatedListener implements MksCmsListenerInterface
+{
+    public function handle(MksCmsEvent $event): void
+    {
+        $postId = $event->context()['post_id'] ?? null;
+        $title = $event->data()->get('title');
+        
+        // Send notification
+        Notification::send(
+            User::admins()->get(),
+            new PostCreatedNotification($postId, $title)
+        );
+    }
+
+    public function shouldQueue(): bool
+    {
+        return true; // Queue for async execution
+    }
+
+    public function priority(): int
+    {
+        return 200; // Higher number = runs last (executes after all other listeners)
+    }
+    
+    // ... other methods
+}
+```
+
+### Example 4: Extend Form with Custom Fields
+
+```php
+class AddSeoFieldsToPostForm implements FormHookListenerInterface
+{
+    public static function getFormName(): string
+    {
+        return 'post.form';
+    }
+
+    public static function getPriority(): int
+    {
+        return 0;
+    }
+
+    public static function extend(Schema $schema): Schema
+    {
+        $existingComponents = $schema->getComponents() ?? [];
+        
+        return $schema->components([
+            ...$existingComponents,
+            Section::make('SEO')
+                ->schema([
+                    TextInput::make('meta_title')
+                        ->label('Meta Title')
+                        ->maxLength(60),
+                    Textarea::make('meta_description')
+                        ->label('Meta Description')
+                        ->maxLength(160)
+                        ->rows(3),
+                ])
+                ->collapsible()
+                ->collapsed(),
+        ]);
+    }
+}
+```
+
+### Example 5: Hook Visibility and Plugin Ownership
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+use MiranSalehi\MksCms\Core\Hooks\HookManager;
+
+// In your ServiceProvider
+public function boot(): void
+{
+    $hookManager = app(HookManager::class);
+    
+    // 1. Register a private hook (only your plugin can access)
+    $privateHook = new HookDefinition(
+        hookName: 'my-plugin.internal.process',
+        ownerPluginId: 'my-plugin',
+        visibility: HookDefinition::VISIBILITY_PRIVATE
+    );
+    $hookManager->registerHookDefinition($privateHook);
+    
+    // 2. Register a public hook (any plugin can extend)
+    $publicHook = new HookDefinition(
+        hookName: 'my-plugin.post.before-save',
+        ownerPluginId: 'my-plugin',
+        visibility: HookDefinition::VISIBILITY_PUBLIC
+    );
+    $hookManager->registerHookDefinition($publicHook);
+    
+    // 3. Register listeners with plugin ownership
+    $hookManager->register(
+        eventName: 'my-plugin.internal.process',
+        listenerClass: InternalProcessorListener::class,
+        priority: 10, // Lower number = runs earlier
+        pluginId: 'my-plugin' // Must match hook owner for private hooks
+    );
+    
+    // 4. Third-party plugin can listen to public hooks
+    // This would be in a different plugin:
+    $hookManager->register(
+        eventName: 'my-plugin.post.before-save',
+        listenerClass: ThirdPartyListener::class,
+        priority: 50, // Higher number = runs later than priority 10
+        pluginId: 'third-party-plugin' // Different plugin, but public hook allows it
+    );
+}
+```
+
+---
+
+## Troubleshooting
+
+### Hooks Not Executing
+
+1. **Check Discovery**: Run `php artisan mks:discover`
+2. **Check Enabled State**: Verify hook is enabled in database
+3. **Check Priority**: Verify priority allows execution
+4. **Check shouldHandle()**: Verify `shouldHandle()` returns true
+
+### Mutations Not Applied
+
+1. **Check Event Result**: Verify `$result->mutations()` contains mutations
+2. **Check Prevention**: Verify event wasn't prevented
+3. **Check Listener Failure**: Check logs for listener errors
+
+### Performance Issues
+
+1. **Check Slow Hooks**: Review logs for slow hook warnings
+2. **Clear Cache**: Run `php artisan cache:clear`
+3. **Review Priority**: Optimize priority order
+4. **Use Async**: Consider queuing heavy listeners
+
+### Cache Issues
+
+1. **Clear State Cache**: Delete `bootstrap/cache/mks_hook_state.php`
+2. **Clear Discovery Cache**: Delete `bootstrap/cache/mks_hook_discovery.php`
+3. **Re-run Discovery**: Run `php artisan mks:discover`
+
+---
+
+## System Requirements
+
+- PHP 8.1+
+- Laravel 11+
+- Filament 4
+- Database (MySQL 5.7+, PostgreSQL 10+, SQLite 3.8+)
+
+## Contributing
+
+Contributions are welcome! Please ensure all code follows PSR-12 coding standards and includes appropriate tests.
+
+## License
+
+[Your License Here]
+
+## Support
+
+[Your Support Information Here]
+
+---
+
+## Menu Management System
+
+MKS CMS includes a powerful Menu Management System fully integrated with Filament.
+
+### Key Features
+- **Visual Menu Builder**: Drag-and-drop interface for managing menu structures.
+- **Nested Menus**: Support for multi-level menus with infinite depth (configurable).
+- **Multiple Locations**: Manage menus for different parts of your site (Header, Footer, Sidebar).
+- **Custom Links & Polymorphic Items**: Link to internal pages, categories, or external URLs.
+
+### Using the Menu Builder
+Navigate to **Menus** in the admin panel.
+1. **Create a Menu**: Give it a name and assign it to a registered location (optional).
+2. **Add Items**: Use the sidebar panels to add:
+   - **Custom Links**: External URLs or arbitrary paths.
+   - **Pages**: Links to static pages.
+   - **Categories**: Links to post categories.
+3. **Structure**: Drag items to reorder. Drag slightly to the right to nest an item under another.
+4. **Edit Items**: Click the "Edit" button on any item to change its label, URL, or target (New Tab/Same Tab).
+
+### Registering Menu Locations
+You can register menu locations from your `AppServiceProvider` or any Plugin's service provider using the `MenuLocationManager`.
+
+```php
+use MiranSalehi\MksCms\Core\Hooks\MenuLocationManager;
+
+public function boot(): void
+{
+    MenuLocationManager::register([
+        'header_primary' => 'Primary Header Menu',
+        'footer_links'   => 'Footer Links Section',
+        'sidebar_main'   => 'Sidebar Main Menu',
+    ]);
+}
+```
+
+These locations will automatically appear in the Menu Resource for assignment.
+
+### Retrieving Menus in Blade
+Use the `MenuService` to retrieve menu trees for your frontend themes.
+
+```php
+@inject('menuService', 'MiranSalehi\MksCms\Services\MenuService')
+
+{{-- Get menu by location --}}
+@php $menuTree = $menuService->forLocation('header_primary'); @endphp
+
+<ul>
+    @foreach($menuTree as $item)
+        <li>
+            <a href="{{ $item->url }}" target="{{ $item->target }}">
+                {{ $item->title }}
+            </a>
+            @if($item->children->count())
+                <ul>
+                    {{-- Render children recursively --}}
+                </ul>
+            @endif
+        </li>
+    @endforeach
+</ul>
+```
+
+---
+
+## User Management
+
+MKS CMS provides a built-in, Filament-native User Management resource.
+
+- **Standard Resource**: fully customizable `UserResource`.
+- **Dedicated Components**: Segregated `UserForm` and `UserTable` classes for better code organization.
+- **Role & Permission Ready**: The structure is ready to be extended with Roles & Permissions packages (like Spatie or Filament Shield).
+
+---
+
+## Plugin Development Tools
+
+MKS CMS offers robust tools to speed up plugin development.
+
+### Generating Resources
+We provide a dedicated command to generate Filament resources that follow the MKS CMS architectural standards (Filament v4 ready).
+
+```bash
+php artisan mks-plugin:make-resource <plugin-id> <ResourceName>
+```
+
+**Example:**
+```bash
+php artisan mks-plugin:make-resource my-shop Product
+```
+
+**What it generates:**
+1. **Resource Class**: `src/Filament/Resources/ProductResource/ProductResource.php`
+   - Includes explicit `slug` definition for clean URLs (e.g., `admin/products`).
+   - Delegates Form and Table configuration to separate classes.
+2. **Schema Class**: `src/Filament/Resources/ProductResource/Schemas/ProductForm.php`
+   - Contains the form schema definition.
+   - Automatically registers `form` hooks.
+3. **Table Class**: `src/Filament/Resources/ProductResource/Tables/ProductTable.php`
+   - Contains the table columns and actions.
+   - Automatically registers `table` hooks.
+4. **Pages**: List, Create, and Edit pages with correct routing.
+
+This structure ensures your plugins remain clean, maintainable, and fully hookable by other developers.
+
+### Automatic Route Loading
+MKS CMS automatically discovers and loads routes from your plugins if they follow the standard convention:
+
+1. **Web Routes**: `routes/web.php`
+   - Automatically wrapped in the `web` middleware group.
+   - Ideal for frontend pages or custom admin routes.
+2. **API Routes**: `routes/api.php`
+   - Automatically wrapped in the `api` middleware group.
+   - Automatically prefixed with `/api`.
+
+If you need custom middleware or prefixes, you can still register routes manually in your plugin class's `boot()` method.

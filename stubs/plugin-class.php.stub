@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Miran\Mksine\Core\Plugins\Contracts\PluginInterface;
+
+class {{ className }} implements PluginInterface
+{
+    /**
+     * Get the unique plugin identifier.
+     */
+    public function id(): string
+    {
+        return '{{ id }}';
+    }
+
+    /**
+     * Called when plugin is first installed.
+     */
+    public function install(): void
+    {
+        // Run migrations, create initial data, etc.
+    }
+
+    /**
+     * Called when plugin is activated.
+     */
+    public function activate(): void
+    {
+        // Register hooks, enable features
+    }
+
+    /**
+     * Called when plugin is deactivated.
+     */
+    public function deactivate(): void
+    {
+        // Unregister hooks, disable features
+        // Note: Data should NOT be deleted here
+    }
+
+    /**
+     * Called when plugin is uninstalled.
+     */
+    public function uninstall(bool $deleteData = false): void
+    {
+        if ($deleteData) {
+            // Delete tables, files, etc.
+        }
+    }
+
+    /**
+     * Called on every request when plugin is active.
+     */
+    public function boot(): void
+    {
+        // Register routes, bind services, etc.
+    }
+
+    /**
+     * Get the plugin's migrations path.
+     */
+    public function migrationsPath(): ?string
+    {
+        return __DIR__ . '/../database/migrations';
+    }
+
+    /**
+     * Get the plugin's config path.
+     */
+    public function configPath(): ?string
+    {
+        return __DIR__ . '/../config';
+    }
+
+    /**
+     * Get the plugin's views path.
+     */
+    public function viewsPath(): ?string
+    {
+        return __DIR__ . '/../resources/views';
+    }
+
+    /**
+     * Get the plugin's translations path.
+     */
+    public function translationsPath(): ?string
+    {
+        return __DIR__ . '/../resources/lang';
+    }
+
+    /**
+     * Get the plugin's Filament resources path.
+     */
+    public function filamentResourcesPath(): ?string
+    {
+        $path = __DIR__ . '/Filament/Resources';
+        return is_dir($path) ? $path : null;
+    }
+
+    /**
+     * Get the plugin's Filament pages path.
+     */
+    public function filamentPagesPath(): ?string
+    {
+        $path = __DIR__ . '/Filament/Pages';
+        return is_dir($path) ? $path : null;
+    }
+
+    /**
+     * Get the plugin's Filament widgets path.
+     */
+    public function filamentWidgetsPath(): ?string
+    {
+        $path = __DIR__ . '/Filament/Widgets';
+        return is_dir($path) ? $path : null;
+    }
+
+    /**
+     * Get the plugin's namespace.
+     */
+    public function namespace(): ?string
+    {
+        return '{{ namespace }}';
+    }
+}
+

@@ -1,0 +1,57 @@
+<?php
+
+namespace {{ namespace }}\Filament\Resources\{{ resourceName }};
+
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+use {{ namespace }}\Filament\Resources\{{ resourceName }}\Pages\Create{{ modelName }};
+use {{ namespace }}\Filament\Resources\{{ resourceName }}\Pages\Edit{{ modelName }};
+use {{ namespace }}\Filament\Resources\{{ resourceName }}\Pages\List{{ modelPlural }};
+use {{ namespace }}\Filament\Resources\{{ resourceName }}\Schemas\{{ modelName }}Form;
+use {{ namespace }}\Filament\Resources\{{ resourceName }}\Tables\{{ modelPlural }}Table;
+use {{ namespace }}\Models\{{ modelName }};
+
+class {{ resourceName }}Resource extends Resource
+{
+    protected static ?string $model = {{ modelName }}::class;
+
+    protected static ?string $navigationLabel = '{{ modelPlural }}';
+
+    protected static ?string $modelLabel = '{{ modelName }}';
+
+    protected static ?string $pluralModelLabel = '{{ modelPlural }}';
+
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static ?int $navigationSort = 1;
+
+    public static function form(Schema $schema): Schema
+    {
+        return {{ modelName }}Form::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return {{ modelPlural }}Table::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => List{{ modelPlural }}::route('/'),
+            'create' => Create{{ modelName }}::route('/create'),
+            'edit' => Edit{{ modelName }}::route('/{record}/edit'),
+        ];
+    }
+}
+

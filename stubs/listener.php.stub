@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Hooks\Listeners;
+
+use Miran\Mksine\Core\Events\MksineEvent;
+use Miran\Mksine\Core\Hooks\MksineListenerInterface;
+
+class {{ className }} implements MksineListenerInterface
+{
+    /**
+     * Handle the event.
+     */
+    public function handle(MksineEvent $event): void
+    {
+        // Handle the event here
+    }
+
+    /**
+     * Determine if this listener should handle the given event.
+     */
+    public function shouldHandle(MksineEvent $event): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine if this listener should be queued for async execution.
+     */
+    public function shouldQueue(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Get the priority of this listener.
+     * Lower numbers execute first.
+     */
+    public function priority(): int
+    {
+        return 0;
+    }
+}
+

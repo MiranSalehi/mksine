@@ -1,0 +1,25 @@
+{
+    "name": "mks-plugins/{{ id }}",
+    "description": "{{ description }}",
+    "type": "mks-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "{{ author }}"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "{{ escapedNamespace }}\\": "src/"
+        }
+    },
+    "extra": {
+        "mks-plugin": {
+            "class": "{{ escapedNamespace }}\\{{ className }}"
+        }
+    }
+}
+

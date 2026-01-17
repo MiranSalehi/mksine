@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Hooks\Listeners;
+
+use Filament\Tables\Table;
+use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
+
+class {{ className }} implements TableHookListenerInterface
+{
+    /**
+     * Get the table name this listener extends.
+     */
+    public static function getTableName(): string
+    {
+        return '{{ tableName }}';
+    }
+
+    /**
+     * Get the priority of this listener.
+     * Lower numbers execute first.
+     */
+    public static function getPriority(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Extend the table.
+     */
+    public static function extend(Table $table): Table
+    {
+        // Add your custom table modifications here
+        return $table;
+    }
+}
+

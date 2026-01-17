@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }}\Hooks\Listeners;
+
+use Filament\Schemas\Schema;
+use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
+
+class {{ className }} implements FormHookListenerInterface
+{
+    /**
+     * Get the form name this listener extends.
+     */
+    public static function getFormName(): string
+    {
+        return '{{ formName }}';
+    }
+
+    /**
+     * Get the priority of this listener.
+     * Lower numbers execute first.
+     */
+    public static function getPriority(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Extend the form schema.
+     */
+    public static function extend(Schema $schema): Schema
+    {
+        $existingComponents = method_exists($schema, 'getComponents') 
+            ? $schema->getComponents() 
+            : [];
+        
+        return $schema->components([
+            ...$existingComponents,
+            // Add your custom form components here
+        ]);
+    }
+}
+

@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * Plugin Manifest for {{ name }}
+ * 
+ * This file defines the plugin metadata and configuration.
+ * It is the source of truth for plugin information.
+ */
+
+return [
+    // Unique plugin identifier (must match folder name)
+    'id' => '{{ id }}',
+    
+    // Human-readable name
+    'name' => '{{ displayName }}',
+    
+    // Plugin version (SemVer)
+    'version' => '1.0.0',
+    
+    // Plugin description
+    'description' => '{{ description }}',
+    
+    // Plugin author
+    'author' => '{{ author }}',
+    
+    // Dependencies (other plugins or mksine version)
+    'requires' => [
+        'mksine' => '^1.0',
+    ],
+    
+    // PHP Namespace
+    'namespace' => '{{ namespace }}',
+    
+    // Main plugin class
+    'plugin_class' => '{{ namespace }}\\{{ className }}',
+    
+    // PSR-4 autoload mapping
+    'autoload' => [
+        '{{ namespace }}\\' => 'src/',
+    ],
+    
+    // Hooks exposed by this plugin
+    'hooks' => [
+        // Public hooks (other plugins can listen)
+        'public' => [
+            // '{{ id }}.example.created',
+        ],
+        
+        // Private hooks (only this plugin can listen)
+        'private' => [
+            // '{{ id }}.internal.process',
+        ],
+    ],
+    
+    // Public API (optional)
+    // 'public_api' => [
+    //     'facade' => '{{ namespace }}\\Facades\\{{ name }}',
+    // ],
+];
+
