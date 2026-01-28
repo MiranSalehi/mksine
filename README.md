@@ -1,5 +1,8 @@
 # MKSine - Complete Documentation
 
+> **⚠️ Development Status**  
+> This package is **under active development** and not yet feature-complete. Page builder, theme manager, and access control are in progress. **Do not use in production or real projects yet.**
+
 MKSine is a powerful, extensible Content Management System built as a Filament plugin for Laravel. It provides a robust foundation for content management with a sophisticated hook system that allows deep customization without modifying core code.
 
 ## Table of Contents
