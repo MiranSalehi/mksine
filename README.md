@@ -1,6 +1,6 @@
-# MKS CMS - Complete Documentation
+# MKSine - Complete Documentation
 
-MKS CMS is a powerful, extensible Content Management System built as a Filament plugin for Laravel. It provides a robust foundation for content management with a sophisticated hook system that allows deep customization without modifying core code.
+MKSine is a powerful, extensible Content Management System built as a Filament plugin for Laravel. It provides a robust foundation for content management with a sophisticated hook system that allows deep customization without modifying core code.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ MKS CMS is a powerful, extensible Content Management System built as a Filament 
 
 ## Overview
 
-MKS CMS is designed with extensibility and developer experience in mind. It features a comprehensive hook system that enables developers to extend and customize functionality at every level, from content lifecycle events to Filament form and table structures.
+MKSine is designed with extensibility and developer experience in mind. It features a comprehensive hook system that enables developers to extend and customize functionality at every level, from content lifecycle events to Filament form and table structures.
 
 ### Key Features
 
@@ -59,7 +59,7 @@ MKS CMS is designed with extensibility and developer experience in mind. It feat
 ### Install via Composer
 
 ```bash
-composer require miransalehi/mksine
+composer require miran/mksine
 ```
 
 ### Publish and Run Migrations
@@ -71,8 +71,8 @@ php artisan mksine:install --migrate
 Or manually:
 
 ```bash
-php artisan vendor:publish --provider="MiranSalehi\MksCms\MksCmsServiceProvider" --tag="mksine-config"
-php artisan vendor:publish --provider="MiranSalehi\MksCms\MksCmsServiceProvider" --tag="mksine-migrations"
+php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-config"
+php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-migrations"
 php artisan migrate
 ```
 
@@ -81,13 +81,13 @@ php artisan migrate
 In your `app/Providers/Filament/AdminPanelProvider.php`:
 
 ```php
-use MiranSalehi\MksCms\MksCmsPlugin;
+use Miran\Mksine\MksinePlugin;
 
 public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugins([
-            MksCmsPlugin::make(),
+            MksinePlugin::make(),
         ]);
 }
 ```
@@ -237,16 +237,16 @@ If `event->isAsyncAllowed()` returns true:
 
 ### Event Structure
 
-All events must extend `MksCmsEvent`:
+All events must extend `MksineEvent`:
 
 ```php
 <?php
 
 namespace App\Hooks\Events;
 
-use MiranSalehi\MksCms\Core\Events\MksCmsEvent;
+use Miran\Mksine\Core\Events\MksineEvent;
 
-class PostPublishing extends MksCmsEvent
+class PostPublishing extends MksineEvent
 {
     /**
      * Get the event name.
@@ -333,22 +333,22 @@ $event->mutations();
 
 ### Listener Interface
 
-All listeners must implement `MksCmsListenerInterface`:
+All listeners must implement `MksineListenerInterface`:
 
 ```php
 <?php
 
 namespace App\Hooks\Listeners;
 
-use MiranSalehi\MksCms\Core\Events\MksCmsEvent;
-use MiranSalehi\MksCms\Core\Hooks\MksCmsListenerInterface;
+use Miran\Mksine\Core\Events\MksineEvent;
+use Miran\Mksine\Core\Hooks\MksineListenerInterface;
 
-class GenerateSlugListener implements MksCmsListenerInterface
+class GenerateSlugListener implements MksineListenerInterface
 {
     /**
      * Handle the event.
      */
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $title = $event->data()->get('title');
         
@@ -361,7 +361,7 @@ class GenerateSlugListener implements MksCmsListenerInterface
      * Determine if this listener should handle the given event.
      * Useful for conditional execution based on event data or context.
      */
-    public function shouldHandle(MksCmsEvent $event): bool
+    public function shouldHandle(MksineEvent $event): bool
     {
         // Only handle if title exists and slug is empty
         return $event->data()->has('title') && empty($event->data()->get('slug'));
@@ -404,7 +404,7 @@ php artisan mks:discover
 ```
 
 The discovery system will:
-1. Scan for classes implementing `MksCmsListenerInterface`
+1. Scan for classes implementing `MksineListenerInterface`
 2. Extract event name from class name or interface method
 3. Sync with database
 4. Register with `HookManager`
@@ -414,7 +414,7 @@ The discovery system will:
 In your `AppServiceProvider`:
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\HookManager;
 
 public function boot(): void
 {
@@ -426,7 +426,7 @@ public function boot(): void
 Or using the `Hooks` helper:
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\Hooks;
+use Miran\Mksine\Core\Hooks\Hooks;
 
 public function boot(): void
 {
@@ -445,9 +445,9 @@ Event hooks listen to content lifecycle events (creating, created, updating, upd
 **Example: Auto-generate slug**
 
 ```php
-class GenerateSlugListener implements MksCmsListenerInterface
+class GenerateSlugListener implements MksineListenerInterface
 {
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $title = $event->data()->get('title');
         if ($title && empty($event->data()->get('slug'))) {
@@ -473,7 +473,7 @@ Create a listener implementing `FormHookListenerInterface`:
 namespace App\Hooks\Listeners;
 
 use Filament\Schemas\Schema;
-use MiranSalehi\MksCms\Core\Hooks\FormHookListenerInterface;
+use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 
 class AddCustomFieldsToPostForm implements FormHookListenerInterface
 {
@@ -511,7 +511,7 @@ class AddCustomFieldsToPostForm implements FormHookListenerInterface
 #### Using Helper
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\Hooks;
+use Miran\Mksine\Core\Hooks\Hooks;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 
@@ -542,7 +542,7 @@ namespace App\Hooks\Listeners;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use MiranSalehi\MksCms\Core\Hooks\TableHookListenerInterface;
+use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
 
 class AddCustomColumnToPostTable implements TableHookListenerInterface
 {
@@ -576,7 +576,7 @@ class AddCustomColumnToPostTable implements TableHookListenerInterface
 #### Using Helper
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\Hooks;
+use Miran\Mksine\Core\Hooks\Hooks;
 use Filament\Tables\Columns\TextColumn;
 
 // Extend entire table
@@ -701,9 +701,9 @@ foreach ($result->mutations() as $mutation) {
 BEFORE events (creating, updating, deleting) can be prevented:
 
 ```php
-class ValidatePostListener implements MksCmsListenerInterface
+class ValidatePostListener implements MksineListenerInterface
 {
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $title = $event->data()->get('title');
         
@@ -850,7 +850,7 @@ By default, discovery scans:
 ### Manual Discovery
 
 ```php
-use MiranSalehi\MksCms\Core\Services\DiscoveryService;
+use Miran\Mksine\Core\Services\DiscoveryService;
 
 $discoveryService = app(DiscoveryService::class);
 $listeners = $discoveryService->discoverListeners(app_path('Hooks/Listeners'));
@@ -918,7 +918,7 @@ Hooks can have three visibility levels:
 Public hooks can be accessed by any listener regardless of plugin ownership. This is useful for hooks that are meant to be extended by third-party plugins.
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+use Miran\Mksine\Core\Hooks\HookDefinition;
 
 $definition = new HookDefinition(
     hookName: 'post.created',
@@ -960,8 +960,8 @@ $definition = new HookDefinition(
 Hook definitions must be registered before listeners attempt to access them:
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
-use MiranSalehi\MksCms\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\HookDefinition;
+use Miran\Mksine\Core\Hooks\HookManager;
 
 // In your ServiceProvider
 public function boot(): void
@@ -995,7 +995,7 @@ Every listener must be associated with a plugin identifier. This metadata is use
 #### Registering Listeners with Plugin Ownership
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\HookManager;
 
 $hookManager = app(HookManager::class);
 
@@ -1021,7 +1021,7 @@ $hookManager->register(
 Use `HookDefinition::PLUGIN_CORE` for core/system listeners:
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
+use Miran\Mksine\Core\Hooks\HookDefinition;
 
 // Core listener
 $hookManager->register(
@@ -1272,7 +1272,7 @@ $this->assertTrue($event->isPrevented());
 $hookManager->register(string $eventName, string $listenerClass, int $priority = 0): void
 
 // Dispatch an event
-$hookManager->dispatch(MksCmsEvent $event): EventResult
+$hookManager->dispatch(MksineEvent $event): EventResult
 
 // Check if listener is enabled
 $hookManager->isListenerEnabled(string $listenerClass): bool
@@ -1313,7 +1313,7 @@ Hooks::extendResourceWidgets(string $resourceName, callable $callback, int $prio
 Hooks::extendPageHeaderActions(string $pageName, callable $callback, int $priority = 0): void
 ```
 
-### MksCmsEvent
+### MksineEvent
 
 ```php
 // Data access
@@ -1352,9 +1352,9 @@ $result->executionTime(): float
 ### Example 1: Auto-generate Slug
 
 ```php
-class GenerateSlugListener implements MksCmsListenerInterface
+class GenerateSlugListener implements MksineListenerInterface
 {
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $title = $event->data()->get('title');
         if ($title && empty($event->data()->get('slug'))) {
@@ -1362,7 +1362,7 @@ class GenerateSlugListener implements MksCmsListenerInterface
         }
     }
 
-    public function shouldHandle(MksCmsEvent $event): bool
+    public function shouldHandle(MksineEvent $event): bool
     {
         return $event->data()->has('title');
     }
@@ -1382,9 +1382,9 @@ class GenerateSlugListener implements MksCmsListenerInterface
 ### Example 2: Validate Before Create
 
 ```php
-class ValidatePostListener implements MksCmsListenerInterface
+class ValidatePostListener implements MksineListenerInterface
 {
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $title = $event->data()->get('title');
         
@@ -1410,9 +1410,9 @@ class ValidatePostListener implements MksCmsListenerInterface
 ### Example 3: Send Notification After Create
 
 ```php
-class NotifyPostCreatedListener implements MksCmsListenerInterface
+class NotifyPostCreatedListener implements MksineListenerInterface
 {
-    public function handle(MksCmsEvent $event): void
+    public function handle(MksineEvent $event): void
     {
         $postId = $event->context()['post_id'] ?? null;
         $title = $event->data()->get('title');
@@ -1479,8 +1479,8 @@ class AddSeoFieldsToPostForm implements FormHookListenerInterface
 ### Example 5: Hook Visibility and Plugin Ownership
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\HookDefinition;
-use MiranSalehi\MksCms\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\HookDefinition;
+use Miran\Mksine\Core\Hooks\HookManager;
 
 // In your ServiceProvider
 public function boot(): void
@@ -1577,7 +1577,7 @@ Contributions are welcome! Please ensure all code follows PSR-12 coding standard
 
 ## Menu Management System
 
-MKS CMS includes a powerful Menu Management System fully integrated with Filament.
+MKSine includes a powerful Menu Management System fully integrated with Filament.
 
 ### Key Features
 - **Visual Menu Builder**: Drag-and-drop interface for managing menu structures.
@@ -1599,7 +1599,7 @@ Navigate to **Menus** in the admin panel.
 You can register menu locations from your `AppServiceProvider` or any Plugin's service provider using the `MenuLocationManager`.
 
 ```php
-use MiranSalehi\MksCms\Core\Hooks\MenuLocationManager;
+use Miran\Mksine\Core\Hooks\MenuLocationManager;
 
 public function boot(): void
 {
@@ -1617,7 +1617,7 @@ These locations will automatically appear in the Menu Resource for assignment.
 Use the `MenuService` to retrieve menu trees for your frontend themes.
 
 ```php
-@inject('menuService', 'MiranSalehi\MksCms\Services\MenuService')
+@inject('menuService', 'Miran\Mksine\Services\MenuService')
 
 {{-- Get menu by location --}}
 @php $menuTree = $menuService->forLocation('header_primary'); @endphp
@@ -1642,7 +1642,7 @@ Use the `MenuService` to retrieve menu trees for your frontend themes.
 
 ## User Management
 
-MKS CMS provides a built-in, Filament-native User Management resource.
+MKSine provides a built-in, Filament-native User Management resource.
 
 - **Standard Resource**: fully customizable `UserResource`.
 - **Dedicated Components**: Segregated `UserForm` and `UserTable` classes for better code organization.
@@ -1652,10 +1652,10 @@ MKS CMS provides a built-in, Filament-native User Management resource.
 
 ## Plugin Development Tools
 
-MKS CMS offers robust tools to speed up plugin development.
+MKSine offers robust tools to speed up plugin development.
 
 ### Generating Resources
-We provide a dedicated command to generate Filament resources that follow the MKS CMS architectural standards (Filament v4 ready).
+We provide a dedicated command to generate Filament resources that follow the MKSine architectural standards (Filament v4 ready).
 
 ```bash
 php artisan mks-plugin:make-resource <plugin-id> <ResourceName>
@@ -1681,7 +1681,7 @@ php artisan mks-plugin:make-resource my-shop Product
 This structure ensures your plugins remain clean, maintainable, and fully hookable by other developers.
 
 ### Automatic Route Loading
-MKS CMS automatically discovers and loads routes from your plugins if they follow the standard convention:
+MKSine automatically discovers and loads routes from your plugins if they follow the standard convention:
 
 1. **Web Routes**: `routes/web.php`
    - Automatically wrapped in the `web` middleware group.

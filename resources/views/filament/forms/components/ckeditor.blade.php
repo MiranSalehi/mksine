@@ -503,7 +503,7 @@
             </script>
             <div
                 x-data="{
-                    state: $wire.$entangle('{{ $getStatePath() }}'),
+                    state: $wire.{{ $applyStateBindingModifiers("\$entangle('{$getStatePath()}')") }},
                     init() {
                         const key = 'ckeditor-{{ $editorId }}';
 

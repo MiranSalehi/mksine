@@ -34,7 +34,8 @@ class CKEditor extends Field
     {
         parent::setUp();
 
-        $this->dehydrated(false);
+        // Don't use dehydrated(false) - state should be sent to server
+        // If you need custom dehydration logic, use dehydrateStateUsing() instead
     }
 
     public function content(string | Closure $content): self
