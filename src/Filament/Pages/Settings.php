@@ -2,6 +2,8 @@
 
 namespace Miran\Mksine\Filament\Pages;
 
+use Miran\Mksine\Core\Hooks\SettingsTabManager;
+use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -27,6 +29,11 @@ class Settings extends Page implements HasSchemas, HasActions
 
     public array $data = [];
 
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System');
+    }
+
     public function mount()
     {
         $this->propsMaker($this->form->getFlatFields());
@@ -43,71 +50,82 @@ class Settings extends Page implements HasSchemas, HasActions
 
     public function getFormSchema(): array
     {
+        $coreTabs = $this->getCoreSettingsTabs();
+        $extendedTabs = app(SettingsTabManager::class)->getTabs();
+
         return [
             Tabs::make()
-                ->tabs([
-                    Tabs\Tab::make('general')
-                        ->label(__('mksine::mksine.settings.tabs.general'))
-                        ->schema([
-
-                            MediaPicker::make('logo')
-                                ->inlineLabel(false)
-                                ->label(__('mksine::mksine.settings.logo'))
-                                ->isRelation(false)
-                                ->collection('logo')
-                                ->acceptedFileTypes(['image/*']),
-
-                            MediaPicker::make('favicon')
-                                ->inlineLabel(false)
-                                ->label(__('mksine::mksine.settings.favicon'))
-                                ->isRelation(false)
-                                ->collection('favicon')
-                                ->acceptedFileTypes(['image/*']),
-                            
-                            TextInput::make('site_name')
-                                ->label(__('mksine::mksine.settings.site_name'))
-                                ->columnSpanFull()
-                                ->required(),
-
-                            TextInput::make('short_site_name')
-                                ->columnSpanFull()
-                                ->label(__('mksine::mksine.settings.short_site_name')),
-
-                            
-                        ])->columns(2),
-
-                    Tabs\Tab::make('permalinks')
-                        ->label(__('mksine::mksine.settings.tabs.permalinks'))
-                        ->schema([
-                            TextInput::make('home_page_url')
-                                ->label(__('mksine::mksine.settings.home_page_url'))
-                                ->placeholder('/'),
-
-                            TextInput::make('categories_url')
-                                ->label(__('mksine::mksine.settings.categories_url'))
-                                ->placeholder('/categories'),
-
-                            TextInput::make('single_category_url')
-                                ->label(__('mksine::mksine.settings.single_category_url'))
-                                ->placeholder('/category/{slug}')
-                                ->helperText(__('mksine::mksine.settings.single_category_url_helper')),
-
-                            TextInput::make('posts_url')
-                                ->label(__('mksine::mksine.settings.posts_url'))
-                                ->placeholder('/posts'),
-
-                            TextInput::make('single_post_url')
-                                ->label(__('mksine::mksine.settings.single_post_url'))
-                                ->placeholder('/post/{slug}')
-                                ->helperText(__('mksine::mksine.settings.single_post_url_helper')),
-
-                            TextInput::make('page_url')
-                                ->label(__('mksine::mksine.settings.page_url'))
-                                ->placeholder('/page/{slug}')
-                                ->helperText(__('mksine::mksine.settings.page_url_helper')),
-                        ]),
-                ])
+                ->vertical()
+                ->tabs(array_merge($coreTabs, $extendedTabs))
                 ->persistTabInQueryString(),
+        ];
+    }
+
+    /**
+     * Core Settings tabs (general, permalinks). Extended by plugins via SettingsTabManager.
+     *
+     * @return array<Tabs\Tab>
+     */
+    protected function getCoreSettingsTabs(): array
+    {
+        return [
+            Tabs\Tab::make('general')
+                ->label(__('mksine::mksine.settings.tabs.general'))
+                ->schema([
+                    MediaPicker::make('logo')
+                        ->inlineLabel(false)
+                        ->label(__('mksine::mksine.settings.logo'))
+                        ->isRelation(false)
+                        ->collection('logo')
+                        ->acceptedFileTypes(['image/*']),
+
+                    MediaPicker::make('favicon')
+                        ->inlineLabel(false)
+                        ->label(__('mksine::mksine.settings.favicon'))
+                        ->isRelation(false)
+                        ->collection('favicon')
+                        ->acceptedFileTypes(['image/*']),
+
+                    TextInput::make('site_name')
+                        ->label(__('mksine::mksine.settings.site_name'))
+                        ->columnSpanFull()
+                        ->required(),
+
+                    TextInput::make('short_site_name')
+                        ->columnSpanFull()
+                        ->label(__('mksine::mksine.settings.short_site_name')),
+                ])->columns(2),
+
+            Tabs\Tab::make('permalinks')
+                ->label(__('mksine::mksine.settings.tabs.permalinks'))
+                ->schema([
+                    TextInput::make('home_page_url')
+                        ->label(__('mksine::mksine.settings.home_page_url'))
+                        ->placeholder('/'),
+
+                    TextInput::make('categories_url')
+                        ->label(__('mksine::mksine.settings.categories_url'))
+                        ->placeholder('/categories'),
+
+                    TextInput::make('single_category_url')
+                        ->label(__('mksine::mksine.settings.single_category_url'))
+                        ->placeholder('/category/{path}')
+                        ->helperText(__('mksine::mksine.settings.single_category_url_helper')),
+
+                    TextInput::make('posts_url')
+                        ->label(__('mksine::mksine.settings.posts_url'))
+                        ->placeholder('/posts'),
+
+                    TextInput::make('single_post_url')
+                        ->label(__('mksine::mksine.settings.single_post_url'))
+                        ->placeholder('/post/{slug}')
+                        ->helperText(__('mksine::mksine.settings.single_post_url_helper')),
+
+                    TextInput::make('page_url')
+                        ->label(__('mksine::mksine.settings.page_url'))
+                        ->placeholder('/page/{slug}')
+                        ->helperText(__('mksine::mksine.settings.page_url_helper')),
+                ]),
         ];
     }
 
@@ -140,11 +158,18 @@ class Settings extends Page implements HasSchemas, HasActions
     {
         $this->validate();
 
-        foreach ($this->form->getState() as $key => $item) {
+        $state = $this->form->getState();
+        $permalinkKeys = array_keys(Permalink::getDefaults());
+
+        foreach ($state as $key => $item) {
             Setting::updateOrCreate(
                 ['key' => $key],
                 ['value' => is_array($item) ? json_encode($item) : $item]
             );
+        }
+
+        if (count(array_intersect($permalinkKeys, array_keys($state))) > 0) {
+            \Illuminate\Support\Facades\Artisan::call('route:clear');
         }
 
         Notification::make()

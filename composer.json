@@ -24,7 +24,8 @@
     "require": {
         "php": "^8.2",
         "filament/filament": "^4.0",
-        "spatie/laravel-package-tools": "^1.15.0"
+        "spatie/laravel-package-tools": "^1.15.0",
+        "bezhansalleh/filament-shield": "^4.1.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",
@@ -41,7 +42,8 @@
     "autoload": {
         "psr-4": {
             "Miran\\Mksine\\": "src/",
-            "Miran\\Mksine\\Database\\Factories\\": "database/factories/"
+            "Miran\\Mksine\\Database\\Factories\\": "database/factories/",
+            "Miran\\Mksine\\Database\\Seeders\\": "database/seeders/"
         }
     },
     "autoload-dev": {

@@ -25,7 +25,7 @@ class MenuLocationResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 7;
 
     public static function getNavigationGroup(): ?string
     {

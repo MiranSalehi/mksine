@@ -18,6 +18,8 @@ class UserResource extends Resource
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
+    protected static ?int $navigationSort = 10;
+
     public static function getNavigationGroup(): ?string
     {
         return __('Access Control');

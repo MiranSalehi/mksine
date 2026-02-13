@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/forms";
+
+/* Enable class-based dark mode (using .dark class on html element) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Source paths for Tailwind v4 */
+@source "../../*.blade.php";
+@source "../../**/*.blade.php";
+@source "../../../../components/**/*.blade.php";
+@source "../../../../page-builder/**/*.blade.php";
+@source "../../../../filament/**/*.blade.php";
+
+/*
+|--------------------------------------------------------------------------
+| MKSine Default Theme Styles
+|--------------------------------------------------------------------------
+*/
+
+/* CSS Variables */
+:root {
+    --color-primary: #ec4899;
+    --color-secondary: #f43f5e;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #e9ecef;
+}
+
+html.dark {
+    --bg-primary: #1e293b;
+    --bg-secondary: #0f172a;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --border-color: #334155;
+}
+
+/* Base Styles */
+@layer base {
+    body {
+        @apply antialiased;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'IranSans', system-ui, sans-serif;
+        @apply font-bold;
+    }
+}
+
+/* Components */
+@layer components {
+    .btn-primary {
+        @apply px-6 py-2 rounded font-semibold transition-colors;
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #db2777;
+    }
+
+    .btn-secondary {
+        @apply px-6 py-2 bg-gray-200 text-gray-800 rounded font-semibold hover:bg-gray-300 transition-colors;
+    }
+
+    .theme-toggle,
+    .direction-toggle {
+        @apply relative inline-flex items-center justify-center w-10 h-10 cursor-pointer rounded-md bg-transparent transition-all;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .theme-toggle:hover,
+    .direction-toggle:hover {
+        background-color: var(--bg-secondary);
+        border-color: var(--color-primary);
+    }
+
+    .theme-toggle svg,
+    .direction-toggle svg {
+        @apply w-5 h-5;
+    }
+}
+
+/* Utilities */
+@layer utilities {
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #db2777;
+}
+
+html.dark ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background: #64748b;
+}
+
+/* Dark Mode Overrides */
+html.dark .bg-white {
+    background-color: var(--bg-primary);
+}
+
+html.dark .text-gray-800 {
+    color: var(--text-primary);
+}
+
+html.dark .text-gray-600 {
+    color: var(--text-secondary);
+}
+
+html.dark .border-gray-200 {
+    border-color: var(--border-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+    }
+}

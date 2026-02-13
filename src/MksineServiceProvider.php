@@ -10,6 +10,7 @@ use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -27,23 +28,63 @@ use Miran\Mksine\Console\Commands\PluginMakePageCommand;
 use Miran\Mksine\Console\Commands\PluginMakeResourceCommand;
 use Miran\Mksine\Console\Commands\PluginMakeWidgetCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
+use Miran\Mksine\Console\Commands\ThemeMakeCommand;
+use Miran\Mksine\Console\Commands\ThemePublishCommand;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Core\Hooks\HookManager;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Core\Hooks\PageHookManager;
+use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
+use Miran\Mksine\Core\Hooks\LaravelHookAsyncDispatcher;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Core\Hooks\SettingsTabManager;
 use Miran\Mksine\Core\Hooks\TableHookManager;
 use Miran\Mksine\Core\MenuItemSources\CategoryMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\CustomLinkMenuItemSource;
+use Miran\Mksine\Core\MenuItemSources\PageMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PostMenuItemSource;
+use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
+use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Livewire\MediaPickerModal;
+use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
+use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
+use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
+use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
+use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
+use Miran\Mksine\Core\PageBuilder\Components\DividerComponent;
+use Miran\Mksine\Core\PageBuilder\Components\FeatureListComponent;
+use Miran\Mksine\Core\PageBuilder\Components\HeadingComponent;
+use Miran\Mksine\Core\PageBuilder\Components\HeroComponent;
+use Miran\Mksine\Core\PageBuilder\Components\ImageComponent;
+use Miran\Mksine\Core\PageBuilder\Components\SliderComponent;
+use Miran\Mksine\Core\PageBuilder\Components\SpacerComponent;
+use Miran\Mksine\Core\PageBuilder\Components\TabsComponent;
+use Miran\Mksine\Core\PageBuilder\Components\TestimonialComponent;
+use Miran\Mksine\Core\PageBuilder\Components\TextComponent;
+use Miran\Mksine\Core\PageBuilder\Livewire\ComponentEditor;
+use Miran\Mksine\Core\PageBuilder\Livewire\PageBuilder;
+use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
+use Miran\Mksine\Core\PageBuilder\Templates\AboutPageTemplate;
+use Miran\Mksine\Core\PageBuilder\Templates\BlankTemplate;
+use Miran\Mksine\Core\PageBuilder\Templates\ContactPageTemplate;
+use Miran\Mksine\Core\PageBuilder\Templates\LandingPageTemplate;
+use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
+use Miran\Mksine\Models\Category;
+use Miran\Mksine\Models\Comment;
+use Miran\Mksine\Models\Media;
+use Miran\Mksine\Models\Menu;
+use Miran\Mksine\Models\MenuLocation;
+use Miran\Mksine\Models\Page;
+use Miran\Mksine\Models\Post;
 use Miran\Mksine\Services\MenuService;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Spatie\Permission\Models\Role;
 
 class MksineServiceProvider extends PackageServiceProvider
 {
@@ -95,9 +136,18 @@ class MksineServiceProvider extends PackageServiceProvider
             return new Mksine;
         });
 
-        // Register HookManager as singleton
+        // Register async dispatcher only when queue is enabled (HookManager depends on interface, not Laravel)
+        if (config('mksine.hooks.queue.enabled', true)) {
+            $this->app->singleton(HookAsyncDispatcherInterface::class, LaravelHookAsyncDispatcher::class);
+        }
+
+        // Register HookManager as singleton (asyncDispatcher is null when queue disabled)
         $this->app->singleton(HookManager::class, function () {
-            return new HookManager;
+            $asyncDispatcher = $this->app->bound(HookAsyncDispatcherInterface::class)
+                ? $this->app->make(HookAsyncDispatcherInterface::class)
+                : null;
+
+            return new HookManager(null, null, null, $asyncDispatcher);
         });
 
         // Register FormHookManager as singleton
@@ -120,6 +170,11 @@ class MksineServiceProvider extends PackageServiceProvider
             return new PageHookManager;
         });
 
+        // Register PluginLogger as singleton (per-plugin log files)
+        $this->app->singleton(PluginLogger::class, function () {
+            return new PluginLogger;
+        });
+
         // Register PluginManager as singleton
         $this->app->singleton(PluginManager::class, function () {
             return new PluginManager;
@@ -136,14 +191,71 @@ class MksineServiceProvider extends PackageServiceProvider
             return new MenuLocationManager;
         });
 
+        // Register SettingsTabManager for extensible Settings page tabs
+        $this->app->singleton(SettingsTabManager::class, function () {
+            return new SettingsTabManager;
+        });
+
         // Register MenuService as singleton
         $this->app->singleton(MenuService::class, function () {
             return new MenuService;
+        });
+
+        // Register ThemeManager as singleton
+        $this->app->singleton(ThemeManager::class, function () {
+            return new ThemeManager;
+        });
+
+        // Register ComponentRegistry as singleton for PageBuilder
+        $this->app->singleton(ComponentRegistry::class, function () {
+            $registry = new ComponentRegistry();
+
+            // Register default components
+            $registry->registerMany([
+                // Content (Simple)
+                HeadingComponent::class,
+                TextComponent::class,
+                FeatureListComponent::class,
+                TestimonialComponent::class,
+
+                // Media
+                ImageComponent::class,
+                SliderComponent::class,
+
+                // Layout
+                SpacerComponent::class,
+                DividerComponent::class,
+                ColumnsComponent::class,
+                HeroComponent::class,
+                TabsComponent::class,
+
+                // Interactive
+                ButtonComponent::class,
+                CallToActionComponent::class,
+                AccordionComponent::class,
+            ]);
+
+            return $registry;
+        });
+
+        // Register Page Builder Templates
+        $this->app->singleton(TemplateRegistry::class, function () {
+            $registry = new TemplateRegistry();
+
+            $registry->register('landing-page', LandingPageTemplate::config());
+            $registry->register('about-us', AboutPageTemplate::config());
+            $registry->register('contact', ContactPageTemplate::config());
+            $registry->register('services', ServicesPageTemplate::config());
+            $registry->register('blank', BlankTemplate::config());
+
+            return $registry;
         });
     }
 
     public function packageBooted(): void
     {
+        $this->registerModelPolicies();
+
         // Asset Registration
         FilamentAsset::register(
             $this->getAssets(),
@@ -203,9 +315,21 @@ class MksineServiceProvider extends PackageServiceProvider
         Livewire::component('mksine::frontend.category-show', \Miran\Mksine\Livewire\Frontend\CategoryShow::class);
         Livewire::component('mksine::frontend.post-list', \Miran\Mksine\Livewire\Frontend\PostList::class);
         Livewire::component('mksine::frontend.post-show', \Miran\Mksine\Livewire\Frontend\PostShow::class);
+        Livewire::component('mksine::frontend.post-comments', \Miran\Mksine\Livewire\Frontend\PostComments::class);
+        Livewire::component('mksine::frontend.page-show', \Miran\Mksine\Livewire\Frontend\PageShow::class);
+
+        // Register PageBuilder Livewire Components
+        Livewire::component('mksine::page-builder', PageBuilder::class);
+        Livewire::component('mksine::component-editor', ComponentEditor::class);
 
         // Register default Menu Item Sources
         $this->registerDefaultMenuItemSources();
+
+        // Register Theme Blade Directives
+        ThemeBladeDirectives::register();
+
+        // Register project theme views
+        app(ThemeManager::class)->registerProjectThemeViews();
 
         // Testing
         Testable::mixin(new TestsMksine);
@@ -226,6 +350,31 @@ class MksineServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * Register Laravel Gate policies for package models.
+     * Laravel only auto-discovers policies for App\Models\*; package models need explicit binding.
+     * Uses app policies (e.g. from Filament Shield) when present.
+     */
+    protected function registerModelPolicies(): void
+    {
+        $bindings = [
+            Category::class => \App\Policies\CategoryPolicy::class,
+            Comment::class => \App\Policies\CommentPolicy::class,
+            Media::class => \App\Policies\MediaPolicy::class,
+            Menu::class => \App\Policies\MenuPolicy::class,
+            MenuLocation::class => \App\Policies\MenuLocationPolicy::class,
+            Page::class => \App\Policies\PagePolicy::class,
+            Post::class => \App\Policies\PostPolicy::class,
+            Role::class => \App\Policies\RolePolicy::class,
+        ];
+
+        foreach ($bindings as $model => $policy) {
+            if (class_exists($policy)) {
+                Gate::policy($model, $policy);
+            }
+        }
+    }
+
+    /**
      * Register default menu item sources.
      */
     protected function registerDefaultMenuItemSources(): void
@@ -235,6 +384,7 @@ class MksineServiceProvider extends PackageServiceProvider
         // Register core sources
         $sourceManager->register('custom_link', new CustomLinkMenuItemSource);
         $sourceManager->register('category', new CategoryMenuItemSource);
+        $sourceManager->register('page', new PageMenuItemSource);
         $sourceManager->register('post', new PostMenuItemSource);
     }
 
@@ -323,6 +473,9 @@ class MksineServiceProvider extends PackageServiceProvider
             PluginMakeResourceCommand::class,
             PluginMakePageCommand::class,
             PluginMakeWidgetCommand::class,
+            // Theme commands
+            ThemeMakeCommand::class,
+            ThemePublishCommand::class,
         ];
     }
 

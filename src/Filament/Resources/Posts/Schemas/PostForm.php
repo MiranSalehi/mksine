@@ -59,6 +59,18 @@ class PostForm
                             ->searchable()
                             ->preload()
                             ->native(false),
+                        Select::make('categories')
+                            ->label('Categories')
+                            ->relationship(
+                                'categories',
+                                'name',
+                                fn ($query) => $query->where('is_active', true)->orderBy('categories.sort_order')
+                            )
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->native(false)
+                            ->columnSpanFull(),
                         DateTimePicker::make('published_at')
                             ->label('Published At')
                             ->displayFormat('d/m/Y H:i')
