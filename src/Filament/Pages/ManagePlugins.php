@@ -9,6 +9,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\File;
+use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use ZipArchive;
 
@@ -21,6 +22,12 @@ class ManagePlugins extends Page
     protected static ?int $navigationSort = 100;
 
     public array $plugins = [];
+
+    public ?string $pluginLogContent = null;
+
+    public string $pluginLogPluginName = '';
+
+    public string $pluginLogPluginId = '';
 
     public function mount(): void
     {
@@ -406,5 +413,43 @@ class ManagePlugins extends Page
             'boot_failed' => __('Boot Failed'),
             default => $status,
         };
+    }
+
+    public function getPluginLogContent(string $pluginId): ?string
+    {
+        return app(PluginLogger::class)->getLogContent($pluginId);
+    }
+
+    public function hasPluginLog(string $pluginId): bool
+    {
+        return app(PluginLogger::class)->hasLog($pluginId);
+    }
+
+    public function openPluginLog(string $pluginId): void
+    {
+        $logger = app(PluginLogger::class);
+        $this->pluginLogPluginId = $pluginId;
+        $this->pluginLogContent = $logger->getLogContent($pluginId) ?? __('No log entries yet.');
+        $plugin = collect($this->plugins)->firstWhere('id', $pluginId);
+        $this->pluginLogPluginName = $plugin['name'] ?? $pluginId;
+
+        $this->dispatch('open-modal', id: 'plugin-log-modal');
+    }
+
+    public function clearPluginLog(): void
+    {
+        if ($this->pluginLogPluginId === '') {
+            return;
+        }
+
+        $logger = app(PluginLogger::class);
+        $logger->clearLog($this->pluginLogPluginId);
+
+        $this->pluginLogContent = __('No log entries yet.');
+    }
+
+    public function closePluginLogModal(): void
+    {
+        $this->dispatch('close-modal', id: 'plugin-log-modal');
     }
 }

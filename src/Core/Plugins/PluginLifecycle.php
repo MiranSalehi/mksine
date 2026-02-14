@@ -16,9 +16,12 @@ final class PluginLifecycle
 {
     private PluginRegistry $registry;
 
-    public function __construct(PluginRegistry $registry)
+    private PluginLogger $pluginLogger;
+
+    public function __construct(PluginRegistry $registry, ?PluginLogger $pluginLogger = null)
     {
         $this->registry = $registry;
+        $this->pluginLogger = $pluginLogger ?? new PluginLogger;
     }
 
     /**
@@ -148,11 +151,17 @@ final class PluginLifecycle
             // Refresh registry
             $this->registry->refreshDbRecord($pluginId);
 
+            $this->pluginLogger->log($pluginId, 'info', 'Plugin deactivated', ['by' => 'user']);
+
             Log::info("Plugin deactivated successfully: {$pluginId}");
 
             return true;
 
         } catch (\Exception $e) {
+            $this->pluginLogger->log($pluginId, 'error', 'Plugin deactivation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             Log::error("Plugin deactivation failed: {$pluginId}", [
                 'error' => $e->getMessage(),
             ]);

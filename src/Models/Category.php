@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
+    use HasFactory;
     use SoftDeletes;
 
     protected $fillable = [
@@ -57,10 +59,93 @@ class Category extends Model
     }
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory()
+    {
+        return \Miran\Mksine\Database\Factories\CategoryFactory::new();
+    }
+
+    /**
      * Get the category image.
      */
     public function categoryImage(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'image');
+    }
+
+    /**
+     * Get breadcrumb path from root to this category (parent → child order, like WordPress).
+     *
+     * @return \Illuminate\Support\Collection<int, Category>
+     */
+    public function getBreadcrumbPath(): \Illuminate\Support\Collection
+    {
+        $path = collect();
+        $current = $this;
+
+        while ($current) {
+            $path->prepend($current);
+            $next = null;
+            if ($current->parent_id) {
+                $next = $current->relationLoaded('parent') ? $current->parent : $current->parent()->first();
+            }
+            $current = $next;
+        }
+
+        return $path;
+    }
+
+    /**
+     * Get full slug path from root to this category (parent/child/grandchild), recursive.
+     * Used for hierarchical URLs like WordPress.
+     */
+    public function getFullSlug(): string
+    {
+        $parent = $this->parent_id
+            ? ($this->relationLoaded('parent') ? $this->parent : $this->parent()->first())
+            : null;
+
+        if (! $parent) {
+            return $this->slug;
+        }
+
+        return $parent->getFullSlug() . '/' . $this->slug;
+    }
+
+    /**
+     * Get the frontend URL path for this category (hierarchical).
+     */
+    public function getUrl(): string
+    {
+        return route('categories.show', ['path' => $this->getFullSlug()]);
+    }
+
+    /**
+     * Find a category by its full path slug (e.g. "health" or "health/nutrition").
+     *
+     * @param  string  $path  Slash-separated slug path from root to leaf
+     * @return Category|null
+     */
+    public static function findByFullPath(string $path): ?Category
+    {
+        $segments = array_values(array_filter(explode('/', $path)));
+        if ($segments === []) {
+            return null;
+        }
+
+        $current = static::whereNull('parent_id')->where('slug', $segments[0])->first();
+        if (! $current) {
+            return null;
+        }
+
+        for ($i = 1, $n = count($segments); $i < $n; $i++) {
+            $current = $current->children()->where('slug', $segments[$i])->first();
+            if (! $current) {
+                return null;
+            }
+        }
+
+        return $current;
     }
 }

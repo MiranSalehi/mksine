@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
+use Miran\Mksine\Contracts\MenuItemSourcePaginatedInterface;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuItem;
@@ -42,6 +43,17 @@ class MenuBuilder extends Page implements HasForms
 
     // Form states for each source
     public array $sourceFormData = [];
+
+    /** Paginated list data per source: [key => ['items' => [], 'total' => 0, 'current_page' => 1, 'per_page' => 10]] */
+    public array $sourceItems = [];
+
+    /** Search term per source (for list sources) */
+    public array $sourceSearch = [];
+
+    /** Current page per source (for list sources) */
+    public array $sourcePage = [];
+
+    private const SOURCE_ITEMS_PER_PAGE = 10;
 
     public function mount(): void
     {
@@ -106,22 +118,152 @@ class MenuBuilder extends Page implements HasForms
         $this->sources = [];
 
         foreach ($sourceManager->getSources() as $key => $source) {
+            $hasCustomForm = $source->getFormSchema() !== null;
+            $supportsMultiple = $source->supportsMultipleSelection();
+            $isListSource = ! $hasCustomForm && $supportsMultiple;
+
             $this->sources[$key] = [
                 'key' => $source->getKey(),
                 'label' => $source->getLabel(),
                 'icon' => $source->getIcon(),
-                'items' => $source->getItems(),
-                'supportsMultiple' => $source->supportsMultipleSelection(),
-                'hasCustomForm' => $source->getFormSchema() !== null,
+                'items' => [], // No longer loaded here; use getSourceItems() for list sources
+                'supportsMultiple' => $supportsMultiple,
+                'hasCustomForm' => $hasCustomForm,
+                'isListSource' => $isListSource,
             ];
 
-            // Initialize form data
             $this->sourceFormData[$key] = [
                 'selected' => [],
                 'url' => '',
                 'label' => '',
             ];
         }
+    }
+
+    /**
+     * Load paginated/filtered items for a list source (called when panel expands or search/page changes).
+     */
+    public function getSourceItems(string $sourceKey): void
+    {
+        $sourceManager = app(MenuItemSourceManager::class);
+        $source = $sourceManager->getSource($sourceKey);
+
+        if (! $source || ! ($this->sources[$sourceKey]['isListSource'] ?? false)) {
+            return;
+        }
+
+        $search = $this->sourceSearch[$sourceKey] ?? '';
+        $page = (int) ($this->sourcePage[$sourceKey] ?? 1);
+        $perPage = self::SOURCE_ITEMS_PER_PAGE;
+
+        if ($source instanceof MenuItemSourcePaginatedInterface) {
+            $result = $source->getItemsPaginated($search, $page, $perPage);
+            $this->sourceItems[$sourceKey] = [
+                'items' => $result['items'],
+                'total' => $result['total'],
+                'current_page' => $page,
+                'per_page' => $perPage,
+            ];
+
+            return;
+        }
+
+        // Fallback: getItems() then filter and slice (for sources that don't implement getItemsPaginated)
+        $all = $source->getItems();
+        $filtered = $search !== ''
+            ? array_values(array_filter($all, fn ($item) => stripos((string) ($item['label'] ?? ''), $search) !== false))
+            : $all;
+        $total = count($filtered);
+        $slice = array_slice($filtered, ($page - 1) * $perPage, $perPage);
+
+        $this->sourceItems[$sourceKey] = [
+            'items' => $slice,
+            'total' => $total,
+            'current_page' => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
+    public function setSourceSearch(string $sourceKey, string $value): void
+    {
+        $this->sourceSearch[$sourceKey] = $value;
+        $this->sourcePage[$sourceKey] = 1;
+        $this->getSourceItems($sourceKey);
+    }
+
+    public function setSourcePage(string $sourceKey, int $page): void
+    {
+        $this->sourcePage[$sourceKey] = max(1, $page);
+        $this->getSourceItems($sourceKey);
+    }
+
+    /**
+     * Build tree order and depth for items that have parent_id (e.g. categories).
+     * Returns the same items with 'depth' (0 = root) added, sorted so parent always comes before children.
+     * If no item has parent_id, returns items unchanged with depth 0.
+     *
+     * @param  array<int, array{id: int, label: string, url: string, parent_id?: int|null}>  $items
+     * @return array<int, array{id: int, label: string, url: string, parent_id?: int|null, depth: int}>
+     */
+    public function getSourceItemsTreeOrder(array $items): array
+    {
+        if ($items === []) {
+            return [];
+        }
+
+        $hasParentId = collect($items)->contains(fn ($item) => array_key_exists('parent_id', $item));
+        if (! $hasParentId) {
+            return array_map(fn ($item) => array_merge($item, ['depth' => 0]), array_values($items));
+        }
+
+        $map = [];
+        foreach ($items as $item) {
+            $item = array_merge($item, ['depth' => 0]);
+            $map[$item['id']] = $item;
+        }
+
+        $maxIterations = count($map);
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $changed = false;
+            foreach ($map as $id => $item) {
+                $pid = $item['parent_id'] ?? null;
+                if ($pid !== null) {
+                    if (isset($map[$pid])) {
+                        $newDepth = $map[$pid]['depth'] + 1;
+                    } else {
+                        $newDepth = 1;
+                    }
+                    if ($item['depth'] !== $newDepth) {
+                        $map[$id]['depth'] = $newDepth;
+                        $changed = true;
+                    }
+                }
+            }
+            if (! $changed) {
+                break;
+            }
+        }
+
+        $buildPath = function (int $id) use (&$buildPath, $map): array {
+            $item = $map[$id] ?? null;
+            if (! $item) {
+                return [$id];
+            }
+            $pid = $item['parent_id'] ?? null;
+            if ($pid === null || ! isset($map[$pid])) {
+                return [$id];
+            }
+
+            return array_merge($buildPath($pid), [$id]);
+        };
+
+        $withPath = [];
+        foreach ($map as $item) {
+            $withPath[] = ['path' => $buildPath($item['id']), 'item' => $item];
+        }
+        usort($withPath, fn ($a, $b) => $a['path'] <=> $b['path']);
+
+        return array_map(fn ($x) => $x['item'], $withPath);
     }
 
     protected function loadMenuItems(): void
@@ -178,9 +320,11 @@ class MenuBuilder extends Page implements HasForms
         $formData = $this->sourceFormData[$sourceKey] ?? [];
 
         if ($source->supportsMultipleSelection()) {
-            // Handle checkbox selection
-            $selectedIds = $formData['selected'] ?? [];
-            $items = collect($source->getItems())->whereIn('id', $selectedIds);
+            // Handle checkbox selection: resolve selected IDs to items (prefer getItemsByIds if available)
+            $selectedIds = array_filter(array_map('intval', $formData['selected'] ?? []));
+            $items = $source instanceof MenuItemSourcePaginatedInterface
+                ? $source->getItemsByIds($selectedIds)
+                : collect($source->getItems())->whereIn('id', $selectedIds)->all();
 
             foreach ($items as $item) {
                 $this->createMenuItem($source->toMenuItem($item));
@@ -250,8 +394,8 @@ class MenuBuilder extends Page implements HasForms
     protected function removeItemFromArray(array $items, int $itemId): array
     {
         return collect($items)
-            ->reject(fn ($item) => $item['id'] === $itemId)
-            ->map(function ($item) use ($itemId) {
+            ->reject(fn (array $item) => $item['id'] === $itemId)
+            ->map(function (array $item) use ($itemId) {
                 $item['children'] = $this->removeItemFromArray($item['children'], $itemId);
 
                 return $item;

@@ -5,34 +5,43 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Events\Categories;
 
 use Miran\Mksine\Core\Events\MksineEvent;
+use Miran\Mksine\Core\Events\QueueableHookEventInterface;
 
 /**
  * Event fired after a category is created.
  * This is an AFTER event, so it cannot be prevented.
  */
-class CategoryCreated extends MksineEvent
+class CategoryCreated extends MksineEvent implements QueueableHookEventInterface
 {
-    /**
-     * Get the event name.
-     */
     public function name(): string
     {
         return 'category.created';
     }
 
-    /**
-     * This is an AFTER event, so it cannot be prevented.
-     */
     public function canBePrevented(): bool
     {
         return false;
     }
 
-    /**
-     * Allow async execution for this event.
-     */
     protected function allowAsync(): bool
     {
         return true;
+    }
+
+    public function toQueuePayload(): array
+    {
+        return [
+            'v' => 1,
+            'data' => $this->allData(),
+            'context' => $this->context(),
+        ];
+    }
+
+    public static function fromQueuePayload(array $payload): static
+    {
+        return new static(
+            $payload['data'] ?? [],
+            $payload['context'] ?? []
+        );
     }
 }

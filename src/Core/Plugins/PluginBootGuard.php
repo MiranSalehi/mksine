@@ -17,8 +17,7 @@ use Miran\Mksine\Models\Plugin as PluginModel;
  * 3. If the application crashes (fatal error), the flag remains
  * 4. On next request, we check for leftover flags and disable those plugins
  *
- * This ensures that a crashing plugin doesn't take down the entire system
- * permanently - it will be auto-disabled after one crash.
+ * All disable reasons and errors are also written to the plugin's dedicated log file.
  */
 final class PluginBootGuard
 {
@@ -27,9 +26,12 @@ final class PluginBootGuard
      */
     private string $flagPath;
 
-    public function __construct(?string $flagPath = null)
+    private PluginLogger $pluginLogger;
+
+    public function __construct(?string $flagPath = null, ?PluginLogger $pluginLogger = null)
     {
         $this->flagPath = $flagPath ?? $this->getDefaultFlagPath();
+        $this->pluginLogger = $pluginLogger ?? new PluginLogger;
     }
 
     /**
@@ -63,14 +65,17 @@ final class PluginBootGuard
 
             $pluginId = $data['plugin_id'];
             $timestamp = $data['timestamp'] ?? null;
+            $reason = 'Boot failure detected - plugin crashed during previous boot';
 
             Log::warning('Detected plugin boot failure from previous request', [
                 'plugin_id' => $pluginId,
                 'timestamp' => $timestamp,
             ]);
 
+            $this->pluginLogger->log($pluginId, 'warning', $reason, ['timestamp' => $timestamp]);
+
             // Disable the plugin in database
-            $this->disableFailedPlugin($pluginId, 'Boot failure detected - plugin crashed during previous boot');
+            $this->disableFailedPlugin($pluginId, $reason);
 
             // Clear the flag
             $this->clearFlag();
@@ -119,13 +124,17 @@ final class PluginBootGuard
 
     /**
      * Handle boot failure (called from exception handler).
+     *
+     * @param  array{message?: string, trace?: string}  $context
      */
-    public function bootFailed(string $pluginId, string $error): void
+    public function bootFailed(string $pluginId, string $error, array $context = []): void
     {
         Log::error('Plugin boot failed', [
             'plugin_id' => $pluginId,
             'error' => $error,
         ]);
+
+        $this->pluginLogger->log($pluginId, 'error', 'Plugin boot failed: ' . $error, $context);
 
         // Clear the boot flag
         $this->clearFlag();
@@ -148,6 +157,10 @@ final class PluginBootGuard
                     'boot_failed' => true,
                     'boot_error' => $error,
                     'boot_failed_at' => now(),
+                ]);
+
+                $this->pluginLogger->log($pluginId, 'warning', 'Plugin auto-disabled due to boot failure', [
+                    'reason' => $error,
                 ]);
 
                 Log::warning('Plugin auto-disabled due to boot failure', [

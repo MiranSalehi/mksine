@@ -2,18 +2,10 @@
 
 namespace Miran\Mksine\Filament\Resources\Media\Pages;
 
-use Filament\Actions\CreateAction;
-use Filament\Resources\Pages\ListRecords;
 use Miran\Mksine\Filament\Resources\Media\MediaResource;
+use Miran\Mksine\Filament\Resources\Pages\MksineListRecords;
 
-class ListMedia extends ListRecords
+class ListMedia extends MksineListRecords
 {
     protected static string $resource = MediaResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            CreateAction::make(),
-        ];
-    }
 }

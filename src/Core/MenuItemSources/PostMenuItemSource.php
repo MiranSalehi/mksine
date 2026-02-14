@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\MenuItemSources;
 
-use Miran\Mksine\Contracts\MenuItemSourceInterface;
+use Miran\Mksine\Contracts\MenuItemSourcePaginatedInterface;
 use Miran\Mksine\Models\MenuItem;
 use Miran\Mksine\Models\Post;
 
@@ -13,7 +13,7 @@ use Miran\Mksine\Models\Post;
  *
  * Allows adding published posts to menus.
  */
-class PostMenuItemSource implements MenuItemSourceInterface
+class PostMenuItemSource implements MenuItemSourcePaginatedInterface
 {
     public function getKey(): string
     {
@@ -43,6 +43,63 @@ class PostMenuItemSource implements MenuItemSourceInterface
                 'url' => '/post/' . $post->slug,
             ])
             ->toArray();
+    }
+
+    /**
+     * Paginated items with search (optional; used by Menu Builder for performance).
+     *
+     * @return array{items: array<int, array{id: int, label: string, url: string}>, total: int}
+     */
+    public function getItemsPaginated(string $search, int $page, int $perPage): array
+    {
+        $query = Post::query()
+            ->where('status', 'published')
+            ->orderBy('published_at', 'desc');
+
+        if ($search !== '') {
+            $query->where('title', 'like', '%' . $search . '%');
+        }
+
+        $total = $query->count();
+        $items = $query
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get()
+            ->map(fn (Post $p) => [
+                'id' => $p->id,
+                'label' => $p->title,
+                'url' => '/post/' . $p->slug,
+            ])
+            ->toArray();
+
+        return ['items' => array_values($items), 'total' => $total];
+    }
+
+    /**
+     * Get items by IDs (optional; used when adding to menu without loading all).
+     *
+     * @param  array<int>  $ids
+     * @return array<int, array{id: int, label: string, url: string}>
+     */
+    public function getItemsByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return Post::query()
+            ->where('status', 'published')
+            ->whereIn('id', $ids)
+            ->orderBy('published_at', 'desc')
+            ->get()
+            ->map(fn (Post $p) => [
+                'id' => $p->id,
+                'label' => $p->title,
+                'url' => '/post/' . $p->slug,
+            ])
+            ->values()
+            ->keyBy('id')
+            ->all();
     }
 
     public function toMenuItem(mixed $item): array

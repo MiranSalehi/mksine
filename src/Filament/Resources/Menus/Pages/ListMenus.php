@@ -2,18 +2,10 @@
 
 namespace Miran\Mksine\Filament\Resources\Menus\Pages;
 
-use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
 use Miran\Mksine\Filament\Resources\Menus\MenuResource;
+use Miran\Mksine\Filament\Resources\Pages\MksineListRecords;
 
-class ListMenus extends ListRecords
+class ListMenus extends MksineListRecords
 {
     protected static string $resource = MenuResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
 }

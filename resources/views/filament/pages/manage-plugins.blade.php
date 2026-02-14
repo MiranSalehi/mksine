@@ -115,6 +115,16 @@
                                         {{ __('Uninstall') }}
                                     </x-filament::button>
                                 @endif
+
+                                <x-filament::button
+                                    size="sm"
+                                    color="gray"
+                                    icon="heroicon-o-document-text"
+                                    wire:click="openPluginLog('{{ $plugin['id'] }}')"
+                                    wire:loading.attr="disabled"
+                                >
+                                    {{ __('View log') }}
+                                </x-filament::button>
                             </div>
 
                             @if($plugin['status'] === 'boot_failed')
@@ -131,5 +141,38 @@
             </div>
         @endif
     </div>
+
+    {{-- Plugin log modal (Filament) --}}
+    <x-filament::modal
+        id="plugin-log-modal"
+        :heading="__('Plugin log') . ': ' . $pluginLogPluginName"
+        width="4xl"
+        sticky-header
+        sticky-footer
+    >
+        <div class="max-h-[60vh] overflow-y-auto">
+            <pre class="text-xs font-mono text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words bg-gray-100 dark:bg-gray-900 rounded-lg p-4 min-h-[200px]">{{ $pluginLogContent }}</pre>
+        </div>
+
+        <x-slot:footerActions>
+            @if($pluginLogPluginId !== '' && $this->hasPluginLog($pluginLogPluginId))
+                <x-filament::button
+                    color="danger"
+                    icon="heroicon-o-trash"
+                    wire:click="clearPluginLog"
+                    wire:loading.attr="disabled"
+                    wire:confirm="{{ __('Are you sure you want to clear this plugin log? All entries will be permanently deleted.') }}"
+                >
+                    {{ __('Clear log') }}
+                </x-filament::button>
+            @endif
+            <x-filament::button
+                color="gray"
+                wire:click="closePluginLogModal"
+            >
+                {{ __('Close') }}
+            </x-filament::button>
+        </x-slot:footerActions>
+    </x-filament::modal>
 </x-filament-panels::page>
 

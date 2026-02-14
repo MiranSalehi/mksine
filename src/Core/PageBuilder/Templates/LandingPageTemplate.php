@@ -1,0 +1,97 @@
+<?php
+
+namespace Miran\Mksine\Core\PageBuilder\Templates;
+
+class LandingPageTemplate
+{
+    public static function config(): array
+    {
+        return [
+            'name' => 'Landing Page',
+            'description' => 'Perfect for product launches, campaigns, or service pages',
+            'category' => 'Marketing',
+            'thumbnail' => null,
+            'blocks' => [
+                [
+                    'id' => 'tpl-1',
+                    'type' => 'hero',
+                    'data' => [
+                        'title' => 'Transform Your Business Today',
+                        'subtitle' => 'Everything you need to succeed in one powerful platform',
+                        'background_color' => '#3b82f6',
+                        'text_color' => '#ffffff',
+                        'button_text' => 'Get Started Free',
+                        'button_url' => '#',
+                        'button_style' => 'primary',
+                    ],
+                    'children' => null,
+                ],
+                [
+                    'id' => 'tpl-2',
+                    'type' => 'features',
+                    'data' => [
+                        'heading' => 'Why Choose Us',
+                        'subheading' => '',
+                        'columns' => 3,
+                        'style' => 'simple',
+                        'icon_style' => 'circle',
+                        'features' => [
+                            [
+                                'icon' => 'heroicon-o-bolt',
+                                'title' => 'Lightning Fast',
+                                'description' => 'Optimized for speed and performance',
+                                'link' => '',
+                            ],
+                            [
+                                'icon' => 'heroicon-o-shield-check',
+                                'title' => 'Secure & Reliable',
+                                'description' => 'Enterprise-grade security standards',
+                                'link' => '',
+                            ],
+                            [
+                                'icon' => 'heroicon-o-device-phone-mobile',
+                                'title' => 'Mobile First',
+                                'description' => 'Beautiful on every device',
+                                'link' => '',
+                            ],
+                        ],
+                    ],
+                    'children' => null,
+                ],
+                [
+                    'id' => 'tpl-3',
+                    'type' => 'testimonial',
+                    'data' => [
+                        'heading' => 'What Our Customers Say',
+                        'layout' => 'grid',
+                        'columns' => 1,
+                        'style' => 'shadowed',
+                        'testimonials' => [
+                            [
+                                'content' => 'This platform completely transformed how we work. Highly recommended!',
+                                'author_name' => 'Jane Doe',
+                                'author_title' => 'CEO, Tech Company',
+                                'author_image' => null,
+                                'rating' => 5,
+                            ],
+                        ],
+                    ],
+                    'children' => null,
+                ],
+                [
+                    'id' => 'tpl-4',
+                    'type' => 'cta',
+                    'data' => [
+                        'title' => 'Ready to Get Started?',
+                        'description' => 'Join thousands of satisfied customers today',
+                        'button_text' => 'Start Free Trial',
+                        'button_url' => '/signup',
+                        'background_color' => '#6366f1',
+                        'text_color' => '#ffffff',
+                    ],
+                    'children' => null,
+                ],
+            ],
+        ];
+    }
+}

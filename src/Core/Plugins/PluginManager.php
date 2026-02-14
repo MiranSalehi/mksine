@@ -117,8 +117,10 @@ final class PluginManager
             Log::debug("Plugin booted successfully: {$pluginId}");
 
         } catch (\Throwable $e) {
-            // Boot failed - mark plugin as failed
-            $this->bootGuard->bootFailed($pluginId, $e->getMessage());
+            // Boot failed - log to plugin log (with trace) and disable
+            $this->bootGuard->bootFailed($pluginId, $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             Log::error("Plugin boot failed: {$pluginId}", [
                 'error' => $e->getMessage(),
