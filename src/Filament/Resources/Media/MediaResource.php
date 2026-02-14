@@ -28,6 +28,11 @@ class MediaResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Content');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return MediaForm::configure($schema);

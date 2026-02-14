@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Hooks;
 
 use Miran\Mksine\Core\Events\MksineEvent;
+use Miran\Mksine\Core\Events\QueueableHookEventInterface;
+use LogicException;
 
 /**
  * Central coordinator for the CMS hook system.
@@ -58,14 +60,18 @@ class HookManager
 
     private HookDispatcher $dispatcher;
 
+    private ?HookAsyncDispatcherInterface $asyncDispatcher;
+
     public function __construct(
         ?HookRegistry $registry = null,
         ?HookStateRepository $stateRepository = null,
-        ?HookDispatcher $dispatcher = null
+        ?HookDispatcher $dispatcher = null,
+        ?HookAsyncDispatcherInterface $asyncDispatcher = null
     ) {
         $this->registry = $registry ?? new HookRegistry;
         $this->stateRepository = $stateRepository ?? new HookStateRepository;
         $this->dispatcher = $dispatcher ?? new HookDispatcher;
+        $this->asyncDispatcher = $asyncDispatcher;
     }
 
     /**
@@ -226,7 +232,72 @@ class HookManager
             return $a['priority'] <=> $b['priority'];
         });
 
-        return $this->dispatcher->dispatch($event, $filteredListeners);
+        $result = $this->dispatcher->dispatch($event, $filteredListeners);
+
+        $this->dispatchPendingAsyncListeners($event, $result);
+
+        return $result;
+    }
+
+    /**
+     * Single authority for whether a listener should be queued.
+     * Requires: queue enabled in config, event allows async.
+     * (Listener already opted in via shouldQueue() — they are in pendingAsyncListeners.)
+     */
+    protected function shouldQueueListener(MksineEvent $event, string $listenerClass): bool
+    {
+        if (! $event->isAsyncAllowed()) {
+            return false;
+        }
+
+        if (! function_exists('config') || ! config('mksine.hooks.queue.enabled', true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Dispatch listeners that opted for async (pendingAsyncListeners) via the async dispatcher.
+     * Enforces: if event allows async it MUST implement QueueableHookEventInterface.
+     */
+    protected function dispatchPendingAsyncListeners(MksineEvent $event, EventResult $result): void
+    {
+        $pending = $result->pendingAsyncListeners();
+
+        if ($pending === []) {
+            return;
+        }
+
+        if ($event->isAsyncAllowed() && ! $event instanceof QueueableHookEventInterface) {
+            throw new LogicException(
+                'Event "' . $event->name() . '" returns allowAsync() === true but does not implement ' .
+                QueueableHookEventInterface::class . '. Async events must implement toQueuePayload() and fromQueuePayload().'
+            );
+        }
+
+        if ($this->asyncDispatcher === null) {
+            return;
+        }
+
+        assert($event instanceof QueueableHookEventInterface);
+
+        $eventClass = $event::class;
+        $payload = $event->toQueuePayload();
+
+        if (! isset($payload['v']) || ! is_int($payload['v'])) {
+            throw new LogicException(
+                'Queue payload from event "' . $event->name() . '" must contain integer version key "v".'
+            );
+        }
+
+        foreach ($pending as $listenerClass) {
+            if (! $this->shouldQueueListener($event, $listenerClass)) {
+                continue;
+            }
+
+            $this->asyncDispatcher->dispatchAsync($listenerClass, $eventClass, $payload);
+        }
     }
 
     /**

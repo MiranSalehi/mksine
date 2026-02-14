@@ -2,11 +2,11 @@
 
 namespace Miran\Mksine\Filament\Resources\MenuLocations\Pages;
 
-use Filament\Resources\Pages\ListRecords;
+use Miran\Mksine\Filament\Resources\Pages\MksineListRecords;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Filament\Resources\MenuLocations\MenuLocationResource;
 
-class ListMenuLocations extends ListRecords
+class ListMenuLocations extends MksineListRecords
 {
     protected static string $resource = MenuLocationResource::class;
 

@@ -1,6 +1,6 @@
 @props(['items', 'depth' => 0])
 
-<div class="sortable-container space-y-2" style="margin-left: {{ $depth * 24 }}px;">
+<div class="sortable-container space-y-0" style="margin-left: {{ $depth * 24 }}px;">
     @foreach($items as $item)
         <div
             wire:key="menu-item-{{ $item['id'] }}"
@@ -66,7 +66,7 @@
                 ])
             @else
                 {{-- Empty container for dropping --}}
-                <div class="sortable-container" style="margin-left: 24px; min-height: 4px;"></div>
+                <div class="sortable-container" style="margin-left: 24px; min-height: 0;"></div>
             @endif
         </div>
     @endforeach

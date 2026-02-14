@@ -7,6 +7,7 @@ namespace Miran\Mksine\Filament\Resources\MenuLocations\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Miran\Mksine\Models\Menu;
 
 class MenuLocationForm
 {

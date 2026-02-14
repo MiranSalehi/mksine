@@ -18,7 +18,7 @@ return [
         'home_page_url' => 'Home Page URL',
         'categories_url' => 'Categories URL',
         'single_category_url' => 'Single Category URL',
-        'single_category_url_helper' => 'Use {slug} for category slug placeholder',
+        'single_category_url_helper' => 'Use {path} for category path (e.g. parent/child slug)',
         'posts_url' => 'Posts URL',
         'single_post_url' => 'Single Post URL',
         'single_post_url_helper' => 'Use {slug} for post slug placeholder',

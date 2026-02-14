@@ -287,20 +287,12 @@ declare(strict_types=1);
 
 namespace {$namespace}\\Filament\\Resources\\{$name}Resource\\Pages;
 
-use Filament\\Actions\\CreateAction;
-use Filament\\Resources\\Pages\\ListRecords;
+use Miran\\Mksine\\Filament\\Resources\\Pages\\MksineListRecords;
 use {$namespace}\\Filament\\Resources\\{$name}Resource\\{$name}Resource;
 
-class List{$pluralName} extends ListRecords
+class List{$pluralName} extends MksineListRecords
 {
     protected static string \$resource = {$name}Resource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            CreateAction::make(),
-        ];
-    }
 }
 PHP;
     }

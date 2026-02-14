@@ -1,0 +1,24 @@
+{
+    "name": "mksine-default-theme",
+    "version": "1.0.0",
+    "description": "MKSine Default Theme",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "npm run dev:css & npm run dev:js",
+        "dev:css": "npx @tailwindcss/cli -i src/css/app.css -o dist/app.css --watch",
+        "dev:js": "npx esbuild src/js/app.js --bundle --outfile=dist/app.js --watch",
+        "build": "npm run build:css && npm run build:js",
+        "build:css": "npx @tailwindcss/cli -i src/css/app.css -o dist/app.css --minify",
+        "build:js": "npx esbuild src/js/app.js --bundle --minify --outfile=dist/app.js"
+    },
+    "dependencies": {
+        "@tailwindcss/forms": "^0.5.11",
+        "alpinejs": "^3.14.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/cli": "^4.0.0",
+        "esbuild": "^0.24.0",
+        "tailwindcss": "^4.0.0"
+    }
+}

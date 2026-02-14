@@ -1,9 +1,15 @@
 # MKSine - Complete Documentation
 
 > **⚠️ Development Status**  
-> This package is **under active development** and not yet feature-complete. Page builder, theme manager, and access control are in progress. **Do not use in production or real projects yet.**
+> This package is **under active development Use in production only after thorough testing.**
 
 MKSine is a powerful, extensible Content Management System built as a Filament plugin for Laravel. It provides a robust foundation for content management with a sophisticated hook system that allows deep customization without modifying core code.
+
+### Recently Added Features
+
+- **Page Builder** — Visual drag-and-drop page builder with blocks (heading, text, image, columns, CTA, etc.) and templates.
+- **Access Control (Permissions)** — Integrate with Filament Shield or Spatie for roles and permissions; User resource is ready for extension.
+- **Theme Management** — Create, activate, and manage themes; npm-based asset build and publish to `public/`.
 
 ## Table of Contents
 
@@ -11,20 +17,29 @@ MKSine is a powerful, extensible Content Management System built as a Filament p
 2. [Installation](#installation)
 3. [Architecture](#architecture)
 4. [Hook System Deep Dive](#hook-system-deep-dive)
-5. [Creating Events](#creating-events)
-6. [Creating Listeners](#creating-listeners)
-7. [Hook Types](#hook-types)
-8. [Data Mutations](#data-mutations)
-9. [Event Prevention](#event-prevention)
-10. [Priority System](#priority-system)
-11. [Discovery System](#discovery-system)
-12. [State Management](#state-management)
-13. [Hook Visibility & Plugin Ownership](#hook-visibility--plugin-ownership)
-14. [Performance & Caching](#performance--caching)
-15. [Best Practices](#best-practices)
-16. [API Reference](#api-reference)
-17. [Examples](#examples)
-18. [Troubleshooting](#troubleshooting)
+5. [Hooks: Usage, Disabling, and Queue Execution](#hooks-usage-disabling-and-queue-execution)
+6. [Creating Events](#creating-events)
+7. [Creating Listeners](#creating-listeners)
+8. [Hook Types](#hook-types)
+9. [Data Mutations](#data-mutations)
+10. [Event Prevention](#event-prevention)
+11. [Priority System](#priority-system)
+12. [Discovery System](#discovery-system)
+13. [State Management](#state-management)
+14. [Hook Visibility & Plugin Ownership](#hook-visibility--plugin-ownership)
+15. [Performance & Caching](#performance--caching)
+16. [Best Practices](#best-practices)
+17. [API Reference](#api-reference)
+18. [Examples](#examples)
+19. [Troubleshooting](#troubleshooting)
+20. [Plugins: Create Plugin, Resource, Page, Widget](#plugins-create-plugin-resource-page-widget)
+21. [Themes: Create, NPM, Publish Assets](#themes-create-npm-publish-assets)
+22. [Settings: Adding a New Tab](#settings-adding-a-new-tab)
+23. [Page Builder: Adding a Component](#page-builder-adding-a-component)
+24. [Theme Manager](#theme-manager)
+25. [Menu Management System](#menu-management-system)
+26. [User Management](#user-management)
+27. [Plugin Development Tools](#plugin-development-tools)
 
 ---
 
@@ -34,6 +49,9 @@ MKSine is designed with extensibility and developer experience in mind. It featu
 
 ### Key Features
 
+- **Page Builder**: Visual page builder with blocks (heading, text, image, columns, hero, CTA, etc.), templates, and extensible component registry
+- **Access Control**: User management resource; ready for Filament Shield or Spatie Laravel Permission for roles and permissions
+- **Theme Management**: Create themes with `mks:make-theme`, build assets with npm, publish to `public/` with `mks:theme-publish`
 - **Filament-First Design**: Built specifically for Filament 4 with deep integration into forms, tables, and resources
 - **Deterministic Execution**: All hook executions follow a strict, immutable 8-phase lifecycle that cannot be bypassed
 - **System Hook Enforcement**: System-critical hooks cannot be disabled, ensuring core functionality integrity
@@ -233,6 +251,86 @@ If `event->isAsyncAllowed()` returns true:
 - **DETERMINISTIC**: Same inputs always produce same execution order
 - **THREAD-SAFE**: Concurrent requests are handled safely
 - **ERROR-RESILIENT**: Failed listeners don't crash the system
+
+---
+
+## Hooks: Usage, Disabling, and Queue Execution
+
+### How to Use Hooks
+
+1. **Register a listener** (in a service provider or plugin boot):
+
+```php
+use Miran\Mksine\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\Hooks;
+
+// Via HookManager
+app(HookManager::class)->register(
+    eventName: 'post.creating',
+    listenerClass: GenerateSlugListener::class,
+    priority: 10,
+    pluginId: 'my-plugin'
+);
+
+// Or via Hooks helper
+Hooks::register('post.creating', GenerateSlugListener::class, 10, 'my-plugin');
+```
+
+2. **Implement the listener** — implement `MksineListenerInterface` with `handle()`, `shouldHandle()`, `shouldQueue()`, and `priority()`.
+
+3. **Dispatch the event** where the action occurs:
+
+```php
+$event = new PostCreating($data, $context);
+$result = app(HookManager::class)->dispatch($event);
+if ($result->wasPrevented()) {
+    throw new ValidationException($result->preventReason());
+}
+foreach ($result->mutations() as $mutation) {
+    $data[$mutation['key']] = $mutation['new'];
+}
+```
+
+4. **Run discovery** so the hook is synced to the database (for state/cache):
+
+```bash
+php artisan mks:discover
+```
+
+### How to Disable or “Remove” a Hook
+
+Hooks are **not unregistered in code** at runtime; they are **disabled** via the database so that the dispatcher skips them.
+
+- **Disable a listener**: Set `is_enabled = 0` for the row in `mks_hooks` where `listener_class` equals your listener’s class name. System hooks (`is_system = 1`) cannot be disabled.
+- **Clear state cache** after DB changes: delete `bootstrap/cache/mks_hook_state.php` or run `php artisan cache:clear`.
+- **Permanent removal**: Remove the `register()` call from your code (and from any plugin), then run `php artisan mks:discover` to sync the registry; the row may remain in `mks_hooks` but the listener will no longer be in the registry. You can also delete or disable the row in `mks_hooks`.
+
+### How to Run a Listener in the Queue
+
+1. **Allow async on the event** — override `allowAsync()` in your event class to return `true`:
+
+```php
+class PostCreated extends MksineEvent
+{
+    protected function allowAsync(): bool
+    {
+        return true;
+    }
+}
+```
+
+2. **Opt in per listener** — in the listener, return `true` from `shouldQueue()`:
+
+```php
+public function shouldQueue(): bool
+{
+    return true;
+}
+```
+
+3. **Queue configuration** — ensure Laravel queue is configured (e.g. `config/queue.php`, `.env` `QUEUE_CONNECTION`) and, if using the MKSine async dispatcher, that it is bound in the container so the manager can dispatch jobs.
+
+Listeners that return `shouldQueue() === true` are **not** run synchronously; they are collected and dispatched as queued jobs when the event allows async. This keeps heavy work (emails, notifications, external APIs) off the request.
 
 ---
 
@@ -1575,6 +1673,624 @@ Contributions are welcome! Please ensure all code follows PSR-12 coding standard
 ## Support
 
 [Your Support Information Here]
+
+---
+
+## Plugins: Create Plugin, Resource, Page, Widget
+
+### Creating a Plugin
+
+Use the artisan command to scaffold a new plugin:
+
+```bash
+php artisan mks-plugin:make {name}
+```
+
+**Example:**
+
+```bash
+php artisan mks-plugin:make my-shop
+```
+
+**Options:** `--namespace=`, `--author=`, `--description=`
+
+This creates `plugins/{name}/` with:
+
+- `plugin.php` (plugin class and ID)
+- `composer.json`
+- `src/` (Filament, Models, Hooks)
+- `routes/web.php`, `routes/api.php`
+
+Then:
+
+1. Run **Plugins** discovery if needed: `php artisan mks-plugin:discover`
+2. In **Admin Panel → System → Plugins**, find the plugin and click **Install**, then **Activate**
+
+### Creating a Resource in a Plugin
+
+Generate a Filament resource that follows MKSine structure (Form schema, Table, pages):
+
+```bash
+php artisan mks-plugin:make-resource {plugin-id} {ResourceName}
+```
+
+**Example:**
+
+```bash
+php artisan mks-plugin:make-resource my-shop Product
+```
+
+This creates under the plugin’s `src/Filament/Resources/`:
+
+- `ProductResource/ProductResource.php`
+- `ProductResource/Schemas/ProductForm.php` (with form hooks)
+- `ProductResource/Tables/ProductTable.php` (with table hooks)
+- `ProductResource/Pages/ListProducts.php`, `CreateProduct.php`, `EditProduct.php`
+
+The resource is auto-discovered when the plugin is active.
+
+### Creating a Page in a Plugin
+
+Generate a custom Filament page:
+
+```bash
+php artisan mks-plugin:make-page {plugin-id} {PageName}
+```
+
+**Example:**
+
+```bash
+php artisan mks-plugin:make-page my-shop Reports
+```
+
+This creates `src/Filament/Pages/Reports.php` (and optionally a view). The page is discovered when the plugin is active.
+
+### Creating a Widget in a Plugin
+
+Generate a Filament widget:
+
+```bash
+php artisan mks-plugin:make-widget {plugin-id} {WidgetName}
+```
+
+**Options:** `--chart`, `--stats` for chart or stats overview widgets.
+
+**Example:**
+
+```bash
+php artisan mks-plugin:make-widget my-shop SalesChart --chart
+php artisan mks-plugin:make-widget my-shop OrderStats --stats
+```
+
+This creates `src/Filament/Widgets/{WidgetName}.php`. For basic widgets, a Blade view is also created under `resources/views/filament/widgets/`. Widgets are discovered when the plugin is active.
+
+---
+
+## Themes: Create, NPM, Publish Assets
+
+### Creating a Theme
+
+```bash
+php artisan mks:make-theme "My Theme"
+```
+
+**Options:** `--identifier=`, `--author=`, `--description=`, `--force`
+
+This creates `resources/views/themes/{identifier}/` with:
+
+- `theme.json` — name, version, author, description, `assets.css` / `assets.js`
+- `layouts/index.blade.php`, templates (`home`, `single`, `page`, `category`, etc.)
+- `src/css/app.css`, `src/js/app.js` — source for build
+- `dist/app.css`, `dist/app.js` — compiled output (commit these)
+- `package.json`, `tailwind.config.js`, `BUILD.md`, `.gitignore`
+
+### Using NPM in a Theme
+
+1. Go to the theme directory: `cd resources/views/themes/{identifier}`
+2. Install dependencies: `npm install`
+3. Development (watch): `npm run dev`
+4. Production build: `npm run build` — compiles `src/` into `dist/` (CSS/JS)
+
+Themes use Tailwind and modern JS by default; you can change the build in `package.json`.
+
+### Publishing CSS/JS to Public
+
+To serve theme assets from the web root:
+
+```bash
+php artisan mks:theme-publish {identifier}
+```
+
+**Examples:**
+
+```bash
+php artisan mks:theme-publish my-theme
+php artisan mks:theme-publish my-theme --force   # Overwrite existing
+php artisan mks:theme-publish                    # Publish all themes
+```
+
+This copies the theme’s `dist/` (and optionally `images/`) to:
+
+- **Project themes:** `public/themes/{identifier}/`
+- **Package themes:** `public/vendor/mksine/themes/{identifier}/`
+
+The layout should use `@themeAssets` so the active theme’s CSS/JS are loaded from these paths.
+
+---
+
+## Settings: Adding a New Tab
+
+The Settings page supports extra tabs via `SettingsTabManager`. Use it in `AppServiceProvider` or a plugin’s `boot()`:
+
+```php
+use Miran\Mksine\Core\Hooks\SettingsTabManager;
+use Filament\Forms\Components\TextInput;
+
+public function boot(): void
+{
+    app(SettingsTabManager::class)->registerTab(
+        id: 'seo',
+        label: __('SEO'),
+        schema: [
+            TextInput::make('meta_description')->label('Meta Description'),
+            TextInput::make('meta_keywords')->label('Meta Keywords'),
+        ],
+        sortOrder: 50
+    );
+}
+```
+
+- **id**: Unique tab key (e.g. `seo`, `my_plugin`).
+- **label**: Tab label (can be a translation key).
+- **schema**: Array of Filament form components, or a callable that returns the array.
+- **sortOrder**: Lower values appear first (default `0`).
+
+Values are stored via the same mechanism as core settings (e.g. `Setting::updateOrCreate`). Core tabs (General, Permalinks, etc.) are defined by the Settings page; your tabs are appended in order.
+
+---
+
+## Page Builder: Adding a Component
+
+The page builder shows blocks from `ComponentRegistry`. To add a custom component:
+
+1. **Implement the interface** — create a class that implements `BuilderComponentInterface` (or extends `BaseBuilderComponent`):
+
+```php
+namespace App\PageBuilder;
+
+use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\Contracts\BuilderComponentInterface;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+
+class MyBlockComponent extends BaseBuilderComponent
+{
+    public static function getType(): string
+    {
+        return 'my_block';
+    }
+
+    public static function getName(): string
+    {
+        return __('My Block');
+    }
+
+    public static function getIcon(): string
+    {
+        return 'heroicon-o-cube';
+    }
+
+    public static function getCategory(): string
+    {
+        return self::CATEGORY_CONTENT; // or CATEGORY_MEDIA, CATEGORY_LAYOUT, CATEGORY_INTERACTIVE
+    }
+
+    public static function getDescription(): string
+    {
+        return __('A custom block for the page builder.');
+    }
+
+    public static function getSchema(): array
+    {
+        return [
+            TextInput::make('title')->label(__('Title'))->required(),
+            Select::make('style')->options(['default' => 'Default', 'highlight' => 'Highlight'])->default('default'),
+        ];
+    }
+
+    public static function getDefaultData(): array
+    {
+        return ['title' => '', 'style' => 'default'];
+    }
+}
+```
+
+2. **Register the component** — in `AppServiceProvider::boot()` (or a plugin):
+
+```php
+use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
+
+public function boot(): void
+{
+    app(ComponentRegistry::class)->register(MyBlockComponent::class);
+}
+```
+
+3. **Render the block on the front** — in your theme’s page builder view, use the block’s `type` and `data`. The built-in renderer will use the same type to pick the Blade partial or Livewire component; add a view for `page-builder.blocks.my_block` (or the convention your theme uses) that reads `$block['data']`.
+
+Required interface methods:
+
+- `getType()` — unique key (e.g. `heading`, `my_block`)
+- `getName()`, `getIcon()`, `getCategory()`, `getDescription()` — for the builder UI
+- `getSchema()` — Filament form components for editing the block
+- `getDefaultData()` — default values for new instances
+- `supportsChildren()` / `getMaxChildren()` — optional; for nested blocks
+- `validate(array $data)` — optional validation
+
+Categories: `BaseBuilderComponent::CATEGORY_CONTENT`, `CATEGORY_MEDIA`, `CATEGORY_LAYOUT`, `CATEGORY_INTERACTIVE`.
+
+---
+
+## Theme Manager
+
+MKSine includes a powerful Theme Management System that supports both package themes (bundled with MKSine) and project themes (created by developers).
+
+### Key Features
+
+- **Dual Theme Sources**: Support for both package default themes and developer-created themes
+- **Visual Theme Manager**: Filament-based UI for managing and activating themes
+- **Automatic Discovery**: Themes are automatically discovered from configured directories
+- **Pre-built Assets**: All themes use pre-compiled CSS/JS - no Node.js required on production
+- **Upload & Install**: Upload theme ZIP files directly from the admin panel
+
+### Theme Architecture
+
+| Theme Type | Location | Public Assets |
+|------------|----------|---------------|
+| **Package Theme** | `packages/mksine/resources/views/themes/` | `public/vendor/mksine/themes/{id}/` |
+| **Project Theme** | `resources/views/themes/` | `public/themes/{id}/` |
+
+### Theme Workflow
+
+MKSine uses a clean, production-ready approach for theme assets:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DEVELOPMENT                                                 │
+│  ┌─────────┐    ┌─────────────┐    ┌──────────┐            │
+│  │  src/   │ ──▶│ npm run     │ ──▶│  dist/   │            │
+│  │  css/js │    │   build     │    │  css/js  │            │
+│  └─────────┘    └─────────────┘    └──────────┘            │
+│       │              │                   │                  │
+│   Tailwind      Compile &           Compiled               │
+│   + Modern JS    Minify             Assets                 │
+└─────────────────────────────────────────────────────────────┘
+                                           │
+                                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  PRODUCTION                                                  │
+│  ┌──────────┐    ┌─────────────┐    ┌──────────┐            │
+│  │  dist/   │ ──▶│ mks:theme-  │ ──▶│ public/  │            │
+│  │  css/js  │    │   publish   │    │ themes/  │            │
+│  └──────────┘    └─────────────┘    └──────────┘            │
+│                                           │                  │
+│                                      Served to               │
+│                                       Browser                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Points:**
+- **Development**: Use Tailwind, modern JS, any build tools you prefer
+- **Pre-build**: Run `npm run build` to generate `dist/` files
+- **Production**: Server only needs compiled files, no Node.js required
+- **Themes are switchable** without rebuilding anything
+
+### Creating a Theme
+
+#### Using the Artisan Command (Recommended)
+
+```bash
+# Create a new theme
+php artisan mks:make-theme "My Theme"
+
+# Create with options
+php artisan mks:make-theme "My Theme" \
+    --identifier=my-theme \
+    --author="Your Name" \
+    --description="A beautiful custom theme"
+
+# Overwrite existing theme
+php artisan mks:make-theme "My Theme" --force
+```
+
+This command generates:
+```
+resources/views/themes/my-theme/
+├── theme.json              # Theme metadata
+├── package.json            # Node.js dependencies for development
+├── tailwind.config.js      # Tailwind configuration
+├── BUILD.md                # Build instructions
+├── .gitignore              # Git ignore rules
+├── src/                    # Development source files
+│   ├── css/
+│   │   └── app.css         # Tailwind CSS source
+│   └── js/
+│       └── app.js          # JavaScript source
+├── dist/                   # Compiled assets (commit these!)
+│   ├── app.css             # Compiled CSS
+│   └── app.js              # Compiled JavaScript
+├── images/                 # Theme images
+├── layouts/
+│   └── index.blade.php     # Main layout
+├── partials/
+│   ├── header.blade.php    # Header partial
+│   └── footer.blade.php    # Footer partial
+├── home.blade.php          # Homepage template
+├── single.blade.php        # Single post template
+├── category.blade.php      # Category archive
+└── page.blade.php          # Static page template
+```
+
+### Theme Development Workflow
+
+#### 1. Install Dependencies
+
+```bash
+cd resources/views/themes/my-theme
+npm install
+```
+
+#### 2. Development Mode
+
+```bash
+npm run dev
+```
+
+This watches `src/css/app.css` and rebuilds `dist/app.css` on changes.
+
+#### 3. Production Build
+
+```bash
+npm run build
+```
+
+This creates minified CSS and JS in `dist/`.
+
+#### 4. Publish to Public Directory
+
+```bash
+php artisan mks:theme-publish my-theme
+```
+
+This copies `dist/` to `public/themes/my-theme/`.
+
+#### 5. Activate Theme
+
+Go to **Admin Panel → Appearance → Themes** and click "Activate".
+
+### theme.json Reference
+
+```json
+{
+    "name": "My Theme",
+    "version": "1.0.0",
+    "author": "Your Name",
+    "description": "A custom theme for MKSine",
+    "screenshot": "screenshot.png",
+    "assets": {
+        "css": ["dist/app.css"],
+        "js": ["dist/app.js"]
+    }
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Display name for the theme |
+| `version` | No | Theme version (default: 1.0.0) |
+| `author` | No | Theme author |
+| `description` | No | Brief description |
+| `screenshot` | No | Screenshot filename (PNG recommended) |
+| `assets.css` | Yes | Array of CSS file paths (relative to theme root) |
+| `assets.js` | Yes | Array of JS file paths (relative to theme root) |
+
+### Theme Templates
+
+#### Layout (layouts/index.blade.php)
+
+```blade
+<!DOCTYPE html>
+<html lang="{{ app()->getLocale() }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ $title ?? config('app.name') }}</title>
+
+    @themeAssets
+</head>
+<body>
+    @include($__theme_namespace . '.partials.header')
+
+    <main>
+        {{ $slot }}
+    </main>
+
+    @include($__theme_namespace . '.partials.footer')
+</body>
+</html>
+```
+
+#### Page Template (home.blade.php)
+
+```blade
+<x-dynamic-component :component="$__theme_layout">
+    <x-slot:title>{{ __('Home') }}</x-slot:title>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1>Welcome to {{ config('app.name') }}</h1>
+
+        @foreach($posts as $post)
+            <article>
+                <h2>{{ $post->title }}</h2>
+                <p>{{ $post->excerpt }}</p>
+            </article>
+        @endforeach
+    </div>
+</x-dynamic-component>
+```
+
+### Theme Variables
+
+These variables are automatically available in all theme templates:
+
+| Variable | Description |
+|----------|-------------|
+| `$__theme_layout` | Dynamic component name for the layout |
+| `$__theme_namespace` | View namespace for includes (`theme::identifier` or `mksine::themes.identifier`) |
+
+### Helper Functions
+
+```php
+// Get ThemeManager instance
+theme_manager()
+
+// Get URL for a theme asset
+theme_asset('images/logo.png')
+
+// Get full view name for a theme view
+theme_view('home')  // Returns: theme::my-theme.home
+
+// Get the layout view name
+theme_layout()
+
+// Get active theme data
+active_theme()
+active_theme()->name
+active_theme()->version
+```
+
+### Blade Directives
+
+#### @themeAssets
+
+Renders CSS and JS tags for the active theme:
+
+```blade
+@themeAssets
+
+{{-- Renders something like: --}}
+<link rel="stylesheet" href="/themes/my-theme/dist/app.css">
+<script src="/themes/my-theme/dist/app.js" defer></script>
+```
+
+### Artisan Commands
+
+#### mks:make-theme
+
+Generate a new theme scaffold with build tools configured.
+
+```bash
+php artisan mks:make-theme {name}
+    [--identifier=]       # Custom identifier (defaults to slugified name)
+    [--author=]           # Theme author name
+    [--description=]      # Theme description
+    [--force]             # Overwrite existing theme
+```
+
+**Examples:**
+```bash
+# Basic theme
+php artisan mks:make-theme "Corporate Theme"
+
+# Theme with all options
+php artisan mks:make-theme "Blog Theme" \
+    --identifier=blog \
+    --author="John Doe" \
+    --description="A minimal blog theme"
+```
+
+#### mks:theme-publish
+
+Publish theme assets (dist/, images/, screenshot) to the public directory.
+
+```bash
+php artisan mks:theme-publish [theme]
+    [--force]             # Overwrite existing published assets
+```
+
+**Examples:**
+```bash
+# Publish all themes
+php artisan mks:theme-publish
+
+# Publish specific theme
+php artisan mks:theme-publish my-theme
+
+# Force overwrite
+php artisan mks:theme-publish my-theme --force
+```
+
+### Uploading Themes via Admin Panel
+
+1. Navigate to **Appearance → Themes**
+2. Click **Upload Theme**
+3. Select a ZIP file containing your theme
+4. The theme will be extracted to `resources/views/themes/`
+5. Click **Activate** to enable the theme
+
+**ZIP Structure Requirements:**
+```
+my-theme.zip
+└── my-theme/           # Theme folder
+    ├── theme.json      # Required
+    ├── layouts/
+    │   └── index.blade.php
+    ├── home.blade.php
+    └── dist/           # Pre-compiled assets
+        ├── app.css
+        └── app.js
+```
+
+### Deleting Themes
+
+- **Project themes** can be deleted from the admin panel
+- **Package themes** cannot be deleted (they are part of the core system)
+- **Active themes** cannot be deleted (activate another theme first)
+
+### Important Notes
+
+#### Commit the `dist/` folder
+
+Unlike typical JavaScript projects, you **SHOULD commit** the `dist/` folder:
+
+```gitignore
+# In your theme's .gitignore
+node_modules/
+# dist/ is NOT ignored - it should be committed
+```
+
+This ensures:
+- Themes work on production servers without Node.js
+- No build step required during deployment
+- Themes are immediately usable after upload
+
+#### Quick Testing (Without Build)
+
+For quick testing without setting up build tools, add Tailwind CDN to your layout:
+
+```html
+<script src="https://cdn.tailwindcss.com"></script>
+```
+
+### Best Practices
+
+1. **Always include theme.json** - Required for theme discovery
+2. **Commit dist/ folder** - Ensures theme works without build tools
+3. **Use semantic versioning** - Helps track theme updates
+4. **Include a screenshot** - Improves UX in the theme selector (recommended: 800x600 PNG)
+5. **Test RTL support** - Use `dir="rtl"` for RTL languages
+6. **Run npm run build** before publishing - Ensures latest assets are compiled
+7. **Use @themeAssets** - Ensures correct asset loading
 
 ---
 

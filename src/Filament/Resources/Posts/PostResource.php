@@ -29,6 +29,11 @@ class PostResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Content');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PostForm::configure($schema);

@@ -24,7 +24,7 @@
                         @foreach($sources as $key => $source)
                             <div x-data="{ expanded: false }" class="border border-gray-200 dark:border-white/10 rounded-lg overflow-hidden">
                                 <button
-                                    @click="expanded = !expanded"
+                                    @click="expanded = !expanded; if(expanded) $wire.getSourceItems('{{ $key }}')"
                                     type="button"
                                     class="flex items-center justify-between w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                                 >
@@ -40,42 +40,110 @@
                                         {{-- Custom Form (e.g., Custom Link) --}}
                                         <div class="space-y-3">
                                             <div>
-                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                                     {{ __('URL') }}
                                                 </label>
                                                 <input
                                                     type="url"
                                                     wire:model="sourceFormData.{{ $key }}.url"
                                                     placeholder="https://"
-                                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
+                                                    class="menu-builder-input w-full rounded-xl border-0 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 ring-1 ring-gray-200 dark:ring-white/10 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-gray-900"
                                                 />
                                             </div>
                                             <div>
-                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                                     {{ __('Link Text') }}
                                                 </label>
                                                 <input
                                                     type="text"
                                                     wire:model="sourceFormData.{{ $key }}.label"
                                                     placeholder="{{ __('Enter link text') }}"
-                                                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
+                                                    class="menu-builder-input w-full rounded-xl border-0 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 ring-1 ring-gray-200 dark:ring-white/10 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-gray-900"
                                                 />
                                             </div>
                                         </div>
-                                    @elseif(count($source['items']) > 0)
-                                        {{-- Checkbox List --}}
-                                        <div class="max-h-48 overflow-y-auto space-y-2">
-                                            @foreach($source['items'] as $item)
-                                                <label class="flex items-center gap-2 cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        wire:model="sourceFormData.{{ $key }}.selected"
-                                                        value="{{ $item['id'] }}"
-                                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                                                    />
-                                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $item['label'] }}</span>
-                                                </label>
-                                            @endforeach
+                                    @elseif($source['isListSource'] ?? false)
+                                        {{-- Paginated list with search (loads on expand) --}}
+                                        <div class="space-y-3">
+                                            <input
+                                                type="search"
+                                                value="{{ $sourceSearch[$key] ?? '' }}"
+                                                placeholder="{{ __('Search…') }}"
+                                                class="menu-builder-input w-full rounded-xl border-0 bg-gray-50 dark:bg-white/5 px-4 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 ring-1 ring-gray-200 dark:ring-white/10 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 dark:focus:ring-offset-gray-900"
+                                                @input.debounce.300ms="$wire.setSourceSearch('{{ $key }}', $event.target.value)"
+                                            />
+                                            @php $data = $sourceItems[$key] ?? null; @endphp
+                                            @if($data)
+                                                @php
+                                                    $items = $data['items'];
+                                                    $isNested = !empty($items) && array_key_exists('children', $items[0] ?? []);
+                                                @endphp
+                                                <div class="max-h-48 overflow-y-auto space-y-0.5">
+                                                    @if($isNested)
+                                                        {{-- درخت بازگشتی: هر گره، بعد فرزندانش تا هر عمق --}}
+                                                        @foreach($items as $node)
+                                                            @include('mksine::filament.pages.partials.menu-builder-source-item', [
+                                                                'item' => $node,
+                                                                'depth' => 0,
+                                                                'sourceKey' => $key,
+                                                            ])
+                                                        @endforeach
+                                                    @else
+                                                        @php $treeItems = $this->getSourceItemsTreeOrder($data['items']); @endphp
+                                                        @foreach($treeItems as $item)
+                                                            @php $depth = (int) ($item['depth'] ?? 0); @endphp
+                                                            <label class="flex items-center gap-2 cursor-pointer py-0.5" style="padding-left: {{ $depth * 16 }}px;">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    wire:model="sourceFormData.{{ $key }}.selected"
+                                                                    value="{{ $item['id'] }}"
+                                                                    class="shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                                                />
+                                                                <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $item['label'] }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    @endif
+                                                </div>
+                                                @if($data['total'] > $data['per_page'])
+                                                    @php
+                                                        $cp = $data['current_page'];
+                                                        $pp = $data['per_page'];
+                                                        $total = $data['total'];
+                                                        $lastPage = (int) max(1, ceil($total / $pp));
+                                                        $from = $total > 0 ? ($cp - 1) * $pp + 1 : 0;
+                                                        $to = min($cp * $pp, $total);
+                                                    @endphp
+                                                    <div class="flex items-center justify-between gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                            {{ $from }}–{{ $to }} {{ __('of') }} {{ $total }}
+                                                        </span>
+                                                        <div class="flex gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                wire:click="setSourcePage('{{ $key }}', {{ $cp - 1 }})"
+                                                                wire:loading.attr="disabled"
+                                                                @disabled($cp <= 1)
+                                                                class="menu-builder-pagination-btn inline-flex items-center justify-center size-9 rounded-xl bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-white/10 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white disabled:pointer-events-none disabled:opacity-40 transition-colors"
+                                                            >
+                                                                <x-heroicon-o-chevron-left class="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                wire:click="setSourcePage('{{ $key }}', {{ $cp + 1 }})"
+                                                                wire:loading.attr="disabled"
+                                                                @disabled($cp >= $lastPage)
+                                                                class="menu-builder-pagination-btn inline-flex items-center justify-center size-9 rounded-xl bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 ring-1 ring-gray-200 dark:ring-white/10 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-white/10 dark:hover:text-white disabled:pointer-events-none disabled:opacity-40 transition-colors"
+                                                            >
+                                                                <x-heroicon-o-chevron-right class="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @else
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                                                    {{ __('Loading…') }}
+                                                </p>
+                                            @endif
                                         </div>
                                     @else
                                         <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
@@ -131,7 +199,6 @@
     @endif
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('menuBuilder', (initialItems) => ({

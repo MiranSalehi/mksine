@@ -11,6 +11,12 @@ namespace Miran\Mksine\Contracts;
  * that can be added to the Menu Builder UI.
  *
  * Example: Categories, Pages, Posts, Products, etc.
+ *
+ * Optional methods (for better performance with many items):
+ * - getItemsPaginated(string $search, int $page, int $perPage): array{items: array, total: int}
+ *   If implemented, the Menu Builder will use this for pagination and search instead of getItems().
+ * - getItemsByIds(array $ids): array
+ *   If implemented, used when adding selected items to the menu (avoids loading all items).
  */
 interface MenuItemSourceInterface
 {

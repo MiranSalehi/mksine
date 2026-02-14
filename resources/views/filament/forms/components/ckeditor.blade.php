@@ -508,7 +508,35 @@
                         const key = 'ckeditor-{{ $editorId }}';
 
                         window.ckeditorInstances = window.ckeditorInstances || {};
-                        const instance = window.ckeditorInstances[key] = window.ckeditorInstances['ckeditor-{{ $editorId }}'] || {};
+                        
+                        // IMPORTANT: Always reset instance data when component mounts
+                        // This handles the case when visibility toggles (e.g., page type changes)
+                        const existingInstance = window.ckeditorInstances[key];
+                        if (existingInstance?.instance) {
+                            // Destroy the old editor instance since DOM has been recreated
+                            try {
+                                if (existingInstance.instance.onKeyDown) {
+                                    window.removeEventListener('keydown', existingInstance.instance.onKeyDown, true);
+                                }
+                                if (existingInstance.mediaSelectedHandler) {
+                                    window.removeEventListener('media-selected', existingInstance.mediaSelectedHandler);
+                                }
+                                existingInstance.instance.destroy();
+                            } catch (e) {
+                                console.warn('Error destroying old CKEditor instance:', e);
+                            }
+                        }
+                        
+                        // Initialize fresh instance data
+                        const instance = window.ckeditorInstances[key] = {
+                            instance: null,
+                            eventListenerAdded: false,
+                            createHandler: null,
+                            destroyHandler: null,
+                            statePath: null,
+                            alpineComponent: null,
+                            mediaSelectedHandler: null
+                        };
 
                         const waitFor = (fnName, cb) => {
                             const t = setInterval(() => {
@@ -519,28 +547,18 @@
                             }, 25);
                         };
 
-                        // Remove existing event listeners to prevent duplicates
-                        if (instance?.createHandler) {
-                            document.removeEventListener('livewire:navigated', instance.createHandler);
-                        }
-                        if (instance?.destroyHandler) {
-                            document.removeEventListener('livewire:navigate', instance.destroyHandler);
-                        }
-
                         // Create handler with Alpine component context
                         instance.createHandler = () => waitFor('createCKEditor', () => window.createCKEditor('{{ $editorId }}', '{{ $statePath }}', this));
 
                         instance.destroyHandler = () => waitFor('destroyCKEditor', () => window.destroyCKEditor('{{ $editorId }}'));
 
-                        // Add event listeners if not already added
+                        // Add event listeners
                         document.addEventListener('livewire:navigated', instance.createHandler);
                         document.addEventListener('livewire:navigate', instance.destroyHandler);
 
-                        // Initialize editor immediately if ClassicEditor is available
+                        // Initialize editor immediately
                         this.$nextTick(() => {
-                            if (!instance.instance) {
-                                instance.createHandler();
-                            }
+                            instance.createHandler();
                         });
 
                         // Watch for state changes and update editor content
@@ -558,6 +576,50 @@
                                 }
                             }
                         });
+                        
+                        // Cleanup function for when component is destroyed
+                        const cleanup = () => {
+                            const inst = window.ckeditorInstances[key];
+                            if (inst) {
+                                // Remove event listeners
+                                if (inst.createHandler) {
+                                    document.removeEventListener('livewire:navigated', inst.createHandler);
+                                }
+                                if (inst.destroyHandler) {
+                                    document.removeEventListener('livewire:navigate', inst.destroyHandler);
+                                }
+                                // Destroy editor
+                                if (inst.instance) {
+                                    try {
+                                        if (inst.instance.onKeyDown) {
+                                            window.removeEventListener('keydown', inst.instance.onKeyDown, true);
+                                        }
+                                        if (inst.mediaSelectedHandler) {
+                                            window.removeEventListener('media-selected', inst.mediaSelectedHandler);
+                                        }
+                                        inst.instance.destroy();
+                                    } catch (e) {
+                                        console.warn('Error destroying CKEditor on cleanup:', e);
+                                    }
+                                }
+                                // Clear instance reference
+                                window.ckeditorInstances[key] = null;
+                            }
+                        };
+                        
+                        // Use $cleanup if available (Alpine 3.12+), otherwise use destroy event
+                        if (typeof this.$cleanup === 'function') {
+                            this.$cleanup(cleanup);
+                        } else {
+                            // Fallback: listen for element removal
+                            this.$el.__x_cleanup = cleanup;
+                        }
+                    },
+                    destroy() {
+                        // Called by Alpine when component is destroyed
+                        if (this.$el.__x_cleanup) {
+                            this.$el.__x_cleanup();
+                        }
                     }
                 }"
                 x-load-js="[@js(\Filament\Support\Facades\FilamentAsset::getScriptSrc('mks-ckeditor-field', package: 'miran/mksine'))]"

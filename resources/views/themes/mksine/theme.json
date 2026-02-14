@@ -1,0 +1,11 @@
+{
+    "name": "MKSine Default",
+    "version": "1.0.0",
+    "author": "MKSine Team",
+    "description": "The default theme for MKSine CMS. A clean, modern blog theme with dark mode and RTL support.",
+    "screenshot": "screenshot.png",
+    "assets": {
+        "css": ["dist/app.css"],
+        "js": ["dist/app.js"]
+    }
+}

@@ -7,6 +7,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
 use Miran\Mksine\Filament\Resources\Pages\Pages\CreatePage;
 use Miran\Mksine\Filament\Resources\Pages\Pages\EditPage;
@@ -28,6 +30,11 @@ class PageResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocument;
 
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Content');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -58,5 +65,13 @@ class PageResource extends Resource
             'create' => CreatePage::route('/create'),
             'edit' => EditPage::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
     }
 }

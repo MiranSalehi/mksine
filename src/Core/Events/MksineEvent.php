@@ -175,6 +175,10 @@ abstract class MksineEvent
     /**
      * Override this method to allow async execution.
      * Default is false.
+     *
+     * CONTRACT: If you return true, the event class MUST implement
+     * QueueableHookEventInterface (toQueuePayload + fromQueuePayload).
+     * The system throws LogicException at dispatch time if not implemented.
      */
     protected function allowAsync(): bool
     {
