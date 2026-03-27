@@ -1,15 +1,18 @@
 <div>
+    @themeDoAction('page.before_breadcrumb')
     <!-- Breadcrumb -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div class="container mx-auto max-w-6xl px-4 py-3">
             <div class="text-sm text-gray-600 dark:text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <a href="{{ route('home') }}" class="text-pink-500 hover:text-pink-600">{{ __('Home') }}</a>
+                <a href="{{ route('home') }}" class="text-blue-500 hover:text-blue-600">{{ __('mksine::frontend.home') }}</a>
                 <span class="text-gray-400 dark:text-gray-500" aria-hidden="true">/</span>
                 <span class="text-gray-800 dark:text-gray-200">{{ $page->title }}</span>
             </div>
         </div>
     </div>
+    @themeDoAction('page.after_breadcrumb')
 
+    @themeDoAction('page.before_content')
     <!-- Main Content -->
     <div class="container mx-auto max-w-4xl px-4 py-12">
         <article>
@@ -35,4 +38,5 @@
             @endif
         </article>
     </div>
+    @themeDoAction('page.after_content')
 </div>

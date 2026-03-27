@@ -20,78 +20,78 @@ class PageForm
 
         $schema = $schema
             ->components([
-                Section::make('Page Information')
+                Section::make(__('mksine::pages.page_information'))
                     ->schema([
                         TextInput::make('title')
-                            ->label('Title')
+                            ->label(__('mksine::pages.title'))
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->columnSpanFull(),
                         TextInput::make('slug')
-                            ->label('Slug')
+                            ->label(__('mksine::pages.slug'))
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
                             ->columnSpanFull(),
                         Select::make('type')
-                            ->label('Page Type')
+                            ->label(__('mksine::pages.page_type'))
                             ->options([
-                                'simple' => 'Simple',
-                                'builder' => 'Builder',
+                                'simple' => __('mksine::pages.type_simple'),
+                                'builder' => __('mksine::pages.type_builder'),
                             ])
                             ->default('simple')
                             ->required()
                             ->native(false)
                             ->live(),
                         Select::make('status')
-                            ->label('Status')
+                            ->label(__('mksine::pages.status'))
                             ->options([
-                                'draft' => 'Draft',
-                                'published' => 'Published',
-                                'scheduled' => 'Scheduled',
+                                'draft' => __('mksine::pages.status_draft'),
+                                'published' => __('mksine::pages.status_published'),
+                                'scheduled' => __('mksine::pages.status_scheduled'),
                             ])
                             ->default('draft')
                             ->required()
                             ->native(false)
                             ->live(),
                         DateTimePicker::make('published_at')
-                            ->label('Publish Date')
+                            ->label(__('mksine::pages.publish_date'))
                             ->visible(fn ($get) => $get('status') === 'scheduled')
                             ->required(fn ($get) => $get('status') === 'scheduled')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                Section::make('Content')
+                Section::make(__('mksine::common.content'))
                     ->columnSpanFull()
                     ->schema([
                         CKEditor::make('content')
-                            ->label('Content')
+                            ->label(__('mksine::pages.content'))
                             ->live(false)
                             ->required(fn ($get) => $get('type') === 'simple')
                             ->columnSpanFull(),
                     ])
                     ->visible(fn ($get) => $get('type') === 'simple'),
-                Section::make('Page Builder')
+                Section::make(__('mksine::pages.page_builder'))
                     ->columnSpanFull()
                     ->schema([
                         PageBuilderField::make('builder_payload')
-                            ->label('')
+                            ->label(__('mksine::page_builder.field_label'))
                             ->columnSpanFull(),
                     ])
                     ->visible(fn ($get) => $get('type') === 'builder'),
-                Section::make('SEO')
+                Section::make(__('mksine::common.seo'))
                     ->schema([
                         TextInput::make('meta_title')
-                            ->label('Meta Title')
+                            ->label(__('mksine::pages.meta_title'))
                             ->maxLength(60)
-                            ->helperText('Recommended: 50-60 characters')
+                            ->helperText(__('mksine::pages.meta_title_helper'))
                             ->columnSpanFull(),
                         Textarea::make('meta_description')
-                            ->label('Meta Description')
+                            ->label(__('mksine::pages.meta_description'))
                             ->maxLength(160)
                             ->rows(3)
-                            ->helperText('Recommended: 150-160 characters')
+                            ->helperText(__('mksine::pages.meta_description_helper'))
                             ->columnSpanFull(),
                     ])
                     ->collapsed()

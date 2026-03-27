@@ -25,13 +25,18 @@ class PageTable
         $table = $table
             ->columns([
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('mksine::pages.title'))
                     ->searchable()
                     ->sortable()
                     ->description(fn ($record) => $record->slug),
                 TextColumn::make('type')
-                    ->label('Type')
+                    ->label(__('mksine::pages.type'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'simple' => __('mksine::pages.type_simple'),
+                        'builder' => __('mksine::pages.type_builder'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'simple' => 'gray',
                         'builder' => 'info',
@@ -39,8 +44,14 @@ class PageTable
                     })
                     ->sortable(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::pages.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'draft' => __('mksine::pages.status_draft'),
+                        'published' => __('mksine::pages.status_published'),
+                        'scheduled' => __('mksine::pages.status_scheduled'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         'draft' => 'gray',
                         'published' => 'success',
@@ -49,32 +60,32 @@ class PageTable
                     })
                     ->sortable(),
                 TextColumn::make('creator.name')
-                    ->label('Author')
+                    ->label(__('mksine::pages.author'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('published_at')
-                    ->label('Published At')
+                    ->label(__('mksine::pages.published_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->label('Updated')
+                    ->label(__('mksine::pages.updated'))
                     ->since()
                     ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('type')
-                    ->label('Type')
+                    ->label(__('mksine::pages.type'))
                     ->options([
-                        'simple' => 'Simple',
-                        'builder' => 'Builder',
+                        'simple' => __('mksine::pages.type_simple'),
+                        'builder' => __('mksine::pages.type_builder'),
                     ]),
                 SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::pages.status'))
                     ->options([
-                        'draft' => 'Draft',
-                        'published' => 'Published',
-                        'scheduled' => 'Scheduled',
+                        'draft' => __('mksine::pages.status_draft'),
+                        'published' => __('mksine::pages.status_published'),
+                        'scheduled' => __('mksine::pages.status_scheduled'),
                     ]),
                 TrashedFilter::make(),
             ])

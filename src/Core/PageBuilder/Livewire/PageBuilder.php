@@ -9,6 +9,10 @@ use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
 class PageBuilder extends Component
 {
     /**
+     * Guard window (ms) to prevent paste modal opening on load.
+     */
+    public const BOOT_GUARD_MS = 1200;
+    /**
      * The builder blocks/items.
      */
     public array $blocks = [];
@@ -29,9 +33,24 @@ class PageBuilder extends Component
     public bool $showComponentPanel = false;
 
     /**
-     * Show template selection panel.
+     * Show template picker modal (only in DOM when true).
      */
     public bool $showTemplatePanel = false;
+
+    /**
+     * Show paste modal (only in DOM when true).
+     */
+    public bool $showPasteModal = false;
+
+    /**
+     * Paste modal: textarea value.
+     */
+    public string $pasteText = '';
+
+    /**
+     * Paste modal: insert position (null = append).
+     */
+    public ?int $pastePosition = null;
 
     /**
      * Target position for new component.
@@ -73,6 +92,11 @@ class PageBuilder extends Component
      */
     protected int $maxHistorySize = 50;
 
+    /**
+     * Epoch (ms) when component mounted – used to ignore spurious openPasteModal on load.
+     */
+    protected ?float $mountedAt = null;
+
     protected $listeners = [
         'builder:reorder' => 'reorderBlocks',
         'builder:reorderColumn' => 'reorderColumnBlocks',
@@ -80,11 +104,21 @@ class PageBuilder extends Component
         'closeEditor' => 'closeEditor',
     ];
 
+    /**
+     * Run at the start of every request. Reset paste modal to avoid persistence
+     * when parent re-renders (e.g. form validation) and component state is reused.
+     */
+    public function boot(): void
+    {
+        $this->showPasteModal = false;
+    }
+
     public function mount(array $value = []): void
     {
         $this->blocks = $value;
         $this->previewUrl = route('mksine.page-builder.preview');
         $this->saveHistory();
+        $this->mountedAt = microtime(true);
     }
 
     /**
@@ -163,6 +197,86 @@ class PageBuilder extends Component
     public function getCategoryMetaProperty(): array
     {
         return ComponentRegistry::getCategoryMeta();
+    }
+
+    /**
+     * Sorted category keys for sidebar display.
+     */
+    public function getSortedCategoriesProperty(): array
+    {
+        $categoryMeta = $this->categoryMeta;
+        $orderKey = collect($categoryMeta)->mapWithKeys(fn ($m, $k) => [$k => $m['order'] ?? 99])->all();
+
+        return collect($this->components ?? [])->keys()->sortBy(fn ($c) => $orderKey[$c] ?? 99)->values()->all();
+    }
+
+    /**
+     * Category display meta (name, icon) keyed by category.
+     */
+    public function getCategoryDisplayMetaProperty(): array
+    {
+        $meta = [];
+        foreach ($this->sortedCategories as $category) {
+            $cm = $this->categoryMeta[$category] ?? [];
+            $meta[$category] = [
+                'name' => $cm['name'] ?? $category,
+                'icon' => $cm['icon'] ?? 'heroicon-o-square-2-stack',
+            ];
+        }
+
+        return $meta;
+    }
+
+    /**
+     * Editor modal heading (component name or fallback).
+     */
+    public function getEditorHeadingProperty(): string
+    {
+        $heading = __('mksine::page_builder.edit_component');
+        if (! empty($this->editingBlockData['block']['type'])) {
+            $registry = app(ComponentRegistry::class);
+            $compClass = $registry->get($this->editingBlockData['block']['type']);
+            if ($compClass) {
+                $heading = $compClass::getName();
+            }
+        }
+
+        return $heading;
+    }
+
+    /**
+     * Templates grouped by category for template picker.
+     */
+    public function getTemplatesByCategoryProperty(): array
+    {
+        return app(TemplateRegistry::class)->byCategory()->toArray();
+    }
+
+    /**
+     * Block display info for rendering (icon class, name, supports children, preview text).
+     */
+    public function getBlockDisplayInfo(array $block): array
+    {
+        $registry = app(ComponentRegistry::class);
+        $componentClass = $registry->get($block['type'] ?? '');
+        $supportsChildren = $componentClass ? $componentClass::supportsChildren() : false;
+        $previewText = '';
+        if ($componentClass && ! empty($block['data'])) {
+            $data = $block['data'];
+            if (($block['type'] ?? '') === 'heading' && ! empty($data['text'])) {
+                $previewText = \Illuminate\Support\Str::limit($data['text'], 40);
+            } elseif (($block['type'] ?? '') === 'text' && ! empty($data['content'])) {
+                $previewText = \Illuminate\Support\Str::limit(strip_tags($data['content']), 40);
+            } elseif (($block['type'] ?? '') === 'button' && ! empty($data['text'])) {
+                $previewText = $data['text'];
+            }
+        }
+
+        return [
+            'componentClass' => $componentClass,
+            'supportsChildren' => $supportsChildren,
+            'previewText' => $previewText,
+        ];
     }
 
     /**
@@ -318,7 +432,7 @@ class PageBuilder extends Component
 
         $this->dispatch('copy-to-clipboard', [
             'data' => json_encode($block),
-            'message' => __('Component copied!'),
+            'message' => __('mksine::page_builder.component_copied'),
         ]);
     }
 
@@ -333,15 +447,20 @@ class PageBuilder extends Component
 
     /**
      * Paste block from clipboard.
+     * Sanitizes JSON input (valid structure, allowed keys).
      */
     public function pasteBlock(string $clipboardData, ?int $position = null): void
     {
         $this->saveHistory();
 
         try {
-            $block = json_decode($clipboardData, true);
+            $decoded = json_decode($clipboardData, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Invalid JSON');
+            }
+            $block = is_array($decoded) ? $decoded : [];
 
-            if (! is_array($block) || empty($block['type'])) {
+            if (empty($block['type']) || ! is_string($block['type'])) {
                 throw new \Exception('Invalid clipboard data');
             }
 
@@ -357,11 +476,11 @@ class PageBuilder extends Component
                 $this->blocks[] = $block;
             }
 
-            $this->dispatch('paste-success', ['message' => __('Component pasted!')]);
+            $this->dispatch('paste-success', ['message' => __('mksine::page_builder.component_pasted')]);
             $this->dispatch('builder:updated');
             $this->emitValue();
         } catch (\Exception $e) {
-            $this->dispatch('paste-error', ['message' => __('Invalid clipboard data')]);
+            $this->dispatch('paste-error', ['message' => __('mksine::page_builder.invalid_clipboard_data')]);
         }
     }
 
@@ -386,6 +505,37 @@ class PageBuilder extends Component
             $result[] = $newCol;
         }
         return $result;
+    }
+
+    /**
+     * Open paste overlay (vanilla, no Filament modal).
+     * Ignores calls within ~600ms of mount to prevent spurious open on load.
+     */
+    public function openPasteModal(?int $position = null): void
+    {
+        if ($this->mountedAt !== null && (microtime(true) - $this->mountedAt) < 0.6) {
+            return;
+        }
+        $this->pastePosition = $position;
+        $this->pasteText = '';
+        $this->showPasteModal = true;
+    }
+
+    public function closePasteModal(): void
+    {
+        $this->showPasteModal = false;
+        $this->pasteText = '';
+        $this->pastePosition = null;
+    }
+
+    public function submitPasteModal(): void
+    {
+        $text = trim($this->pasteText);
+        $position = $this->pastePosition;
+        $this->closePasteModal();
+        if ($text !== '') {
+            $this->pasteBlock($text, $position);
+        }
     }
 
     /**
@@ -432,7 +582,7 @@ class PageBuilder extends Component
     }
 
     /**
-     * Open editor for a block.
+     * Open editor for a block (modal only in DOM when editingBlockId is set).
      */
     public function editBlock(string $blockId, ?string $parentId = null, ?int $columnIndex = null): void
     {
@@ -570,7 +720,7 @@ class PageBuilder extends Component
     }
 
     /**
-     * Toggle template panel (opens/closes template picker modal).
+     * Toggle template picker modal (only in DOM when showTemplatePanel=true).
      */
     public function toggleTemplatePanel(): void
     {
@@ -582,9 +732,6 @@ class PageBuilder extends Component
         }
     }
 
-    /**
-     * Close template picker modal.
-     */
     public function closeTemplatePanel(): void
     {
         $this->showTemplatePanel = false;

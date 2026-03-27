@@ -19,11 +19,20 @@ class PostResource extends Resource
 {
     protected static ?string $model = Post::class;
 
-    protected static ?string $navigationLabel = 'Posts';
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::posts.navigation_label');
+    }
 
-    protected static ?string $modelLabel = 'Post';
+    public static function getModelLabel(): string
+    {
+        return __('mksine::posts.model_label');
+    }
 
-    protected static ?string $pluralModelLabel = 'Posts';
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::posts.plural_model_label');
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
@@ -31,7 +40,7 @@ class PostResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Content');
+        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

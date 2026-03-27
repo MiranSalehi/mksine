@@ -181,7 +181,60 @@ class ThemeManager
         // Clear cached active theme
         $this->activeThemeData = null;
 
-        return $theme->activate();
+        $activated = $theme->activate();
+
+        if ($activated && function_exists('lang_path')) {
+            $this->publishThemeTranslations($identifier);
+        }
+
+        return $activated;
+    }
+
+    /**
+     * Get theme translations source path (lang/ or resources/lang/).
+     */
+    public function getThemeTranslationsPath(ThemeData $theme): ?string
+    {
+        $path = $theme->path . '/resources/lang';
+        if (File::isDirectory($path)) {
+            return $path;
+        }
+        $path = $theme->path . '/lang';
+
+        return File::isDirectory($path) ? $path : null;
+    }
+
+    /**
+     * Publish theme translations to lang/vendor/theme-{identifier}/.
+     * Always overwrites. Returns true if translations were published.
+     */
+    public function publishThemeTranslations(string $identifier): bool
+    {
+        if (! function_exists('lang_path')) {
+            return false;
+        }
+
+        $theme = $this->get($identifier);
+
+        if (! $theme) {
+            return false;
+        }
+
+        $src = $this->getThemeTranslationsPath($theme);
+
+        if (! $src) {
+            return false;
+        }
+
+        $dest = lang_path('vendor/theme-' . $identifier);
+
+        if (! File::isDirectory($dest)) {
+            File::ensureDirectoryExists($dest);
+        }
+
+        File::copyDirectory($src, $dest);
+
+        return true;
     }
 
     /**
@@ -319,7 +372,128 @@ class ThemeManager
     }
 
     /**
+     * Storage directory for admin-edited custom CSS/JS (overrides theme dist/custom.*).
+     */
+    public function getCustomStorageDir(): string
+    {
+        return storage_path('app/theme-custom');
+    }
+
+    /**
+     * Get the storage path for a theme's custom CSS or JS file.
+     *
+     * @param  'css'|'js'  $type
+     */
+    public function getCustomStoragePath(string $identifier, string $type): string
+    {
+        if (! in_array($type, ['css', 'js'], true)) {
+            throw new \InvalidArgumentException('Type must be "css" or "js".');
+        }
+
+        return $this->getCustomStorageDir() . '/' . $identifier . '.' . $type;
+    }
+
+    /**
+     * Check if admin-edited custom asset exists for a theme.
+     *
+     * @param  'css'|'js'  $type
+     */
+    public function hasCustomAsset(string $identifier, string $type): bool
+    {
+        return File::isFile($this->getCustomStoragePath($identifier, $type));
+    }
+
+    /**
+     * Get custom CSS or JS content. Prefers storage (admin-edited), then theme dist file.
+     *
+     * @param  'css'|'js'  $type
+     */
+    public function getCustomContent(string $identifier, string $type): string
+    {
+        $storagePath = $this->getCustomStoragePath($identifier, $type);
+        if (File::isFile($storagePath)) {
+            return File::get($storagePath);
+        }
+
+        $theme = $this->get($identifier);
+        if (! $theme) {
+            return '';
+        }
+
+        $distPath = $theme->path . '/dist/custom.' . $type;
+
+        return File::isFile($distPath) ? File::get($distPath) : '';
+    }
+
+    /**
+     * Save custom CSS or JS (always to storage; used by Theme Manager).
+     *
+     * @param  'css'|'js'  $type
+     */
+    public function putCustomContent(string $identifier, string $type, string $content): bool
+    {
+        $dir = $this->getCustomStorageDir();
+        File::ensureDirectoryExists($dir);
+
+        $path = $this->getCustomStoragePath($identifier, $type);
+
+        return File::put($path, $content) !== false;
+    }
+
+    /**
+     * Path to JSON file storing extra CSS/JS file list (paths or URLs) per theme.
+     */
+    public function getExtraAssetsStoragePath(string $identifier): string
+    {
+        return $this->getCustomStorageDir() . '/' . $identifier . '-extra-assets.json';
+    }
+
+    /**
+     * Get list of extra CSS and JS files (paths or full URLs) for a theme.
+     * These are loaded after theme assets without editing Blade.
+     *
+     * @return array{css: array<int, string>, js: array<int, string>}
+     */
+    public function getExtraAssets(string $identifier): array
+    {
+        $path = $this->getExtraAssetsStoragePath($identifier);
+        if (! File::isFile($path)) {
+            return ['css' => [], 'js' => []];
+        }
+        $data = json_decode(File::get($path), true);
+        if (! is_array($data)) {
+            return ['css' => [], 'js' => []];
+        }
+
+        return [
+            'css' => array_values(array_filter(array_map('trim', $data['css'] ?? []))),
+            'js' => array_values(array_filter(array_map('trim', $data['js'] ?? []))),
+        ];
+    }
+
+    /**
+     * Save list of extra CSS/JS files for a theme.
+     *
+     * @param  array<int, string>  $css  Paths or full URLs
+     * @param  array<int, string>  $js  Paths or full URLs
+     */
+    public function setExtraAssets(string $identifier, array $css, array $js): bool
+    {
+        $dir = $this->getCustomStorageDir();
+        File::ensureDirectoryExists($dir);
+        $path = $this->getExtraAssetsStoragePath($identifier);
+        $data = [
+            'css' => array_values(array_filter(array_map('trim', $css))),
+            'js' => array_values(array_filter(array_map('trim', $js))),
+        ];
+
+        return File::put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false;
+    }
+
+    /**
      * Register project theme views with Laravel's view system.
+     * Registers the "theme" hint so that view names like "theme::identifier.layouts.index"
+     * resolve (Laravel uses the part before the first :: as the hint).
      */
     public function registerProjectThemeViews(): void
     {
@@ -328,6 +502,8 @@ class ThemeManager
         if (! File::isDirectory($projectThemesPath)) {
             return;
         }
+
+        view()->addNamespace('theme', $projectThemesPath);
 
         $directories = File::directories($projectThemesPath);
 

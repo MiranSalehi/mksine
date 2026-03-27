@@ -68,7 +68,9 @@ class PluginMakeCommand extends Command
         $this->createPluginPhp($pluginPath, $name, $namespace, $className, $author, $description);
         $this->createPluginClass($pluginPath, $namespace, $className, $name);
         $this->createComposerJson($pluginPath, $name, $namespace, $author, $description);
-        $this->createRoutesFiles($pluginPath);
+        $this->createRoutesFiles($pluginPath, $name);
+        $this->createNpmFiles($pluginPath, $name);
+        $this->createPublishesReadme($pluginPath);
 
         // Auto-discover the new plugin
         $this->newLine();
@@ -87,6 +89,9 @@ class PluginMakeCommand extends Command
         $this->newLine();
         $this->line('Or use CLI:');
         $this->line("  <comment>php artisan mks-plugin:install {$name} && php artisan mks-plugin:activate {$name}</comment>");
+        $this->newLine();
+        $this->line('Frontend assets (build + publish to public/):');
+        $this->line("  <comment>cd plugins/{$name} && npm install && npm run build</comment>");
         $this->newLine();
         $this->line('<fg=gray>Note: Autoloading is handled automatically - no need to modify composer.json!</>');
 
@@ -108,8 +113,12 @@ class PluginMakeCommand extends Command
             "{$basePath}/database",
             "{$basePath}/database/migrations",
             "{$basePath}/config",
+            "{$basePath}/publishes",
             "{$basePath}/resources",
             "{$basePath}/resources/views",
+            "{$basePath}/resources/css",
+            "{$basePath}/resources/js",
+            "{$basePath}/resources/dist",
             "{$basePath}/resources/lang",
             "{$basePath}/routes",
         ];
@@ -394,7 +403,7 @@ JSON;
         $this->line("  Created: {$path}");
     }
 
-    private function createRoutesFiles(string $basePath): void
+    private function createRoutesFiles(string $basePath, string $name): void
     {
         $webRoutesContent = <<<PHP
 <?php
@@ -408,8 +417,8 @@ use Illuminate\Support\Facades\Route;
  * They are wrapped in the 'web' middleware group.
  */
 
-Route::get('/{$this->argument('name')}-example', function () {
-    return 'Hello from {$this->argument('name')} plugin!';
+Route::get('/{$name}-example', function () {
+    return 'Hello from {$name} plugin!';
 });
 PHP;
 
@@ -425,7 +434,7 @@ use Illuminate\Support\Facades\Route;
  * They are wrapped in the 'api' middleware group and prefixed with 'api/'.
  */
 
-Route::get('/{$this->argument('name')}-test', function () {
+Route::get('/{$name}-test', function () {
     return ['status' => 'success', 'message' => 'API is working'];
 });
 PHP;
@@ -434,6 +443,123 @@ PHP;
         $this->files->put("{$basePath}/routes/api.php", $apiRoutesContent);
         $this->line("  Created: {$basePath}/routes/web.php");
         $this->line("  Created: {$basePath}/routes/api.php");
+    }
+
+    private function createNpmFiles(string $basePath, string $name): void
+    {
+        $packageJson = <<<JSON
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build && npm run publish && npm run sync:mksine-tailwind && npm run sync:filament-assets",
+        "publish": "cd ../.. && php artisan mks-plugin:publish {$name}",
+        "sync:mksine-tailwind": "cd ../../packages/mksine && npm run build:styles",
+        "sync:filament-assets": "node ../../packages/mksine/bin/filament-assets.js"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "vite": "^7.0.0"
+    }
+}
+JSON;
+
+        $viteConfig = <<<JS
+import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig({
+    plugins: [
+        tailwindcss(),
+    ],
+    build: {
+        outDir: 'resources/dist',
+        emptyOutDir: false,
+        rollupOptions: {
+            input: 'resources/js/app.js',
+            output: {
+                assetFileNames: '[name].[ext]',
+                entryFileNames: '[name].js',
+            },
+        },
+    },
+});
+JS;
+
+        $sourceCss = <<<CSS
+@import 'tailwindcss' source(none);
+
+/* Scan this plugin's PHP source and Blade views for Tailwind classes */
+@source '../../src';
+@source '../views';
+
+/* Plugin-specific styles */
+
+CSS;
+
+        $sourceJs = <<<JS
+import '../css/app.css';
+
+// {$name} plugin JavaScript entry point
+// Add your plugin-specific Alpine.js components, Livewire hooks, etc. here.
+
+JS;
+
+        $this->files->put("{$basePath}/package.json", $packageJson);
+        $this->line("  Created: {$basePath}/package.json");
+
+        $this->files->put("{$basePath}/vite.config.js", $viteConfig);
+        $this->line("  Created: {$basePath}/vite.config.js");
+
+        $this->files->put("{$basePath}/resources/css/app.css", $sourceCss);
+        $this->line("  Created: {$basePath}/resources/css/app.css");
+
+        $this->files->put("{$basePath}/resources/js/app.js", $sourceJs);
+        $this->line("  Created: {$basePath}/resources/js/app.js");
+
+        // Keep the dist directory tracked by git (compiled files themselves are gitignored)
+        $this->files->put("{$basePath}/resources/dist/.gitkeep", '');
+        $this->line("  Created: {$basePath}/resources/dist/.gitkeep");
+    }
+
+    private function createPublishesReadme(string $basePath): void
+    {
+        $readme = <<<'MARKDOWN'
+# publishes/
+
+JSON recipes for copying files from this plugin’s `vendor/<package>/` into the plugin (config + migration stubs).
+
+Core runner (in **miran/mksine**): `Miran\Mksine\Core\Plugins\Publishing\PluginVendorPublishRunner`.
+
+## Preset file: `publishes/{preset}.json`
+
+```json
+{
+    "vendor_path": "vendor-name/package-name",
+    "config": {
+        "from": "config/package.php",
+        "to": "config/package.php"
+    },
+    "migrations": [
+        "create_example_table",
+        "add_column_to_example_table"
+    ]
+}
+```
+
+- `vendor_path`: path under `plugins/{id}/vendor/`.
+- `config.from`: path inside that package; `config.to`: path inside the plugin (created if needed).
+- `migrations`: migration base names (`.php` or `.php.stub` under `database/migrations/` in the package).
+
+Register a console command in your plugin’s `boot()` (see **mks-booking** `mks-booking:publish-vendor`) that calls `PluginVendorPublishRunner::publish()` for your plugin manifest.
+
+Then from **app root**: `php artisan {your-plugin}:publish-vendor {preset}`.
+
+MARKDOWN;
+
+        $this->files->put("{$basePath}/publishes/README.md", $readme);
+        $this->line("  Created: {$basePath}/publishes/README.md");
     }
 
     private function studlyCase(string $value): string

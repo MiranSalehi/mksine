@@ -18,19 +18,28 @@ class MediaResource extends Resource
 {
     protected static ?string $model = Media::class;
 
-    protected static ?string $navigationLabel = 'Media';
-
-    protected static ?string $modelLabel = 'Media';
-
-    protected static ?string $pluralModelLabel = 'Media';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedPhoto;
 
     protected static ?int $navigationSort = 2;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::media.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mksine::media.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::media.plural_model_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('Content');
+        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

@@ -22,7 +22,7 @@ class CategoryMenuItemSource implements MenuItemSourcePaginatedInterface
 
     public function getLabel(): string
     {
-        return __('Categories');
+        return (string) __('mksine::categories.plural_model_label');
     }
 
     public function getIcon(): string

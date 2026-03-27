@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'navigation_label' => 'Users',
+    'model_label' => 'User',
+    'plural_model_label' => 'Users',
+    'avatar' => 'Avatar',
+    'name' => 'Name',
+    'email' => 'Email',
+    'bio' => 'Bio',
+    'date_of_birth' => 'Date of Birth',
+    'country_code' => 'Country Code',
+    'phone_number' => 'Phone Number',
+    'phone_placeholder' => 'e.g. 912 123 4567',
+    'password' => 'Password',
+    'created_at' => 'Created At',
+    'placeholder_dash' => '—',
+    'phone' => 'Phone',
+    'section_profile' => 'Profile',
+    'section_security' => 'Security',
+    'section_notifications' => 'Notifications',
+    'section_appearance' => 'Appearance',
+    'section_advanced' => 'Advanced',
+    'section_permissions' => 'Permissions',
+    'section_roles' => 'Roles',
+    'section_contact' => 'Contact',
+];

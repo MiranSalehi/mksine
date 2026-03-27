@@ -216,6 +216,14 @@ final class PluginManifest
     }
 
     /**
+     * Path to publishes/ — JSON presets for {@see \Miran\Mksine\Core\Plugins\Publishing\PluginVendorPublishRunner}.
+     */
+    public function publishesPath(): string
+    {
+        return $this->basePath . '/publishes';
+    }
+
+    /**
      * Get web routes path (if exists).
      */
     public function webRoutesPath(): ?string
@@ -287,6 +295,186 @@ final class PluginManifest
         $path = $this->basePath . '/src/Filament/Widgets';
 
         return is_dir($path) ? $path : null;
+    }
+
+    /**
+     * Get the public directory path for this plugin's published assets.
+     * Assets are served from: public/plugins/{id}/
+     */
+    public function publicPath(): string
+    {
+        return public_path('plugins/' . $this->id());
+    }
+
+    /**
+     * Get compiled CSS path inside the plugin (source, not yet published).
+     * Expected at: {plugin}/resources/dist/app.css
+     */
+    public function distCssPath(): ?string
+    {
+        $path = $this->basePath . '/resources/dist/app.css';
+
+        return file_exists($path) ? $path : null;
+    }
+
+    /**
+     * Get compiled JS path inside the plugin (source, not yet published).
+     * Expected at: {plugin}/resources/dist/app.js
+     */
+    public function distJsPath(): ?string
+    {
+        $path = $this->basePath . '/resources/dist/app.js';
+
+        return file_exists($path) ? $path : null;
+    }
+
+    /**
+     * Get CSS URL for the published asset (public/plugins/{id}/app.css).
+     * Returns null if not yet published.
+     */
+    public function publishedCssUrl(): ?string
+    {
+        $publicFile = $this->publicPath() . '/app.css';
+
+        return file_exists($publicFile) ? asset('plugins/' . $this->id() . '/app.css') : null;
+    }
+
+    /**
+     * Get JS URL for the published asset (public/plugins/{id}/app.js).
+     * Returns null if not yet published.
+     */
+    public function publishedJsUrl(): ?string
+    {
+        $publicFile = $this->publicPath() . '/app.js';
+
+        return file_exists($publicFile) ? asset('plugins/' . $this->id() . '/app.js') : null;
+    }
+
+    /**
+     * Check whether the plugin's dist/ folder has been published to public/.
+     */
+    public function hasPublishedAssets(): bool
+    {
+        return is_dir($this->publicPath());
+    }
+
+    /**
+     * Publish assets from resources/dist/ to public/plugins/{id}/.
+     * Returns true on success, false if dist/ doesn't exist.
+     */
+    public function publishAssets(): bool
+    {
+        $distPath = $this->basePath . '/resources/dist';
+
+        if (! is_dir($distPath)) {
+            return false;
+        }
+
+        $dest = $this->publicPath();
+
+        if (! is_dir($dest)) {
+            mkdir($dest, 0755, true);
+        }
+
+        $this->copyDirectory($distPath, $dest);
+
+        return true;
+    }
+
+    /**
+     * Publish translations from resources/lang/ or lang/ to lang/vendor/{id}/.
+     * Always overwrites existing files. Returns true if translations were published.
+     */
+    public function publishTranslations(): bool
+    {
+        $src = $this->translationsPath();
+
+        if (! $src || ! is_dir($src)) {
+            return false;
+        }
+
+        if (! function_exists('lang_path')) {
+            return false;
+        }
+
+        $dest = lang_path('vendor/' . $this->id());
+
+        if (! is_dir($dest)) {
+            mkdir($dest, 0755, true);
+        }
+
+        $this->copyDirectory($src, $dest);
+
+        return true;
+    }
+
+    /**
+     * Remove published assets from public/plugins/{id}/.
+     */
+    public function removePublishedAssets(): void
+    {
+        $dest = $this->publicPath();
+
+        if (is_dir($dest)) {
+            $this->removeDirectory($dest);
+        }
+    }
+
+    /**
+     * Recursively copy a directory.
+     */
+    private function copyDirectory(string $src, string $dst): void
+    {
+        foreach (scandir($src) as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $srcPath = $src . DIRECTORY_SEPARATOR . $item;
+            $dstPath = $dst . DIRECTORY_SEPARATOR . $item;
+
+            if (is_dir($srcPath)) {
+                if (! is_dir($dstPath)) {
+                    mkdir($dstPath, 0755, true);
+                }
+                $this->copyDirectory($srcPath, $dstPath);
+            } else {
+                copy($srcPath, $dstPath);
+            }
+        }
+    }
+
+    /**
+     * Recursively remove a directory.
+     */
+    private function removeDirectory(string $path): void
+    {
+        foreach (scandir($path) as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $full = $path . DIRECTORY_SEPARATOR . $item;
+
+            if (is_dir($full)) {
+                $this->removeDirectory($full);
+            } else {
+                unlink($full);
+            }
+        }
+
+        rmdir($path);
+    }
+
+    /**
+     * Get source CSS path for the plugin (if exists).
+     * Expected at: {plugin}/resources/css/app.css
+     */
+    public function sourceCssPath(): ?string
+    {
+        $path = $this->basePath . '/resources/css/app.css';
+
+        return file_exists($path) ? $path : null;
     }
 
     /**

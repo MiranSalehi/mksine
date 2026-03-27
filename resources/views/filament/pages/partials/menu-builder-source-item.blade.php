@@ -1,13 +1,13 @@
 @props(['item', 'depth' => 0, 'sourceKey' => ''])
 
-<label class="flex items-center gap-2 cursor-pointer py-0.5" style="padding-left: {{ $depth * 16 }}px;">
+<label class="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 pe-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50" style="padding-inline-start: {{ $depth * 16 + 8 }}px;">
     <input
         type="checkbox"
         wire:model="sourceFormData.{{ $sourceKey }}.selected"
         value="{{ $item['id'] }}"
-        class="shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        class="size-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
     />
-    <span class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ $item['label'] }}</span>
+    <span class="truncate text-sm text-gray-700 dark:text-gray-300">{{ $item['label'] }}</span>
 </label>
 @if(!empty($item['children']))
     @foreach($item['children'] as $child)

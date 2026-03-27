@@ -20,22 +20,22 @@ class ListComments extends MksineListRecords
     public function getTabs(): array
     {
         return [
-            'pending' => Tab::make('Pending')
+            'pending' => Tab::make(__('mksine::comments.tab_pending'))
                 ->icon('heroicon-o-clock')
                 ->badge(Comment::where('status', Comment::STATUS_PENDING)->count() ?: null)
                 ->badgeColor('warning')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Comment::STATUS_PENDING)),
-            'approved' => Tab::make('Approved')
+            'approved' => Tab::make(__('mksine::comments.tab_approved'))
                 ->icon('heroicon-o-check-circle')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Comment::STATUS_APPROVED)),
-            'all' => Tab::make('All')
+            'all' => Tab::make(__('mksine::comments.tab_all'))
                 ->icon('heroicon-o-inbox'),
-            'spam' => Tab::make('Spam')
+            'spam' => Tab::make(__('mksine::comments.tab_spam'))
                 ->icon('heroicon-o-exclamation-triangle')
                 ->badge(Comment::where('status', Comment::STATUS_SPAM)->count() ?: null)
                 ->badgeColor('danger')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Comment::STATUS_SPAM)),
-            'trash' => Tab::make('Trash')
+            'trash' => Tab::make(__('mksine::comments.tab_trash'))
                 ->icon('heroicon-o-trash')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Comment::STATUS_TRASH)),
         ];

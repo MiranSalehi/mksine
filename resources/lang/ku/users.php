@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'navigation_label' => 'بەکارهێنەران',
+    'model_label' => 'بەکارهێنەر',
+    'plural_model_label' => 'بەکارهێنەران',
+    'avatar' => 'وێنە',
+    'name' => 'ناو',
+    'email' => 'ئیمەیڵ',
+    'bio' => 'ژیاننامە',
+    'date_of_birth' => 'بەرواری لەدایکبوون',
+    'country_code' => 'کۆدی وڵات',
+    'phone_number' => 'ژمارەی تەلەفۆن',
+    'phone_placeholder' => 'وەک 912 123 4567',
+    'password' => 'وشەی نهێنی',
+    'created_at' => 'دروستکراو لە',
+    'placeholder_dash' => '—',
+    'phone' => 'تەلەفۆن',
+    'section_profile' => 'پرۆفایل',
+    'section_security' => 'ئاسایش',
+    'section_notifications' => 'ئاگادارییەکان',
+    'section_appearance' => 'دەرکەوتن',
+    'section_advanced' => 'پێشکەوتوو',
+    'section_permissions' => 'مۆڵەتەکان',
+    'section_roles' => 'ڕۆڵەکان',
+    'section_contact' => 'پەیوەندی',
+];

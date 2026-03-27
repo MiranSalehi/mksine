@@ -15,7 +15,7 @@ class HeadingComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Heading');
+        return __('mksine::page_builder.component_labels.name_heading');
     }
 
     public static function getIcon(): string
@@ -30,36 +30,36 @@ class HeadingComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add a heading or title to your page.');
+        return __('mksine::page_builder.component_labels.desc_heading');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('text')
-                ->label(__('Heading Text'))
+                ->label(__('mksine::page_builder.component_labels.heading_text'))
                 ->required()
                 ->maxLength(255)
-                ->placeholder(__('Enter heading text...')),
+                ->placeholder(__('mksine::page_builder.component_labels.enter_heading_text')),
             Select::make('level')
-                ->label(__('Heading Level'))
+                ->label(__('mksine::page_builder.component_labels.heading_level'))
                 ->options([
-                    'h1' => 'H1 - Main Title',
-                    'h2' => 'H2 - Section Title',
-                    'h3' => 'H3 - Subsection',
-                    'h4' => 'H4 - Small Heading',
-                    'h5' => 'H5 - Minor Heading',
-                    'h6' => 'H6 - Smallest',
+                    'h1' => __('mksine::page_builder.component_labels.h1'),
+                    'h2' => __('mksine::page_builder.component_labels.h2'),
+                    'h3' => __('mksine::page_builder.component_labels.h3'),
+                    'h4' => __('mksine::page_builder.component_labels.h4'),
+                    'h5' => __('mksine::page_builder.component_labels.h5'),
+                    'h6' => __('mksine::page_builder.component_labels.h6'),
                 ])
                 ->default('h2')
                 ->required()
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Alignment'))
+                ->label(__('mksine::page_builder.component_labels.alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('left')
                 ->native(false),

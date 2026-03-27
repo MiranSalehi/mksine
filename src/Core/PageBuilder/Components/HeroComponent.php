@@ -18,7 +18,7 @@ class HeroComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Hero Section');
+        return __('mksine::page_builder.component_labels.name_hero');
     }
 
     public static function getIcon(): string
@@ -33,94 +33,94 @@ class HeroComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('A full-width hero section with title, subtitle, and call-to-action.');
+        return __('mksine::page_builder.component_labels.desc_hero');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('title')
-                ->label(__('Title'))
+                ->label(__('mksine::page_builder.component_labels.title'))
                 ->required()
                 ->maxLength(255)
-                ->placeholder(__('Welcome to our site'))
+                ->placeholder(__('mksine::page_builder.component_labels.welcome_site'))
                 ->columnSpanFull(),
             Textarea::make('subtitle')
-                ->label(__('Subtitle'))
+                ->label(__('mksine::page_builder.component_labels.subtitle'))
                 ->rows(2)
                 ->maxLength(500)
-                ->placeholder(__('A brief description...'))
+                ->placeholder(__('mksine::page_builder.component_labels.brief_description'))
                 ->columnSpanFull(),
             MediaPicker::make('background_image')
-                ->label(__('Background Image'))
+                ->label(__('mksine::page_builder.component_labels.background_image'))
                 ->isRelation(false)
                 ->collection('page_builder')
                 ->acceptedFileTypes(['image/*'])
                 ->columnSpanFull(),
             Select::make('overlay')
-                ->label(__('Overlay'))
+                ->label(__('mksine::page_builder.component_labels.overlay'))
                 ->options([
-                    'none' => __('None'),
-                    'light' => __('Light'),
-                    'dark' => __('Dark'),
-                    'gradient' => __('Gradient'),
+                    'none' => __('mksine::page_builder.component_labels.none'),
+                    'light' => __('mksine::page_builder.component_labels.light'),
+                    'dark' => __('mksine::page_builder.component_labels.dark'),
+                    'gradient' => __('mksine::page_builder.component_labels.gradient'),
                 ])
                 ->default('dark')
                 ->native(false),
             Select::make('height')
-                ->label(__('Height'))
+                ->label(__('mksine::page_builder.component_labels.height'))
                 ->options([
-                    'small' => __('Small (300px)'),
-                    'medium' => __('Medium (450px)'),
-                    'large' => __('Large (600px)'),
-                    'full' => __('Full Screen'),
+                    'small' => __('mksine::page_builder.component_labels.small_300'),
+                    'medium' => __('mksine::page_builder.component_labels.medium_450'),
+                    'large' => __('mksine::page_builder.component_labels.large_600'),
+                    'full' => __('mksine::page_builder.component_labels.full_screen'),
                 ])
                 ->default('medium')
                 ->native(false),
             Select::make('text_alignment')
-                ->label(__('Text Alignment'))
+                ->label(__('mksine::page_builder.component_labels.text_alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('center')
                 ->native(false),
             Select::make('text_color')
-                ->label(__('Text Color'))
+                ->label(__('mksine::page_builder.component_labels.text_color'))
                 ->options([
-                    'white' => __('White'),
-                    'dark' => __('Dark'),
+                    'white' => __('mksine::page_builder.component_labels.white'),
+                    'dark' => __('mksine::page_builder.component_labels.dark'),
                 ])
                 ->default('white')
                 ->native(false),
             TextInput::make('button_text')
-                ->label(__('Button Text'))
+                ->label(__('mksine::page_builder.component_labels.button_text'))
                 ->maxLength(100)
-                ->placeholder(__('Get Started')),
+                ->placeholder(__('mksine::page_builder.component_labels.get_started')),
             TextInput::make('button_url')
-                ->label(__('Button URL'))
+                ->label(__('mksine::page_builder.component_labels.button_url'))
                 ->url()
                 ->placeholder('https://'),
             Select::make('button_style')
-                ->label(__('Button Style'))
+                ->label(__('mksine::page_builder.component_labels.style'))
                 ->options([
-                    'primary' => __('Primary'),
-                    'secondary' => __('Secondary'),
-                    'outline' => __('Outline'),
+                    'primary' => __('mksine::page_builder.component_labels.primary'),
+                    'secondary' => __('mksine::page_builder.component_labels.secondary'),
+                    'outline' => __('mksine::page_builder.component_labels.outline'),
                 ])
                 ->default('primary')
                 ->native(false),
             Toggle::make('show_secondary_button')
-                ->label(__('Show Secondary Button'))
+                ->label(__('mksine::page_builder.component_labels.show_secondary_button'))
                 ->default(false)
                 ->live(),
             TextInput::make('secondary_button_text')
-                ->label(__('Secondary Button Text'))
+                ->label(__('mksine::page_builder.component_labels.secondary_button_text'))
                 ->maxLength(100)
                 ->visible(fn ($get) => $get('show_secondary_button')),
             TextInput::make('secondary_button_url')
-                ->label(__('Secondary Button URL'))
+                ->label(__('mksine::page_builder.component_labels.secondary_button_url'))
                 ->url()
                 ->visible(fn ($get) => $get('show_secondary_button')),
         ];

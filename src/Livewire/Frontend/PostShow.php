@@ -3,11 +3,12 @@
 namespace Miran\Mksine\Livewire\Frontend;
 
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Post;
 
 class PostShow extends Component
 {
+    public bool $skipLayout = false;
+
     public Post $post;
 
     public function mount($slug)
@@ -18,7 +19,6 @@ class PostShow extends Component
             ->firstOrFail();
     }
 
-    #[Layout('mksine::themes.mksine.layouts.index')]
     public function render()
     {
         $categoryIds = $this->post->categories->pluck('id')->toArray();
@@ -32,9 +32,11 @@ class PostShow extends Component
             ->take(3)
             ->get();
 
-        return view('mksine::themes.mksine.single', [
+        $view = view(theme_view('single'), [
             'post' => $this->post,
             'relatedPosts' => $relatedPosts,
         ]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

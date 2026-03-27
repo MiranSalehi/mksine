@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'کتێبخانەی میدیا',
+    'select_single' => 'ئایتمێکی میدیا هەڵبژێرە',
+    'select_multiple' => 'یەک یان زیاتر ئایتمی میدیا هەڵبژێرە',
+    'search_placeholder' => 'گەڕان بە ناو...',
+    'click_to_upload' => 'کرتە بکە بۆ بارکردنی فایلەکان',
+    'browse_files' => 'فایلەکان بگەڕێ',
+    'files_ready_to_upload' => ':count فایل ئامادەی بارکردنە',
+    'upload' => 'بارکردن',
+    'uploading' => 'بارکردن...',
+    'no_media_found' => 'هیچ میدیایەک نەدۆزرایەوە',
+    'no_media_empty_hint' => 'فایلەکان بە دەقمەی سەرەوە بار بکە',
+    'items_selected' => ':count ئایتم هەڵبژێردرا',
+    'cancel' => 'هەڵوەشاندنەوە',
+    'confirm_selection' => 'دڵنیاکردنەوەی هەڵبژاردن',
+    'select_media' => 'هەڵبژاردنی میدیا',
+    'change_media' => 'گۆڕینی میدیا',
+    'add_more_media' => 'زیادکردنی میدیای زیاتر',
+    'all_types' => 'هەموو جۆرەکان',
+    'images' => 'وێنەکان',
+    'videos' => 'ڤیدیۆکان',
+    'pdf' => 'PDF',
+    'documents' => 'بڕگەنامەکان',
+];

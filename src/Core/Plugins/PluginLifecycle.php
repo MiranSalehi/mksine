@@ -103,6 +103,11 @@ final class PluginLifecycle
                 $instance->activate();
             }
 
+            // Publish translations to project lang (always overwrite)
+            if ($manifest->publishTranslations()) {
+                Log::info("Published translations for plugin: {$pluginId}");
+            }
+
             Log::info("Plugin activated successfully: {$pluginId}");
 
             return true;
@@ -247,9 +252,12 @@ final class PluginLifecycle
     }
 
     /**
-     * Run plugin migrations.
+     * Run pending migrations for a plugin's database/migrations directory.
+     *
+     * Called on install and via {@see \Miran\Mksine\Console\Commands\PluginMigrateCommand}
+     * when new migration files are added after the plugin was already installed.
      */
-    private function runMigrations(PluginManifest $manifest): void
+    public function runMigrations(PluginManifest $manifest): void
     {
         $migrationsPath = $manifest->migrationsPath();
 

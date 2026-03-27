@@ -22,7 +22,7 @@ class PageMenuItemSource implements MenuItemSourcePaginatedInterface
 
     public function getLabel(): string
     {
-        return __('Pages');
+        return (string) __('mksine::pages.plural_model_label');
     }
 
     public function getIcon(): string

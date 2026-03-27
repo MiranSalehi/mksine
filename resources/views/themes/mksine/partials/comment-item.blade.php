@@ -10,7 +10,7 @@
         @if($avatarUrl)
             <img src="{{ $avatarUrl }}" alt="{{ $comment->author_display_name }}" class="w-10 h-10 rounded-full object-cover">
         @else
-            <div class="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center text-sm font-bold text-pink-600 dark:text-pink-400 shrink-0">
+            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 shrink-0">
                 {{ $initials }}
             </div>
         @endif
@@ -20,7 +20,7 @@
         </div>
         @if(!$isReply)
             <button type="button" wire:click="setReply({{ $comment->id }})"
-                    class="text-sm text-pink-500 hover:text-pink-600 dark:text-pink-400">{{ __('Reply') }}</button>
+                    class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400">{{ __('Reply') }}</button>
         @endif
     </div>
     @if($comment->hasRating())

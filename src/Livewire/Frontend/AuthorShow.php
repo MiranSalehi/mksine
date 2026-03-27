@@ -4,11 +4,12 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Post;
 
 class AuthorShow extends Component
 {
+    public bool $skipLayout = false;
+
     public $author;
 
     public function mount($id)
@@ -17,10 +18,9 @@ class AuthorShow extends Component
         $this->author = $userClass::findOrFail($id);
     }
 
-    #[Layout('mksine::themes.mksine.layouts.index')]
     public function render()
     {
-        View::share('title', $this->author->name . ' - ' . __('Author'));
+        View::share('title', $this->author->name . ' - ' . __('mksine::frontend.author'));
 
         $posts = Post::query()
             ->where('author_id', $this->author->id)
@@ -28,8 +28,8 @@ class AuthorShow extends Component
             ->latest('published_at')
             ->paginate(12);
 
-        return view('mksine::themes.mksine.author', [
-            'posts' => $posts,
-        ]);
+        $view = view(theme_view('author'), ['posts' => $posts]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

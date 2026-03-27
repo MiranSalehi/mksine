@@ -18,7 +18,7 @@ class TestimonialComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Testimonial');
+        return __('mksine::page_builder.component_labels.name_testimonial');
     }
 
     public static function getIcon(): string
@@ -33,72 +33,72 @@ class TestimonialComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Display customer testimonials and reviews.');
+        return __('mksine::page_builder.component_labels.desc_testimonial');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('heading')
-                ->label(__('Section Heading'))
+                ->label(__('mksine::page_builder.component_labels.section_heading'))
                 ->maxLength(255)
-                ->placeholder(__('What our customers say'))
+                ->placeholder(__('mksine::page_builder.component_labels.what_customers_say'))
                 ->columnSpanFull(),
             Select::make('layout')
-                ->label(__('Layout'))
+                ->label(__('mksine::page_builder.component_labels.layout'))
                 ->options([
-                    'grid' => __('Grid'),
-                    'carousel' => __('Carousel'),
-                    'single' => __('Single Featured'),
+                    'grid' => __('mksine::page_builder.component_labels.grid'),
+                    'carousel' => __('mksine::page_builder.component_labels.carousel'),
+                    'single' => __('mksine::page_builder.component_labels.single_featured'),
                 ])
                 ->default('grid')
                 ->native(false),
             Select::make('columns')
-                ->label(__('Columns'))
+                ->label(__('mksine::page_builder.component_labels.columns'))
                 ->options([
-                    1 => __('1 Column'),
-                    2 => __('2 Columns'),
-                    3 => __('3 Columns'),
+                    1 => __('mksine::page_builder.component_labels.one_column'),
+                    2 => __('mksine::page_builder.component_labels.two_columns'),
+                    3 => __('mksine::page_builder.component_labels.three_columns'),
                 ])
                 ->default(3)
                 ->native(false)
                 ->visible(fn ($get) => $get('layout') === 'grid'),
             Select::make('style')
-                ->label(__('Card Style'))
+                ->label(__('mksine::page_builder.component_labels.card_style'))
                 ->options([
-                    'simple' => __('Simple'),
-                    'bordered' => __('Bordered'),
-                    'shadowed' => __('Shadowed'),
-                    'quote' => __('Quote Style'),
+                    'simple' => __('mksine::page_builder.component_labels.simple'),
+                    'bordered' => __('mksine::page_builder.component_labels.bordered'),
+                    'shadowed' => __('mksine::page_builder.component_labels.shadowed'),
+                    'quote' => __('mksine::page_builder.component_labels.quote_style'),
                 ])
                 ->default('shadowed')
                 ->native(false),
             Repeater::make('testimonials')
-                ->label(__('Testimonials'))
+                ->label(__('mksine::page_builder.component_labels.testimonials'))
                 ->schema([
                     Textarea::make('content')
-                        ->label(__('Testimonial Text'))
+                        ->label(__('mksine::page_builder.component_labels.testimonial_text'))
                         ->required()
                         ->rows(3)
                         ->maxLength(1000)
                         ->columnSpanFull(),
                     TextInput::make('author_name')
-                        ->label(__('Author Name'))
+                        ->label(__('mksine::page_builder.component_labels.author_name'))
                         ->required()
                         ->maxLength(100),
                     TextInput::make('author_title')
-                        ->label(__('Author Title/Company'))
+                        ->label(__('mksine::page_builder.component_labels.author_title_company'))
                         ->maxLength(100)
-                        ->placeholder(__('CEO at Company')),
+                        ->placeholder(__('mksine::page_builder.component_labels.ceo_company')),
                     MediaPicker::make('author_image')
-                        ->label(__('Author Image'))
+                        ->label(__('mksine::page_builder.component_labels.author_image'))
                         ->isRelation(false)
                         ->collection('page_builder')
                         ->acceptedFileTypes(['image/*']),
                     Select::make('rating')
-                        ->label(__('Rating'))
+                        ->label(__('mksine::page_builder.component_labels.rating'))
                         ->options([
-                            0 => __('No Rating'),
+                            0 => __('mksine::page_builder.component_labels.no_rating'),
                             1 => '⭐',
                             2 => '⭐⭐',
                             3 => '⭐⭐⭐',

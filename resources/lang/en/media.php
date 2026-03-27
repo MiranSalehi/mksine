@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'navigation_label' => 'Media',
+    'model_label' => 'Media',
+    'plural_model_label' => 'Media',
+    'disk' => 'Disk',
+    'file' => 'File',
+    'name' => 'Name',
+    'file_name' => 'File Name',
+    'mime_type' => 'MIME Type',
+    'size_bytes' => 'Size (bytes)',
+    'width' => 'Width',
+    'height' => 'Height',
+    'path' => 'Path',
+    'url' => 'URL',
+    'preview' => 'Preview',
+    'type' => 'Type',
+    'size' => 'Size',
+    'dimensions' => 'Dimensions',
+    'attachments' => 'Attachments',
+    'created' => 'Created',
+    'file_information' => 'File Information',
+    'details' => 'Details',
+];

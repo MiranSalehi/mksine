@@ -18,7 +18,7 @@ class SliderComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Slider/Carousel');
+        return __('mksine::page_builder.component_labels.name_slider');
     }
 
     public static function getIcon(): string
@@ -33,86 +33,86 @@ class SliderComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('An image or content carousel with navigation.');
+        return __('mksine::page_builder.component_labels.desc_slider');
     }
 
     public static function getSchema(): array
     {
         return [
             Select::make('type')
-                ->label(__('Slider Type'))
+                ->label(__('mksine::page_builder.component_labels.slider_type'))
                 ->options([
-                    'image' => __('Image Slider'),
-                    'content' => __('Content Slider'),
+                    'image' => __('mksine::page_builder.component_labels.image_slider'),
+                    'content' => __('mksine::page_builder.component_labels.content_slider'),
                 ])
                 ->default('image')
                 ->native(false)
                 ->live(),
             Select::make('height')
-                ->label(__('Height'))
+                ->label(__('mksine::page_builder.component_labels.height'))
                 ->options([
-                    'small' => __('Small (250px)'),
-                    'medium' => __('Medium (400px)'),
-                    'large' => __('Large (550px)'),
-                    'auto' => __('Auto'),
+                    'small' => __('mksine::page_builder.component_labels.small_250'),
+                    'medium' => __('mksine::page_builder.component_labels.medium_400'),
+                    'large' => __('mksine::page_builder.component_labels.large_550'),
+                    'auto' => __('mksine::page_builder.component_labels.auto'),
                 ])
                 ->default('medium')
                 ->native(false),
             Toggle::make('autoplay')
-                ->label(__('Autoplay'))
+                ->label(__('mksine::page_builder.component_labels.autoplay'))
                 ->default(true),
             TextInput::make('autoplay_speed')
-                ->label(__('Autoplay Speed (ms)'))
+                ->label(__('mksine::page_builder.component_labels.autoplay_speed'))
                 ->numeric()
                 ->default(5000)
                 ->visible(fn ($get) => $get('autoplay')),
             Toggle::make('show_arrows')
-                ->label(__('Show Navigation Arrows'))
+                ->label(__('mksine::page_builder.component_labels.show_navigation_arrows'))
                 ->default(true),
             Toggle::make('show_dots')
-                ->label(__('Show Dots/Indicators'))
+                ->label(__('mksine::page_builder.component_labels.show_dots_indicators'))
                 ->default(true),
             Toggle::make('loop')
-                ->label(__('Infinite Loop'))
+                ->label(__('mksine::page_builder.component_labels.infinite_loop'))
                 ->default(true),
             Select::make('effect')
-                ->label(__('Transition Effect'))
+                ->label(__('mksine::page_builder.component_labels.transition_effect'))
                 ->options([
-                    'slide' => __('Slide'),
-                    'fade' => __('Fade'),
+                    'slide' => __('mksine::page_builder.component_labels.slide'),
+                    'fade' => __('mksine::page_builder.component_labels.fade'),
                 ])
                 ->default('slide')
                 ->native(false),
             Repeater::make('slides')
-                ->label(__('Slides'))
+                ->label(__('mksine::page_builder.component_labels.slides'))
                 ->schema([
                     MediaPicker::make('image')
-                        ->label(__('Image'))
+                        ->label(__('mksine::page_builder.component_labels.field_image'))
                         ->required()
                         ->isRelation(false)
                         ->collection('page_builder')
                         ->acceptedFileTypes(['image/*'])
                         ->columnSpanFull(),
                     TextInput::make('title')
-                        ->label(__('Title (optional)'))
+                        ->label(__('mksine::page_builder.component_labels.title_optional'))
                         ->maxLength(255),
                     TextInput::make('subtitle')
-                        ->label(__('Subtitle (optional)'))
+                        ->label(__('mksine::page_builder.component_labels.subtitle_optional'))
                         ->maxLength(500),
                     TextInput::make('button_text')
-                        ->label(__('Button Text')),
+                        ->label(__('mksine::page_builder.component_labels.button_text')),
                     TextInput::make('button_url')
-                        ->label(__('Button URL'))
+                        ->label(__('mksine::page_builder.component_labels.button_url'))
                         ->url(),
                     TextInput::make('alt')
-                        ->label(__('Alt Text'))
+                        ->label(__('mksine::page_builder.component_labels.alt_text'))
                         ->maxLength(255),
                 ])
                 ->columns(2)
                 ->defaultItems(3)
                 ->reorderable()
                 ->collapsible()
-                ->itemLabel(fn (array $state): ?string => $state['title'] ?? __('Slide'))
+                ->itemLabel(fn (array $state): ?string => $state['title'] ?? __('mksine::page_builder.component_labels.slide_label'))
                 ->columnSpanFull(),
         ];
     }

@@ -107,22 +107,22 @@ class ComponentRegistry
     {
         return [
             BaseBuilderComponent::CATEGORY_CONTENT => [
-                'name' => __('Content'),
+                'name' => __('mksine::page_builder.category_content'),
                 'icon' => 'heroicon-o-document-text',
                 'order' => 1,
             ],
             BaseBuilderComponent::CATEGORY_MEDIA => [
-                'name' => __('Media'),
+                'name' => __('mksine::page_builder.category_media'),
                 'icon' => 'heroicon-o-photo',
                 'order' => 2,
             ],
             BaseBuilderComponent::CATEGORY_LAYOUT => [
-                'name' => __('Layout'),
+                'name' => __('mksine::page_builder.category_layout'),
                 'icon' => 'heroicon-o-view-columns',
                 'order' => 3,
             ],
             BaseBuilderComponent::CATEGORY_INTERACTIVE => [
-                'name' => __('Interactive'),
+                'name' => __('mksine::page_builder.category_interactive'),
                 'icon' => 'heroicon-o-cursor-arrow-rays',
                 'order' => 4,
             ],

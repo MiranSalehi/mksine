@@ -4,27 +4,43 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Page;
 
 class PageShow extends Component
 {
-    public Page $page;
+    public bool $skipLayout = false;
 
-    public function mount($slug)
+    /** Set when opening via /page/{slug}. */
+    public ?string $slug = null;
+
+    /** Set when rendering front page from settings (no slug in URL). */
+    public ?int $pageId = null;
+
+    /** Not public so Livewire does not bind route param "page" (string) to it. */
+    protected ?Page $pageModel = null;
+
+    /**
+     * Load page by pageId (front page from settings) or by slug (normal URL /page/{slug}).
+     */
+    public function mount(): void
     {
-        $this->page = Page::where('slug', $slug)
-            ->where('status', 'published')
-            ->firstOrFail();
+        if ($this->pageId !== null && $this->pageId > 0) {
+            $this->pageModel = Page::where('id', $this->pageId)->published()->firstOrFail();
+        } elseif ($this->slug !== null && $this->slug !== '') {
+            $this->pageModel = Page::where('slug', $this->slug)
+                ->where('status', 'published')
+                ->firstOrFail();
+        } else {
+            abort(404);
+        }
     }
 
-    #[Layout('mksine::themes.mksine.layouts.index')]
     public function render()
     {
-        View::share('title', $this->page->title . ' - ' . (config('app.name', 'MKS CMS')));
+        View::share('title', $this->pageModel->title . ' - ' . (config('app.name', 'MKS CMS')));
 
-        return view('mksine::themes.mksine.page', [
-            'page' => $this->page,
-        ]);
+        $view = view(theme_view('page'), ['page' => $this->pageModel]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'navigation_label' => 'پۆلەکان',
+    'model_label' => 'پۆل',
+    'plural_model_label' => 'پۆلەکان',
+    'category_information' => 'زانیاری پۆل',
+    'name' => 'ناو',
+    'slug' => 'سلەگ',
+    'image' => 'وێنە',
+    'settings' => 'ڕێکخستنەکان',
+    'parent_category' => 'پۆلی باوان',
+    'no_parent' => 'بێ باوان',
+    'sort_order' => 'ڕێکخستنی جۆربەجۆر',
+    'active' => 'چالاک',
+    'description' => 'وەسف',
+    'meta_title' => 'ناونیشانی مێتا',
+    'meta_description' => 'وەسفی مێتا',
+    'meta_title_helper' => 'پێشنیارکراو: ٥٠-٦٠ پیت',
+    'meta_description_helper' => 'پێشنیارکراو: ١٥٠-١٦٠ پیت',
+    'posts_count' => 'ژمارەی پۆستەکان',
+    'order' => 'ڕێکخستن',
+    'parent' => 'باوەڕ',
+    'posts' => 'پۆستەکان',
+    'category_image' => 'وێنەی پۆل',
+];

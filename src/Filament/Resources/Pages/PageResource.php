@@ -21,11 +21,20 @@ class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
 
-    protected static ?string $navigationLabel = 'Pages';
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::pages.navigation_label');
+    }
 
-    protected static ?string $modelLabel = 'Page';
+    public static function getModelLabel(): string
+    {
+        return __('mksine::pages.model_label');
+    }
 
-    protected static ?string $pluralModelLabel = 'Pages';
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::pages.plural_model_label');
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocument;
 
@@ -33,7 +42,7 @@ class PageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Content');
+        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

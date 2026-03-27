@@ -24,8 +24,6 @@ class MenuBuilder extends Page implements HasForms
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bars-3-bottom-left';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-
     protected static ?int $navigationSort = 3;
 
     protected static bool $shouldRegisterNavigation = false;
@@ -67,32 +65,37 @@ class MenuBuilder extends Page implements HasForms
 
     public static function getNavigationLabel(): string
     {
-        return __('Menu Builder');
+        return __('mksine::menu_builder.navigation_label');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('mksine::common.appearance');
     }
 
     public function getTitle(): string
     {
-        return __('Menu Builder');
+        return __('mksine::menu_builder.title');
     }
 
     public function getSubheading(): ?string
     {
         if ($this->selectedMenu) {
-            return __('Editing: :menu', ['menu' => $this->selectedMenu->name]);
+            return __('mksine::menu_builder.editing_menu', ['menu' => $this->selectedMenu->name]);
         }
 
-        return __('Select a menu to edit');
+        return __('mksine::menu_builder.select_menu_to_edit');
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('selectMenu')
-                ->label(__('Select Menu'))
+                ->label(__('mksine::menu_builder.select_menu'))
                 ->icon('heroicon-o-queue-list')
-                ->form([
+                ->schema([
                     Select::make('menu_id')
-                        ->label(__('Menu'))
+                        ->label(__('mksine::menu_builder.menu'))
                         ->options(Menu::orderBy('name')->pluck('name', 'id'))
                         ->required()
                         ->searchable(),
@@ -104,7 +107,7 @@ class MenuBuilder extends Page implements HasForms
                 }),
 
             Action::make('save')
-                ->label(__('Save Menu'))
+                ->label(__('mksine::menu_builder.save_menu'))
                 ->icon('heroicon-o-check')
                 ->color('primary')
                 ->visible(fn () => $this->selectedMenu !== null)
@@ -303,7 +306,7 @@ class MenuBuilder extends Page implements HasForms
     {
         if (! $this->selectedMenu) {
             Notification::make()
-                ->title(__('Please select a menu first'))
+                ->title(__('mksine::menu_builder.please_select_menu_first'))
                 ->warning()
                 ->send();
 
@@ -344,7 +347,7 @@ class MenuBuilder extends Page implements HasForms
         }
 
         Notification::make()
-            ->title(__('Item(s) added'))
+            ->title(__('mksine::menu_builder.items_added'))
             ->success()
             ->send();
     }
@@ -386,7 +389,7 @@ class MenuBuilder extends Page implements HasForms
         $this->menuItems = $this->removeItemFromArray($this->menuItems, $itemId);
 
         Notification::make()
-            ->title(__('Item removed'))
+            ->title(__('mksine::menu_builder.item_removed'))
             ->success()
             ->send();
     }
@@ -407,7 +410,7 @@ class MenuBuilder extends Page implements HasForms
     public function editItemAction(): Action
     {
         return Action::make('editItem')
-            ->label(__('Edit Item'))
+            ->label(__('mksine::menu_builder.edit_item'))
             ->modalWidth('md')
             ->fillForm(function (array $arguments) {
                 $item = MenuItem::find($arguments['itemId']);
@@ -420,14 +423,14 @@ class MenuBuilder extends Page implements HasForms
 
                 $schema = [
                     TextInput::make('label')
-                        ->label(__('Label'))
+                        ->label(__('mksine::menu_builder.label'))
                         ->required(),
 
                     Select::make('target')
-                        ->label(__('Target'))
+                        ->label(__('mksine::menu_builder.target'))
                         ->options([
-                            '_self' => __('Same Tab'),
-                            '_blank' => __('New Tab'),
+                            '_self' => __('mksine::menu_builder.same_tab'),
+                            '_blank' => __('mksine::menu_builder.new_tab'),
                         ])
                         ->default('_self')
                         ->required(),
@@ -435,7 +438,7 @@ class MenuBuilder extends Page implements HasForms
 
                 if ($type === MenuItem::TYPE_CUSTOM_LINK) {
                     $schema[] = TextInput::make('url')
-                        ->label(__('URL'))
+                        ->label(__('mksine::menu_builder.url'))
                         ->required()
                         ->url();
                 }
@@ -453,7 +456,7 @@ class MenuBuilder extends Page implements HasForms
                 $this->loadMenuItems();
 
                 Notification::make()
-                    ->title(__('Item updated'))
+                    ->title(__('mksine::menu_builder.item_updated'))
                     ->success()
                     ->send();
             });
@@ -474,7 +477,7 @@ class MenuBuilder extends Page implements HasForms
         $this->loadMenuItems();
 
         Notification::make()
-            ->title(__('Menu structure updated'))
+            ->title(__('mksine::menu_builder.menu_structure_updated'))
             ->success()
             ->send();
     }
@@ -505,7 +508,7 @@ class MenuBuilder extends Page implements HasForms
         $this->saveStructureRecursive($this->menuItems, null, $order);
 
         Notification::make()
-            ->title(__('Menu saved successfully'))
+            ->title(__('mksine::menu_builder.menu_saved'))
             ->success()
             ->send();
     }

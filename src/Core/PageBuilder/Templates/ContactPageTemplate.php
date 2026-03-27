@@ -7,9 +7,9 @@ class ContactPageTemplate
     public static function config(): array
     {
         return [
-            'name' => 'Contact Us',
-            'description' => 'Simple contact page with information sections',
-            'category' => 'General',
+            'name' => __('mksine::page_builder.templates.contact.name'),
+            'description' => __('mksine::page_builder.templates.contact.description'),
+            'category' => __('mksine::page_builder.templates.categories.general'),
             'thumbnail' => null,
             'blocks' => [
                 [

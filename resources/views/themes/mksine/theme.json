@@ -5,7 +5,7 @@
     "description": "The default theme for MKSine CMS. A clean, modern blog theme with dark mode and RTL support.",
     "screenshot": "screenshot.png",
     "assets": {
-        "css": ["dist/app.css"],
-        "js": ["dist/app.js"]
+        "css": ["dist/app.css", "dist/custom.css"],
+        "js": ["dist/app.js", "dist/custom.js"]
     }
 }

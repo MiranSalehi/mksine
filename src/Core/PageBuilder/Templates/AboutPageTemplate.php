@@ -7,9 +7,9 @@ class AboutPageTemplate
     public static function config(): array
     {
         return [
-            'name' => 'About Us',
-            'description' => 'Professional about page with team highlights',
-            'category' => 'General',
+            'name' => __('mksine::page_builder.templates.about_us.name'),
+            'description' => __('mksine::page_builder.templates.about_us.description'),
+            'category' => __('mksine::page_builder.templates.categories.general'),
             'thumbnail' => null,
             'blocks' => [
                 [

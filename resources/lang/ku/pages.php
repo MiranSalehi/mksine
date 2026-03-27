@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'navigation_label' => 'پەڕەکان',
+    'model_label' => 'پەڕە',
+    'plural_model_label' => 'پەڕەکان',
+    'title' => 'ناونیشان',
+    'slug' => 'سلەگ',
+    'page_type' => 'جۆری پەڕە',
+    'page_builder' => 'دروستکەری پەڕە',
+    'status' => 'دۆخ',
+    'publish_date' => 'بەرواری بڵاوکردنەوە',
+    'content' => 'ناوەڕۆک',
+    'meta_title' => 'ناونیشانی مێتا',
+    'meta_title_helper' => 'پێشنیارکراو: ٥٠-٦٠ پیت',
+    'meta_description' => 'وەسفی مێتا',
+    'meta_description_helper' => 'پێشنیارکراو: ١٥٠-١٦٠ پیت',
+    'type' => 'جۆر',
+    'author' => 'نووسەر',
+    'status_draft' => 'ڕەشنووس',
+    'status_published' => 'بڵاوکراوەتەوە',
+    'status_scheduled' => 'کاتەبەندی کراوە',
+    'type_simple' => 'سادە',
+    'type_builder' => 'دروستکەر',
+    'page_information' => 'زانیاری پەڕە',
+    'published_at' => 'بڵاوکراوەتەوە لە',
+    'updated' => 'نوێکرایەوە',
+];

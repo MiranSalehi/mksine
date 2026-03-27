@@ -20,8 +20,12 @@ while (dir !== join(dir, '..')) {
 }
 
 if (!existsSync(join(dir, 'artisan'))) {
-    console.warn('mksine: Laravel app root (artisan) not found; skipping filament:assets.');
-    process.exit(0);
+    console.error(
+        'mksine: Laravel app root (artisan) not found when walking up from',
+        packageRoot,
+        '- run this via npm from plugins/<id>, resources/views/themes/<id>, or packages/mksine.',
+    );
+    process.exit(1);
 }
 
 try {
