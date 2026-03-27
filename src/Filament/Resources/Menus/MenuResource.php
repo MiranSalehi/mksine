@@ -19,19 +19,28 @@ class MenuResource extends Resource
 {
     protected static ?string $model = Menu::class;
 
-    protected static ?string $navigationLabel = 'Menus';
-
-    protected static ?string $modelLabel = 'Menu';
-
-    protected static ?string $pluralModelLabel = 'Menus';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBars3;
 
     protected static ?int $navigationSort = 6;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::menus.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mksine::menus.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::menus.plural_model_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('Appearance');
+        return __('mksine::common.appearance');
     }
 
     public static function form(Schema $schema): Schema

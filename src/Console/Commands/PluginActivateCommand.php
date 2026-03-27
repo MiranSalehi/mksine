@@ -47,6 +47,12 @@ class PluginActivateCommand extends Command
             // Activate (will auto-install if needed)
             $pluginManager->activate($pluginId);
 
+            // Publish assets to public/plugins/{id}/ (mirrors theme system).
+            $manifest = $pluginManager->getManifest($pluginId);
+            if ($manifest && $manifest->publishAssets()) {
+                $this->line("  → Assets published to: " . $manifest->publicPath());
+            }
+
             $this->newLine();
             $this->info("✅ Plugin activated successfully: {$pluginId}");
 

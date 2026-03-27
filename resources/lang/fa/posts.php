@@ -1,0 +1,27 @@
+<?php
+
+return array (
+  'navigation_label' => 'نوشته‌ها',
+  'model_label' => 'نوشته',
+  'plural_model_label' => 'نوشته‌ها',
+  'title' => 'عنوان',
+  'slug' => 'اسلاگ',
+  'excerpt' => 'خلاصه',
+  'status' => 'وضعیت',
+  'author' => 'نویسنده',
+  'categories' => 'دسته‌ها',
+  'published_at' => 'تاریخ انتشار',
+  'featured_image' => 'تصویر شاخص',
+  'content' => 'محتوا',
+  'content_placeholder' => 'محتوا را وارد کنید...',
+  'meta_title' => 'عنوان متا',
+  'meta_description' => 'توضیحات متا',
+  'status_draft' => 'پیش‌نویس',
+  'status_published' => 'منتشرشده',
+  'status_archived' => 'بایگانی',
+  'published_from' => 'انتشار از',
+  'published_until' => 'انتشار تا',
+  'image' => 'تصویر',
+  'views' => 'بازدید',
+  'created' => 'ایجاد',
+);

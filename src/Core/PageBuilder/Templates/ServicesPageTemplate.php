@@ -7,9 +7,9 @@ class ServicesPageTemplate
     public static function config(): array
     {
         return [
-            'name' => 'Services',
-            'description' => 'Showcase your services with features and pricing',
-            'category' => 'Business',
+            'name' => __('mksine::page_builder.templates.services.name'),
+            'description' => __('mksine::page_builder.templates.services.description'),
+            'category' => __('mksine::page_builder.templates.categories.business'),
             'thumbnail' => null,
             'blocks' => [
                 [

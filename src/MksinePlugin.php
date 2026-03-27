@@ -2,13 +2,19 @@
 
 namespace Miran\Mksine;
 
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
+use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Filament\Support\Colors\Color;
 
 class MksinePlugin implements Plugin
 {
@@ -19,6 +25,15 @@ class MksinePlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        $panel->plugins([
+            FilamentShieldPlugin::make()
+                ->navigationSort(11)
+                ->navigationGroup(fn() => __('mksine::common.access_control')),
+        ])
+            ->colors([
+                'primary' => Color::Blue,
+            ]);
+
         // Register core MKS CMS resources and pages
         $panel
             ->discoverResources(__DIR__ . '/Filament/Resources', 'Miran\\Mksine\\Filament\\Resources')
@@ -26,6 +41,9 @@ class MksinePlugin implements Plugin
 
         // Discover and register active plugin Filament components
         $this->discoverPluginFilamentComponents($panel);
+
+        // Optional: Filament panel plugins from active CMS plugins (e.g. Activitylog) — not app panel code.
+        $this->registerPluginFilamentPlugins($panel);
     }
 
     public function boot(Panel $panel): void
@@ -35,6 +53,63 @@ class MksinePlugin implements Plugin
             PanelsRenderHook::BODY_END,
             fn(): string => Blade::render('@livewire(\'mksine::media-picker-modal\')')
         );
+    }
+
+    /**
+     * Iterate over active plugins and register their compiled assets with Filament.
+     * Each plugin is responsible for its own CSS/JS build (self-contained).
+     * Called from MksineServiceProvider::packageBooted() so assets are available for filament:assets.
+     *
+     * **Global CSS hazard:** these stylesheets load on every panel page. A full Tailwind bundle
+     * that includes Preflight (`@import "tailwindcss"`) will reset/base-overrides and break
+     * Filament layouts (grids, cards, plugin/theme pages). Plugins should ship theme+utilities
+     * only, or scope their CSS — see mks-booking `resources/css/app.css`.
+     */
+    public static function registerPluginAssets(): void
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('mks_plugins')) {
+                return;
+            }
+
+            $pluginManager = app(PluginManager::class);
+
+            if (! $pluginManager->isInitialized()) {
+                $pluginManager->initialize();
+            }
+
+            $registry = $pluginManager->getRegistry();
+
+            foreach ($registry->getManifests() as $pluginId => $manifest) {
+                if (! $registry->isActive($pluginId)) {
+                    continue;
+                }
+
+                $assets = [];
+
+                // Prefer published URL (public/plugins/{id}/) over raw dist/ path.
+                // This mirrors the theme system and works correctly after deployment.
+                if ($cssUrl = $manifest->publishedCssUrl()) {
+                    $assets[] = Css::make("{$pluginId}-styles", $cssUrl);
+                } elseif ($cssPath = $manifest->distCssPath()) {
+                    // Fallback: serve directly from plugin folder (dev only).
+                    $assets[] = Css::make("{$pluginId}-styles", $cssPath);
+                }
+
+                if ($jsUrl = $manifest->publishedJsUrl()) {
+                    $assets[] = Js::make("{$pluginId}-scripts", $jsUrl);
+                } elseif ($jsPath = $manifest->distJsPath()) {
+                    $assets[] = Js::make("{$pluginId}-scripts", $jsPath);
+                }
+
+                if (! empty($assets)) {
+                    FilamentAsset::register($assets);
+                    Log::debug("Registered assets for plugin: {$pluginId}");
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to register plugin assets: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -100,7 +175,6 @@ class MksinePlugin implements Plugin
                     ]);
                 }
             }
-
         } catch (\Throwable $e) {
             // Log error but don't crash - plugin discovery is not critical for core functionality
             Log::warning('Failed to discover plugin Filament components: ' . $e->getMessage());
@@ -117,6 +191,44 @@ class MksinePlugin implements Plugin
             return \Illuminate\Support\Facades\Schema::hasTable('mks_plugins');
         } catch (\Throwable $e) {
             return false;
+        }
+    }
+
+    /**
+     * Let active plugins register additional Filament {@see Plugin} instances (rmsramos/activitylog, etc.).
+     */
+    protected function registerPluginFilamentPlugins(Panel $panel): void
+    {
+        try {
+            if (! $this->isDatabaseReady()) {
+                return;
+            }
+
+            $pluginManager = app(PluginManager::class);
+
+            if (! $pluginManager->isInitialized()) {
+                $pluginManager->initialize();
+            }
+
+            $registry = $pluginManager->getRegistry();
+
+            foreach ($registry->getManifests() as $pluginId => $manifest) {
+                if (! $registry->isActive($pluginId)) {
+                    continue;
+                }
+
+                $instance = $pluginManager->instantiatePlugin($manifest);
+
+                if (! $instance instanceof RegistersFilamentPlugins) {
+                    continue;
+                }
+
+                foreach ($instance->filamentPlugins($panel) as $filamentPlugin) {
+                    $panel->plugin($filamentPlugin);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to register plugin Filament packages: '.$e->getMessage());
         }
     }
 

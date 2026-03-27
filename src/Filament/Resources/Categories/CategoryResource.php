@@ -19,11 +19,20 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static ?string $navigationLabel = 'Categories';
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::categories.navigation_label');
+    }
 
-    protected static ?string $modelLabel = 'Category';
+    public static function getModelLabel(): string
+    {
+        return __('mksine::categories.model_label');
+    }
 
-    protected static ?string $pluralModelLabel = 'Categories';
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::categories.plural_model_label');
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTag;
 
@@ -31,7 +40,7 @@ class CategoryResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Content');
+        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

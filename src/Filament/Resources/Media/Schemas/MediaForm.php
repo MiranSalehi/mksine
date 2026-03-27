@@ -15,11 +15,11 @@ class MediaForm
     {
         return $schema
             ->components([
-                Section::make('File Information')
+                Section::make(__('mksine::media.file_information'))
                     ->schema([
                         // Hidden disk field for create page (needed for mutateFormDataBeforeCreate)
                         Select::make('disk')
-                            ->label('Disk')
+                            ->label(__('mksine::media.disk'))
                             ->options(function () {
                                 $disks = config('filesystems.disks', []);
                                 foreach ($disks as $disk => $config) {
@@ -34,7 +34,7 @@ class MediaForm
                             ->visibleOn('create')
                             ->dehydrated(),
                         FileUpload::make('file')
-                            ->label('File')
+                            ->label(__('mksine::media.file'))
                             ->required()
                             ->acceptedFileTypes(['image/*', 'video/*', 'audio/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->maxSize(10240) // 10MB
@@ -73,15 +73,15 @@ class MediaForm
                             ->live(),
                     ])
                     ->columns(1),
-                Section::make('Details')
+                Section::make(__('mksine::media.details'))
                     ->schema([
                         TextInput::make('name')
-                            ->label('Name')
+                            ->label(__('mksine::media.name'))
                             ->columnSpanFull()
                             ->maxLength(255)
                             ->visibleOn(['create', 'edit']),
                         Select::make('disk')
-                            ->label('Disk')
+                            ->label(__('mksine::media.disk'))
                             ->options(function () {
                                 $disks = config('filesystems.disks', []);
                                 foreach ($disks as $disk => $config) {
@@ -128,43 +128,43 @@ class MediaForm
                                 }
                             }),
                         TextInput::make('file_name')
-                            ->label('File Name')
+                            ->label(__('mksine::media.file_name'))
                             ->disabled()
                             ->columnSpanFull()
                             ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('mime_type')
-                            ->label('MIME Type')
+                            ->label(__('mksine::media.mime_type'))
                             ->disabled()
                             ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('size')
-                            ->label('Size (bytes)')
+                            ->label(__('mksine::media.size_bytes'))
                             ->numeric()
                             ->disabled()
                             ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('width')
-                            ->label('Width')
+                            ->label(__('mksine::media.width'))
                             ->numeric()
                             ->disabled()
                             ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('height')
-                            ->label('Height')
+                            ->label(__('mksine::media.height'))
                             ->numeric()
                             ->disabled()
                             ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('path')
-                            ->label('Path')
+                            ->label(__('mksine::media.path'))
                             ->disabled()
                             ->dehydrated()
                             ->required()
                             ->columnSpanFull()
                             ->visibleOn('edit'),
                         TextInput::make('url')
-                            ->label('URL')
+                            ->label(__('mksine::media.url'))
                             ->disabled()
                             ->dehydrated()
                             ->columnSpanFull()

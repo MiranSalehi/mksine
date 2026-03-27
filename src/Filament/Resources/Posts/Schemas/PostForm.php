@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
@@ -18,67 +19,66 @@ class PostForm
     {
         $schema = $schema
             ->components([
-                Section::make('Content')
+                Section::make(__('mksine::common.content'))
                     ->schema([
                         TextInput::make('title')
-                            ->label('Title')
+                            ->label(__('mksine::posts.title'))
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->columnSpanFull(),
                         TextInput::make('slug')
-                            ->label('Slug')
+                            ->label(__('mksine::posts.slug'))
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
                             ->columnSpanFull(),
                         Textarea::make('excerpt')
-                            ->label('Excerpt')
+                            ->label(__('mksine::posts.excerpt'))
                             ->rows(3)
                             ->maxLength(500)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                Section::make('Settings')
+                Section::make(__('mksine::categories.settings'))
                     ->schema([
                         Select::make('status')
-                            ->label('Status')
+                            ->label(__('mksine::posts.status'))
                             ->options([
-                                'draft' => 'Draft',
-                                'published' => 'Published',
-                                'archived' => 'Archived',
+                                'draft' => __('mksine::posts.status_draft'),
+                                'published' => __('mksine::posts.status_published'),
+                                'archived' => __('mksine::posts.status_archived'),
                             ])
                             ->default('draft')
                             ->required()
                             ->native(false),
                         Select::make('author_id')
-                            ->label('Author')
+                            ->label(__('mksine::posts.author'))
                             ->relationship('author', 'name')
                             ->required()
                             ->default(fn () => auth()->id())
                             ->searchable()
                             ->preload()
                             ->native(false),
-                        Select::make('categories')
-                            ->label('Categories')
+                        SelectTree::make('categories')
+                            ->label(__('mksine::posts.categories'))
                             ->relationship(
-                                'categories',
-                                'name',
-                                fn ($query) => $query->where('is_active', true)->orderBy('categories.sort_order')
+                                relationship: 'categories',
+                                titleAttribute: 'name',
+                                parentAttribute: 'parent_id',
+                                modifyQueryUsing: fn ($query) => $query->where('is_active', true)->orderBy('categories.sort_order')
                             )
-                            ->multiple()
                             ->searchable()
-                            ->preload()
-                            ->native(false)
+                            ->enableBranchNode()
                             ->columnSpanFull(),
                         DateTimePicker::make('published_at')
-                            ->label('Published At')
+                            ->label(__('mksine::posts.published_at'))
                             ->displayFormat('d/m/Y H:i')
                             ->native(false),
 
                         MediaPicker::make('featured_image')
                             ->isRelation(false)
-                            ->label('Featured Image')
+                            ->label(__('mksine::posts.featured_image'))
                             ->collection('featured_image')
                             ->acceptedFileTypes(['image/*'])
                             ->columnSpanFull(),
@@ -87,19 +87,19 @@ class PostForm
                     ->collapsible(),
 
                 CKEditor::make('content')
-                    ->label('Content')
+                    ->label(__('mksine::posts.content'))
                     ->required()
-                    ->placeholder('Enter post content...')
+                    ->placeholder(__('mksine::posts.content_placeholder'))
                     ->columnSpanFull(),
 
-                Section::make('SEO')
+                Section::make(__('mksine::common.seo'))
                     ->schema([
                         TextInput::make('meta_title')
-                            ->label('Meta Title')
+                            ->label(__('mksine::posts.meta_title'))
                             ->maxLength(255)
                             ->columnSpanFull(),
                         Textarea::make('meta_description')
-                            ->label('Meta Description')
+                            ->label(__('mksine::posts.meta_description'))
                             ->rows(2)
                             ->maxLength(500)
                             ->columnSpanFull(),

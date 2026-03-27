@@ -17,19 +17,28 @@ class MenuLocationResource extends Resource
 {
     protected static ?string $model = MenuLocation::class;
 
-    protected static ?string $navigationLabel = 'Menu Locations';
-
-    protected static ?string $modelLabel = 'Location';
-
-    protected static ?string $pluralModelLabel = 'Locations';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMapPin;
 
     protected static ?int $navigationSort = 7;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::menu_locations.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mksine::menu_locations.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::menu_locations.plural_model_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('Appearance');
+        return __('mksine::common.appearance');
     }
 
     public static function form(Schema $schema): Schema

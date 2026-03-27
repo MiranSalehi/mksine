@@ -17,7 +17,7 @@ class FeatureListComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Feature List');
+        return __('mksine::page_builder.component_labels.name_features');
     }
 
     public static function getIcon(): string
@@ -32,67 +32,67 @@ class FeatureListComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Display a grid of features with icons, titles, and descriptions.');
+        return __('mksine::page_builder.component_labels.desc_features');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('heading')
-                ->label(__('Section Heading'))
+                ->label(__('mksine::page_builder.component_labels.section_heading'))
                 ->maxLength(255)
-                ->placeholder(__('Our Features'))
+                ->placeholder(__('mksine::page_builder.component_labels.our_features'))
                 ->columnSpanFull(),
             Textarea::make('subheading')
-                ->label(__('Section Subheading'))
+                ->label(__('mksine::page_builder.component_labels.section_subheading'))
                 ->rows(2)
                 ->maxLength(500)
                 ->columnSpanFull(),
             Select::make('columns')
-                ->label(__('Columns'))
+                ->label(__('mksine::page_builder.component_labels.columns'))
                 ->options([
-                    2 => __('2 Columns'),
-                    3 => __('3 Columns'),
-                    4 => __('4 Columns'),
+                    2 => __('mksine::page_builder.component_labels.two_columns'),
+                    3 => __('mksine::page_builder.component_labels.three_columns'),
+                    4 => __('mksine::page_builder.component_labels.four_columns'),
                 ])
                 ->default(3)
                 ->native(false),
             Select::make('style')
-                ->label(__('Card Style'))
+                ->label(__('mksine::page_builder.component_labels.card_style'))
                 ->options([
-                    'simple' => __('Simple'),
-                    'bordered' => __('Bordered'),
-                    'shadowed' => __('Shadowed'),
-                    'filled' => __('Filled'),
+                    'simple' => __('mksine::page_builder.component_labels.simple'),
+                    'bordered' => __('mksine::page_builder.component_labels.bordered'),
+                    'shadowed' => __('mksine::page_builder.component_labels.shadowed'),
+                    'filled' => __('mksine::page_builder.component_labels.filled'),
                 ])
                 ->default('simple')
                 ->native(false),
             Select::make('icon_style')
-                ->label(__('Icon Style'))
+                ->label(__('mksine::page_builder.component_labels.icon_style'))
                 ->options([
-                    'circle' => __('Circle'),
-                    'square' => __('Square'),
-                    'none' => __('No Background'),
+                    'circle' => __('mksine::page_builder.component_labels.circle'),
+                    'square' => __('mksine::page_builder.component_labels.square'),
+                    'none' => __('mksine::page_builder.component_labels.no_background'),
                 ])
                 ->default('circle')
                 ->native(false),
             Repeater::make('features')
-                ->label(__('Features'))
+                ->label(__('mksine::page_builder.component_labels.features'))
                 ->schema([
                     TextInput::make('icon')
-                        ->label(__('Icon'))
+                        ->label(__('mksine::page_builder.component_labels.icon'))
                         ->placeholder('heroicon-o-star')
-                        ->helperText(__('Heroicon name (e.g., heroicon-o-star)')),
+                        ->helperText(__('mksine::page_builder.component_labels.heroicon_help')),
                     TextInput::make('title')
-                        ->label(__('Title'))
+                        ->label(__('mksine::page_builder.component_labels.title'))
                         ->required()
                         ->maxLength(100),
                     Textarea::make('description')
-                        ->label(__('Description'))
+                        ->label(__('mksine::page_builder.component_labels.description'))
                         ->rows(2)
                         ->maxLength(300),
                     TextInput::make('link')
-                        ->label(__('Link (optional)'))
+                        ->label(__('mksine::page_builder.component_labels.link_optional'))
                         ->url()
                         ->placeholder('https://'),
                 ])

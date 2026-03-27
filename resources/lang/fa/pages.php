@@ -1,0 +1,28 @@
+<?php
+
+return array (
+  'navigation_label' => 'صفحات',
+  'model_label' => 'صفحه',
+  'plural_model_label' => 'صفحات',
+  'title' => 'عنوان',
+  'slug' => 'اسلاگ',
+  'page_type' => 'نوع صفحه',
+  'page_information' => 'اطلاعات صفحه',
+  'page_builder' => 'صفحه‌ساز',
+  'status' => 'وضعیت',
+  'status_draft' => 'پیش‌نویس',
+  'status_published' => 'منتشرشده',
+  'status_scheduled' => 'زمان‌بندی‌شده',
+  'type_simple' => 'ساده',
+  'type_builder' => 'صفحه‌ساز',
+  'publish_date' => 'تاریخ انتشار',
+  'content' => 'محتوا',
+  'meta_title' => 'عنوان متا',
+  'meta_title_helper' => 'توصیه: ۵۰ تا ۶۰ کاراکتر',
+  'meta_description' => 'توضیحات متا',
+  'meta_description_helper' => 'توصیه: ۱۵۰ تا ۱۶۰ کاراکتر',
+  'type' => 'نوع',
+  'author' => 'نویسنده',
+  'published_at' => 'تاریخ انتشار',
+  'updated' => 'به‌روزرسانی',
+);

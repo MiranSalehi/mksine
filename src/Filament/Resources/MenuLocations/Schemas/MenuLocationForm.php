@@ -15,25 +15,25 @@ class MenuLocationForm
     {
         return $schema->components([
             TextInput::make('key')
-                ->label(__('Key'))
+                ->label(__('mksine::menu_locations.key'))
                 ->disabled()
-                ->helperText(__('Location keys are registered via code and cannot be changed.')),
+                ->helperText(__('mksine::menu_locations.key_helper')),
 
             TextInput::make('label')
-                ->label(__('Label'))
+                ->label(__('mksine::menu_locations.label'))
                 ->required()
                 ->maxLength(255),
 
             Select::make('menu_id')
-                ->label(__('Assigned Menu'))
+                ->label(__('mksine::menu_locations.assigned_menu'))
                 ->options(function () {
                     $menus = Menu::query()->orderBy('name')->get();
                     return $menus->pluck('name', 'id')->toArray();
                 })
                 ->searchable()
                 ->preload()
-                ->placeholder(__('— No menu assigned —'))
-                ->helperText(__('Select the menu to display at this location.')),
+                ->placeholder(__('mksine::menu_locations.no_menu_assigned'))
+                ->helperText(__('mksine::menu_locations.assigned_menu_helper')),
         ]);
     }
 }

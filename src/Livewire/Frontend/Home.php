@@ -3,13 +3,14 @@
 namespace Miran\Mksine\Livewire\Frontend;
 
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Post;
 use Miran\Mksine\Models\Category;
 
 class Home extends Component
 {
-    #[Layout('mksine::themes.mksine.layouts.index')]
+    /** When true, component is embedded in FrontendResolver; do not apply layout. */
+    public bool $skipLayout = false;
+
     public function render()
     {
         $latestPosts = Post::query()
@@ -24,10 +25,11 @@ class Home extends Component
             ->latest()
             ->get();
 
-
-        return view('mksine::themes.mksine.home', [
+        $view = view(theme_view('home'), [
             'latestPosts' => $latestPosts,
             'categories' => $categories,
         ]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

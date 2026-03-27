@@ -4,11 +4,12 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Category;
 
 class CategoryShow extends Component
 {
+    public bool $skipLayout = false;
+
     public Category $category;
 
     public function mount($path)
@@ -20,10 +21,9 @@ class CategoryShow extends Component
         }
     }
 
-    #[Layout('mksine::themes.mksine.layouts.index')]
     public function render()
     {
-        View::share('title', $this->category->name . ' - ' . __('Category'));
+        View::share('title', $this->category->name . ' - ' . __('mksine::frontend.category'));
 
         $posts = $this->category->posts()
             ->where('posts.status', 'published')
@@ -37,9 +37,8 @@ class CategoryShow extends Component
             ->take(10)
             ->get();
 
-        return view('mksine::themes.mksine.category', [
-            'posts' => $posts,
-            'categories' => $categories,
-        ]);
+        $view = view(theme_view('category'), ['posts' => $posts, 'categories' => $categories]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

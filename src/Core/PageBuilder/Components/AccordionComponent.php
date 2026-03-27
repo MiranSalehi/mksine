@@ -3,11 +3,11 @@
 namespace Miran\Mksine\Core\PageBuilder\Components;
 
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Filament\Forms\Components\CKEditor;
 
 class AccordionComponent extends BaseBuilderComponent
 {
@@ -18,7 +18,7 @@ class AccordionComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('FAQ Accordion');
+        return __('mksine::page_builder.component_labels.name_accordion');
     }
 
     public static function getIcon(): string
@@ -33,59 +33,52 @@ class AccordionComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Collapsible FAQ sections with questions and answers.');
+        return __('mksine::page_builder.component_labels.desc_accordion');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('heading')
-                ->label(__('Section Heading'))
+                ->label(__('mksine::page_builder.component_labels.section_heading'))
                 ->maxLength(255)
-                ->placeholder(__('Frequently Asked Questions'))
+                ->placeholder(__('mksine::page_builder.component_labels.frequently_asked'))
                 ->columnSpanFull(),
             Select::make('style')
-                ->label(__('Style'))
+                ->label(__('mksine::page_builder.component_labels.style'))
                 ->options([
-                    'simple' => __('Simple'),
-                    'bordered' => __('Bordered'),
-                    'separated' => __('Separated Cards'),
+                    'simple' => __('mksine::page_builder.component_labels.simple'),
+                    'bordered' => __('mksine::page_builder.component_labels.bordered'),
+                    'separated' => __('mksine::page_builder.component_labels.separated_cards'),
                 ])
                 ->default('bordered')
                 ->native(false),
             Toggle::make('allow_multiple')
-                ->label(__('Allow Multiple Open'))
-                ->helperText(__('Allow multiple items to be open at once'))
+                ->label(__('mksine::page_builder.component_labels.allow_multiple_open'))
+                ->helperText(__('mksine::page_builder.component_labels.allow_multiple_help'))
                 ->default(false),
             Toggle::make('first_open')
-                ->label(__('First Item Open by Default'))
+                ->label(__('mksine::page_builder.component_labels.first_item_open_default'))
                 ->default(true),
             Select::make('icon_position')
-                ->label(__('Icon Position'))
+                ->label(__('mksine::page_builder.component_labels.icon_position'))
                 ->options([
-                    'left' => __('Left'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('right')
                 ->native(false),
             Repeater::make('items')
-                ->label(__('FAQ Items'))
+                ->label(__('mksine::page_builder.component_labels.faq_items'))
                 ->schema([
                     TextInput::make('question')
-                        ->label(__('Question'))
+                        ->label(__('mksine::page_builder.component_labels.question'))
                         ->required()
                         ->maxLength(500)
                         ->columnSpanFull(),
-                    RichEditor::make('answer')
-                        ->label(__('Answer'))
+                    CKEditor::make('answer')
+                        ->label(__('mksine::page_builder.component_labels.answer'))
                         ->required()
-                        ->toolbarButtons([
-                            'bold',
-                            'italic',
-                            'link',
-                            'orderedList',
-                            'bulletList',
-                        ])
                         ->columnSpanFull(),
                 ])
                 ->defaultItems(3)

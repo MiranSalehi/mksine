@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'navigation_label' => 'Pages',
+    'model_label' => 'Page',
+    'plural_model_label' => 'Pages',
+    'title' => 'Title',
+    'slug' => 'Slug',
+    'page_type' => 'Page Type',
+    'page_builder' => 'Page Builder',
+    'status' => 'Status',
+    'publish_date' => 'Publish Date',
+    'content' => 'Content',
+    'meta_title' => 'Meta Title',
+    'meta_title_helper' => 'Recommended: 50-60 characters',
+    'meta_description' => 'Meta Description',
+    'meta_description_helper' => 'Recommended: 150-160 characters',
+    'type' => 'Type',
+    'author' => 'Author',
+    'status_draft' => 'Draft',
+    'status_published' => 'Published',
+    'status_scheduled' => 'Scheduled',
+    'type_simple' => 'Simple',
+    'type_builder' => 'Builder',
+    'page_information' => 'Page Information',
+    'published_at' => 'Published At',
+    'updated' => 'Updated',
+];

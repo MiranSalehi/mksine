@@ -10,6 +10,7 @@ MKSine is a powerful, extensible Content Management System built as a Filament p
 - **Page Builder** — Visual drag-and-drop page builder with blocks (heading, text, image, columns, CTA, etc.) and templates.
 - **Access Control (Permissions)** — Integrate with Filament Shield or Spatie for roles and permissions; User resource is ready for extension.
 - **Theme Management** — Create, activate, and manage themes; npm-based asset build and publish to `public/`.
+- **Plugin NPM Build** — Plugins now have the same npm build system as themes: `package.json`, `vite.config.js`, `resources/css/app.css`, `resources/js/app.js`, `resources/dist/`. `npm run build` inside a plugin compiles CSS/JS, rebuilds the admin panel CSS, and publishes Filament assets automatically.
 
 ## Table of Contents
 
@@ -33,13 +34,15 @@ MKSine is a powerful, extensible Content Management System built as a Filament p
 18. [Examples](#examples)
 19. [Troubleshooting](#troubleshooting)
 20. [Plugins: Create Plugin, Resource, Page, Widget](#plugins-create-plugin-resource-page-widget)
-21. [Themes: Create, NPM, Publish Assets](#themes-create-npm-publish-assets)
-22. [Settings: Adding a New Tab](#settings-adding-a-new-tab)
-23. [Page Builder: Adding a Component](#page-builder-adding-a-component)
-24. [Theme Manager](#theme-manager)
-25. [Menu Management System](#menu-management-system)
-26. [User Management](#user-management)
-27. [Plugin Development Tools](#plugin-development-tools)
+21. [Plugins: Composer packages (install and publish)](#plugins-composer-packages-install-and-publish)
+22. [Plugin NPM Build & Assets](#plugin-npm-build--assets)
+23. [Themes: Create, NPM, Publish Assets](#themes-create-npm-publish-assets)
+24. [Settings: Adding a New Tab](#settings-adding-a-new-tab)
+25. [Page Builder: Adding a Component](#page-builder-adding-a-component)
+26. [Theme Manager](#theme-manager)
+27. [Menu Management System](#menu-management-system)
+28. [User Management](#user-management)
+29. [Plugin Development Tools](#plugin-development-tools)
 
 ---
 
@@ -1698,13 +1701,19 @@ This creates `plugins/{name}/` with:
 
 - `plugin.php` (plugin class and ID)
 - `composer.json`
+- `package.json`, `vite.config.js` — npm build config
 - `src/` (Filament, Models, Hooks)
+- `resources/css/app.css` — Tailwind CSS source
+- `resources/js/app.js` — JS entry point
+- `resources/dist/` — compiled output (committed to git)
 - `routes/web.php`, `routes/api.php`
+- `publishes/` — optional JSON presets for copying vendor package files into this plugin (see [Composer packages in plugins](#plugins-composer-packages-install-and-publish)); includes `README.md`
 
 Then:
 
 1. Run **Plugins** discovery if needed: `php artisan mks-plugin:discover`
 2. In **Admin Panel → System → Plugins**, find the plugin and click **Install**, then **Activate**
+3. Install npm deps and build: `cd plugins/{name} && npm install && npm run build`
 
 ### Creating a Resource in a Plugin
 
@@ -1763,6 +1772,122 @@ php artisan mks-plugin:make-widget my-shop OrderStats --stats
 ```
 
 This creates `src/Filament/Widgets/{WidgetName}.php`. For basic widgets, a Blade view is also created under `resources/views/filament/widgets/`. Widgets are discovered when the plugin is active.
+
+## Plugins: Composer packages (install and publish)
+
+If you add a Composer dependency **inside** a plugin (`cd plugins/{id} && composer require …`), many third-party packages document a **`php artisan …:install`** step or **`vendor:publish`** for config and migrations. Those commands assume the package is installed on the **host Laravel app** and usually write under the application’s `config/` and `database/migrations/`. A package that exists **only** under `plugins/{id}/vendor/` is not wired the same way at the app root, and **you should not rely on running those installers on production** when plugins are deployed as ZIPs without Composer.
+
+**Use MKSine’s plugin-local workflow instead:**
+
+1. **Define a preset** — Add `plugins/{id}/publishes/{preset}.json` describing where the package lives under `vendor/` and what to copy into the plugin (optional `config.from` / `config.to`, optional `migrations` list). The scaffolded plugin includes `publishes/README.md` with the JSON shape.
+2. **Register a console command** in that plugin’s `boot()` that calls `Miran\Mksine\Core\Plugins\Publishing\PluginVendorPublishRunner` (pass the plugin manifest, preset name, console I/O, and `--force` if you need to overwrite config). Example in the **mks-booking** plugin: `php artisan mks-booking:publish-vendor {preset}` from the **app root** (`--force` overwrites published config targets).
+3. **Apply migrations** — After files exist under the plugin’s `database/migrations/`, run `php artisan mks-plugin:migrate {id}` (or your usual plugin migration flow).
+
+There is **no** `mks-plugin:publish-vendor` in the core package: each plugin owns its preset files and command name so third-party authors can ship plugins without modifying `miran/mksine`.
+
+---
+
+## Plugin NPM Build & Assets
+
+Plugins have the same npm build system as themes. Every plugin scaffolded with `mks-plugin:make` ships with a self-contained frontend build setup.
+
+### Directory Layout
+
+```
+plugins/{name}/
+├── package.json          ← npm scripts
+├── vite.config.js        ← Vite + @tailwindcss/vite
+├── resources/
+│   ├── css/
+│   │   └── app.css       ← Tailwind source (scans src/ and views/)
+│   ├── js/
+│   │   └── app.js        ← JS entry point
+│   └── dist/
+│       ├── app.css       ← compiled (committed to git)
+│       └── app.js        ← compiled (committed to git)
+└── node_modules/         ← gitignored
+```
+
+### NPM Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Full production build (3 steps below) |
+| `npm run build:admin` | Rebuild mksine admin panel CSS only |
+
+`npm run build` runs the following three steps **in order**:
+
+1. **`vite build`** — compiles `resources/css/app.css` + `resources/js/app.js` → `resources/dist/`
+2. **`build:admin`** — rebuilds `packages/mksine/resources/dist/mksine.css` so the admin panel picks up any new Tailwind classes from plugin views
+3. **`build:publish`** — runs `php artisan filament:assets` to copy compiled CSS/JS to `public/`
+
+### Workflow
+
+```bash
+cd plugins/my-plugin
+
+# First time
+npm install
+
+# During development — watch & rebuild admin CSS manually when needed
+npm run dev
+
+# Production / after editing Blade views or CSS
+npm run build
+```
+
+### How Admin Panel CSS Works
+
+Plugin Blade views use Tailwind utility classes (including Filament's `primary-*` colours). These classes are generated by the **mksine admin panel CSS** (`packages/mksine/resources/dist/mksine.css`), not by the plugin's own CSS.
+
+`packages/mksine/resources/css/index.css` is configured to scan **all plugin view directories**:
+
+```css
+@source '../../../../plugins';   /* scans all plugins recursively */
+```
+
+This means:
+- After editing a plugin's Blade view, run `npm run build` in the plugin (or `npm run build:styles` in `packages/mksine`) to pick up new classes.
+- The plugin's own `resources/dist/app.css` is for **custom non-Tailwind styles** only (animations, vendor overrides, etc.). It is registered as a Filament asset automatically when the plugin is active.
+
+### Plugin CSS is Registered Automatically
+
+When a plugin is **active** and `resources/dist/app.css` exists, MKSine registers it as a Filament asset automatically — no manual registration needed:
+
+```php
+// MksinePlugin::boot() handles this for every active plugin
+if ($cssPath = $manifest->distCssPath()) {
+    FilamentAsset::register([Css::make("{$pluginId}-styles", $cssPath)]);
+}
+```
+
+### Tailwind Source in Plugin CSS
+
+`resources/css/app.css` is pre-configured to scan the plugin's own source files:
+
+```css
+@import 'tailwindcss' source(none);
+
+/* Scans plugin PHP source and Blade views for Tailwind classes */
+@source '../../src';
+@source '../views';
+
+/* Add your custom (non-utility) styles below */
+```
+
+> **Note:** Tailwind's `primary-*`, `danger-*`, and other Filament colour utilities are NOT generated in the plugin's own CSS — they come from the mksine admin panel CSS. Run `npm run build` (not just `vite build`) to ensure these are included.
+
+### Comparing Plugin vs Theme Build
+
+| | Plugin | Theme |
+|---|---|---|
+| **Purpose** | Admin panel (Filament) | Frontend (public site) |
+| **Tailwind utilities** | Shared via mksine admin CSS | Self-contained per theme |
+| **Primary colour** | Filament panel colour (runtime) | Theme-defined |
+| **`npm run build` rebuilds mksine CSS** | ✅ Yes | ❌ No |
+| **`npm run build` runs `filament:assets`** | ✅ Yes | ❌ No |
+| **`npm run build` runs theme-publish** | ❌ No | ✅ Yes |
 
 ---
 

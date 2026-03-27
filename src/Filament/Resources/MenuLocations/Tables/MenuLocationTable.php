@@ -15,25 +15,25 @@ class MenuLocationTable
         return $table
             ->columns([
                 TextColumn::make('key')
-                    ->label(__('Key'))
+                    ->label(__('mksine::menu_locations.key'))
                     ->badge()
                     ->color('gray')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('label')
-                    ->label(__('Label'))
+                    ->label(__('mksine::menu_locations.label'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('menu.name')
-                    ->label(__('Assigned Menu'))
-                    ->placeholder(__('— Not assigned —'))
+                    ->label(__('mksine::menu_locations.assigned_menu'))
+                    ->placeholder(__('mksine::menu_locations.not_assigned'))
                     ->badge()
                     ->color(fn ($state) => $state ? 'success' : 'gray'),
 
                 TextColumn::make('updated_at')
-                    ->label(__('Updated'))
+                    ->label(__('mksine::menu_locations.updated'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

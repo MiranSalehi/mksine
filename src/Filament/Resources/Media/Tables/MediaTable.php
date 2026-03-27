@@ -18,17 +18,17 @@ class MediaTable
         return $table
             ->columns([
                 ImageColumn::make('url')
-                    ->label('Preview')
+                    ->label(__('mksine::media.preview'))
                     ->circular()
                     ->defaultImageUrl(fn ($record) => $record->url ?? null),
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('mksine::media.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('medium')
                     ->limit(30),
                 TextColumn::make('file_name')
-                    ->label('File Name')
+                    ->label(__('mksine::media.file_name'))
                     ->searchable()
                     ->sortable()
                     ->copyable()
@@ -36,7 +36,7 @@ class MediaTable
                     ->color('gray')
                     ->limit(30),
                 TextColumn::make('mime_type')
-                    ->label('Type')
+                    ->label(__('mksine::media.type'))
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
                         str_starts_with($state, 'image/') => 'success',
@@ -46,24 +46,24 @@ class MediaTable
                     })
                     ->sortable(),
                 TextColumn::make('size')
-                    ->label('Size')
+                    ->label(__('mksine::media.size'))
                     ->formatStateUsing(fn ($state) => static::formatBytes($state))
                     ->sortable()
                     ->color('gray'),
                 TextColumn::make('width')
-                    ->label('Dimensions')
+                    ->label(__('mksine::media.dimensions'))
                     ->formatStateUsing(fn ($record) => $record->width && $record->height
                         ? "{$record->width} × {$record->height}"
                         : '-')
                     ->color('gray'),
                 TextColumn::make('attachments_count')
-                    ->label('Attachments')
+                    ->label(__('mksine::media.attachments'))
                     ->counts('attachments')
                     ->badge()
                     ->color('info')
                     ->sortable(),
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('mksine::media.created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -72,12 +72,12 @@ class MediaTable
             ])
             ->filters([
                 SelectFilter::make('mime_type')
-                    ->label('Type')
+                    ->label(__('mksine::media.type'))
                     ->options([
-                        'image' => 'Images',
-                        'video' => 'Videos',
-                        'audio' => 'Audio',
-                        'application' => 'Documents',
+                        'image' => __('mksine::media.filter_images'),
+                        'video' => __('mksine::media.filter_videos'),
+                        'audio' => __('mksine::media.filter_audio'),
+                        'application' => __('mksine::media.filter_documents'),
                     ])
                     ->query(function ($query, $state) {
                         $state = $state['value'] ?? null;

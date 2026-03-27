@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'navigation_label' => 'Categories',
+    'model_label' => 'Category',
+    'plural_model_label' => 'Categories',
+    'category_information' => 'Category Information',
+    'name' => 'Name',
+    'slug' => 'Slug',
+    'image' => 'Image',
+    'settings' => 'Settings',
+    'parent_category' => 'Parent Category',
+    'no_parent' => 'No parent',
+    'sort_order' => 'Sort Order',
+    'active' => 'Active',
+    'description' => 'Description',
+    'meta_title' => 'Meta Title',
+    'meta_description' => 'Meta Description',
+    'meta_title_helper' => 'Recommended: 50-60 characters',
+    'meta_description_helper' => 'Recommended: 150-160 characters',
+    'posts_count' => 'Posts Count',
+    'order' => 'Order',
+    'parent' => 'Parent',
+    'posts' => 'Posts',
+    'category_image' => 'Category Image',
+];

@@ -57,14 +57,6 @@ class ThemePublishCommand extends Command
             ? public_path("themes/{$identifier}")
             : public_path("vendor/mksine/themes/{$identifier}");
 
-        if (! $force && is_dir($destinationPath)) {
-            if (! $this->confirm("Assets for '{$theme->name}' already exist. Overwrite?")) {
-                $this->info('Skipped.');
-
-                return self::SUCCESS;
-            }
-        }
-
         $result = $themeManager->publishAssets($identifier);
 
         if ($result) {

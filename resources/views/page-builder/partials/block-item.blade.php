@@ -1,36 +1,31 @@
 @php
-    $registry = app(\Miran\Mksine\Core\PageBuilder\ComponentRegistry::class);
-    $componentClass = $registry->get($block['type']);
-    $supportsChildren = $componentClass ? $componentClass::supportsChildren() : false;
+    $displayInfo = $this->getBlockDisplayInfo($block);
+    $componentClass = $displayInfo['componentClass'];
+    $supportsChildren = $displayInfo['supportsChildren'];
+    $previewText = $displayInfo['previewText'];
 @endphp
 
 <div
-    class="group relative bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700 transition-all shadow-sm hover:shadow-md"
+    class="group relative rounded-xl border-2 border-gray-200 bg-white shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:border-purple-300 hover:shadow-lg hover:ring-purple-200/50 dark:border-gray-700 dark:bg-gray-800/80 dark:ring-white/5 dark:hover:border-purple-600/60 dark:hover:ring-purple-500/20"
     data-block-id="{{ $block['id'] }}"
     x-data="{ copyFeedback: '', copySuccess: false }"
     @copy-done.window="if ($event.detail?.blockId === '{{ $block['id'] }}') { copyFeedback = $event.detail.message; copySuccess = $event.detail.success !== false; setTimeout(() => { copyFeedback = ''; copySuccess = false }, 2200) }"
 >
     {{-- Block Header --}}
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-        {{-- Drag Handle --}}
-        <div data-sortable-handle class="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <x-heroicon-o-bars-3 class="w-5 h-5" />
+    <div class="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+        <div data-sortable-handle class="cursor-grab p-1.5 text-gray-400 transition-colors hover:rounded-lg hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing dark:hover:bg-gray-700 dark:hover:text-gray-300" aria-label="Drag to reorder">
+            <x-heroicon-o-bars-3 class="h-5 w-5" aria-hidden="true" />
         </div>
 
-        {{-- Component Icon & Name --}}
-        <div class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
             @if($componentClass)
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30 flex items-center justify-center shrink-0">
-                    <x-dynamic-component :component="$componentClass::getIcon()" class="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/40 dark:to-fuchsia-900/40">
+                    <x-dynamic-component :component="$componentClass::getIcon()" class="h-4 w-4 text-violet-600 dark:text-violet-400" />
                 </div>
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ $componentClass::getName() }}</p>
-                    @if($block['type'] === 'heading' && !empty($block['data']['text']))
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ \Illuminate\Support\Str::limit($block['data']['text'], 40) }}</p>
-                    @elseif($block['type'] === 'text' && !empty($block['data']['content']))
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ \Illuminate\Support\Str::limit(strip_tags($block['data']['content']), 40) }}</p>
-                    @elseif($block['type'] === 'button' && !empty($block['data']['text']))
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $block['data']['text'] }}</p>
+                    <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $componentClass::getName() }}</p>
+                    @if($previewText)
+                        <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ $previewText }}</p>
                     @endif
                 </div>
             @else
@@ -38,59 +33,55 @@
             @endif
         </div>
 
-        {{-- Actions --}}
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {{-- Move Up --}}
+        <div class="flex items-center gap-0.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <button
                 type="button"
                 wire:click="moveBlockUp('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                title="{{ __('Move Up') }}"
+                class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                title="{{ __('mksine::page_builder.move_up') }}"
+                aria-label="{{ __('mksine::page_builder.move_up') }}"
             >
-                <x-heroicon-o-chevron-up class="w-4 h-4" />
+                <x-heroicon-o-chevron-up class="h-4 w-4" />
             </button>
-
-            {{-- Move Down --}}
             <button
                 type="button"
                 wire:click="moveBlockDown('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                title="{{ __('Move Down') }}"
+                class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                title="{{ __('mksine::page_builder.move_down') }}"
+                aria-label="{{ __('mksine::page_builder.move_down') }}"
             >
-                <x-heroicon-o-chevron-down class="w-4 h-4" />
+                <x-heroicon-o-chevron-down class="h-4 w-4" />
             </button>
 
-            <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+            <div class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-600"></div>
 
-            {{-- Edit --}}
             <button
                 type="button"
                 wire:click="editBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                title="{{ __('Edit') }}"
+                class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                title="{{ __('mksine::page_builder.edit') }}"
+                aria-label="{{ __('mksine::page_builder.edit') }}"
             >
-                <x-heroicon-o-pencil-square class="w-4 h-4" />
+                <x-heroicon-o-pencil-square class="h-4 w-4" />
             </button>
-
-            {{-- Duplicate --}}
             <button
                 type="button"
                 wire:click="duplicateBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                title="{{ __('Duplicate') }}"
+                class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+                title="{{ __('mksine::page_builder.duplicate') }}"
+                aria-label="{{ __('mksine::page_builder.duplicate') }}"
             >
-                <x-heroicon-o-document-duplicate class="w-4 h-4" />
+                <x-heroicon-o-document-duplicate class="h-4 w-4" />
             </button>
-
-            {{-- Copy --}}
             <div class="relative inline-flex">
                 <button
                     type="button"
-                    @click="$wire.getBlockJsonForCopy('{{ $block['id'] }}', @js($parentId), @js($columnIndex)).then(() => { const j = $wire.copyBlockJson; if (!j) { window.dispatchEvent(new CustomEvent('copy-done', { detail: { blockId: '{{ $block['id'] }}', message: '{{ __('Copy failed') }}', success: false } })); $wire.copyBlockJson = null; return; } const doCopy = () => { const ta = document.createElement('textarea'); ta.value = j; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }; if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') { navigator.clipboard.writeText(j).catch(() => { doCopy(); }); } else { doCopy(); } window.dispatchEvent(new CustomEvent('copy-done', { detail: { blockId: '{{ $block['id'] }}', message: '{{ __('Copied!') }}', success: true } })); $wire.copyBlockJson = null; })"
-                    class="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
-                    title="{{ __('Copy (Cmd+C)') }}"
+                    @click="$wire.getBlockJsonForCopy('{{ $block['id'] }}', @js($parentId), @js($columnIndex)).then(() => { const j = $wire.copyBlockJson; if (!j) { window.dispatchEvent(new CustomEvent('copy-done', { detail: { blockId: '{{ $block['id'] }}', message: '{{ __('mksine::page_builder.copy_failed') }}', success: false } })); $wire.copyBlockJson = null; return; } const doCopy = () => { const ta = document.createElement('textarea'); ta.value = j; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }; if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') { navigator.clipboard.writeText(j).catch(() => { doCopy(); }); } else { doCopy(); } window.dispatchEvent(new CustomEvent('copy-done', { detail: { blockId: '{{ $block['id'] }}', message: '{{ __('mksine::page_builder.copied') }}', success: true } })); $wire.copyBlockJson = null; })"
+                    class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-900/20 dark:hover:text-violet-400"
+                    title="{{ __('mksine::page_builder.copy_cmd') }}"
+                    aria-label="{{ __('mksine::page_builder.copy_cmd') }}"
                 >
-                    <x-heroicon-o-clipboard-document class="w-4 h-4" />
+                    <x-heroicon-o-clipboard-document class="h-4 w-4" />
                 </button>
                 <span
                     x-show="copyFeedback"
@@ -101,21 +92,20 @@
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     x-text="copyFeedback"
-                    class="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1 text-xs font-medium rounded-md whitespace-nowrap shadow-lg z-20"
-                    :class="copySuccess ? 'bg-green-600 text-white' : 'bg-red-500 text-white'"
+                    class="absolute bottom-full left-1/2 z-50 mb-1 -translate-x-1/2 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-medium shadow-lg"
+                    :class="copySuccess ? 'bg-emerald-600 text-white' : 'bg-danger-500 text-white'"
                     style="display: none;"
                 ></span>
             </div>
-
-            {{-- Delete --}}
             <button
                 type="button"
                 wire:click="removeBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                wire:confirm="{{ __('Are you sure you want to delete this component?') }}"
-                class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                title="{{ __('Delete') }}"
+                wire:confirm="{{ __('mksine::page_builder.delete_confirm') }}"
+                class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-danger-50 hover:text-danger-600 dark:hover:bg-danger-900/20 dark:hover:text-danger-400"
+                title="{{ __('mksine::page_builder.delete') }}"
+                aria-label="{{ __('mksine::page_builder.delete') }}"
             >
-                <x-heroicon-o-trash class="w-4 h-4" />
+                <x-heroicon-o-trash class="h-4 w-4" />
             </button>
         </div>
     </div>
@@ -125,21 +115,19 @@
         <div class="p-4">
             <div class="grid gap-4" style="grid-template-columns: repeat({{ count($block['children']) }}, minmax(0, 1fr));">
                 @foreach($block['children'] as $colIndex => $column)
-                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 min-h-[120px] p-3">
-                        {{-- Column Header --}}
-                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('Column') }} {{ $colIndex + 1 }}</span>
+                    <div class="min-h-[120px] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
+                        <div class="mb-3 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.column') }} {{ $colIndex + 1 }}</span>
                             <button
                                 type="button"
                                 wire:click="openComponentPanel(null, '{{ $block['id'] }}', {{ $colIndex }})"
-                                class="p-1 text-gray-400 hover:text-pink-500 transition-colors"
-                                title="{{ __('Add to column') }}"
+                                class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-900/30 dark:hover:text-violet-400"
+                                title="{{ __('mksine::page_builder.add_to_column') }}"
                             >
-                                <x-heroicon-o-plus class="w-4 h-4" />
+                                <x-heroicon-o-plus class="h-4 w-4" />
                             </button>
                         </div>
 
-                        {{-- Column Items --}}
                         @if(!empty($column['items']))
                             <div class="space-y-2" data-sortable-column data-parent-id="{{ $block['id'] }}" data-column-index="{{ $colIndex }}">
                                 @foreach($column['items'] as $itemIndex => $item)
@@ -152,15 +140,17 @@
                                 @endforeach
                             </div>
                         @else
-                            <div class="flex flex-col items-center justify-center text-center py-4">
-                                <x-heroicon-o-inbox class="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
-                                <p class="text-xs text-gray-400 dark:text-gray-500">{{ __('Empty column') }}</p>
+                            <div class="flex flex-col items-center justify-center py-6 text-center">
+                                <div class="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-200/80 dark:bg-gray-700/50">
+                                    <x-heroicon-o-inbox class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.empty_column') }}</p>
                                 <button
                                     type="button"
                                     wire:click="openComponentPanel(0, '{{ $block['id'] }}', {{ $colIndex }})"
-                                    class="mt-2 text-xs text-pink-500 hover:text-pink-600 font-medium"
+                                    class="mt-2 text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
                                 >
-                                    + {{ __('Add component') }}
+                                    + {{ __('mksine::page_builder.add_component_short') }}
                                 </button>
                             </div>
                         @endif

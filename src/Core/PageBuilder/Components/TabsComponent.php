@@ -3,10 +3,10 @@
 namespace Miran\Mksine\Core\PageBuilder\Components;
 
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Filament\Forms\Components\CKEditor;
 
 class TabsComponent extends BaseBuilderComponent
 {
@@ -17,7 +17,7 @@ class TabsComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Tabs');
+        return __('mksine::page_builder.component_labels.name_tabs');
     }
 
     public static function getIcon(): string
@@ -32,64 +32,54 @@ class TabsComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Tabbed content sections for organized information.');
+        return __('mksine::page_builder.component_labels.desc_tabs');
     }
 
     public static function getSchema(): array
     {
         return [
             Select::make('style')
-                ->label(__('Tab Style'))
+                ->label(__('mksine::page_builder.component_labels.tab_style'))
                 ->options([
-                    'underline' => __('Underline'),
-                    'pills' => __('Pills'),
-                    'boxed' => __('Boxed'),
-                    'buttons' => __('Buttons'),
+                    'underline' => __('mksine::page_builder.component_labels.underline'),
+                    'pills' => __('mksine::page_builder.component_labels.pills'),
+                    'boxed' => __('mksine::page_builder.component_labels.boxed'),
+                    'buttons' => __('mksine::page_builder.component_labels.buttons'),
                 ])
                 ->default('underline')
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Tab Alignment'))
+                ->label(__('mksine::page_builder.component_labels.tab_alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
-                    'full' => __('Full Width'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
+                    'full' => __('mksine::page_builder.component_labels.full_width'),
                 ])
                 ->default('left')
                 ->native(false),
             Select::make('orientation')
-                ->label(__('Orientation'))
+                ->label(__('mksine::page_builder.component_labels.orientation'))
                 ->options([
-                    'horizontal' => __('Horizontal'),
-                    'vertical' => __('Vertical'),
+                    'horizontal' => __('mksine::page_builder.component_labels.horizontal'),
+                    'vertical' => __('mksine::page_builder.component_labels.vertical'),
                 ])
                 ->default('horizontal')
                 ->native(false),
             Repeater::make('tabs')
-                ->label(__('Tabs'))
+                ->label(__('mksine::page_builder.component_labels.tabs'))
                 ->schema([
                     TextInput::make('title')
-                        ->label(__('Tab Title'))
+                        ->label(__('mksine::page_builder.component_labels.tab_title'))
                         ->required()
                         ->maxLength(100),
                     TextInput::make('icon')
-                        ->label(__('Icon (optional)'))
+                        ->label(__('mksine::page_builder.component_labels.icon_optional'))
                         ->placeholder('heroicon-o-home')
-                        ->helperText(__('Heroicon name')),
-                    RichEditor::make('content')
-                        ->label(__('Tab Content'))
+                        ->helperText(__('mksine::page_builder.component_labels.heroicon_name')),
+                    CKEditor::make('content')
+                        ->label(__('mksine::page_builder.component_labels.tab_content'))
                         ->required()
-                        ->toolbarButtons([
-                            'bold',
-                            'italic',
-                            'underline',
-                            'link',
-                            'orderedList',
-                            'bulletList',
-                            'h2',
-                            'h3',
-                        ])
                         ->columnSpanFull(),
                 ])
                 ->columns(2)

@@ -21,7 +21,7 @@ class CustomLinkMenuItemSource implements MenuItemSourceInterface
 
     public function getLabel(): string
     {
-        return __('Custom Link');
+        return (string) __('mksine::menu_builder.custom_link');
     }
 
     public function getIcon(): string

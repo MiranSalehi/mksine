@@ -122,6 +122,21 @@ class Category extends Model
     }
 
     /**
+     * Get category tree for select/checkbox UI: roots with children, active only, ordered by sort_order.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Category>
+     */
+    public static function getTreeForSelect(): \Illuminate\Database\Eloquent\Collection
+    {
+        return static::query()
+            ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->with(['children' => fn (HasMany $q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->get();
+    }
+
+    /**
      * Find a category by its full path slug (e.g. "health" or "health/nutrition").
      *
      * @param  string  $path  Slash-separated slug path from root to leaf

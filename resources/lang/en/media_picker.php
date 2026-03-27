@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Media Library',
+    'select_single' => 'Select a media item',
+    'select_multiple' => 'Select one or more media items',
+    'search_placeholder' => 'Search by name...',
+    'click_to_upload' => 'Click to upload files',
+    'browse_files' => 'Browse Files',
+    'files_ready_to_upload' => ':count file(s) ready to upload',
+    'upload' => 'Upload',
+    'uploading' => 'Uploading...',
+    'no_media_found' => 'No media found',
+    'no_media_empty_hint' => 'Upload files using the button above',
+    'items_selected' => ':count item(s) selected',
+    'cancel' => 'Cancel',
+    'confirm_selection' => 'Confirm Selection',
+    'select_media' => 'Select Media',
+    'change_media' => 'Change Media',
+    'add_more_media' => 'Add More Media',
+    'all_types' => 'All Types',
+    'images' => 'Images',
+    'videos' => 'Videos',
+    'pdf' => 'PDF',
+    'documents' => 'Documents',
+];

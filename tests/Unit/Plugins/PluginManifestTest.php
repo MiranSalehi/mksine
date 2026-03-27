@@ -52,6 +52,7 @@ PHP;
         expect($manifest->namespace())->toBe('TestPlugin');
         expect($manifest->pluginClass())->toBe('TestPlugin\\TestPluginPlugin');
         expect($manifest->basePath())->toBe($this->tempDir);
+        expect($manifest->publishesPath())->toBe($this->tempDir.'/publishes');
     });
 
     it('provides default values for optional fields', function () {

@@ -21,6 +21,8 @@ class CKEditor extends Field
 
     protected string $placeholder = 'Type or paste your content here...';
 
+    protected string | Closure $height = '300px';
+
     public static function make(?string $name = null): static
     {
         $field = app(static::class, [
@@ -61,7 +63,9 @@ class CKEditor extends Field
 
     public function getContent(): string
     {
-        return $this->evaluate($this->content);
+        $result = $this->evaluate($this->content);
+
+        return is_string($result) ? $result : '';
     }
 
     public function getName(): string
@@ -72,5 +76,28 @@ class CKEditor extends Field
     public function getPlaceholder(): string
     {
         return $this->placeholder;
+    }
+
+    public function height(string | Closure $height): static
+    {
+        $this->height = $height;
+
+        return $this;
+    }
+
+    public function getHeight(): string
+    {
+        $height = $this->evaluate($this->height);
+
+        return (is_string($height) && preg_match('/^\d+(\.\d+)?(px|rem|em)$/', $height))
+            ? $height
+            : '300px';
+    }
+
+    public function getUploadUrl(): ?string
+    {
+        $url = $this->evaluate($this->uploadUrl);
+
+        return is_string($url) ? $url : null;
     }
 }
