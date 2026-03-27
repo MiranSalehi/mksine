@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Plugins;
 
+use Composer\Autoload\ClassLoader;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Plugins\Contracts\PluginInterface;
@@ -30,6 +31,18 @@ final class PluginManager
 
     private bool $initialized = false;
 
+    /**
+     * Whether plugin PSR-4 autoload mappings are registered (no DB access).
+     */
+    private bool $autoloadRegistered = false;
+
+    /**
+     * Cached discovery result for a single request / Artisan run.
+     *
+     * @var array<string, PluginManifest>|null
+     */
+    private ?array $discoveredManifests = null;
+
     public function __construct(
         ?PluginDiscovery $discovery = null,
         ?PluginRegistry $registry = null,
@@ -43,6 +56,76 @@ final class PluginManager
     }
 
     /**
+     * Discover plugin manifests once per process.
+     *
+     * @return array<string, PluginManifest>
+     */
+    private function getDiscoveredManifests(): array
+    {
+        return $this->discoveredManifests ??= $this->discovery->discover();
+    }
+
+    /**
+     * Register PSR-4 for Spatie's activity log if the plugin vendors it (ZIP deploy).
+     *
+     * Do not require the plugin's full vendor/autoload.php: it duplicates Symfony /
+     * Laravel packages and can break the host application autoload order.
+     */
+    private function registerPluginActivitylogAutoload(PluginManifest $manifest): void
+    {
+        $activitylogSrc = rtrim($manifest->basePath(), '/\\').'/vendor/spatie/laravel-activitylog/src';
+        if (! is_dir($activitylogSrc)) {
+            return;
+        }
+
+        $loader = new ClassLoader;
+        $loader->addPsr4('Spatie\\Activitylog\\', $activitylogSrc);
+        $loader->register(false);
+    }
+
+    /**
+     * Register PSR-4 for rmsramos/filament-activitylog vendored under a plugin (ZIP deploy).
+     *
+     * Same rationale as {@see registerPluginActivitylogAutoload}: avoid loading the plugin's
+     * full composer autoload during panel registration.
+     */
+    private function registerPluginRmsramosActivitylogAutoload(PluginManifest $manifest): void
+    {
+        $rmsSrc = rtrim($manifest->basePath(), '/\\').'/vendor/rmsramos/activitylog/src';
+        if (! is_dir($rmsSrc)) {
+            return;
+        }
+
+        $loader = new ClassLoader;
+        $loader->addPsr4('Rmsramos\\Activitylog\\', $rmsSrc);
+        $loader->register(false);
+    }
+
+    /**
+     * Register custom autoload paths for all discovered plugins (filesystem only).
+     *
+     * Safe during {@see \Illuminate\Support\ServiceProvider::register()} before the
+     * database connection resolver exists, so app code can reference plugin classes
+     * during later provider boot (e.g. models using plugin traits).
+     */
+    public function registerPluginAutoload(): void
+    {
+        if ($this->autoloadRegistered) {
+            return;
+        }
+
+        PluginAutoloader::register();
+
+        foreach ($this->getDiscoveredManifests() as $manifest) {
+            PluginAutoloader::addFromManifest($manifest);
+            $this->registerPluginActivitylogAutoload($manifest);
+            $this->registerPluginRmsramosActivitylogAutoload($manifest);
+        }
+
+        $this->autoloadRegistered = true;
+    }
+
+    /**
      * Initialize the plugin system.
      * This should be called early in the boot process.
      */
@@ -52,19 +135,9 @@ final class PluginManager
             return;
         }
 
-        // Register custom autoloader
-        PluginAutoloader::register();
+        $this->registerPluginAutoload();
 
-        // Discover plugins
-        $manifests = $this->discovery->discover();
-
-        // Load registry
-        $this->registry->load($manifests);
-
-        // Register autoloading for all discovered plugins
-        foreach ($manifests as $manifest) {
-            PluginAutoloader::addFromManifest($manifest);
-        }
+        $this->registry->load($this->getDiscoveredManifests());
 
         $this->initialized = true;
     }
@@ -325,6 +398,52 @@ final class PluginManager
     }
 
     /**
+     * Run pending migrations for one installed plugin (e.g. after pulling new migration files).
+     */
+    public function migratePluginDatabase(string $pluginId): void
+    {
+        if (! $this->initialized) {
+            $this->initialize();
+        }
+
+        $manifest = $this->registry->getManifest($pluginId);
+
+        if (! $manifest) {
+            throw new \InvalidArgumentException("Plugin not found: {$pluginId}");
+        }
+
+        if (! $this->registry->isInstalled($pluginId)) {
+            throw new \RuntimeException("Plugin not installed: {$pluginId}");
+        }
+
+        $this->lifecycle->runMigrations($manifest);
+    }
+
+    /**
+     * Run pending migrations for every installed plugin that has a migrations directory.
+     */
+    public function migrateAllInstalledPlugins(): void
+    {
+        if (! $this->initialized) {
+            $this->initialize();
+        }
+
+        foreach ($this->registry->getManifests() as $pluginId => $manifest) {
+            if (! $this->registry->isInstalled($pluginId)) {
+                continue;
+            }
+
+            $migrationsPath = $manifest->migrationsPath();
+
+            if (! $migrationsPath || ! is_dir($migrationsPath)) {
+                continue;
+            }
+
+            $this->lifecycle->runMigrations($manifest);
+        }
+    }
+
+    /**
      * Check for plugins that failed during previous boot.
      * This should be called early to detect and disable crashed plugins.
      */
@@ -347,5 +466,17 @@ final class PluginManager
     public function isInitialized(): bool
     {
         return $this->initialized;
+    }
+
+    /**
+     * Instantiate a plugin class from a manifest without registering it in the registry.
+     */
+    public function instantiatePlugin(PluginManifest $manifest): ?PluginInterface
+    {
+        if (! $this->initialized) {
+            $this->initialize();
+        }
+
+        return $this->lifecycle->instantiate($manifest);
     }
 }

@@ -19,19 +19,28 @@ class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
 
-    protected static ?string $navigationLabel = 'Comments';
-
-    protected static ?string $modelLabel = 'Comment';
-
-    protected static ?string $pluralModelLabel = 'Comments';
-
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
     protected static ?int $navigationSort = 4;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::comments.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mksine::comments.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::comments.plural_model_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('Content');
+        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

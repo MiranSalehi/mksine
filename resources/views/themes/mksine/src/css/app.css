@@ -19,8 +19,10 @@
 
 /* CSS Variables */
 :root {
-    --color-primary: #ec4899;
-    --color-secondary: #f43f5e;
+    --color-primary: #3b82f6;
+    /* Tailwind blue-500 */
+    --color-secondary: #4f46e5;
+    /* Tailwind indigo-600 */
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
     --text-primary: #212529;
@@ -45,7 +47,12 @@ html.dark {
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         font-family: 'IranSans', system-ui, sans-serif;
         @apply font-bold;
     }
@@ -60,7 +67,8 @@ html.dark {
     }
 
     .btn-primary:hover {
-        background-color: #db2777;
+        background-color: #2563eb;
+        /* Tailwind blue-600 */
     }
 
     .btn-secondary {
@@ -111,7 +119,8 @@ html.dark {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #db2777;
+    background: #2563eb;
+    /* Tailwind blue-600 */
 }
 
 html.dark ::-webkit-scrollbar-track {
@@ -145,6 +154,7 @@ html.dark .border-gray-200 {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -160,4 +170,177 @@ html.dark .border-gray-200 {
     body {
         background: white;
     }
+}
+
+
+
+/* =========================================================================
+   Modern Menu Styling (e.g. mksine-menu-header_primary)
+   ========================================================================= */
+
+/* Base menu list items */
+[class*="mksine-menu-"] li {
+    position: relative;
+    list-style: none;
+}
+
+/* Base anchor links */
+[class*="mksine-menu-"] a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #4b5563;
+    /* Tailwind gray-600 */
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    white-space: nowrap;
+}
+
+/* Hover effect on links */
+[class*="mksine-menu-"] a:hover {
+    color: #3b82f6;
+    /* Tailwind blue-500 */
+    background-color: rgba(59, 130, 246, 0.05);
+    /* blue-500 with 5% opacity */
+    border-radius: 0.5rem;
+}
+
+/* 
+ * Dropdown Submenus (Level 1 and deeper)
+ */
+[class*="mksine-submenu-"] {
+    position: absolute;
+    top: 100%;
+    /* Dropdown opens below the parent for Level 0 items */
+    left: 0;
+    min-width: 220px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    /* Tailwind gray-200 */
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+    /* Animation initial state */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.98);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+}
+
+/* Open Level 1 dropdowns on hover */
+[class*="mksine-menu-"]>li:hover>[class*="mksine-submenu-level-1"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* 
+ * Deep Submenus (Level 2+)
+ * Positioned to the right of the parent submenu
+ */
+[class*="mksine-submenu-level-1"] [class*="mksine-submenu-"] {
+    top: 0;
+    left: calc(100% + 5px);
+    /* Offset to the right */
+
+    /* Keep the animation sliding in from the left rather than top */
+    transform: translateX(-10px) translateY(0) scale(0.98);
+}
+
+/* Open deep submenus on hover */
+[class*="mksine-submenu-"] li:hover>[class*="mksine-submenu-"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0) scale(1);
+}
+
+/* Dark mode support for menus */
+.dark [class*="mksine-submenu-"] {
+    background-color: #1f2937;
+    /* Tailwind gray-800 */
+    border-color: #374151;
+    /* Tailwind gray-700 */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.dark [class*="mksine-menu-"] a {
+    color: #d1d5db;
+    /* Tailwind gray-300 */
+}
+
+.dark [class*="mksine-menu-"] a:hover {
+    color: #60a5fa;
+    /* Tailwind blue-400 */
+    background-color: rgba(96, 165, 250, 0.1);
+    /* blue-400 with 10% opacity */
+}
+
+/* =========================================================================
+   Footer Menu Styling (via layout columns)
+   ========================================================================= */
+
+/* Top-level list acts as a grid of columns */
+.mksine-menu-footer_links {
+    display: grid !important;
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 2rem !important;
+}
+
+@media (min-width: 640px) {
+    .mksine-menu-footer_links {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Top-level list items (act as columns) */
+.mksine-menu-footer_links>li {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top-level links (act as Column Headers) */
+.mksine-menu-footer_links>li>a {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    /* font-bold */
+    margin-bottom: 1rem !important;
+    /* mb-4 */
+    font-size: 1rem !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* Sub-menus (The actual bottom links lists) */
+.mksine-menu-footer_links [class*="mksine-submenu-"] {
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: transparent !important;
+    min-width: unset !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    /* space-y-2 */
+}
+
+/* Sub-menu links */
+.mksine-menu-footer_links [class*="mksine-submenu-"] a {
+    padding: 0 !important;
+    font-size: 0.875rem !important;
+    /* text-sm */
+    color: #9ca3af !important;
+    /* text-gray-400 */
+    font-weight: 400 !important;
+}
+
+.mksine-menu-footer_links [class*="mksine-submenu-"] a:hover {
+    color: #ffffff !important;
+    background-color: transparent !important;
 }

@@ -17,7 +17,7 @@ class ImageComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Image');
+        return __('mksine::page_builder.component_labels.name_image');
     }
 
     public static function getIcon(): string
@@ -32,51 +32,51 @@ class ImageComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add an image from the media library.');
+        return __('mksine::page_builder.component_labels.desc_image');
     }
 
     public static function getSchema(): array
     {
         return [
             MediaPicker::make('image')
-                ->label(__('Image'))
+                ->label(__('mksine::page_builder.component_labels.field_image'))
                 ->required()
                 ->isRelation(false)
                 ->collection('page_builder')
                 ->acceptedFileTypes(['image/*'])
                 ->columnSpanFull(),
             TextInput::make('alt')
-                ->label(__('Alt Text'))
-                ->placeholder(__('Describe the image for accessibility'))
+                ->label(__('mksine::page_builder.component_labels.alt_text'))
+                ->placeholder(__('mksine::page_builder.component_labels.describe_image'))
                 ->maxLength(255),
             TextInput::make('caption')
-                ->label(__('Caption'))
-                ->placeholder(__('Optional image caption'))
+                ->label(__('mksine::page_builder.component_labels.caption'))
+                ->placeholder(__('mksine::page_builder.component_labels.optional_caption'))
                 ->maxLength(500),
             Select::make('size')
-                ->label(__('Size'))
+                ->label(__('mksine::page_builder.component_labels.size'))
                 ->options([
-                    'small' => __('Small'),
-                    'medium' => __('Medium'),
-                    'large' => __('Large'),
-                    'full' => __('Full Width'),
+                    'small' => __('mksine::page_builder.component_labels.small'),
+                    'medium' => __('mksine::page_builder.component_labels.medium'),
+                    'large' => __('mksine::page_builder.component_labels.large'),
+                    'full' => __('mksine::page_builder.component_labels.full_width'),
                 ])
                 ->default('large')
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Alignment'))
+                ->label(__('mksine::page_builder.component_labels.alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('center')
                 ->native(false),
             Toggle::make('rounded')
-                ->label(__('Rounded Corners'))
+                ->label(__('mksine::page_builder.component_labels.rounded_corners'))
                 ->default(false),
             Toggle::make('shadow')
-                ->label(__('Drop Shadow'))
+                ->label(__('mksine::page_builder.component_labels.drop_shadow'))
                 ->default(false),
         ];
     }

@@ -16,10 +16,10 @@ class CommentForm
     {
         $schema = $schema
             ->components([
-                Section::make('Comment Information')
+                Section::make(__('mksine::comments.comment_information'))
                     ->schema([
                         Select::make('post_id')
-                            ->label('Post')
+                            ->label(__('mksine::comments.post'))
                             ->relationship('post', 'title')
                             ->required()
                             ->searchable()
@@ -27,63 +27,63 @@ class CommentForm
                             ->native(false)
                             ->columnSpanFull(),
                         Select::make('parent_id')
-                            ->label('Reply to')
+                            ->label(__('mksine::comments.reply_to'))
                             ->relationship('parent', 'content', fn ($query) => $query->limit(50))
                             ->getOptionLabelFromRecordUsing(fn (Comment $record) => \Illuminate\Support\Str::limit($record->content, 50))
                             ->searchable()
                             ->preload()
                             ->native(false)
-                            ->placeholder('None (root comment)')
+                            ->placeholder(__('mksine::comments.none_root'))
                             ->columnSpanFull(),
                         Textarea::make('content')
-                            ->label('Content')
+                            ->label(__('mksine::comments.content'))
                             ->required()
                             ->rows(4)
                             ->maxLength(5000)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
-                Section::make('Author Information')
+                Section::make(__('mksine::comments.author_information'))
                     ->schema([
                         Select::make('user_id')
-                            ->label('Registered User')
+                            ->label(__('mksine::comments.registered_user'))
                             ->relationship('user', 'name')
                             ->searchable()
                             ->preload()
                             ->native(false)
-                            ->placeholder('Guest comment'),
+                            ->placeholder(__('mksine::comments.guest_comment')),
                         TextInput::make('author_name')
-                            ->label('Guest Name')
+                            ->label(__('mksine::comments.guest_name'))
                             ->maxLength(255)
-                            ->placeholder('For guest comments'),
+                            ->placeholder(__('mksine::comments.guest_name_placeholder')),
                         TextInput::make('author_email')
-                            ->label('Guest Email')
+                            ->label(__('mksine::comments.guest_email'))
                             ->email()
                             ->maxLength(255)
-                            ->placeholder('For guest comments'),
+                            ->placeholder(__('mksine::comments.guest_email_placeholder')),
                     ])
                     ->columns(3)
                     ->collapsible(),
-                Section::make('Rating & Status')
+                Section::make(__('mksine::comments.rating_status'))
                     ->schema([
                         Select::make('rating')
-                            ->label('Rating')
+                            ->label(__('mksine::comments.rating'))
                             ->options([
-                                1 => '1 Star',
-                                2 => '2 Stars',
-                                3 => '3 Stars',
-                                4 => '4 Stars',
-                                5 => '5 Stars',
+                                1 => __('mksine::comments.rating_1_star'),
+                                2 => __('mksine::comments.rating_2_stars'),
+                                3 => __('mksine::comments.rating_3_stars'),
+                                4 => __('mksine::comments.rating_4_stars'),
+                                5 => __('mksine::comments.rating_5_stars'),
                             ])
                             ->native(false)
-                            ->placeholder('No rating'),
+                            ->placeholder(__('mksine::comments.no_rating')),
                         Select::make('status')
-                            ->label('Status')
+                            ->label(__('mksine::comments.status'))
                             ->options([
-                                Comment::STATUS_PENDING => 'Pending',
-                                Comment::STATUS_APPROVED => 'Approved',
-                                Comment::STATUS_SPAM => 'Spam',
-                                Comment::STATUS_TRASH => 'Trash',
+                                Comment::STATUS_PENDING => __('mksine::comments.status_pending'),
+                                Comment::STATUS_APPROVED => __('mksine::comments.status_approved'),
+                                Comment::STATUS_SPAM => __('mksine::comments.status_spam'),
+                                Comment::STATUS_TRASH => __('mksine::comments.status_trash'),
                             ])
                             ->default(Comment::STATUS_PENDING)
                             ->required()
@@ -91,15 +91,15 @@ class CommentForm
                     ])
                     ->columns(2)
                     ->collapsible(),
-                Section::make('Technical Info')
+                Section::make(__('mksine::comments.technical_info'))
                     ->schema([
                         TextInput::make('ip_address')
-                            ->label('IP Address')
+                            ->label(__('mksine::comments.ip_address'))
                             ->maxLength(45)
                             ->disabled()
                             ->dehydrated(false),
                         Textarea::make('user_agent')
-                            ->label('User Agent')
+                            ->label(__('mksine::comments.user_agent'))
                             ->rows(2)
                             ->disabled()
                             ->dehydrated(false)

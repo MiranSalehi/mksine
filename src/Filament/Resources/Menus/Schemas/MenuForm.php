@@ -16,7 +16,7 @@ class MenuForm
     {
         $schema = $schema->components([
             TextInput::make('name')
-                ->label(__('Name'))
+                ->label(__('mksine::menu_builder.name'))
                 ->required()
                 ->maxLength(255)
                 ->live(onBlur: true)
@@ -31,14 +31,14 @@ class MenuForm
                 }),
 
             TextInput::make('slug')
-                ->label(__('Slug'))
+                ->label(__('mksine::menu_builder.slug'))
                 ->required()
                 ->unique(ignoreRecord: true)
                 ->maxLength(255)
-                ->helperText(__('The slug is used in URLs and must be unique.')),
+                ->helperText(__('mksine::menu_builder.slug_helper')),
 
             Textarea::make('description')
-                ->label(__('Description'))
+                ->label(__('mksine::menu_builder.description'))
                 ->rows(3)
                 ->maxLength(1000),
         ]);

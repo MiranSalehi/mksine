@@ -22,15 +22,15 @@ class PostsTable
             ->columns([
                 ImageColumn::make('featuredImage.full_url')
                     ->circular()
-                    ->label('Image'),
+                    ->label(__('mksine::posts.image')),
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('mksine::posts.title'))
                     ->searchable()
                     ->sortable()
                     ->weight('medium')
                     ->limit(50),
                 TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('mksine::posts.slug'))
                     ->searchable()
                     ->sortable()
                     ->copyable()
@@ -38,7 +38,7 @@ class PostsTable
                     ->limit(30)
                     ->toggleable(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::posts.status'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'published' => 'success',
@@ -46,24 +46,30 @@ class PostsTable
                         'archived' => 'warning',
                         default => 'gray',
                     })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'draft' => __('mksine::posts.status_draft'),
+                        'published' => __('mksine::posts.status_published'),
+                        'archived' => __('mksine::posts.status_archived'),
+                        default => $state,
+                    })
                     ->sortable(),
                 TextColumn::make('author.name')
-                    ->label('Author')
+                    ->label(__('mksine::posts.author'))
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('published_at')
-                    ->label('Published')
+                    ->label(__('mksine::posts.published_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('views_count')
-                    ->label('Views')
+                    ->label(__('mksine::posts.views'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->color('gray'),
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('mksine::posts.created'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -71,20 +77,20 @@ class PostsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::posts.status'))
                     ->options([
-                        'draft' => 'Draft',
-                        'published' => 'Published',
-                        'archived' => 'Archived',
+                        'draft' => __('mksine::posts.status_draft'),
+                        'published' => __('mksine::posts.status_published'),
+                        'archived' => __('mksine::posts.status_archived'),
                     ])
                     ->native(false),
                 Filter::make('published_at')
-                    ->label('Published')
+                    ->label(__('mksine::posts.published_at'))
                     ->schema([
                         \Filament\Forms\Components\DatePicker::make('published_from')
-                            ->label('Published From'),
+                            ->label(__('mksine::posts.published_from')),
                         \Filament\Forms\Components\DatePicker::make('published_until')
-                            ->label('Published Until'),
+                            ->label(__('mksine::posts.published_until')),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

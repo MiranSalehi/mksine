@@ -28,13 +28,13 @@ class CommentTable
         $table = $table
             ->columns([
                 TextColumn::make('post.title')
-                    ->label('Post')
+                    ->label(__('mksine::comments.post'))
                     ->searchable()
                     ->sortable()
                     ->limit(30)
                     ->tooltip(fn (Comment $record): string => $record->post?->title ?? ''),
                 TextColumn::make('author_display_name')
-                    ->label('Author')
+                    ->label(__('mksine::comments.author'))
                     ->searchable(query: function ($query, string $search) {
                         $query->where(function ($q) use ($search) {
                             $q->where('author_name', 'like', "%{$search}%")
@@ -45,19 +45,26 @@ class CommentTable
                         $query->orderByRaw("COALESCE(author_name, (SELECT name FROM users WHERE users.id = comments.user_id)) {$direction}");
                     }),
                 TextColumn::make('content')
-                    ->label('Content')
+                    ->label(__('mksine::comments.content'))
                     ->searchable()
                     ->limit(80)
                     ->wrap()
                     ->html()
                     ->formatStateUsing(fn (Comment $record): string => nl2br(e(\Illuminate\Support\Str::limit($record->content, 80)))),
                 TextColumn::make('rating')
-                    ->label('Rating')
+                    ->label(__('mksine::comments.rating'))
                     ->formatStateUsing(fn (?int $state): string => $state ? str_repeat('⭐', $state) : '-')
                     ->sortable(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::comments.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Comment::STATUS_APPROVED => __('mksine::comments.status_approved'),
+                        Comment::STATUS_PENDING => __('mksine::comments.status_pending'),
+                        Comment::STATUS_SPAM => __('mksine::comments.status_spam'),
+                        Comment::STATUS_TRASH => __('mksine::comments.status_trash'),
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
                         Comment::STATUS_APPROVED => 'success',
                         Comment::STATUS_PENDING => 'warning',
@@ -67,44 +74,44 @@ class CommentTable
                     })
                     ->sortable(),
                 TextColumn::make('parent_id')
-                    ->label('Type')
-                    ->formatStateUsing(fn (?int $state): string => $state ? 'Reply' : 'Comment')
+                    ->label(__('mksine::comments.type'))
+                    ->formatStateUsing(fn (?int $state): string => $state ? __('mksine::comments.reply_type') : __('mksine::comments.root_comment'))
                     ->badge()
                     ->color(fn (?int $state): string => $state ? 'info' : 'primary'),
                 TextColumn::make('replies_count')
-                    ->label('Replies')
+                    ->label(__('mksine::comments.replies'))
                     ->counts('replies')
                     ->badge()
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
-                    ->label('Date')
+                    ->label(__('mksine::comments.date'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->label('Status')
+                    ->label(__('mksine::comments.status'))
                     ->options([
-                        Comment::STATUS_PENDING => 'Pending',
-                        Comment::STATUS_APPROVED => 'Approved',
-                        Comment::STATUS_SPAM => 'Spam',
-                        Comment::STATUS_TRASH => 'Trash',
+                        Comment::STATUS_PENDING => __('mksine::comments.status_pending'),
+                        Comment::STATUS_APPROVED => __('mksine::comments.status_approved'),
+                        Comment::STATUS_SPAM => __('mksine::comments.status_spam'),
+                        Comment::STATUS_TRASH => __('mksine::comments.status_trash'),
                     ])
                     ->native(false),
                 SelectFilter::make('rating')
-                    ->label('Rating')
+                    ->label(__('mksine::comments.rating'))
                     ->options([
-                        1 => '1 Star',
-                        2 => '2 Stars',
-                        3 => '3 Stars',
-                        4 => '4 Stars',
-                        5 => '5 Stars',
+                        1 => __('mksine::comments.rating_1_star'),
+                        2 => __('mksine::comments.rating_2_stars'),
+                        3 => __('mksine::comments.rating_3_stars'),
+                        4 => __('mksine::comments.rating_4_stars'),
+                        5 => __('mksine::comments.rating_5_stars'),
                     ])
                     ->native(false),
                 SelectFilter::make('post_id')
-                    ->label('Post')
+                    ->label(__('mksine::comments.post'))
                     ->relationship('post', 'title')
                     ->searchable()
                     ->preload()
@@ -112,48 +119,48 @@ class CommentTable
             ])
             ->recordActions([
                 Action::make('approve')
-                    ->label('Approve')
+                    ->label(__('mksine::comments.approve'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn (Comment $record): bool => $record->status !== Comment::STATUS_APPROVED)
                     ->action(function (Comment $record): void {
                         $record->update(['status' => Comment::STATUS_APPROVED]);
                         Notification::make()
-                            ->title('Comment Approved')
+                            ->title(__('mksine::comments.comment_approved'))
                             ->success()
                             ->send();
                     }),
                 Action::make('view')
-                    ->label('View')
+                    ->label(__('mksine::comments.view'))
                     ->icon('heroicon-o-eye')
                     ->color('gray')
-                    ->modalHeading(fn (Comment $record): string => 'Comment by ' . $record->author_display_name)
+                    ->modalHeading(fn (Comment $record): string => __('mksine::comments.comment_by', ['name' => $record->author_display_name]))
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close')
+                    ->modalCancelActionLabel(__('mksine::common.close'))
                     ->form(fn (Comment $record): array => [
-                        Section::make('Comment Details')
+                        Section::make(__('mksine::comments.comment_details'))
                             ->schema([
                                 Placeholder::make('post')
-                                    ->label('Post')
+                                    ->label(__('mksine::comments.post'))
                                     ->content($record->post?->title ?? '-'),
                                 Placeholder::make('author')
-                                    ->label('Author')
+                                    ->label(__('mksine::comments.author'))
                                     ->content($record->author_display_name . ($record->author_display_email ? ' (' . $record->author_display_email . ')' : '')),
                                 Placeholder::make('date')
-                                    ->label('Date')
+                                    ->label(__('mksine::comments.date'))
                                     ->content($record->created_at?->format('F j, Y g:i A')),
                                 Placeholder::make('rating')
-                                    ->label('Rating')
-                                    ->content($record->rating ? str_repeat('⭐', $record->rating) . ' (' . $record->rating . '/5)' : 'No rating'),
+                                    ->label(__('mksine::comments.rating'))
+                                    ->content($record->rating ? str_repeat('⭐', $record->rating) . ' (' . $record->rating . '/5)' : __('mksine::comments.no_rating')),
                                 Placeholder::make('status')
-                                    ->label('Status')
+                                    ->label(__('mksine::comments.status'))
                                     ->content(ucfirst($record->status)),
                                 Placeholder::make('type')
-                                    ->label('Type')
-                                    ->content($record->parent_id ? 'Reply to comment #' . $record->parent_id : 'Root comment'),
+                                    ->label(__('mksine::comments.type'))
+                                    ->content($record->parent_id ? __('mksine::comments.reply_to_comment', ['id' => $record->parent_id]) : __('mksine::comments.root_comment_label')),
                             ])
                             ->columns(3),
-                        Section::make('Content')
+                        Section::make(__('mksine::common.content'))
                             ->schema([
                                 Placeholder::make('content')
                                     ->label('')
@@ -161,29 +168,29 @@ class CommentTable
                                         '<div class="prose dark:prose-invert max-w-none text-sm">' . nl2br(e($record->content)) . '</div>'
                                     )),
                             ]),
-                        Section::make('Technical Info')
+                        Section::make(__('mksine::comments.technical_info'))
                             ->schema([
                                 Placeholder::make('ip')
-                                    ->label('IP Address')
+                                    ->label(__('mksine::comments.ip_address'))
                                     ->content($record->ip_address ?? '-'),
                                 Placeholder::make('user_agent')
-                                    ->label('User Agent')
+                                    ->label(__('mksine::comments.user_agent'))
                                     ->content(\Illuminate\Support\Str::limit($record->user_agent ?? '-', 100)),
                             ])
                             ->columns(2)
                             ->collapsed(),
                     ]),
                 Action::make('reply')
-                    ->label('Reply')
+                    ->label(__('mksine::comments.reply'))
                     ->icon('heroicon-o-chat-bubble-left-ellipsis')
                     ->color('info')
                     ->form([
                         Textarea::make('content')
-                            ->label('Reply Content')
+                            ->label(__('mksine::comments.reply_content'))
                             ->required()
                             ->rows(4)
                             ->maxLength(5000)
-                            ->placeholder('Write your reply...'),
+                            ->placeholder(__('mksine::comments.reply_placeholder')),
                     ])
                     ->action(function (Comment $record, array $data): void {
                         Comment::create([
@@ -196,13 +203,13 @@ class CommentTable
                             'user_agent' => request()->userAgent(),
                         ]);
                         Notification::make()
-                            ->title('Reply Added')
+                            ->title(__('mksine::comments.reply_added'))
                             ->success()
                             ->send();
                     }),
                 ActionGroup::make([
                     Action::make('spam')
-                        ->label('Mark as Spam')
+                        ->label(__('mksine::comments.mark_as_spam'))
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('danger')
                         ->visible(fn (Comment $record): bool => $record->status !== Comment::STATUS_SPAM)
@@ -210,12 +217,12 @@ class CommentTable
                         ->action(function (Comment $record): void {
                             $record->update(['status' => Comment::STATUS_SPAM]);
                             Notification::make()
-                                ->title('Marked as Spam')
+                                ->title(__('mksine::comments.marked_as_spam'))
                                 ->warning()
                                 ->send();
                         }),
                     Action::make('trash')
-                        ->label('Move to Trash')
+                        ->label(__('mksine::comments.move_to_trash'))
                         ->icon('heroicon-o-trash')
                         ->color('gray')
                         ->visible(fn (Comment $record): bool => $record->status !== Comment::STATUS_TRASH)
@@ -223,19 +230,19 @@ class CommentTable
                         ->action(function (Comment $record): void {
                             $record->update(['status' => Comment::STATUS_TRASH]);
                             Notification::make()
-                                ->title('Moved to Trash')
+                                ->title(__('mksine::comments.moved_to_trash'))
                                 ->warning()
                                 ->send();
                         }),
                     Action::make('restore')
-                        ->label('Restore to Pending')
+                        ->label(__('mksine::comments.restore_to_pending'))
                         ->icon('heroicon-o-arrow-uturn-left')
                         ->color('warning')
                         ->visible(fn (Comment $record): bool => in_array($record->status, [Comment::STATUS_SPAM, Comment::STATUS_TRASH]))
                         ->action(function (Comment $record): void {
                             $record->update(['status' => Comment::STATUS_PENDING]);
                             Notification::make()
-                                ->title('Restored to Pending')
+                                ->title(__('mksine::comments.restored_to_pending'))
                                 ->success()
                                 ->send();
                         }),
@@ -243,44 +250,44 @@ class CommentTable
                     DeleteAction::make(),
                 ])
                     ->icon('heroicon-m-ellipsis-vertical')
-                    ->tooltip('More Actions'),
+                    ->tooltip(__('mksine::common.more_actions')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('approve')
-                        ->label('Approve Selected')
+                        ->label(__('mksine::comments.approve_selected'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(function (Collection $records): void {
                             $records->each->update(['status' => Comment::STATUS_APPROVED]);
                             Notification::make()
-                                ->title($records->count() . ' comments approved')
+                                ->title(__('mksine::comments.comments_approved', ['count' => $records->count()]))
                                 ->success()
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion()
                         ->requiresConfirmation(),
                     BulkAction::make('spam')
-                        ->label('Mark as Spam')
+                        ->label(__('mksine::comments.mark_as_spam'))
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('danger')
                         ->action(function (Collection $records): void {
                             $records->each->update(['status' => Comment::STATUS_SPAM]);
                             Notification::make()
-                                ->title($records->count() . ' comments marked as spam')
+                                ->title(__('mksine::comments.comments_marked_spam', ['count' => $records->count()]))
                                 ->warning()
                                 ->send();
                         })
                         ->deselectRecordsAfterCompletion()
                         ->requiresConfirmation(),
                     BulkAction::make('trash')
-                        ->label('Move to Trash')
+                        ->label(__('mksine::comments.move_to_trash'))
                         ->icon('heroicon-o-trash')
                         ->color('gray')
                         ->action(function (Collection $records): void {
                             $records->each->update(['status' => Comment::STATUS_TRASH]);
                             Notification::make()
-                                ->title($records->count() . ' comments moved to trash')
+                                ->title(__('mksine::comments.comments_moved_trash', ['count' => $records->count()]))
                                 ->warning()
                                 ->send();
                         })

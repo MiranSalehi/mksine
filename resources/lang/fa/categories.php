@@ -1,0 +1,25 @@
+<?php
+
+return array (
+  'navigation_label' => 'دسته‌ها',
+  'model_label' => 'دسته',
+  'plural_model_label' => 'دسته‌ها',
+  'category_information' => 'اطلاعات دسته',
+  'name' => 'نام',
+  'slug' => 'اسلاگ',
+  'image' => 'تصویر',
+  'settings' => 'تنظیمات',
+  'parent_category' => 'دستهٔ والد',
+  'no_parent' => 'بدون والد',
+  'sort_order' => 'ترتیب مرتب‌سازی',
+  'parent' => 'والد',
+  'order' => 'ترتیب',
+  'active' => 'فعال',
+  'active_only' => 'فقط فعال',
+  'inactive_only' => 'فقط غیرفعال',
+  'description' => 'توضیحات',
+  'meta_title' => 'عنوان متا',
+  'meta_description' => 'توضیحات متا',
+  'posts_count' => 'نوشته‌ها',
+  'created' => 'ایجاد',
+);

@@ -14,7 +14,7 @@ class DividerComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Divider');
+        return __('mksine::page_builder.component_labels.name_divider');
     }
 
     public static function getIcon(): string
@@ -29,37 +29,37 @@ class DividerComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add a horizontal line separator.');
+        return __('mksine::page_builder.component_labels.desc_divider');
     }
 
     public static function getSchema(): array
     {
         return [
             Select::make('style')
-                ->label(__('Style'))
+                ->label(__('mksine::page_builder.component_labels.style'))
                 ->options([
-                    'solid' => __('Solid'),
-                    'dashed' => __('Dashed'),
-                    'dotted' => __('Dotted'),
+                    'solid' => __('mksine::page_builder.component_labels.solid'),
+                    'dashed' => __('mksine::page_builder.component_labels.dashed'),
+                    'dotted' => __('mksine::page_builder.component_labels.dotted'),
                 ])
                 ->default('solid')
                 ->native(false),
             Select::make('width')
-                ->label(__('Width'))
+                ->label(__('mksine::page_builder.component_labels.width'))
                 ->options([
-                    '25' => '25%',
-                    '50' => '50%',
-                    '75' => '75%',
-                    '100' => '100%',
+                    '25' => __('mksine::page_builder.component_labels.width_25'),
+                    '50' => __('mksine::page_builder.component_labels.width_50'),
+                    '75' => __('mksine::page_builder.component_labels.width_75'),
+                    '100' => __('mksine::page_builder.component_labels.width_100'),
                 ])
                 ->default('100')
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Alignment'))
+                ->label(__('mksine::page_builder.component_labels.alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('center')
                 ->native(false),

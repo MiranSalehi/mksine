@@ -20,28 +20,28 @@ class MenuTable
         $table = $table
             ->columns([
                 TextColumn::make('name')
-                    ->label(__('Name'))
+                    ->label(__('mksine::menus.name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('slug')
-                    ->label(__('Slug'))
+                    ->label(__('mksine::menus.slug'))
                     ->searchable()
                     ->copyable()
-                    ->copyMessage(__('Slug copied')),
+                    ->copyMessage(__('mksine::menus.slug_copied')),
 
                 TextColumn::make('items_count')
-                    ->label(__('Items'))
+                    ->label(__('mksine::menus.items'))
                     ->counts('items')
                     ->sortable(),
 
                 TextColumn::make('locations.label')
-                    ->label(__('Locations'))
+                    ->label(__('mksine::menus.locations'))
                     ->badge()
                     ->separator(','),
 
                 TextColumn::make('updated_at')
-                    ->label(__('Updated'))
+                    ->label(__('mksine::menus.updated'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -50,7 +50,7 @@ class MenuTable
             ->actions([
                 EditAction::make(),
                 Action::make('builder')
-                    ->label(__('Edit Items'))
+                    ->label(__('mksine::menus.edit_items'))
                     ->icon('heroicon-o-bars-3-bottom-left')
                     ->url(fn ($record) => MenuBuilder::getUrl(['menu' => $record->id])),
                 DeleteAction::make(),

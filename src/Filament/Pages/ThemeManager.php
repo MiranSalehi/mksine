@@ -4,7 +4,9 @@ namespace Miran\Mksine\Filament\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CodeEditor;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -12,22 +14,33 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use ZipArchive;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class ThemeManager extends Page
 {
+    use HasPageShield;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
 
     protected string $view = 'mksine::filament.pages.theme-manager';
-
-    protected static ?string $navigationLabel = 'Themes';
-
-    protected static ?string $title = 'Theme Manager';
 
     protected static ?string $slug = 'themes';
 
     protected static ?int $navigationSort = 8;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Appearance';
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::themes.navigation_label');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('mksine::common.appearance');
+    }
+
+    public function getTitle(): string
+    {
+        return __('mksine::themes.title');
+    }
 
     /**
      * Get all discovered themes.
@@ -54,7 +67,7 @@ class ThemeManager extends Page
         $package = $themes->filter(fn ($t) => $t->isPackageTheme())->count();
         $project = $themes->filter(fn ($t) => $t->isProjectTheme())->count();
 
-        return __(':total themes (:package package, :project project)', [
+        return __('mksine::themes.themes_count', [
             'total' => $total,
             'package' => $package,
             'project' => $project,
@@ -65,13 +78,13 @@ class ThemeManager extends Page
     {
         return [
             Action::make('upload')
-                ->label(__('Upload Theme'))
+                ->label(__('mksine::themes.upload_theme'))
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('primary')
-                ->form([
+                ->schema([
                     FileUpload::make('theme_file')
-                        ->label(__('Theme ZIP File'))
-                        ->helperText(__('Upload a theme as a .zip file. The ZIP should contain a folder with theme.json inside.'))
+                        ->label(__('mksine::themes.theme_zip_file'))
+                        ->helperText(__('mksine::themes.theme_zip_helper'))
                         ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
                         ->maxSize(51200) // 50MB max
                         ->required()
@@ -88,8 +101,8 @@ class ThemeManager extends Page
                         $tempPath = storage_path('app/' . $uploadedFile);
                     } else {
                         Notification::make()
-                            ->title(__('Upload failed'))
-                            ->body(__('Invalid file format.'))
+                            ->title(__('mksine::themes.upload_failed'))
+                            ->body(__('mksine::plugins.invalid_file_format'))
                             ->danger()
                             ->send();
 
@@ -100,14 +113,14 @@ class ThemeManager extends Page
                 }),
 
             Action::make('discover')
-                ->label(__('Discover Themes'))
+                ->label(__('mksine::themes.discover_themes'))
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('info')
                 ->action(function () {
                     app(ThemeManagerService::class)->clearCache();
 
                     Notification::make()
-                        ->title(__('Themes discovered successfully'))
+                        ->title(__('mksine::themes.themes_discovered'))
                         ->success()
                         ->send();
 
@@ -134,14 +147,14 @@ class ThemeManager extends Page
 
         try {
             if (! File::exists($tempPath)) {
-                throw new \RuntimeException(__('Uploaded file not found.'));
+                throw new \RuntimeException(__('mksine::themes.uploaded_file_not_found'));
             }
 
             $zip = new ZipArchive;
             $openResult = $zip->open($tempPath);
 
             if ($openResult !== true) {
-                throw new \RuntimeException(__('Failed to open ZIP file. Error code: :code', ['code' => $openResult]));
+                throw new \RuntimeException(__('mksine::themes.zip_open_failed', ['code' => $openResult]));
             }
 
             // Find the root folder in ZIP (the theme folder)
@@ -170,7 +183,7 @@ class ThemeManager extends Page
             if (! $hasThemeJson) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Invalid theme: theme.json not found in the ZIP file.'));
+                throw new \RuntimeException(__('mksine::themes.invalid_theme_no_json'));
             }
 
             // Get theme.json content
@@ -183,7 +196,7 @@ class ThemeManager extends Page
             if (! is_array($themeJson) || empty($themeJson['name'])) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Invalid theme.json: missing theme name.'));
+                throw new \RuntimeException(__('mksine::themes.invalid_theme_missing_name'));
             }
 
             // Determine theme identifier
@@ -194,7 +207,7 @@ class ThemeManager extends Page
             if (File::isDirectory($targetPath)) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Theme ":id" already exists. Please delete it first.', ['id' => $themeIdentifier]));
+                throw new \RuntimeException(__('mksine::themes.theme_already_exists', ['id' => $themeIdentifier]));
             }
 
             // Extract to themes directory
@@ -220,8 +233,8 @@ class ThemeManager extends Page
             $themeManager->publishAssets($themeIdentifier);
 
             Notification::make()
-                ->title(__('Theme uploaded successfully'))
-                ->body(__('Theme ":name" (v:version) has been uploaded.', [
+                ->title(__('mksine::themes.theme_uploaded'))
+                ->body(__('mksine::themes.theme_uploaded_name', [
                     'name' => $themeJson['name'] ?? $themeIdentifier,
                     'version' => $themeJson['version'] ?? '1.0.0',
                 ]))
@@ -232,7 +245,7 @@ class ThemeManager extends Page
 
         } catch (\Throwable $e) {
             Notification::make()
-                ->title(__('Upload failed'))
+                ->title(__('mksine::themes.upload_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -249,7 +262,7 @@ class ThemeManager extends Page
 
         if (! $theme) {
             Notification::make()
-                ->title(__('Theme not found'))
+                ->title(__('mksine::themes.theme_not_found'))
                 ->danger()
                 ->send();
 
@@ -264,13 +277,13 @@ class ThemeManager extends Page
             }
 
             Notification::make()
-                ->title(__('Theme activated'))
-                ->body(__('The theme ":name" has been activated.', ['name' => $theme->name]))
+                ->title(__('mksine::themes.theme_activated'))
+                ->body(__('mksine::themes.theme_activated_name', ['name' => $theme->name]))
                 ->success()
                 ->send();
         } else {
             Notification::make()
-                ->title(__('Failed to activate theme'))
+                ->title(__('mksine::themes.failed_activate_theme'))
                 ->danger()
                 ->send();
         }
@@ -286,7 +299,7 @@ class ThemeManager extends Page
 
         if (! $theme) {
             Notification::make()
-                ->title(__('Theme not found'))
+                ->title(__('mksine::themes.theme_not_found'))
                 ->danger()
                 ->send();
 
@@ -296,8 +309,8 @@ class ThemeManager extends Page
         // Only allow deletion of project themes
         if ($theme->isPackageTheme()) {
             Notification::make()
-                ->title(__('Cannot delete package theme'))
-                ->body(__('Package themes cannot be deleted. They are part of the core system.'))
+                ->title(__('mksine::themes.cannot_delete_package_theme'))
+                ->body(__('mksine::themes.package_theme_explanation'))
                 ->danger()
                 ->send();
 
@@ -307,8 +320,8 @@ class ThemeManager extends Page
         // Cannot delete active theme
         if ($identifier === $this->getActiveThemeIdentifier()) {
             Notification::make()
-                ->title(__('Cannot delete active theme'))
-                ->body(__('Please activate a different theme before deleting this one.'))
+                ->title(__('mksine::themes.cannot_delete_active_theme'))
+                ->body(__('mksine::themes.activate_different_first'))
                 ->danger()
                 ->send();
 
@@ -322,7 +335,7 @@ class ThemeManager extends Page
             $realThemesDir = realpath($themesDir);
 
             if (! $realThemePath || ! $realThemesDir || ! str_starts_with($realThemePath, $realThemesDir)) {
-                throw new \RuntimeException(__('Cannot delete theme outside of themes directory.'));
+                throw new \RuntimeException(__('mksine::themes.cannot_delete_outside_themes'));
             }
 
             // Delete theme directory
@@ -338,8 +351,8 @@ class ThemeManager extends Page
             $themeManager->clearCache();
 
             Notification::make()
-                ->title(__('Theme deleted'))
-                ->body(__('The theme ":name" has been deleted.', ['name' => $theme->name]))
+                ->title(__('mksine::themes.theme_deleted'))
+                ->body(__('mksine::themes.theme_deleted_name', ['name' => $theme->name]))
                 ->success()
                 ->send();
 
@@ -347,11 +360,87 @@ class ThemeManager extends Page
 
         } catch (\Throwable $e) {
             Notification::make()
-                ->title(__('Delete failed'))
+                ->title(__('mksine::themes.delete_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
+    }
+
+    /**
+     * Actions (for modals opened from content, e.g. Custom CSS/JS per theme).
+     */
+    protected function getActions(): array
+    {
+        return [
+            $this->customCssJsAction(),
+        ];
+    }
+
+    /**
+     * Custom CSS/JS editor action – opens Filament modal with form.
+     */
+    public function customCssJsAction(): Action
+    {
+        return Action::make('customCssJs')
+            ->label(__('mksine::themes.custom_css_js'))
+            ->icon('heroicon-o-code-bracket-square')
+            ->modalHeading(fn (array $arguments) => __('mksine::themes.custom_css_js') . ' – ' . (app(ThemeManagerService::class)->get($arguments['themeIdentifier'] ?? '')?->name ?? ($arguments['themeIdentifier'] ?? '')))
+            ->modalDescription(__('mksine::themes.custom_css_js_modal_description'))
+            ->modalWidth('4xl')
+            ->fillForm(function (array $arguments): array {
+                $id = $arguments['themeIdentifier'] ?? '';
+                $manager = app(ThemeManagerService::class);
+                $extra = $manager->getExtraAssets($id);
+
+                return [
+                    'custom_css' => $manager->getCustomContent($id, 'css'),
+                    'custom_js' => $manager->getCustomContent($id, 'js'),
+                    'extra_css_files' => implode("\n", $extra['css']),
+                    'extra_js_files' => implode("\n", $extra['js']),
+                ];
+            })
+            ->schema([
+                CodeEditor::make('custom_css')
+                    ->language(CodeEditor\Enums\Language::Css)
+                    ->label(__('mksine::themes.custom_css'))
+                    ->columnSpanFull(),
+                CodeEditor::make('custom_js')
+                    ->language(CodeEditor\Enums\Language::JavaScript)
+                    ->label(__('mksine::themes.custom_js'))
+                    ->columnSpanFull(),
+                Textarea::make('extra_css_files')
+                    ->label(__('mksine::themes.additional_css_files'))
+                    ->placeholder(__('mksine::themes.additional_css_placeholder'))
+                    ->helperText(__('mksine::themes.additional_css_helper'))
+                    ->rows(3)
+                    ->columnSpanFull(),
+                Textarea::make('extra_js_files')
+                    ->label(__('mksine::themes.additional_js_files'))
+                    ->placeholder(__('mksine::themes.additional_js_placeholder'))
+                    ->helperText(__('mksine::themes.additional_js_helper'))
+                    ->rows(3)
+                    ->columnSpanFull(),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $id = $arguments['themeIdentifier'] ?? '';
+                if ($id === '') {
+                    return;
+                }
+                $manager = app(ThemeManagerService::class);
+                $manager->putCustomContent($id, 'css', $data['custom_css'] ?? '');
+                $manager->putCustomContent($id, 'js', $data['custom_js'] ?? '');
+
+                $extraCss = array_filter(array_map('trim', explode("\n", $data['extra_css_files'] ?? '')));
+                $extraJs = array_filter(array_map('trim', explode("\n", $data['extra_js_files'] ?? '')));
+                $manager->setExtraAssets($id, array_values($extraCss), array_values($extraJs));
+
+                Notification::make()
+                    ->title(__('mksine::themes.custom_css_js_saved'))
+                    ->body(__('mksine::themes.custom_css_js_changes_notice'))
+                    ->success()
+                    ->send();
+            });
     }
 
     /**
@@ -362,7 +451,7 @@ class ThemeManager extends Page
         app(ThemeManagerService::class)->clearCache();
 
         Notification::make()
-            ->title(__('Theme list refreshed'))
+            ->title(__('mksine::themes.theme_list_refreshed'))
             ->success()
             ->send();
 

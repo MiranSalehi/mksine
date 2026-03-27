@@ -4,9 +4,11 @@ namespace Miran\Mksine\Filament\Pages;
 
 use Miran\Mksine\Core\Hooks\SettingsTabManager;
 use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Models\Page as PageModel;
 use Miran\Mksine\Models\Setting;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -16,10 +18,11 @@ use Miran\Mksine\Filament\Forms\Components\MediaPicker;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Actions\Contracts\HasActions;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class Settings extends Page implements HasSchemas, HasActions
 {
-    use InteractsWithSchemas, InteractsWithActions;
+    use InteractsWithSchemas, InteractsWithActions, HasPageShield;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
@@ -29,9 +32,19 @@ class Settings extends Page implements HasSchemas, HasActions
 
     public array $data = [];
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::settings.navigation_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('System');
+        return __('mksine::common.system');
+    }
+
+    public function getTitle(): string
+    {
+        return __('mksine::settings.title');
     }
 
     public function mount()
@@ -70,61 +83,69 @@ class Settings extends Page implements HasSchemas, HasActions
     {
         return [
             Tabs\Tab::make('general')
-                ->label(__('mksine::mksine.settings.tabs.general'))
+                ->label(__('mksine::settings.tabs.general'))
                 ->schema([
                     MediaPicker::make('logo')
                         ->inlineLabel(false)
-                        ->label(__('mksine::mksine.settings.logo'))
+                        ->label(__('mksine::settings.logo'))
                         ->isRelation(false)
                         ->collection('logo')
                         ->acceptedFileTypes(['image/*']),
 
                     MediaPicker::make('favicon')
                         ->inlineLabel(false)
-                        ->label(__('mksine::mksine.settings.favicon'))
+                        ->label(__('mksine::settings.favicon'))
                         ->isRelation(false)
                         ->collection('favicon')
                         ->acceptedFileTypes(['image/*']),
 
                     TextInput::make('site_name')
-                        ->label(__('mksine::mksine.settings.site_name'))
+                        ->label(__('mksine::settings.site_name'))
                         ->columnSpanFull()
                         ->required(),
 
                     TextInput::make('short_site_name')
                         ->columnSpanFull()
-                        ->label(__('mksine::mksine.settings.short_site_name')),
+                        ->label(__('mksine::settings.short_site_name')),
                 ])->columns(2),
 
             Tabs\Tab::make('permalinks')
-                ->label(__('mksine::mksine.settings.tabs.permalinks'))
+                ->label(__('mksine::settings.tabs.permalinks'))
                 ->schema([
+                    Select::make('front_page_id')
+                        ->label(__('mksine::settings.front_page'))
+                        ->helperText(__('mksine::settings.front_page_helper'))
+                        ->placeholder(__('mksine::settings.front_page_default'))
+                        ->options(fn () => ['' => __('mksine::settings.front_page_default')] + PageModel::published()->orderBy('title')->pluck('title', 'id')->all())
+                        ->searchable()
+                        ->allowHtml(false),
+
                     TextInput::make('home_page_url')
-                        ->label(__('mksine::mksine.settings.home_page_url'))
+                        ->label(__('mksine::settings.home_page_url'))
                         ->placeholder('/'),
 
                     TextInput::make('categories_url')
-                        ->label(__('mksine::mksine.settings.categories_url'))
+                        ->label(__('mksine::settings.categories_url'))
                         ->placeholder('/categories'),
 
                     TextInput::make('single_category_url')
-                        ->label(__('mksine::mksine.settings.single_category_url'))
+                        ->label(__('mksine::settings.single_category_url'))
                         ->placeholder('/category/{path}')
-                        ->helperText(__('mksine::mksine.settings.single_category_url_helper')),
+                        ->helperText(__('mksine::settings.single_category_url_helper')),
 
                     TextInput::make('posts_url')
-                        ->label(__('mksine::mksine.settings.posts_url'))
+                        ->label(__('mksine::settings.posts_url'))
                         ->placeholder('/posts'),
 
                     TextInput::make('single_post_url')
-                        ->label(__('mksine::mksine.settings.single_post_url'))
+                        ->label(__('mksine::settings.single_post_url'))
                         ->placeholder('/post/{slug}')
-                        ->helperText(__('mksine::mksine.settings.single_post_url_helper')),
+                        ->helperText(__('mksine::settings.single_post_url_helper')),
 
                     TextInput::make('page_url')
-                        ->label(__('mksine::mksine.settings.page_url'))
+                        ->label(__('mksine::settings.page_url'))
                         ->placeholder('/page/{slug}')
-                        ->helperText(__('mksine::mksine.settings.page_url_helper')),
+                        ->helperText(__('mksine::settings.page_url_helper')),
                 ]),
         ];
     }
@@ -173,7 +194,7 @@ class Settings extends Page implements HasSchemas, HasActions
         }
 
         Notification::make()
-            ->title(__('mksine::mksine.settings.save_success'))
+            ->title(__('mksine::settings.save_success'))
             ->success()
             ->send();
     }
@@ -182,7 +203,7 @@ class Settings extends Page implements HasSchemas, HasActions
     {
         return [
             Action::make('save-data')
-                ->label(__('mksine::mksine.settings.save'))
+                ->label(__('mksine::settings.save'))
                 ->action('saveData')
         ];
     }

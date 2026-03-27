@@ -35,6 +35,22 @@ class MksineInstallCommand extends Command
             '--force' => $this->option('force'),
         ]);
 
+        // Publish translation files to project lang path
+        $this->info('🌐 Publishing translation files...');
+        $this->call('vendor:publish', [
+            '--provider' => 'Miran\Mksine\MksineServiceProvider',
+            '--tag' => 'mksine-lang',
+            '--force' => $this->option('force'),
+        ]);
+
+        // Publish fonts (IranYekan, etc.)
+        $this->info('🔤 Publishing fonts...');
+        $this->call('vendor:publish', [
+            '--provider' => 'Miran\Mksine\MksineServiceProvider',
+            '--tag' => 'mksine-fonts',
+            '--force' => $this->option('force'),
+        ]);
+
         // Run migrations if requested
         if ($this->option('migrate')) {
             $this->info('🔄 Running migrations...');

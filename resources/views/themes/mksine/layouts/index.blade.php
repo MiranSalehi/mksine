@@ -13,17 +13,14 @@
         <div class="container mx-auto max-w-6xl px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                         S
                     </div>
                     <span class="text-xl font-bold text-gray-800">Health Blog</span>
                 </div>
 
                 <nav class="hidden md:flex gap-6">
-                    <a href="{{ route('home') }}" class="text-gray-600 hover:text-pink-500 transition">Home</a>
-                    <a href="{{ route('categories.index') }}" class="text-gray-600 hover:text-pink-500 transition">Categories</a>
-                    <a href="#" class="text-gray-600 hover:text-pink-500 transition">About</a>
-                    <a href="#" class="text-gray-600 hover:text-pink-500 transition">Contact</a>
+                    <x-mksine::menu location="header_primary" class="hidden md:flex gap-6" />
                 </nav>
 
                 <div class="flex items-center gap-4">
@@ -60,7 +57,7 @@
         </div>
     </header>
 
-    {{ $slot }}
+    {!! $slot !!}
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-gray-300 py-12">
@@ -70,22 +67,8 @@
                     <h4 class="font-bold text-white mb-4">About</h4>
                     <p class="text-sm">Health Blog is a reliable source for health and wellness information</p>
                 </div>
-                <div>
-                    <h4 class="font-bold text-white mb-4">Categories</h4>
-                    <ul class="text-sm space-y-2">
-                        <li><a href="#" class="hover:text-white transition">Medicine</a></li>
-                        <li><a href="#" class="hover:text-white transition">Nutrition</a></li>
-                        <li><a href="#" class="hover:text-white transition">Exercise</a></li>
-                        <li><a href="#" class="hover:text-white transition">Beauty</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold text-white mb-4">Useful Links</h4>
-                    <ul class="text-sm space-y-2">
-                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition">Terms of Use</a></li>
-                        <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
-                    </ul>
+                <div class="md:col-span-2">
+                    <x-mksine::menu location="footer_links" class="grid grid-cols-1 sm:grid-cols-2 gap-8" />
                 </div>
                 <div>
                     <h4 class="font-bold text-white mb-4">Social Media</h4>

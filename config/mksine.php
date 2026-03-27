@@ -93,6 +93,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Plugin Boot Guard
+    |--------------------------------------------------------------------------
+    |
+    | TTL in seconds for boot flag staleness. Flags younger than this are
+    | considered "still booting" (safe for concurrent requests). Only flags
+    | older than TTL trigger "boot failure" detection.
+    |
+    */
+    'plugins' => [
+        'boot_guard_ttl' => env('MKS_CMS_PLUGIN_BOOT_GUARD_TTL', 15),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Media Settings
     |--------------------------------------------------------------------------
     |

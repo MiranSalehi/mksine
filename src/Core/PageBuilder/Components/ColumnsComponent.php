@@ -14,7 +14,7 @@ class ColumnsComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Columns');
+        return __('mksine::page_builder.component_labels.name_columns');
     }
 
     public static function getIcon(): string
@@ -29,55 +29,55 @@ class ColumnsComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Create multi-column layouts. Drag components into each column.');
+        return __('mksine::page_builder.component_labels.desc_columns');
     }
 
     public static function getSchema(): array
     {
         return [
             Select::make('columns')
-                ->label(__('Number of Columns'))
+                ->label(__('mksine::page_builder.component_labels.number_of_columns'))
                 ->options([
-                    2 => __('2 Columns'),
-                    3 => __('3 Columns'),
-                    4 => __('4 Columns'),
+                    2 => __('mksine::page_builder.component_labels.two_columns'),
+                    3 => __('mksine::page_builder.component_labels.three_columns'),
+                    4 => __('mksine::page_builder.component_labels.four_columns'),
                 ])
                 ->default(2)
                 ->required()
                 ->native(false)
                 ->live(),
             Select::make('layout')
-                ->label(__('Column Layout'))
+                ->label(__('mksine::page_builder.component_labels.column_layout'))
                 ->options(fn ($get) => static::getLayoutOptions((int) ($get('columns') ?? 2)))
                 ->default('equal')
                 ->native(false),
             Select::make('gap')
-                ->label(__('Gap Between Columns'))
+                ->label(__('mksine::page_builder.component_labels.gap_between_columns'))
                 ->options([
-                    'none' => __('None'),
-                    'sm' => __('Small'),
-                    'md' => __('Medium'),
-                    'lg' => __('Large'),
+                    'none' => __('mksine::page_builder.component_labels.none'),
+                    'sm' => __('mksine::page_builder.component_labels.small'),
+                    'md' => __('mksine::page_builder.component_labels.medium'),
+                    'lg' => __('mksine::page_builder.component_labels.large'),
                 ])
                 ->default('md')
                 ->native(false),
             Select::make('vertical_alignment')
-                ->label(__('Vertical Alignment'))
+                ->label(__('mksine::page_builder.component_labels.vertical_alignment'))
                 ->options([
-                    'start' => __('Top'),
-                    'center' => __('Center'),
-                    'end' => __('Bottom'),
-                    'stretch' => __('Stretch'),
+                    'start' => __('mksine::page_builder.component_labels.top'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'end' => __('mksine::page_builder.component_labels.bottom'),
+                    'stretch' => __('mksine::page_builder.component_labels.stretch'),
                 ])
                 ->default('start')
                 ->native(false),
             Select::make('stack_on_mobile')
-                ->label(__('Stack on Mobile'))
+                ->label(__('mksine::page_builder.component_labels.stack_on_mobile'))
                 ->options([
-                    'always' => __('Always Stack'),
-                    'tablet' => __('Stack on Tablet & Mobile'),
-                    'mobile' => __('Stack on Mobile Only'),
-                    'never' => __('Never Stack'),
+                    'always' => __('mksine::page_builder.component_labels.always_stack'),
+                    'tablet' => __('mksine::page_builder.component_labels.stack_tablet_mobile'),
+                    'mobile' => __('mksine::page_builder.component_labels.stack_mobile_only'),
+                    'never' => __('mksine::page_builder.component_labels.never_stack'),
                 ])
                 ->default('mobile')
                 ->native(false),
@@ -111,20 +111,20 @@ class ColumnsComponent extends BaseBuilderComponent
     protected static function getLayoutOptions(int $columns): array
     {
         $options = [
-            'equal' => __('Equal Width'),
+            'equal' => __('mksine::page_builder.component_labels.equal_width'),
         ];
 
         if ($columns === 2) {
-            $options['1-2'] = '1/3 + 2/3';
-            $options['2-1'] = '2/3 + 1/3';
-            $options['1-3'] = '1/4 + 3/4';
-            $options['3-1'] = '3/4 + 1/4';
+            $options['1-2'] = __('mksine::page_builder.component_labels.layout_1_2');
+            $options['2-1'] = __('mksine::page_builder.component_labels.layout_2_1');
+            $options['1-3'] = __('mksine::page_builder.component_labels.layout_1_3');
+            $options['3-1'] = __('mksine::page_builder.component_labels.layout_3_1');
         }
 
         if ($columns === 3) {
-            $options['1-2-1'] = '1/4 + 1/2 + 1/4';
-            $options['2-1-1'] = '1/2 + 1/4 + 1/4';
-            $options['1-1-2'] = '1/4 + 1/4 + 1/2';
+            $options['1-2-1'] = __('mksine::page_builder.component_labels.layout_1_2_1');
+            $options['2-1-1'] = __('mksine::page_builder.component_labels.layout_2_1_1');
+            $options['1-1-2'] = __('mksine::page_builder.component_labels.layout_1_1_2');
         }
 
         return $options;

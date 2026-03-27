@@ -1,0 +1,26 @@
+<?php
+
+return array (
+  'title' => 'کتابخانه رسانه',
+  'select_single' => 'یک رسانه انتخاب کنید',
+  'select_multiple' => 'یک یا چند رسانه انتخاب کنید',
+  'search_placeholder' => 'جستجو با نام...',
+  'click_to_upload' => 'برای آپلود فایل کلیک کنید',
+  'browse_files' => 'مرور فایل‌ها',
+  'files_ready_to_upload' => ':count فایل آماده آپلود',
+  'upload' => 'آپلود',
+  'uploading' => 'در حال آپلود...',
+  'no_media_found' => 'رسانه‌ای یافت نشد',
+  'no_media_empty_hint' => 'با دکمهٔ بالا فایل آپلود کنید',
+  'items_selected' => ':count مورد انتخاب شده',
+  'cancel' => 'لغو',
+  'confirm_selection' => 'تأیید انتخاب',
+  'select_media' => 'انتخاب رسانه',
+  'change_media' => 'تغییر رسانه',
+  'add_more_media' => 'افزودن رسانه',
+  'all_types' => 'همه انواع',
+  'images' => 'تصاویر',
+  'videos' => 'ویدیوها',
+  'pdf' => 'PDF',
+  'documents' => 'اسناد',
+);

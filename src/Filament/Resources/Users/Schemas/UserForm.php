@@ -2,8 +2,8 @@
 
 namespace Miran\Mksine\Filament\Resources\Users\Schemas;
 
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -18,10 +18,10 @@ class UserForm
     {
         $schema = $schema
             ->components([
-                Section::make(__('Profile'))
+                Section::make(__('mksine::users.section_profile'))
                     ->schema([
                         MediaPicker::make('avatar')
-                            ->label(__('Avatar'))
+                            ->label(__('mksine::users.avatar'))
                             ->collection('avatar')
                             ->acceptedFileTypes(['image/*'])
                             ->isRelation(true)
@@ -29,52 +29,54 @@ class UserForm
                             ->columnSpanFull(),
 
                         TextInput::make('name')
-                            ->label(__('Name'))
+                            ->label(__('mksine::users.name'))
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('email')
-                            ->label(__('Email'))
+                            ->label(__('mksine::users.email'))
                             ->email()
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
 
                         Textarea::make('bio')
-                            ->label(__('Bio'))
+                            ->label(__('mksine::users.bio'))
                             ->rows(4)
                             ->maxLength(1000)
                             ->columnSpanFull(),
 
                         DatePicker::make('date_of_birth')
-                            ->label(__('Date of Birth'))
+                            ->label(__('mksine::users.date_of_birth'))
                             ->native(false)
                             ->displayFormat('d/m/Y')
                             ->maxDate(now()),
                     ])
-                    ->columns(2),
+                    ->inlineLabel()
+                    ->columnSpanFull(),
 
-                Section::make(__('Contact'))
+                Section::make(__('mksine::users.section_contact'))
                     ->schema([
                         Select::make('phone_country_code')
-                            ->label(__('Country Code'))
+                            ->label(__('mksine::users.country_code'))
                             ->options(config('mksine.country_dial_codes', []))
                             ->searchable()
                             ->native(false),
 
                         TextInput::make('phone_number')
-                            ->label(__('Phone Number'))
+                            ->label(__('mksine::users.phone_number'))
                             ->tel()
                             ->maxLength(20)
-                            ->placeholder(__('e.g. 912 123 4567')),
+                            ->placeholder(__('mksine::users.phone_placeholder')),
                     ])
-                    ->columns(2)
+                    ->columnSpanFull()
+                    ->inlineLabel()
                     ->collapsible(),
 
-                Section::make(__('Security'))
+                Section::make(__('mksine::users.section_security'))
                     ->schema([
                         TextInput::make('password')
-                            ->label(__('Password'))
+                            ->label(__('mksine::users.password'))
                             ->password()
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $context): bool => $context === 'create')
@@ -83,7 +85,8 @@ class UserForm
                             ->relationship('roles', 'name')
                             ->searchable(),
                     ])
-                    ->columns(1)
+                    ->columnSpanFull()
+                    ->inlineLabel()
                     ->collapsible()
                     ->collapsed(fn (string $context): bool => $context === 'edit'),
             ]);

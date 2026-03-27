@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'navigation_label' => 'ڕێکخستنەکان',
+    'title' => 'ڕێکخستنەکان',
+    'save' => 'پاشەکەوتکردن',
+    'save_success' => 'ڕێکخستنەکان بە سەرکەوتوویی پاشەکەوتکران',
+    'tabs' => [
+        'general' => 'گشتی',
+        'permalinks' => 'لینکە هەمیشەییەکان',
+    ],
+    'site_name' => 'ناوی ماڵپەڕ',
+    'short_site_name' => 'ناوی کورتەی ماڵپەڕ',
+    'logo' => 'لۆگۆ',
+    'favicon' => 'فەیڤیکۆن',
+    'front_page' => 'پەڕەی سەرەتا',
+    'front_page_helper' => 'هەڵبژێرە کامی پەڕە وەک سەرەتای ماڵپەڕ پیشان دەدرێت. بەتاڵ بەجێبهێڵە بۆ بنەڕەتی (نوێترین پۆستەکان).',
+    'front_page_default' => 'بنەڕەتی (نوێترین پۆستەکان)',
+    'home_page_url' => 'URLی پەڕەی سەرەتا',
+    'categories_url' => 'URLی پۆلەکان',
+    'single_category_url' => 'URLی پۆلی تاک',
+    'single_category_url_helper' => '{path} بەکاربهێنە بۆ ڕێگەی پۆل (وەک parent/child slug)',
+    'posts_url' => 'URLی پۆستەکان',
+    'single_post_url' => 'URLی پۆستی تاک',
+    'single_post_url_helper' => '{slug} بەکاربهێنە بۆ جێگرەوەی slugی پۆست',
+    'page_url' => 'URLی پەڕە',
+    'page_url_helper' => '{slug} بەکاربهێنە بۆ جێگرەوەی slugی پەڕە',
+];

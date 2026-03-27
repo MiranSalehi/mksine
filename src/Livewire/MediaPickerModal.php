@@ -165,11 +165,11 @@ class MediaPickerModal extends Component
     public function getFileTypes(): array
     {
         return [
-            '' => __('All Types'),
-            'image/' => __('Images'),
-            'video/' => __('Videos'),
-            'application/pdf' => __('PDF'),
-            'application/' => __('Documents'),
+            '' => __('mksine::media_picker.all_types'),
+            'image/' => __('mksine::media_picker.images'),
+            'video/' => __('mksine::media_picker.videos'),
+            'application/pdf' => __('mksine::media_picker.pdf'),
+            'application/' => __('mksine::media_picker.documents'),
         ];
     }
 

@@ -17,7 +17,7 @@ class CallToActionComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Call to Action');
+        return __('mksine::page_builder.component_labels.name_cta');
     }
 
     public static function getIcon(): string
@@ -32,63 +32,63 @@ class CallToActionComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('A section to encourage user action with title, text, and buttons.');
+        return __('mksine::page_builder.component_labels.desc_cta');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('title')
-                ->label(__('Title'))
+                ->label(__('mksine::page_builder.component_labels.title'))
                 ->required()
                 ->maxLength(255)
-                ->placeholder(__('Ready to get started?'))
+                ->placeholder(__('mksine::page_builder.component_labels.ready_to_get_started'))
                 ->columnSpanFull(),
             Textarea::make('description')
-                ->label(__('Description'))
+                ->label(__('mksine::page_builder.component_labels.description'))
                 ->rows(2)
                 ->maxLength(500)
-                ->placeholder(__('Join thousands of satisfied customers...'))
+                ->placeholder(__('mksine::page_builder.component_labels.join_thousands'))
                 ->columnSpanFull(),
             Select::make('style')
-                ->label(__('Style'))
+                ->label(__('mksine::page_builder.component_labels.style'))
                 ->options([
-                    'simple' => __('Simple'),
-                    'boxed' => __('Boxed'),
-                    'gradient' => __('Gradient'),
-                    'dark' => __('Dark'),
+                    'simple' => __('mksine::page_builder.component_labels.simple'),
+                    'boxed' => __('mksine::page_builder.component_labels.boxed'),
+                    'gradient' => __('mksine::page_builder.component_labels.gradient'),
+                    'dark' => __('mksine::page_builder.component_labels.dark'),
                 ])
                 ->default('gradient')
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Alignment'))
+                ->label(__('mksine::page_builder.component_labels.alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'between' => __('Space Between'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'between' => __('mksine::page_builder.component_labels.space_between'),
                 ])
                 ->default('center')
                 ->native(false),
             TextInput::make('button_text')
-                ->label(__('Button Text'))
+                ->label(__('mksine::page_builder.component_labels.button_text'))
                 ->required()
                 ->maxLength(100)
-                ->placeholder(__('Get Started')),
+                ->placeholder(__('mksine::page_builder.component_labels.get_started')),
             TextInput::make('button_url')
-                ->label(__('Button URL'))
+                ->label(__('mksine::page_builder.component_labels.button_url'))
                 ->required()
                 ->url()
                 ->placeholder('https://'),
             Toggle::make('show_secondary_button')
-                ->label(__('Show Secondary Button'))
+                ->label(__('mksine::page_builder.component_labels.show_secondary_button'))
                 ->default(false)
                 ->live(),
             TextInput::make('secondary_button_text')
-                ->label(__('Secondary Button Text'))
+                ->label(__('mksine::page_builder.component_labels.secondary_button_text'))
                 ->maxLength(100)
                 ->visible(fn ($get) => $get('show_secondary_button')),
             TextInput::make('secondary_button_url')
-                ->label(__('Secondary Button URL'))
+                ->label(__('mksine::page_builder.component_labels.secondary_button_url'))
                 ->url()
                 ->visible(fn ($get) => $get('show_secondary_button')),
         ];

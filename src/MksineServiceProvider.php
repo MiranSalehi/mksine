@@ -22,14 +22,19 @@ use Miran\Mksine\Console\Commands\PluginActivateCommand;
 use Miran\Mksine\Console\Commands\PluginDeactivateCommand;
 use Miran\Mksine\Console\Commands\PluginDiscoverCommand;
 use Miran\Mksine\Console\Commands\PluginInstallCommand;
+use Miran\Mksine\Console\Commands\PluginMigrateCommand;
 use Miran\Mksine\Console\Commands\PluginListCommand;
 use Miran\Mksine\Console\Commands\PluginMakeCommand;
+use Miran\Mksine\Console\Commands\PluginMakeModelCommand;
 use Miran\Mksine\Console\Commands\PluginMakePageCommand;
 use Miran\Mksine\Console\Commands\PluginMakeResourceCommand;
 use Miran\Mksine\Console\Commands\PluginMakeWidgetCommand;
+use Miran\Mksine\Console\Commands\PluginPublishCommand;
+use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
 use Miran\Mksine\Console\Commands\ThemePublishCommand;
+use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Core\Hooks\HookManager;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
@@ -206,6 +211,34 @@ class MksineServiceProvider extends PackageServiceProvider
             return new ThemeManager;
         });
 
+        // Register ThemeEnqueue as singleton (per-request queue for wp_enqueue_style/script-style API)
+        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeEnqueue::class, function () {
+            return new \Miran\Mksine\Core\Theme\ThemeEnqueue;
+        });
+
+        // Register ThemeRegistry for theme overrides and route callbacks (theme.php API)
+        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeRegistry::class, function () {
+            return new \Miran\Mksine\Core\Theme\ThemeRegistry;
+        });
+
+        // Register ThemeActionManager for template hooks (theme_add_action / theme_do_action)
+        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeActionManager::class, function () {
+            return new \Miran\Mksine\Core\Theme\ThemeActionManager;
+        });
+
+        // Register TranslationFileManager for Languages admin page (edit lang files)
+        $this->app->singleton(\Miran\Mksine\Core\Translation\TranslationFileManager::class, function () {
+            return new \Miran\Mksine\Core\Translation\TranslationFileManager;
+        });
+
+        $this->app->singleton(\Miran\Mksine\Core\Translation\AdminTranslationManager::class, function ($app) {
+            return new \Miran\Mksine\Core\Translation\AdminTranslationManager(
+                $app->make(\Miran\Mksine\Core\Translation\TranslationFileManager::class),
+                $app->make(\Miran\Mksine\Core\Plugins\PluginManager::class),
+                $app->make(\Miran\Mksine\Core\Theme\ThemeManager::class),
+            );
+        });
+
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {
             $registry = new ComponentRegistry();
@@ -250,10 +283,34 @@ class MksineServiceProvider extends PackageServiceProvider
 
             return $registry;
         });
+
+        // Register plugin PSR-4 autoload before any service provider boot() so application code
+        // (e.g. App\Models\User traits) can reference plugin namespaces. Full initialize() runs
+        // later; it also touches the database and must run after the DB layer is ready.
+        $this->app->make(PluginManager::class)->registerPluginAutoload();
     }
 
     public function packageBooted(): void
     {
+        // Load package defaults first, then project lang so project overrides (Languages page edits project files).
+        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'mksine');
+        if (function_exists('lang_path') && is_dir(lang_path())) {
+            $this->loadTranslationsFrom(lang_path(), 'mksine');
+        }
+
+        $this->registerPublishableLang();
+        $this->registerPublishableFonts();
+        $this->ensureDefaultLangInProject();
+
+        // Configure Language Switch: locales from TranslationFileManager, render in panel header (topbar).
+        if (class_exists(\BezhanSalleh\LanguageSwitch\LanguageSwitch::class)) {
+            \BezhanSalleh\LanguageSwitch\LanguageSwitch::configureUsing(function ($switch) {
+                $switch
+                    ->locales(fn () => app(\Miran\Mksine\Core\Translation\TranslationFileManager::class)->getAvailableLocales())
+                    ->renderHook(\Filament\View\PanelsRenderHook::USER_MENU_BEFORE);
+            });
+        }
+
         $this->registerModelPolicies();
 
         // Asset Registration
@@ -261,6 +318,12 @@ class MksineServiceProvider extends PackageServiceProvider
             $this->getAssets(),
             $this->getAssetPackageName()
         );
+
+        // Plugin assets (must run before filament:assets for CLI publish)
+        MksinePlugin::registerPluginAssets();
+
+        $this->registerPluginTranslations();
+        $this->registerThemeTranslations();
 
         FilamentAsset::registerScriptData(
             $this->getScriptData(),
@@ -273,11 +336,7 @@ class MksineServiceProvider extends PackageServiceProvider
         FilamentView::registerRenderHook(
             'panels::head.end',
             function (): string {
-                return <<<'HTML'
-                    <script>
-                        window.ckeditorInstances = window.ckeditorInstances || {};
-                    </script>
-                HTML;
+                return view('mksine::partials.ckeditor-bootstrap')->render();
             }
         );
 
@@ -317,6 +376,7 @@ class MksineServiceProvider extends PackageServiceProvider
         Livewire::component('mksine::frontend.post-show', \Miran\Mksine\Livewire\Frontend\PostShow::class);
         Livewire::component('mksine::frontend.post-comments', \Miran\Mksine\Livewire\Frontend\PostComments::class);
         Livewire::component('mksine::frontend.page-show', \Miran\Mksine\Livewire\Frontend\PageShow::class);
+        Livewire::component('mksine::frontend.frontend-resolver', \Miran\Mksine\Livewire\Frontend\FrontendResolver::class);
 
         // Register PageBuilder Livewire Components
         Livewire::component('mksine::page-builder', PageBuilder::class);
@@ -465,17 +525,22 @@ class MksineServiceProvider extends PackageServiceProvider
             // Plugin commands
             PluginListCommand::class,
             PluginInstallCommand::class,
+            PluginMigrateCommand::class,
             PluginActivateCommand::class,
             PluginDeactivateCommand::class,
             PluginUninstallCommand::class,
             PluginDiscoverCommand::class,
+            PluginPublishCommand::class,
+            PluginPublishLangCommand::class,
             PluginMakeCommand::class,
+            PluginMakeModelCommand::class,
             PluginMakeResourceCommand::class,
             PluginMakePageCommand::class,
             PluginMakeWidgetCommand::class,
             // Theme commands
             ThemeMakeCommand::class,
             ThemePublishCommand::class,
+            ThemePublishLangCommand::class,
         ];
     }
 
@@ -890,5 +955,157 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         return null;
+    }
+
+    /**
+     * Load translations for active plugins from lang/vendor/{plugin-id}/.
+     */
+    private function registerPluginTranslations(): void
+    {
+        if (! function_exists('lang_path')) {
+            return;
+        }
+
+        try {
+            if (! Schema::hasTable('mks_plugins')) {
+                return;
+            }
+
+            $pluginManager = app(PluginManager::class);
+            if (! $pluginManager->isInitialized()) {
+                $pluginManager->initialize();
+            }
+
+            $registry = $pluginManager->getRegistry();
+
+            foreach ($registry->getManifests() as $pluginId => $manifest) {
+                if (! $registry->isActive($pluginId)) {
+                    continue;
+                }
+
+                $publishedPath = lang_path('vendor/' . $pluginId);
+                if (is_dir($publishedPath)) {
+                    $this->loadTranslationsFrom($publishedPath, $pluginId);
+                } elseif ($manifest->translationsPath()) {
+                    $this->loadTranslationsFrom($manifest->translationsPath(), $pluginId);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if DB not ready (e.g. during migrate)
+        }
+    }
+
+    /**
+     * Load translations for the active theme from lang/vendor/theme-{identifier}/.
+     */
+    private function registerThemeTranslations(): void
+    {
+        if (! function_exists('lang_path')) {
+            return;
+        }
+
+        try {
+            $themeManager = app(\Miran\Mksine\Core\Theme\ThemeManager::class);
+            $active = $themeManager->getActive();
+
+            if (! $active) {
+                return;
+            }
+
+            $publishedPath = lang_path('vendor/theme-' . $active->identifier);
+            if (is_dir($publishedPath)) {
+                $this->loadTranslationsFrom($publishedPath, 'theme-' . $active->identifier);
+            } else {
+                $src = $themeManager->getThemeTranslationsPath($active);
+                if ($src) {
+                    $this->loadTranslationsFrom($src, 'theme-' . $active->identifier);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if theme system not ready
+        }
+    }
+
+    /**
+     * Register publishable font files: package fonts → public/fonts.
+     * Run: php artisan vendor:publish --tag=mksine-fonts
+     */
+    private function registerPublishableFonts(): void
+    {
+        $fontsPath = realpath(__DIR__ . '/../resources/fonts/iranyekan');
+        if (! $fontsPath || ! is_dir($fontsPath)) {
+            return;
+        }
+
+        $publishArray = [];
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($fontsPath, \RecursiveDirectoryIterator::SKIP_DOTS)) as $file) {
+            if ($file->isFile()) {
+                $relative = str_replace($fontsPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $publishArray[$file->getPathname()] = public_path('fonts/iranyekan/' . $relative);
+            }
+        }
+
+        if ($publishArray !== []) {
+            $this->publishes($publishArray, 'mksine-fonts');
+        }
+    }
+
+    /**
+     * Register publishable translation files: package lang → project lang path.
+     * Run: php artisan vendor:publish --tag=mksine-lang
+     */
+    private function registerPublishableLang(): void
+    {
+        if (! function_exists('lang_path')) {
+            return;
+        }
+
+        $packageLang = realpath(__DIR__ . '/../resources/lang');
+        if (! $packageLang || ! is_dir($packageLang)) {
+            return;
+        }
+
+        $publishArray = [];
+        foreach (array_merge(
+            glob($packageLang . '/*/*.php') ?: [],
+            glob($packageLang . '/*.json') ?: []
+        ) as $absPath) {
+            $relative = str_replace($packageLang . DIRECTORY_SEPARATOR, '', $absPath);
+            $publishArray[$absPath] = lang_path($relative);
+        }
+
+        if ($publishArray !== []) {
+            $this->publishes($publishArray, 'mksine-lang');
+        }
+    }
+
+    /**
+     * Copy default package translations to project lang path if missing (e.g. after install).
+     * Only copies when the target file does not exist so user edits are not overwritten.
+     */
+    private function ensureDefaultLangInProject(): void
+    {
+        if (! function_exists('lang_path')) {
+            return;
+        }
+
+        $packageLang = realpath(__DIR__ . '/../resources/lang');
+        if (! $packageLang || ! is_dir($packageLang)) {
+            return;
+        }
+
+        $filesystem = app(Filesystem::class);
+        $candidates = array_merge(
+            glob($packageLang . '/*/*.php') ?: [],
+            glob($packageLang . '/*.json') ?: []
+        );
+        foreach ($candidates as $absPath) {
+            $relative = str_replace($packageLang . DIRECTORY_SEPARATOR, '', $absPath);
+            $target = lang_path($relative);
+            if (! $filesystem->exists($target)) {
+                $filesystem->ensureDirectoryExists(dirname($target));
+                $filesystem->copy($absPath, $target);
+            }
+        }
     }
 }

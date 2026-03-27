@@ -4,15 +4,15 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 use Miran\Mksine\Models\Category;
 
 class CategoryList extends Component
 {
-    #[Layout('mksine::themes.mksine.layouts.index')]
+    public bool $skipLayout = false;
+
     public function render()
     {
-        View::share('title', __('Categories') . ' - ' . (config('app.name', 'MKS CMS')));
+        View::share('title', __('mksine::frontend.categories') . ' - ' . (config('app.name', 'MKS CMS')));
 
         $categories = Category::query()
             ->whereNull('parent_id')
@@ -24,8 +24,8 @@ class CategoryList extends Component
             ->orderBy('sort_order')
             ->get();
 
-        return view('mksine::themes.mksine.categories', [
-            'categories' => $categories,
-        ]);
+        $view = view(theme_view('categories'), ['categories' => $categories]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

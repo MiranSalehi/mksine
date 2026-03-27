@@ -4,21 +4,31 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
+use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Post;
 
 class PostList extends Component
 {
     use WithPagination;
 
-    #[Layout('mksine::components.layouts.app')]
+    public bool $skipLayout = false;
+
     public function render()
     {
-        return view('mksine::livewire.frontend.post-list', [
-            'posts' => Post::query()
-                ->where('status', 'published')
-                ->latest('published_at')
-                ->paginate(12),
-        ]);
+        $posts = Post::query()
+            ->where('status', 'published')
+            ->latest('published_at')
+            ->paginate(12);
+
+        $categories = Category::query()
+            ->with('parent')
+            ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
+            ->orderBy('sort_order')
+            ->take(10)
+            ->get();
+
+        $view = view(theme_view('posts'), ['posts' => $posts, 'categories' => $categories]);
+
+        return $this->skipLayout ? $view : $view->layout(theme_layout());
     }
 }

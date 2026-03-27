@@ -22,7 +22,7 @@ class PostMenuItemSource implements MenuItemSourcePaginatedInterface
 
     public function getLabel(): string
     {
-        return __('Posts');
+        return (string) __('mksine::posts.plural_model_label');
     }
 
     public function getIcon(): string

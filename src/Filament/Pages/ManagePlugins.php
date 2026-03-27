@@ -11,10 +11,13 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use ZipArchive;
 
 class ManagePlugins extends Page
 {
+    use HasPageShield;
+
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-puzzle-piece';
 
     protected string $view = 'mksine::filament.pages.manage-plugins';
@@ -55,17 +58,17 @@ class ManagePlugins extends Page
 
     public static function getNavigationLabel(): string
     {
-        return __('Plugins');
+        return __('mksine::plugins.navigation_label');
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return __('System');
+        return __('mksine::common.system');
     }
 
     public function getTitle(): string
     {
-        return __('Manage Plugins');
+        return __('mksine::plugins.title');
     }
 
     public function getSubheading(): ?string
@@ -73,20 +76,20 @@ class ManagePlugins extends Page
         $active = collect($this->plugins)->where('status', 'active')->count();
         $total = count($this->plugins);
 
-        return __(':active of :total plugins active', ['active' => $active, 'total' => $total]);
+        return __('mksine::plugins.subheading', ['active' => $active, 'total' => $total]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('upload')
-                ->label(__('Upload Plugin'))
+                ->label(__('mksine::plugins.upload_plugin'))
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('primary')
                 ->form([
                     FileUpload::make('plugin_file')
-                        ->label(__('Plugin ZIP File'))
-                        ->helperText(__('Upload a plugin as a .zip file. The ZIP should contain a folder with plugin.php inside.'))
+                        ->label(__('mksine::plugins.plugin_zip_file'))
+                        ->helperText(__('mksine::plugins.plugin_zip_helper'))
                         ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
                         ->maxSize(51200) // 50MB max
                         ->required()
@@ -105,8 +108,8 @@ class ManagePlugins extends Page
                         $tempPath = storage_path('app/' . $uploadedFile);
                     } else {
                         Notification::make()
-                            ->title(__('Upload failed'))
-                            ->body(__('Invalid file format.'))
+                            ->title(__('mksine::plugins.upload_failed'))
+                            ->body(__('mksine::plugins.invalid_file_format'))
                             ->danger()
                             ->send();
 
@@ -117,12 +120,12 @@ class ManagePlugins extends Page
                 }),
 
             Action::make('discover')
-                ->label(__('Discover Plugins'))
+                ->label(__('mksine::plugins.discover_plugins'))
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('info')
                 ->action(function () {
                     Notification::make()
-                        ->title(__('Plugins discovered successfully'))
+                        ->title(__('mksine::plugins.plugins_discovered'))
                         ->success()
                         ->send();
 
@@ -147,14 +150,14 @@ class ManagePlugins extends Page
         try {
             // Validate file exists
             if (! File::exists($tempPath)) {
-                throw new \RuntimeException(__('Uploaded file not found.'));
+                throw new \RuntimeException(__('mksine::plugins.uploaded_file_not_found'));
             }
 
             $zip = new ZipArchive;
             $openResult = $zip->open($tempPath);
 
             if ($openResult !== true) {
-                throw new \RuntimeException(__('Failed to open ZIP file. Error code: :code', ['code' => $openResult]));
+                throw new \RuntimeException(__('mksine::plugins.zip_open_failed', ['code' => $openResult]));
             }
 
             // Find the root folder in ZIP (the plugin folder)
@@ -183,7 +186,7 @@ class ManagePlugins extends Page
             if (! $hasPluginPhp) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Invalid plugin: plugin.php not found in the ZIP file.'));
+                throw new \RuntimeException(__('mksine::plugins.invalid_plugin_no_manifest'));
             }
 
             // Determine plugin ID from manifest
@@ -200,7 +203,7 @@ class ManagePlugins extends Page
             if (! is_array($manifest) || empty($manifest['id'])) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Invalid plugin manifest: missing plugin ID.'));
+                throw new \RuntimeException(__('mksine::plugins.invalid_plugin_missing_id'));
             }
 
             $pluginId = $manifest['id'];
@@ -210,7 +213,7 @@ class ManagePlugins extends Page
             if (File::isDirectory($targetPath)) {
                 $zip->close();
 
-                throw new \RuntimeException(__('Plugin ":id" already exists. Please uninstall it first.', ['id' => $pluginId]));
+                throw new \RuntimeException(__('mksine::plugins.plugin_already_exists', ['id' => $pluginId]));
             }
 
             // Extract to plugins directory
@@ -232,8 +235,8 @@ class ManagePlugins extends Page
             }
 
             Notification::make()
-                ->title(__('Plugin uploaded successfully'))
-                ->body(__('Plugin ":name" (v:version) has been uploaded. You can now install and activate it.', [
+                ->title(__('mksine::plugins.plugin_uploaded'))
+                ->body(__('mksine::plugins.plugin_uploaded_body', [
                     'name' => $manifest['name'] ?? $pluginId,
                     'version' => $manifest['version'] ?? '?',
                 ]))
@@ -244,7 +247,7 @@ class ManagePlugins extends Page
 
         } catch (\Throwable $e) {
             Notification::make()
-                ->title(__('Upload failed'))
+                ->title(__('mksine::plugins.upload_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -258,14 +261,14 @@ class ManagePlugins extends Page
             $pluginManager->install($pluginId);
 
             Notification::make()
-                ->title(__('Plugin installed successfully'))
+                ->title(__('mksine::plugins.plugin_installed'))
                 ->success()
                 ->send();
 
             $this->refreshPage();
         } catch (\Exception $e) {
             Notification::make()
-                ->title(__('Installation failed'))
+                ->title(__('mksine::plugins.installation_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -278,15 +281,21 @@ class ManagePlugins extends Page
             $pluginManager = app(PluginManager::class);
             $pluginManager->activate($pluginId);
 
+            // Publish assets to public/plugins/{id}/ after activation (mirrors theme behaviour).
+            $manifest = $pluginManager->getManifest($pluginId);
+            if ($manifest) {
+                $manifest->publishAssets();
+            }
+
             Notification::make()
-                ->title(__('Plugin activated successfully'))
+                ->title(__('mksine::plugins.plugin_activated'))
                 ->success()
                 ->send();
 
             $this->refreshPage();
         } catch (\Exception $e) {
             Notification::make()
-                ->title(__('Activation failed'))
+                ->title(__('mksine::plugins.activation_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -300,14 +309,14 @@ class ManagePlugins extends Page
             $pluginManager->deactivate($pluginId);
 
             Notification::make()
-                ->title(__('Plugin deactivated successfully'))
+                ->title(__('mksine::plugins.plugin_deactivated'))
                 ->success()
                 ->send();
 
             $this->refreshPage();
         } catch (\Exception $e) {
             Notification::make()
-                ->title(__('Deactivation failed'))
+                ->title(__('mksine::plugins.deactivation_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -321,14 +330,14 @@ class ManagePlugins extends Page
             $pluginManager->uninstall($pluginId, false);
 
             Notification::make()
-                ->title(__('Plugin uninstalled successfully'))
+                ->title(__('mksine::plugins.plugin_uninstalled'))
                 ->success()
                 ->send();
 
             $this->refreshPage();
         } catch (\Exception $e) {
             Notification::make()
-                ->title(__('Uninstallation failed'))
+                ->title(__('mksine::plugins.uninstallation_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -344,7 +353,7 @@ class ManagePlugins extends Page
             $manifest = $pluginManager->getManifest($pluginId);
 
             if (! $manifest) {
-                throw new \RuntimeException(__('Plugin not found.'));
+                throw new \RuntimeException(__('mksine::plugins.plugin_not_found'));
             }
 
             // Check status
@@ -352,14 +361,14 @@ class ManagePlugins extends Page
 
             // Only allow deletion if plugin is not installed
             if ($status !== 'not_installed') {
-                throw new \RuntimeException(__('Please uninstall the plugin before deleting it.'));
+                throw new \RuntimeException(__('mksine::plugins.please_uninstall_before_delete'));
             }
 
             // Get plugin path from manifest
             $pluginPath = $manifest->basePath();
 
             if (empty($pluginPath)) {
-                throw new \RuntimeException(__('Cannot delete this plugin. It may be a Composer package.'));
+                throw new \RuntimeException(__('mksine::plugins.cannot_delete_composer_plugin'));
             }
 
             // Safety check: ensure path is within plugins directory
@@ -368,15 +377,15 @@ class ManagePlugins extends Page
             $realPluginsDir = realpath($pluginsDir);
 
             if (! $realPluginPath || ! $realPluginsDir || ! str_starts_with($realPluginPath, $realPluginsDir)) {
-                throw new \RuntimeException(__('Cannot delete plugin outside of plugins directory.'));
+                throw new \RuntimeException(__('mksine::plugins.cannot_delete_outside_plugins_dir'));
             }
 
             // Delete the plugin directory
             File::deleteDirectory($pluginPath);
 
             Notification::make()
-                ->title(__('Plugin deleted successfully'))
-                ->body(__('All plugin files have been removed from the server.'))
+                ->title(__('mksine::plugins.plugin_deleted'))
+                ->body(__('mksine::plugins.all_files_removed'))
                 ->success()
                 ->send();
 
@@ -384,7 +393,7 @@ class ManagePlugins extends Page
 
         } catch (\Exception $e) {
             Notification::make()
-                ->title(__('Delete failed'))
+                ->title(__('mksine::plugins.delete_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -406,11 +415,11 @@ class ManagePlugins extends Page
     public function getStatusLabel(string $status): string
     {
         return match ($status) {
-            'active' => __('Active'),
-            'inactive' => __('Inactive'),
-            'installed' => __('Installed'),
-            'not_installed' => __('Not Installed'),
-            'boot_failed' => __('Boot Failed'),
+            'active' => __('mksine::plugins.status_active'),
+            'inactive' => __('mksine::plugins.status_inactive'),
+            'installed' => __('mksine::plugins.status_installed'),
+            'not_installed' => __('mksine::plugins.status_not_installed'),
+            'boot_failed' => __('mksine::plugins.status_boot_failed'),
             default => $status,
         };
     }
@@ -429,7 +438,7 @@ class ManagePlugins extends Page
     {
         $logger = app(PluginLogger::class);
         $this->pluginLogPluginId = $pluginId;
-        $this->pluginLogContent = $logger->getLogContent($pluginId) ?? __('No log entries yet.');
+        $this->pluginLogContent = $logger->getLogContent($pluginId) ?? __('mksine::plugins.no_log_entries_yet');
         $plugin = collect($this->plugins)->firstWhere('id', $pluginId);
         $this->pluginLogPluginName = $plugin['name'] ?? $pluginId;
 
@@ -445,7 +454,7 @@ class ManagePlugins extends Page
         $logger = app(PluginLogger::class);
         $logger->clearLog($this->pluginLogPluginId);
 
-        $this->pluginLogContent = __('No log entries yet.');
+        $this->pluginLogContent = __('mksine::plugins.no_log_entries_yet');
     }
 
     public function closePluginLogModal(): void

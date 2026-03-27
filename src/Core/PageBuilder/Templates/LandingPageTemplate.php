@@ -7,9 +7,9 @@ class LandingPageTemplate
     public static function config(): array
     {
         return [
-            'name' => 'Landing Page',
-            'description' => 'Perfect for product launches, campaigns, or service pages',
-            'category' => 'Marketing',
+            'name' => __('mksine::page_builder.templates.landing_page.name'),
+            'description' => __('mksine::page_builder.templates.landing_page.description'),
+            'category' => __('mksine::page_builder.templates.categories.marketing'),
             'thumbnail' => null,
             'blocks' => [
                 [

@@ -2,8 +2,8 @@
 
 namespace Miran\Mksine\Core\PageBuilder\Components;
 
-use Filament\Forms\Components\RichEditor;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Filament\Forms\Components\CKEditor;
 
 class TextComponent extends BaseBuilderComponent
 {
@@ -14,7 +14,7 @@ class TextComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Text');
+        return __('mksine::page_builder.component_labels.name_text');
     }
 
     public static function getIcon(): string
@@ -29,30 +29,15 @@ class TextComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add rich text content with formatting.');
+        return __('mksine::page_builder.component_labels.desc_text');
     }
 
     public static function getSchema(): array
     {
         return [
-            RichEditor::make('content')
-                ->label(__('Content'))
+            CKEditor::make('content')
+                ->label(__('mksine::page_builder.component_labels.content'))
                 ->required()
-                ->toolbarButtons([
-                    'bold',
-                    'italic',
-                    'underline',
-                    'strike',
-                    'link',
-                    'orderedList',
-                    'bulletList',
-                    'h2',
-                    'h3',
-                    'blockquote',
-                    'codeBlock',
-                    'redo',
-                    'undo',
-                ])
                 ->columnSpanFull(),
         ];
     }

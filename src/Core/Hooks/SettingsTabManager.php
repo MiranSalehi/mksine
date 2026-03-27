@@ -27,7 +27,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 class SettingsTabManager
 {
     /**
-     * @var array<int, array{id: string, label: string, schema: array|callable, sortOrder: int}>
+     * @var array<int, array{id: string, label: string|\Closure, schema: array|callable, sortOrder: int}>
      */
     private array $tabs = [];
 
@@ -35,11 +35,11 @@ class SettingsTabManager
      * Register a tab on the Settings page.
      *
      * @param  string  $id  Unique tab identifier (e.g. 'my_plugin', 'seo')
-     * @param  string  $label  Tab label (translatable string or key)
+     * @param  string|\Closure  $label  Tab label (string or closure for lazy translation — use closure when using __())
      * @param  array|callable  $schema  Form components for the tab, or callable returning array
      * @param  int  $sortOrder  Lower values appear first (default 0)
      */
-    public function registerTab(string $id, string $label, array|callable $schema, int $sortOrder = 0): void
+    public function registerTab(string $id, string|\Closure $label, array|callable $schema, int $sortOrder = 0): void
     {
         $this->tabs[] = [
             'id' => $id,
@@ -64,8 +64,9 @@ class SettingsTabManager
                 ? $def['schema']()
                 : $def['schema'];
 
+            $label = is_callable($def['label']) ? $def['label']() : $def['label'];
             $tabInstances[] = Tab::make($def['id'])
-                ->label($def['label'])
+                ->label($label)
                 ->schema($schema)
                 ->columns(2);
         }

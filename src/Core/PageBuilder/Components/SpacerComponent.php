@@ -14,7 +14,7 @@ class SpacerComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Spacer');
+        return __('mksine::page_builder.component_labels.name_spacer');
     }
 
     public static function getIcon(): string
@@ -29,21 +29,21 @@ class SpacerComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add vertical spacing between elements.');
+        return __('mksine::page_builder.component_labels.desc_spacer');
     }
 
     public static function getSchema(): array
     {
         return [
             Select::make('size')
-                ->label(__('Spacing Size'))
+                ->label(__('mksine::page_builder.component_labels.spacing_size'))
                 ->options([
-                    'xs' => __('Extra Small (8px)'),
-                    'sm' => __('Small (16px)'),
-                    'md' => __('Medium (32px)'),
-                    'lg' => __('Large (48px)'),
-                    'xl' => __('Extra Large (64px)'),
-                    '2xl' => __('2X Large (96px)'),
+                    'xs' => __('mksine::page_builder.component_labels.extra_small_8'),
+                    'sm' => __('mksine::page_builder.component_labels.small_16'),
+                    'md' => __('mksine::page_builder.component_labels.medium_32'),
+                    'lg' => __('mksine::page_builder.component_labels.large_48'),
+                    'xl' => __('mksine::page_builder.component_labels.extra_large_64'),
+                    '2xl' => __('mksine::page_builder.component_labels.two_x_large_96'),
                 ])
                 ->default('md')
                 ->required()

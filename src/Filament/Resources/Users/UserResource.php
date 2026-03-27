@@ -20,9 +20,24 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('mksine::users.navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mksine::users.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mksine::users.plural_model_label');
+    }
+
     public static function getNavigationGroup(): ?string
     {
-        return __('Access Control');
+        return __('mksine::common.access_control');
     }
 
     public static function form(Schema $schema): Schema

@@ -16,7 +16,7 @@ class ButtonComponent extends BaseBuilderComponent
 
     public static function getName(): string
     {
-        return __('Button');
+        return __('mksine::page_builder.component_labels.name_button');
     }
 
     public static function getIcon(): string
@@ -31,55 +31,55 @@ class ButtonComponent extends BaseBuilderComponent
 
     public static function getDescription(): string
     {
-        return __('Add a call-to-action button.');
+        return __('mksine::page_builder.component_labels.desc_button');
     }
 
     public static function getSchema(): array
     {
         return [
             TextInput::make('text')
-                ->label(__('Button Text'))
+                ->label(__('mksine::page_builder.component_labels.button_text'))
                 ->required()
                 ->maxLength(100)
-                ->placeholder(__('Click here')),
+                ->placeholder(__('mksine::page_builder.component_labels.click_here')),
             TextInput::make('url')
-                ->label(__('Link URL'))
+                ->label(__('mksine::page_builder.component_labels.link_url'))
                 ->required()
                 ->url()
                 ->placeholder('https://'),
             Select::make('style')
-                ->label(__('Style'))
+                ->label(__('mksine::page_builder.component_labels.style'))
                 ->options([
-                    'primary' => __('Primary'),
-                    'secondary' => __('Secondary'),
-                    'outline' => __('Outline'),
-                    'ghost' => __('Ghost'),
+                    'primary' => __('mksine::page_builder.component_labels.primary'),
+                    'secondary' => __('mksine::page_builder.component_labels.secondary'),
+                    'outline' => __('mksine::page_builder.component_labels.outline'),
+                    'ghost' => __('mksine::page_builder.component_labels.ghost'),
                 ])
                 ->default('primary')
                 ->native(false),
             Select::make('size')
-                ->label(__('Size'))
+                ->label(__('mksine::page_builder.component_labels.size'))
                 ->options([
-                    'sm' => __('Small'),
-                    'md' => __('Medium'),
-                    'lg' => __('Large'),
+                    'sm' => __('mksine::page_builder.component_labels.small'),
+                    'md' => __('mksine::page_builder.component_labels.medium'),
+                    'lg' => __('mksine::page_builder.component_labels.large'),
                 ])
                 ->default('md')
                 ->native(false),
             Select::make('alignment')
-                ->label(__('Alignment'))
+                ->label(__('mksine::page_builder.component_labels.alignment'))
                 ->options([
-                    'left' => __('Left'),
-                    'center' => __('Center'),
-                    'right' => __('Right'),
+                    'left' => __('mksine::page_builder.component_labels.left'),
+                    'center' => __('mksine::page_builder.component_labels.center'),
+                    'right' => __('mksine::page_builder.component_labels.right'),
                 ])
                 ->default('left')
                 ->native(false),
             Toggle::make('new_tab')
-                ->label(__('Open in New Tab'))
+                ->label(__('mksine::page_builder.component_labels.open_in_new_tab'))
                 ->default(false),
             Toggle::make('full_width')
-                ->label(__('Full Width'))
+                ->label(__('mksine::page_builder.component_labels.full_width'))
                 ->default(false),
         ];
     }

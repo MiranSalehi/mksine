@@ -1,17 +1,58 @@
+/* IranYekan font - packages/mksine/resources/fonts/iranyekan/ (publish to public/fonts/iranyekan/) */
+@font-face {
+    font-family: IranYekan;
+    src: url('/fonts/iranyekan/woff2/iranyekanweblight.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: IranYekan;
+    src: url('/fonts/iranyekan/woff2/iranyekanwebregular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: IranYekan;
+    src: url('/fonts/iranyekan/woff2/iranyekanwebbold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* DroidKufi font (Kurdish) */
+@font-face {
+    font-family: DroidKufi;
+    src: url('/fonts/DroidKufiRegular.eot');
+    src: url('/fonts/DroidKufiRegular.eot?#iefix') format('embedded-opentype'),
+         url('/fonts/DroidKufiRegular.woff') format('woff'),
+         url('/fonts/DroidKufiRegular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 @import 'tailwindcss' source(none);
 @source '../../src';
 @source '../views';
+@source '../../../../plugins';
 @import '../../../../vendor/filament/filament/resources/css/index.css';
-:root {
-    /* Overrides the border radius setting in the theme. */
-    --ck-border-radius: 0.5rem;
 
-    /* Overrides the default font size in the theme. */
+/* Override Filament's default font with IranYekan */
+:root {
+    --font-family: 'IranYekan', 'DroidKufi', ui-sans-serif, system-ui, sans-serif;
+    /* CKEditor overrides */
+    --ck-border-radius: 0.5rem;
     --ck-font-size-base: 14px;
 }
 
+*, body, html {
+    font-family: 'IranYekan', 'DroidKufi', ui-sans-serif, system-ui, sans-serif;
+}
+
 .dark {
-    --ck-color-base-background: hsla(0,0%,100%,.05);
+    --ck-color-base-background: hsla(0, 0%, 100%, .05);
 
     /* Helper variables to avoid duplication in the colors. */
     --ck-custom-background: hsl(270, 1%, 29%);
@@ -123,6 +164,25 @@
     border-top-left-radius: var(--ck-border-radius);
 }
 
-.ck-rounded-corners .ck.ck-toolbar, .ck.ck-toolbar.ck-rounded-corners {
+.ck-rounded-corners .ck.ck-toolbar,
+.ck.ck-toolbar.ck-rounded-corners {
     border-radius: 0;
+}
+
+/* mks-booking: operator reminders slide-over — header flush to panel top (Filament default is pt-6) */
+.fi-mks-booking-operator-reminders-modal .fi-modal-window > .fi-modal-header {
+    padding-top: 0 !important;
+}
+
+/* Same modal: slightly tighter horizontal padding on the list body (beat Filament sticky px-6) */
+.fi-mks-booking-operator-reminders-modal .fi-modal-content {
+    padding-inline: 0.75rem !important;
+}
+
+/*
+ * Filament floating notifications stack: default inset-4 feels too wide on RTL panels.
+ * Keep a small gutter from the viewport edges.
+ */
+.fi-no {
+    inset: 1rem 0.5rem;
 }
