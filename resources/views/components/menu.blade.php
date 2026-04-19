@@ -18,14 +18,26 @@
         <ul class="{{ $ulClass }}">
     @endif
         @foreach($menuItems as $item)
+            @php
+                $hasChildren = ! empty($item['children']);
+            @endphp
             <li>
-                <a href="{{ $item['url'] }}" 
-                   @if(!empty($item['target'])) target="{{ $item['target'] }}" @endif
-                >
-                    {{ $item['label'] }}
-                </a>
+                @if ($hasChildren)
+                    <span
+                        class="mksine-menu-parent-trigger"
+                        role="button"
+                        tabindex="0"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                    >{{ $item['label'] }}</span>
+                @else
+                    <a
+                        href="{{ $item['url'] }}"
+                        @if (! empty($item['target'])) target="{{ $item['target'] }}" @endif
+                    >{{ $item['label'] }}</a>
+                @endif
 
-                @if(!empty($item['children']))
+                @if ($hasChildren)
                     <x-mksine::menu :items="$item['children']" :location="$location" :depth="$depth + 1" />
                 @endif
             </li>

@@ -2,15 +2,26 @@
 
 namespace Miran\Mksine;
 
+use App\Policies\CategoryPolicy;
+use App\Policies\CommentPolicy;
+use App\Policies\MediaPolicy;
+use App\Policies\MenuLocationPolicy;
+use App\Policies\MenuPolicy;
+use App\Policies\PagePolicy;
+use App\Policies\PostPolicy;
+use App\Policies\RolePolicy;
+use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -18,56 +29,62 @@ use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
 use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
+use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\PluginActivateCommand;
 use Miran\Mksine\Console\Commands\PluginDeactivateCommand;
 use Miran\Mksine\Console\Commands\PluginDiscoverCommand;
 use Miran\Mksine\Console\Commands\PluginInstallCommand;
-use Miran\Mksine\Console\Commands\PluginMigrateCommand;
 use Miran\Mksine\Console\Commands\PluginListCommand;
 use Miran\Mksine\Console\Commands\PluginMakeCommand;
 use Miran\Mksine\Console\Commands\PluginMakeModelCommand;
 use Miran\Mksine\Console\Commands\PluginMakePageCommand;
 use Miran\Mksine\Console\Commands\PluginMakeResourceCommand;
 use Miran\Mksine\Console\Commands\PluginMakeWidgetCommand;
+use Miran\Mksine\Console\Commands\PluginMigrateCommand;
 use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
+use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
 use Miran\Mksine\Console\Commands\ThemePublishCommand;
 use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
+use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\FormHookManager;
+use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
 use Miran\Mksine\Core\Hooks\HookManager;
+use Miran\Mksine\Core\Hooks\LaravelHookAsyncDispatcher;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Core\Hooks\PageHookManager;
-use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
-use Miran\Mksine\Core\Hooks\LaravelHookAsyncDispatcher;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
 use Miran\Mksine\Core\Hooks\SettingsTabManager;
+use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
 use Miran\Mksine\Core\Hooks\TableHookManager;
 use Miran\Mksine\Core\MenuItemSources\CategoryMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\CustomLinkMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PageMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PostMenuItemSource;
-use Miran\Mksine\Core\Plugins\PluginLogger;
-use Miran\Mksine\Core\Plugins\PluginManager;
-use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
-use Miran\Mksine\Core\Theme\ThemeManager;
-use Miran\Mksine\Livewire\MediaPickerModal;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
+use Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent;
 use Miran\Mksine\Core\PageBuilder\Components\DividerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\FeatureListComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeadingComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeroComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ImageComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineClinicFeaturesGridComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineFeaturedDomainsComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineFinanceShowcaseComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineHeroDomainComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksinePostCommentsFeedComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineServicesTrioComponent;
+use Miran\Mksine\Core\PageBuilder\Components\MksineTestimonialsGridComponent;
 use Miran\Mksine\Core\PageBuilder\Components\SliderComponent;
 use Miran\Mksine\Core\PageBuilder\Components\SpacerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\TabsComponent;
-use Miran\Mksine\Core\PageBuilder\Components\TestimonialComponent;
 use Miran\Mksine\Core\PageBuilder\Components\TextComponent;
 use Miran\Mksine\Core\PageBuilder\Livewire\ComponentEditor;
 use Miran\Mksine\Core\PageBuilder\Livewire\PageBuilder;
@@ -76,7 +93,27 @@ use Miran\Mksine\Core\PageBuilder\Templates\AboutPageTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\BlankTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\ContactPageTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\LandingPageTemplate;
+use Miran\Mksine\Core\PageBuilder\Templates\MksineDefaultHomeTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
+use Miran\Mksine\Core\Plugins\PluginLogger;
+use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Theme\ThemeActionManager;
+use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
+use Miran\Mksine\Core\Theme\ThemeEnqueue;
+use Miran\Mksine\Core\Theme\ThemeLivewireMissingComponentResolver;
+use Miran\Mksine\Core\Theme\ThemeManager;
+use Miran\Mksine\Core\Theme\ThemeRegistry;
+use Miran\Mksine\Core\Translation\AdminTranslationManager;
+use Miran\Mksine\Core\Translation\TranslationFileManager;
+use Miran\Mksine\Livewire\Frontend\CategoryList;
+use Miran\Mksine\Livewire\Frontend\CategoryShow;
+use Miran\Mksine\Livewire\Frontend\FrontendResolver;
+use Miran\Mksine\Livewire\Frontend\Home;
+use Miran\Mksine\Livewire\Frontend\PageShow;
+use Miran\Mksine\Livewire\Frontend\PostComments;
+use Miran\Mksine\Livewire\Frontend\PostList;
+use Miran\Mksine\Livewire\Frontend\PostShow;
+use Miran\Mksine\Livewire\MediaPickerModal;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Comment;
 use Miran\Mksine\Models\Media;
@@ -135,7 +172,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        require_once __DIR__ . '/Helpers/functions.php';
+        require_once __DIR__.'/Helpers/functions.php';
 
         $this->app->singleton(Mksine::class, function () {
             return new Mksine;
@@ -212,36 +249,36 @@ class MksineServiceProvider extends PackageServiceProvider
         });
 
         // Register ThemeEnqueue as singleton (per-request queue for wp_enqueue_style/script-style API)
-        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeEnqueue::class, function () {
-            return new \Miran\Mksine\Core\Theme\ThemeEnqueue;
+        $this->app->singleton(ThemeEnqueue::class, function () {
+            return new ThemeEnqueue;
         });
 
         // Register ThemeRegistry for theme overrides and route callbacks (theme.php API)
-        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeRegistry::class, function () {
-            return new \Miran\Mksine\Core\Theme\ThemeRegistry;
+        $this->app->singleton(ThemeRegistry::class, function () {
+            return new ThemeRegistry;
         });
 
         // Register ThemeActionManager for template hooks (theme_add_action / theme_do_action)
-        $this->app->singleton(\Miran\Mksine\Core\Theme\ThemeActionManager::class, function () {
-            return new \Miran\Mksine\Core\Theme\ThemeActionManager;
+        $this->app->singleton(ThemeActionManager::class, function () {
+            return new ThemeActionManager;
         });
 
         // Register TranslationFileManager for Languages admin page (edit lang files)
-        $this->app->singleton(\Miran\Mksine\Core\Translation\TranslationFileManager::class, function () {
-            return new \Miran\Mksine\Core\Translation\TranslationFileManager;
+        $this->app->singleton(TranslationFileManager::class, function () {
+            return new TranslationFileManager;
         });
 
-        $this->app->singleton(\Miran\Mksine\Core\Translation\AdminTranslationManager::class, function ($app) {
-            return new \Miran\Mksine\Core\Translation\AdminTranslationManager(
-                $app->make(\Miran\Mksine\Core\Translation\TranslationFileManager::class),
-                $app->make(\Miran\Mksine\Core\Plugins\PluginManager::class),
-                $app->make(\Miran\Mksine\Core\Theme\ThemeManager::class),
+        $this->app->singleton(AdminTranslationManager::class, function ($app) {
+            return new AdminTranslationManager(
+                $app->make(TranslationFileManager::class),
+                $app->make(PluginManager::class),
+                $app->make(ThemeManager::class),
             );
         });
 
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {
-            $registry = new ComponentRegistry();
+            $registry = new ComponentRegistry;
 
             // Register default components
             $registry->registerMany([
@@ -249,7 +286,6 @@ class MksineServiceProvider extends PackageServiceProvider
                 HeadingComponent::class,
                 TextComponent::class,
                 FeatureListComponent::class,
-                TestimonialComponent::class,
 
                 // Media
                 ImageComponent::class,
@@ -259,6 +295,7 @@ class MksineServiceProvider extends PackageServiceProvider
                 SpacerComponent::class,
                 DividerComponent::class,
                 ColumnsComponent::class,
+                ContainerInsetComponent::class,
                 HeroComponent::class,
                 TabsComponent::class,
 
@@ -266,6 +303,15 @@ class MksineServiceProvider extends PackageServiceProvider
                 ButtonComponent::class,
                 CallToActionComponent::class,
                 AccordionComponent::class,
+
+                // MKSine theme landing sections
+                MksineFinanceShowcaseComponent::class,
+                MksineHeroDomainComponent::class,
+                MksineServicesTrioComponent::class,
+                MksineFeaturedDomainsComponent::class,
+                MksineClinicFeaturesGridComponent::class,
+                MksineTestimonialsGridComponent::class,
+                MksinePostCommentsFeedComponent::class,
             ]);
 
             return $registry;
@@ -273,13 +319,14 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Register Page Builder Templates
         $this->app->singleton(TemplateRegistry::class, function () {
-            $registry = new TemplateRegistry();
+            $registry = new TemplateRegistry;
 
             $registry->register('landing-page', LandingPageTemplate::config());
             $registry->register('about-us', AboutPageTemplate::config());
             $registry->register('contact', ContactPageTemplate::config());
             $registry->register('services', ServicesPageTemplate::config());
             $registry->register('blank', BlankTemplate::config());
+            $registry->register('mksine-default-home', MksineDefaultHomeTemplate::config());
 
             return $registry;
         });
@@ -292,8 +339,10 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->syncAuthUserModelWithMksineConfig();
+
         // Load package defaults first, then project lang so project overrides (Languages page edits project files).
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'mksine');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'mksine');
         if (function_exists('lang_path') && is_dir(lang_path())) {
             $this->loadTranslationsFrom(lang_path(), 'mksine');
         }
@@ -303,11 +352,11 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->ensureDefaultLangInProject();
 
         // Configure Language Switch: locales from TranslationFileManager, render in panel header (topbar).
-        if (class_exists(\BezhanSalleh\LanguageSwitch\LanguageSwitch::class)) {
-            \BezhanSalleh\LanguageSwitch\LanguageSwitch::configureUsing(function ($switch) {
+        if (class_exists(LanguageSwitch::class)) {
+            LanguageSwitch::configureUsing(function ($switch) {
                 $switch
-                    ->locales(fn () => app(\Miran\Mksine\Core\Translation\TranslationFileManager::class)->getAvailableLocales())
-                    ->renderHook(\Filament\View\PanelsRenderHook::USER_MENU_BEFORE);
+                    ->locales(fn () => app(TranslationFileManager::class)->getAvailableLocales())
+                    ->renderHook(PanelsRenderHook::USER_MENU_BEFORE);
             });
         }
 
@@ -342,7 +391,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Handle Stubs
         if (app()->runningInConsole()) {
-            foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
+            foreach (app(Filesystem::class)->files(__DIR__.'/../stubs/') as $file) {
                 $this->publishes([
                     $file->getRealPath() => base_path("stubs/mksine/{$file->getFilename()}"),
                 ], 'mksine-stubs');
@@ -350,14 +399,14 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         // Publish migrations directly
-        $migrationsPath = __DIR__ . '/../database/migrations';
+        $migrationsPath = __DIR__.'/../database/migrations';
         if (app()->runningInConsole() && file_exists($migrationsPath)) {
             $filesystem = app(Filesystem::class);
             $migrationFiles = $filesystem->files($migrationsPath);
 
             $publishArray = [];
             foreach ($migrationFiles as $file) {
-                $publishArray[$file->getRealPath()] = database_path('migrations/' . $file->getFilename());
+                $publishArray[$file->getRealPath()] = database_path('migrations/'.$file->getFilename());
             }
 
             if (! empty($publishArray)) {
@@ -367,20 +416,22 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Register Livewire Components
         Livewire::component('mksine::media-picker-modal', MediaPickerModal::class);
-        
+
         // Register Frontend Livewire Components
-        Livewire::component('mksine::frontend.home', \Miran\Mksine\Livewire\Frontend\Home::class);
-        Livewire::component('mksine::frontend.category-list', \Miran\Mksine\Livewire\Frontend\CategoryList::class);
-        Livewire::component('mksine::frontend.category-show', \Miran\Mksine\Livewire\Frontend\CategoryShow::class);
-        Livewire::component('mksine::frontend.post-list', \Miran\Mksine\Livewire\Frontend\PostList::class);
-        Livewire::component('mksine::frontend.post-show', \Miran\Mksine\Livewire\Frontend\PostShow::class);
-        Livewire::component('mksine::frontend.post-comments', \Miran\Mksine\Livewire\Frontend\PostComments::class);
-        Livewire::component('mksine::frontend.page-show', \Miran\Mksine\Livewire\Frontend\PageShow::class);
-        Livewire::component('mksine::frontend.frontend-resolver', \Miran\Mksine\Livewire\Frontend\FrontendResolver::class);
+        Livewire::component('mksine::frontend.home', Home::class);
+        Livewire::component('mksine::frontend.category-list', CategoryList::class);
+        Livewire::component('mksine::frontend.category-show', CategoryShow::class);
+        Livewire::component('mksine::frontend.post-list', PostList::class);
+        Livewire::component('mksine::frontend.post-show', PostShow::class);
+        Livewire::component('mksine::frontend.post-comments', PostComments::class);
+        Livewire::component('mksine::frontend.page-show', PageShow::class);
+        Livewire::component('mksine::frontend.frontend-resolver', FrontendResolver::class);
 
         // Register PageBuilder Livewire Components
         Livewire::component('mksine::page-builder', PageBuilder::class);
         Livewire::component('mksine::component-editor', ComponentEditor::class);
+
+        $this->registerThemeLivewireMissingComponentResolver();
 
         // Register default Menu Item Sources
         $this->registerDefaultMenuItemSources();
@@ -417,14 +468,14 @@ class MksineServiceProvider extends PackageServiceProvider
     protected function registerModelPolicies(): void
     {
         $bindings = [
-            Category::class => \App\Policies\CategoryPolicy::class,
-            Comment::class => \App\Policies\CommentPolicy::class,
-            Media::class => \App\Policies\MediaPolicy::class,
-            Menu::class => \App\Policies\MenuPolicy::class,
-            MenuLocation::class => \App\Policies\MenuLocationPolicy::class,
-            Page::class => \App\Policies\PagePolicy::class,
-            Post::class => \App\Policies\PostPolicy::class,
-            Role::class => \App\Policies\RolePolicy::class,
+            Category::class => CategoryPolicy::class,
+            Comment::class => CommentPolicy::class,
+            Media::class => MediaPolicy::class,
+            Menu::class => MenuPolicy::class,
+            MenuLocation::class => MenuLocationPolicy::class,
+            Page::class => PagePolicy::class,
+            Post::class => PostPolicy::class,
+            Role::class => RolePolicy::class,
         ];
 
         foreach ($bindings as $model => $policy) {
@@ -432,6 +483,42 @@ class MksineServiceProvider extends PackageServiceProvider
                 Gate::policy($model, $policy);
             }
         }
+    }
+
+    /**
+     * Theme Livewire classes use PSR-4 under e.g. Themes\{Theme}\Livewire\* (see ThemeBootstrap).
+     * Livewire maps dotted names from the FQCN, but reverse resolution prepends
+     * config('livewire.class_namespace') (App\Livewire), so updates after the first request fail.
+     * Map names starting with "themes." back to the real class.
+     */
+    protected function registerThemeLivewireMissingComponentResolver(): void
+    {
+        Livewire::resolveMissingComponent(
+            fn (string $name): ?string => ThemeLivewireMissingComponentResolver::resolve($name)
+        );
+    }
+
+    /**
+     * Align Laravel's auth provider and Filament Shield with mksine.user_model so
+     * consuming apps do not have to repeat the same FQCN in config/auth.php and .env.
+     * Runs before plugin boot; plugins may override (e.g. mks-booking user subclass).
+     */
+    protected function syncAuthUserModelWithMksineConfig(): void
+    {
+        if (! (bool) config('mksine.sync_auth_user_model', true)) {
+            return;
+        }
+
+        $model = config('mksine.user_model');
+
+        if (! is_string($model) || $model === '' || ! class_exists($model)) {
+            return;
+        }
+
+        config([
+            'auth.providers.users.model' => $model,
+            'filament-shield.auth_provider_model' => $model,
+        ]);
     }
 
     /**
@@ -468,7 +555,7 @@ class MksineServiceProvider extends PackageServiceProvider
             // Plugin system failure should not crash the entire application
             // Log the error and continue
             if (app()->bound('log')) {
-                \Illuminate\Support\Facades\Log::error('Plugin system initialization failed', [
+                Log::error('Plugin system initialization failed', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
@@ -488,10 +575,10 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         $assets = [];
 
-        $cssPath = __DIR__ . '/../resources/dist/mksine.css';
-        $jsPath = __DIR__ . '/../resources/dist/mksine.js';
-        $ckeditorCssPath = __DIR__ . '/../resources/dist/mks-ckeditor-field.css';
-        $ckeditorJsPath = __DIR__ . '/../resources/dist/mks-ckeditor-field.js';
+        $cssPath = __DIR__.'/../resources/dist/mksine.css';
+        $jsPath = __DIR__.'/../resources/dist/mksine.js';
+        $ckeditorCssPath = __DIR__.'/../resources/dist/mks-ckeditor-field.css';
+        $ckeditorJsPath = __DIR__.'/../resources/dist/mks-ckeditor-field.js';
 
         if (file_exists($ckeditorCssPath)) {
             $assets[] = Css::make('mks-ckeditor-field', $ckeditorCssPath);
@@ -541,6 +628,8 @@ class MksineServiceProvider extends PackageServiceProvider
             ThemeMakeCommand::class,
             ThemePublishCommand::class,
             ThemePublishLangCommand::class,
+            ReleaseArchiveCommand::class,
+            FreshSuperAdminCommand::class,
         ];
     }
 
@@ -631,7 +720,7 @@ class MksineServiceProvider extends PackageServiceProvider
             // Log warning instead of silent failure
             // This allows package to boot while providing visibility into issues
             if (app()->bound('log') && ! $this->isDatabaseBootstrapping($e)) {
-                \Illuminate\Support\Facades\Log::warning('MKS CMS: Failed to load hooks from database', [
+                Log::warning('MKS CMS: Failed to load hooks from database', [
                     'error' => $e->getMessage(),
                     'context' => 'loadListenersFromDatabase',
                 ]);
@@ -685,35 +774,17 @@ class MksineServiceProvider extends PackageServiceProvider
             }
         }
 
-        // Skip if already registered (from default listeners)
+        // Skip if already registered (e.g. from code). Priority and enabled state
+        // still come from HookStateRepository + mks_hooks at dispatch time.
         if ($alreadyRegistered) {
-            // Just update priority and state if needed
-            if ($hook->priority !== 0) {
-                $hookManager->setPriority($listenerClass, $hook->priority);
-            }
-            if (! $hook->is_enabled) {
-                $hookManager->disableListener($listenerClass);
-            }
-
             return;
         }
 
-        // Register new listener from database
         $hookManager->register(
             $eventName,
             $listenerClass,
             $hook->priority
         );
-
-        // Apply state management if needed
-        if (! $hook->is_enabled) {
-            $hookManager->disableListener($listenerClass);
-        }
-
-        // Apply priority override if different from default
-        if ($hook->priority !== 0) {
-            $hookManager->setPriority($listenerClass, $hook->priority);
-        }
     }
 
     /**
@@ -791,7 +862,7 @@ class MksineServiceProvider extends PackageServiceProvider
         } catch (\Exception $e) {
             // Log warning for unexpected database errors
             if (app()->bound('log') && ! $this->isDatabaseBootstrapping($e)) {
-                \Illuminate\Support\Facades\Log::warning('MKS CMS: Database error during hook discovery fallback', [
+                Log::warning('MKS CMS: Database error during hook discovery fallback', [
                     'error' => $e->getMessage(),
                     'context' => 'discoverFormAndTableHooksFallback',
                 ]);
@@ -808,7 +879,7 @@ class MksineServiceProvider extends PackageServiceProvider
      */
     protected function discoverFormAndTableHooks(): void
     {
-        $listenersPath = __DIR__ . '/Core/Listeners';
+        $listenersPath = __DIR__.'/Core/Listeners';
 
         if (! is_dir($listenersPath)) {
             return;
@@ -858,7 +929,7 @@ class MksineServiceProvider extends PackageServiceProvider
             }
 
             $reflection = new \ReflectionClass($fullClassName);
-            if ($reflection->implementsInterface(\Miran\Mksine\Core\Hooks\FormHookListenerInterface::class)) {
+            if ($reflection->implementsInterface(FormHookListenerInterface::class)) {
                 try {
                     $formName = $fullClassName::getFormName();
                     $hooks[$formName] = $fullClassName;
@@ -899,7 +970,7 @@ class MksineServiceProvider extends PackageServiceProvider
             }
 
             $reflection = new \ReflectionClass($fullClassName);
-            if ($reflection->implementsInterface(\Miran\Mksine\Core\Hooks\TableHookListenerInterface::class)) {
+            if ($reflection->implementsInterface(TableHookListenerInterface::class)) {
                 try {
                     $tableName = $fullClassName::getTableName();
                     $hooks[$tableName] = $fullClassName;
@@ -938,7 +1009,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Try to match namespace (handle both with and without declare)
         if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
-            $fullClassName = $matches[1] . '\\' . $className;
+            $fullClassName = $matches[1].'\\'.$className;
 
             // Verify class exists
             if (class_exists($fullClassName)) {
@@ -983,7 +1054,7 @@ class MksineServiceProvider extends PackageServiceProvider
                     continue;
                 }
 
-                $publishedPath = lang_path('vendor/' . $pluginId);
+                $publishedPath = lang_path('vendor/'.$pluginId);
                 if (is_dir($publishedPath)) {
                     $this->loadTranslationsFrom($publishedPath, $pluginId);
                 } elseif ($manifest->translationsPath()) {
@@ -1005,20 +1076,20 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         try {
-            $themeManager = app(\Miran\Mksine\Core\Theme\ThemeManager::class);
+            $themeManager = app(ThemeManager::class);
             $active = $themeManager->getActive();
 
             if (! $active) {
                 return;
             }
 
-            $publishedPath = lang_path('vendor/theme-' . $active->identifier);
+            $publishedPath = lang_path('vendor/theme-'.$active->identifier);
             if (is_dir($publishedPath)) {
-                $this->loadTranslationsFrom($publishedPath, 'theme-' . $active->identifier);
+                $this->loadTranslationsFrom($publishedPath, 'theme-'.$active->identifier);
             } else {
                 $src = $themeManager->getThemeTranslationsPath($active);
                 if ($src) {
-                    $this->loadTranslationsFrom($src, 'theme-' . $active->identifier);
+                    $this->loadTranslationsFrom($src, 'theme-'.$active->identifier);
                 }
             }
         } catch (\Throwable $e) {
@@ -1032,7 +1103,7 @@ class MksineServiceProvider extends PackageServiceProvider
      */
     private function registerPublishableFonts(): void
     {
-        $fontsPath = realpath(__DIR__ . '/../resources/fonts/iranyekan');
+        $fontsPath = realpath(__DIR__.'/../resources/fonts/iranyekan');
         if (! $fontsPath || ! is_dir($fontsPath)) {
             return;
         }
@@ -1040,8 +1111,8 @@ class MksineServiceProvider extends PackageServiceProvider
         $publishArray = [];
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($fontsPath, \RecursiveDirectoryIterator::SKIP_DOTS)) as $file) {
             if ($file->isFile()) {
-                $relative = str_replace($fontsPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                $publishArray[$file->getPathname()] = public_path('fonts/iranyekan/' . $relative);
+                $relative = str_replace($fontsPath.DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $publishArray[$file->getPathname()] = public_path('fonts/iranyekan/'.$relative);
             }
         }
 
@@ -1060,17 +1131,19 @@ class MksineServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $packageLang = realpath(__DIR__ . '/../resources/lang');
+        $packageLang = realpath(__DIR__.'/../resources/lang');
         if (! $packageLang || ! is_dir($packageLang)) {
             return;
         }
 
         $publishArray = [];
-        foreach (array_merge(
-            glob($packageLang . '/*/*.php') ?: [],
-            glob($packageLang . '/*.json') ?: []
-        ) as $absPath) {
-            $relative = str_replace($packageLang . DIRECTORY_SEPARATOR, '', $absPath);
+        foreach (
+            array_merge(
+                glob($packageLang.'/*/*.php') ?: [],
+                glob($packageLang.'/*.json') ?: []
+            ) as $absPath
+        ) {
+            $relative = str_replace($packageLang.DIRECTORY_SEPARATOR, '', $absPath);
             $publishArray[$absPath] = lang_path($relative);
         }
 
@@ -1089,18 +1162,18 @@ class MksineServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $packageLang = realpath(__DIR__ . '/../resources/lang');
+        $packageLang = realpath(__DIR__.'/../resources/lang');
         if (! $packageLang || ! is_dir($packageLang)) {
             return;
         }
 
         $filesystem = app(Filesystem::class);
         $candidates = array_merge(
-            glob($packageLang . '/*/*.php') ?: [],
-            glob($packageLang . '/*.json') ?: []
+            glob($packageLang.'/*/*.php') ?: [],
+            glob($packageLang.'/*.json') ?: []
         );
         foreach ($candidates as $absPath) {
-            $relative = str_replace($packageLang . DIRECTORY_SEPARATOR, '', $absPath);
+            $relative = str_replace($packageLang.DIRECTORY_SEPARATOR, '', $absPath);
             $target = lang_path($relative);
             if (! $filesystem->exists($target)) {
                 $filesystem->ensureDirectoryExists(dirname($target));

@@ -12,6 +12,68 @@ if (! function_exists('mks_setting')) {
     }
 }
 
+if (! function_exists('mks_setting_media_url')) {
+    /**
+     * Resolve a public URL for a setting that stores a single Media id (or JSON array of ids).
+     */
+    function mks_setting_media_url(string $key): ?string
+    {
+        $raw = mks_setting($key);
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $id = null;
+
+        if (is_numeric($raw)) {
+            $id = (int) $raw;
+        } elseif (is_string($raw)) {
+            $trimmed = trim($raw);
+            if ($trimmed !== '' && str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded) && isset($decoded[0]) && is_numeric($decoded[0])) {
+                    $id = (int) $decoded[0];
+                }
+            } elseif (is_numeric($trimmed)) {
+                $id = (int) $trimmed;
+            }
+        }
+
+        if ($id === null || $id < 1) {
+            return null;
+        }
+
+        $media = \Miran\Mksine\Models\Media::query()->find($id);
+
+        if ($media === null) {
+            return null;
+        }
+
+        return $media->full_url;
+    }
+}
+
+if (! function_exists('mksine_pb_media_url')) {
+    /**
+     * Resolve a media library URL for page builder blocks, or a theme asset path fallback.
+     *
+     * @param  int|string|null  $mediaId  Stored media id from MediaPicker (isRelation false)
+     */
+    function mksine_pb_media_url(mixed $mediaId, string $fallbackThemeAssetPath): string
+    {
+        if (is_numeric($mediaId) && (int) $mediaId > 0) {
+            $media = \Miran\Mksine\Models\Media::query()->find((int) $mediaId);
+
+            if ($media !== null && $media->full_url !== null && $media->full_url !== '') {
+                return $media->full_url;
+            }
+        }
+
+        return theme_asset($fallbackThemeAssetPath);
+    }
+}
+
 if (! function_exists('theme_manager')) {
     /**
      * Get the ThemeManager instance.

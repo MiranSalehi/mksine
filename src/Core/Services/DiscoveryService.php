@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\MksineListenerInterface;
@@ -298,7 +299,7 @@ class DiscoveryService
                 } catch (\Exception $e) {
                     // Log in debug mode or when explicitly enabled
                     if (config('app.debug') || config('mksine.log_hook_errors', false)) {
-                        \Illuminate\Support\Facades\Log::warning('MKS CMS: Failed to sync listener', [
+                        Log::warning('MKS CMS: Failed to sync listener', [
                             'event_name' => $listener['event_name'] ?? 'unknown',
                             'listener_class' => $listener['listener_class'] ?? 'unknown',
                             'error' => $e->getMessage(),
@@ -363,7 +364,7 @@ class DiscoveryService
                 } catch (\Exception $e) {
                     // Log in debug mode or when explicitly enabled
                     if (config('app.debug') || config('mksine.log_hook_errors', false)) {
-                        \Illuminate\Support\Facades\Log::warning('MKS CMS: Failed to sync form hook', [
+                        Log::warning('MKS CMS: Failed to sync form hook', [
                             'form_name' => $formName,
                             'listener_class' => $listenerClass,
                             'error' => $e->getMessage(),
@@ -428,7 +429,7 @@ class DiscoveryService
                 } catch (\Exception $e) {
                     // Log in debug mode or when explicitly enabled
                     if (config('app.debug') || config('mksine.log_hook_errors', false)) {
-                        \Illuminate\Support\Facades\Log::warning('MKS CMS: Failed to sync table hook', [
+                        Log::warning('MKS CMS: Failed to sync table hook', [
                             'table_name' => $tableName,
                             'listener_class' => $listenerClass,
                             'error' => $e->getMessage(),
@@ -472,7 +473,7 @@ class DiscoveryService
         // Match class declaration, but exclude comments and strings
         // Pattern: class ClassName (with optional extends/implements)
         // Must be on its own line or after namespace/use statements
-        if (preg_match('/^\s*class\s+(\w+)(?:\s+extends|\s+implements|\s*\{|\s*$)/m', $content, $matches)) {
+        if (preg_match('/^\s*(?:(?:abstract|final)\s+)?class\s+(\w+)(?:\s+extends|\s+implements|\s*\{|\s*$)/m', $content, $matches)) {
             return $matches[1];
         }
 
@@ -487,7 +488,7 @@ class DiscoveryService
         $content = file_get_contents($filePath);
 
         if (preg_match('/namespace\s+([^;]+);/', $content, $matches)) {
-            $fullClassName = $matches[1] . '\\' . $className;
+            $fullClassName = $matches[1].'\\'.$className;
 
             // Try to autoload the class
             if (! class_exists($fullClassName)) {

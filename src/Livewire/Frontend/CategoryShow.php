@@ -19,14 +19,17 @@ class CategoryShow extends Component
         if (! $this->category) {
             abort(404);
         }
+
+        $this->category->loadMissing(['parent.parent.parent.parent.parent']);
     }
 
     public function render()
     {
-        View::share('title', $this->category->name . ' - ' . __('mksine::frontend.category'));
+        View::share('title', $this->category->name.' - '.__('mksine::frontend.category'));
 
         $posts = $this->category->posts()
             ->where('posts.status', 'published')
+            ->with(['author', 'featuredImage', 'categories'])
             ->latest('posts.published_at')
             ->paginate(12);
 
@@ -37,7 +40,11 @@ class CategoryShow extends Component
             ->take(10)
             ->get();
 
-        $view = view(theme_view('category'), ['posts' => $posts, 'categories' => $categories]);
+        $view = view(theme_view('category'), [
+            'posts' => $posts,
+            'categories' => $categories,
+            'breadcrumbPath' => $this->category->getBreadcrumbPath(),
+        ]);
 
         return $this->skipLayout ? $view : $view->layout(theme_layout());
     }

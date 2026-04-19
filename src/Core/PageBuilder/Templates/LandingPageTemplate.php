@@ -2,6 +2,8 @@
 
 namespace Miran\Mksine\Core\PageBuilder\Templates;
 
+use Miran\Mksine\Core\PageBuilder\Components\MksineTestimonialsGridComponent;
+
 class LandingPageTemplate
 {
     public static function config(): array
@@ -60,22 +62,8 @@ class LandingPageTemplate
                 ],
                 [
                     'id' => 'tpl-3',
-                    'type' => 'testimonial',
-                    'data' => [
-                        'heading' => 'What Our Customers Say',
-                        'layout' => 'grid',
-                        'columns' => 1,
-                        'style' => 'shadowed',
-                        'testimonials' => [
-                            [
-                                'content' => 'This platform completely transformed how we work. Highly recommended!',
-                                'author_name' => 'Jane Doe',
-                                'author_title' => 'CEO, Tech Company',
-                                'author_image' => null,
-                                'rating' => 5,
-                            ],
-                        ],
-                    ],
+                    'type' => MksineTestimonialsGridComponent::getType(),
+                    'data' => MksineTestimonialsGridComponent::getDefaultData(),
                     'children' => null,
                 ],
                 [

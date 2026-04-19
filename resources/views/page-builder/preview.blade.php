@@ -1,3 +1,11 @@
+@php
+    $showPageHeader = $showPageHeader ?? true;
+    $builderContentWidth = $builderContentWidth ?? 'contained';
+    $builderFullWidth = ($builderContentWidth === 'full');
+    $mainClasses = $builderFullWidth
+        ? 'w-full'
+        : 'container mx-auto max-w-4xl px-4 py-12';
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 <head>
@@ -61,23 +69,27 @@
         <div class="min-h-screen pt-16 transition-all duration-300"
              :style="device==='desktop' ? {} : (device==='tablet' ? { maxWidth: '768px', marginLeft: 'auto', marginRight: 'auto', boxShadow: '0 0 0 1px rgb(0 0 0 / 0.05)' } : { maxWidth: '375px', marginLeft: 'auto', marginRight: 'auto', boxShadow: '0 0 0 1px rgb(0 0 0 / 0.05)', minHeight: '667px' })">
 
-            {{-- Breadcrumb: same as themes/mksine/page.blade.php --}}
-            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <div class="container mx-auto max-w-6xl px-4 py-3">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span class="text-pink-500 dark:text-pink-400">{{ __('mksine::frontend.home') }}</span>
-                        <span class="text-gray-400 dark:text-gray-500" aria-hidden="true">/</span>
-                        <span class="text-gray-800 dark:text-gray-200">{{ $title }}</span>
+            @if ($showPageHeader)
+                {{-- Breadcrumb: same as themes/mksine/page.blade.php --}}
+                <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <div class="container mx-auto max-w-6xl px-4 py-3">
+                        <div class="text-sm text-gray-600 dark:text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="text-pink-500 dark:text-pink-400">{{ __('mksine::frontend.home') }}</span>
+                            <span class="text-gray-400 dark:text-gray-500" aria-hidden="true">/</span>
+                            <span class="text-gray-800 dark:text-gray-200">{{ $title }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
-            {{-- Main content: exact same structure as themes/mksine/page.blade.php --}}
-            <div class="container mx-auto max-w-4xl px-4 py-12">
+            {{-- Main content: mirrors themes/mksine/page.blade.php builder branch --}}
+            <div class="{{ $mainClasses }}">
                 <article>
-                    <header class="mb-8">
-                        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100">{{ $title }}</h1>
-                    </header>
+                    @if ($showPageHeader)
+                        <header class="mb-8">
+                            <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100">{{ $title }}</h1>
+                        </header>
+                    @endif
 
                     @if(empty($blocks))
                         <div class="builder-content flex min-h-[40vh] flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 py-16 text-center dark:border-gray-600">
@@ -85,7 +97,7 @@
                             <p class="mt-1 text-sm text-gray-400 dark:text-gray-500">{{ __('mksine::page_builder.add_components_to_see_preview') }}</p>
                         </div>
                     @else
-                        <div class="builder-content space-y-8">
+                        <div class="builder-content space-y-0">
                             @foreach($blocks as $block)
                                 @include('mksine::page-builder.render.block', ['block' => $block])
                             @endforeach

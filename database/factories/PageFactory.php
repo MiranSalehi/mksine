@@ -25,6 +25,8 @@ class PageFactory extends Factory
             'status' => fake()->randomElement(['draft', 'published', 'scheduled']),
             'content' => fake()->optional(0.8)->passthrough('<p>'.implode('</p><p>', fake()->paragraphs(2)).'</p>'),
             'builder_payload' => null,
+            'show_page_header' => true,
+            'builder_content_width' => 'contained',
             'meta_title' => fake()->optional(0.6)->sentence(6),
             'meta_description' => fake()->optional(0.6)->paragraph(),
             'published_at' => null,

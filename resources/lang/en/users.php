@@ -13,6 +13,7 @@ return [
     'phone_number' => 'Phone Number',
     'phone_placeholder' => 'e.g. 912 123 4567',
     'password' => 'Password',
+    'password_leave_blank' => 'Leave blank to keep the current password.',
     'created_at' => 'Created At',
     'placeholder_dash' => '—',
     'phone' => 'Phone',

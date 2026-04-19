@@ -64,8 +64,9 @@ class MksineInstallCommand extends Command
         $this->info('✅ MKSine installed successfully!');
         $this->newLine();
         $this->line('Next steps:');
-        $this->line('  1. Review the config file: <comment>config/mksine.php</comment>');
-        $this->line('  2. Run migrations: <comment>php artisan migrate</comment>');
+        $this->line('  1. Run migrations: <comment>php artisan migrate</comment>');
+        $this->line('  2. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.');
+        $this->line('     Auth + Shield use <comment>mksine.user_model</comment> unless <comment>MKS_CMS_SYNC_AUTH_USER_MODEL=false</comment>.');
         $this->line('  3. Check CMS info: <comment>php artisan mksine:info</comment>');
 
         return self::SUCCESS;

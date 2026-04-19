@@ -11,6 +11,11 @@ class PostComments extends Component
 {
     public int $postId;
 
+    /**
+     * full: list + form (default). form_only: submission form without duplicating the comment list.
+     */
+    public string $variant = 'full';
+
     public string $author_name = '';
 
     public string $author_email = '';
@@ -48,9 +53,10 @@ class PostComments extends Component
         ];
     }
 
-    public function mount(int $postId): void
+    public function mount(int $postId, string $variant = 'full'): void
     {
         $this->postId = $postId;
+        $this->variant = in_array($variant, ['full', 'form_only'], true) ? $variant : 'full';
         if (Auth::check()) {
             $this->author_name = Auth::user()->name ?? '';
             $this->author_email = Auth::user()->email ?? '';
@@ -104,6 +110,10 @@ class PostComments extends Component
 
     public function getCommentsProperty()
     {
+        if ($this->variant === 'form_only') {
+            return collect();
+        }
+
         return Comment::query()
             ->where('post_id', $this->postId)
             ->approved()
@@ -124,6 +134,7 @@ class PostComments extends Component
             'comments' => $this->comments,
             'post' => $this->post,
             'parentComment' => $this->parent_id ? Comment::find($this->parent_id) : null,
+            'variant' => $this->variant,
         ]);
     }
 }

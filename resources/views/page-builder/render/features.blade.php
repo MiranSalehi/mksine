@@ -6,46 +6,46 @@
     $iconStyle = $data['icon_style'] ?? 'circle';
     $features = $data['features'] ?? [];
 
-    $gridCols = match($columns) {
+    $gridCols = match ($columns) {
         2 => 'sm:grid-cols-2',
         4 => 'sm:grid-cols-2 lg:grid-cols-4',
         default => 'sm:grid-cols-2 lg:grid-cols-3',
     };
 
-    $cardClasses = match($style) {
-        'bordered' => 'border border-gray-200 dark:border-gray-700 rounded-lg',
-        'shadowed' => 'bg-white dark:bg-gray-800 shadow-lg rounded-lg',
-        'filled' => 'bg-gray-50 dark:bg-gray-800 rounded-lg',
-        default => '',
+    $cardClasses = match ($style) {
+        'bordered' => 'rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900/40',
+        'shadowed' => 'rounded-2xl bg-white p-6 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/5 dark:bg-zinc-900/50 dark:shadow-black/40 dark:ring-white/10',
+        'filled' => 'rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-900/50',
+        default => 'py-2',
     };
 
-    $iconBgClasses = match($iconStyle) {
-        'circle' => 'w-14 h-14 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
-        'square' => 'w-14 h-14 rounded-lg bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-900/30 dark:to-purple-900/30',
+    $iconBgClasses = match ($iconStyle) {
+        'circle' => 'mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/15 ring-1 ring-amber-500/20 dark:from-amber-400/10 dark:to-orange-500/10 dark:ring-amber-400/25',
+        'square' => 'mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/15 ring-1 ring-amber-500/20 dark:from-amber-400/10 dark:to-orange-500/10 dark:ring-amber-400/25',
         default => '',
     };
 @endphp
 
-<section class="mb-8">
-    @if($heading || $subheading)
-        <div class="text-center mb-8 sm:mb-12">
-            @if($heading)
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+<section class="mb-10 md:mb-14">
+    @if ($heading || $subheading)
+        <div class="mb-10 text-center sm:mb-12">
+            @if ($heading)
+                <h2 class="mb-4 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
                     {{ $heading }}
                 </h2>
             @endif
 
-            @if($subheading)
-                <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            @if ($subheading)
+                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
                     {{ $subheading }}
                 </p>
             @endif
         </div>
     @endif
 
-    @if(count($features) > 0)
-        <div class="grid grid-cols-1 {{ $gridCols }} gap-6 sm:gap-8">
-            @foreach($features as $feature)
+    @if (count($features) > 0)
+        <div class="grid grid-cols-1 gap-6 sm:gap-8 {{ $gridCols }}">
+            @foreach ($features as $feature)
                 @php
                     $icon = $feature['icon'] ?? 'heroicon-o-star';
                     $title = $feature['title'] ?? '';
@@ -53,29 +53,29 @@
                     $link = $feature['link'] ?? '';
                 @endphp
 
-                <div class="{{ $cardClasses }} {{ $style !== 'simple' ? 'p-6' : 'py-4' }}">
-                    @if($icon && $iconStyle !== 'none')
-                        <div class="{{ $iconBgClasses }} flex items-center justify-center mb-4">
-                            <x-dynamic-component :component="$icon" class="w-7 h-7 text-pink-600 dark:text-pink-400" />
+                <div class="{{ $cardClasses }} transition-colors duration-200 hover:border-amber-200/60 dark:hover:border-amber-500/20">
+                    @if ($icon && $iconStyle !== 'none')
+                        <div class="{{ $iconBgClasses }}">
+                            <x-dynamic-component :component="$icon" class="h-7 w-7 text-amber-600 dark:text-amber-400" />
                         </div>
                     @endif
 
-                    @if($title)
-                        @if($link)
-                            <a href="{{ $link }}" class="block">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
+                    @if ($title)
+                        @if ($link)
+                            <a href="{{ $link }}" class="group/block">
+                                <h3 class="mb-2 text-lg font-semibold tracking-tight text-zinc-900 transition-colors group-hover/block:text-amber-600 dark:text-zinc-50 dark:group-hover/block:text-amber-400">
                                     {{ $title }}
                                 </h3>
                             </a>
                         @else
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            <h3 class="mb-2 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                                 {{ $title }}
                             </h3>
                         @endif
                     @endif
 
-                    @if($description)
-                        <p class="text-gray-600 dark:text-gray-400 text-sm">
+                    @if ($description)
+                        <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                             {{ $description }}
                         </p>
                     @endif

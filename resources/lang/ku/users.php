@@ -13,6 +13,7 @@ return [
     'phone_number' => 'ژمارەی تەلەفۆن',
     'phone_placeholder' => 'وەک 912 123 4567',
     'password' => 'وشەی نهێنی',
+    'password_leave_blank' => 'بەتاڵی بهێڵەرەوە بۆ ئەوەی وشەی نهێنیی ئێستا بمێنێتەوە.',
     'created_at' => 'دروستکراو لە',
     'placeholder_dash' => '—',
     'phone' => 'تەلەفۆن',

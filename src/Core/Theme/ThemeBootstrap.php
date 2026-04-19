@@ -27,7 +27,7 @@ class ThemeBootstrap
             return;
         }
 
-        $this->registerThemeAutoload($theme->identifier, $themePath);
+        self::registerAutoloadForTheme($theme->identifier, $themePath);
 
         $registry = app(ThemeRegistry::class);
         $registrar = new ThemeRegistrar($registry);
@@ -43,7 +43,28 @@ class ThemeBootstrap
         })();
     }
 
-    protected function registerThemeAutoload(string $identifier, string $themePath): void
+    /**
+     * Register PSR-4 for the active theme's php/ directory. Idempotent; safe to call multiple times.
+     *
+     * Livewire sub-requests (e.g. POST /livewire/update) do not load mksine routes/web.php, so
+     * {@see boot()} never runs and theme classes would not autoload without this.
+     */
+    public static function ensureActiveThemeAutoloadRegistered(): void
+    {
+        try {
+            $theme = theme_manager()->getActive();
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($theme === null) {
+            return;
+        }
+
+        self::registerAutoloadForTheme($theme->identifier, $theme->path);
+    }
+
+    public static function registerAutoloadForTheme(string $identifier, string $themePath): void
     {
         $phpPath = $themePath . '/php';
         if (! File::isDirectory($phpPath)) {

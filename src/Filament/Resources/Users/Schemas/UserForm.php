@@ -78,9 +78,13 @@ class UserForm
                         TextInput::make('password')
                             ->label(__('mksine::users.password'))
                             ->password()
-                            ->dehydrated(fn ($state) => filled($state))
+                            ->revealable()
+                            ->dehydrated(fn (?string $state): bool => filled($state))
                             ->required(fn (string $context): bool => $context === 'create')
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->helperText(fn (string $context): ?string => $context === 'edit'
+                                ? __('mksine::users.password_leave_blank')
+                                : null),
                         CheckboxList::make('roles')
                             ->relationship('roles', 'name')
                             ->searchable(),
