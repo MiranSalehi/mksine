@@ -1,3 +1,7 @@
+---
+title: ADR 005: Split monolithic package README into docs/
+---
+
 # ADR 005: Split monolithic package README into `docs/`
 
 ## Context
@@ -17,5 +21,5 @@ The package README grew into a very large single file. That hurts navigation, re
 
 ## References
 
-- [00-overview.md](../00-overview.md)
+- [00-introduction.md](../00-introduction.md)
 - [archive/README-v1-monolithic.md](../archive/README-v1-monolithic.md)

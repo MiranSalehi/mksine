@@ -137,7 +137,7 @@ Toggle via config **`sync_auth_user_model`** or env **`MKS_CMS_SYNC_AUTH_USER_MO
 
 **Filament panel access:** your published `User` model should implement Filament’s **`FilamentUser`** contract (and, if you use Filament Shield, **`HasPanelShield`**) so users can access the admin panel according to your rules.
 
-**Plugins that extend the app user:** add plugin-only columns/traits on a **subclass** of `App\Models\User` (not on the app model). In the plugin’s **`boot()`**, set **`auth.providers.users.model`**, **`mksine.user_model`**, and **`filament-shield.auth_provider_model`** to that subclass (see **`docs/40-security-auth.md`** in the package). If existing Spatie permission rows use `model_type` = `App\Models\User`, override **`getMorphClass()`** on the subclass to return the **application** user FQCN so roles keep matching without data migrations.
+**Plugins that extend the app user:** add plugin-only columns/traits on a **subclass** of `App\Models\User` (not on the app model). In the plugin’s **`boot()`**, set **`auth.providers.users.model`**, **`mksine.user_model`**, and **`filament-shield.auth_provider_model`** to that subclass (see **[`docs/guides/auth/user-subclass.md`](../guides/auth/user-subclass.md)** in the package). If existing Spatie permission rows use `model_type` = `App\Models\User`, override **`getMorphClass()`** on the subclass to return the **application** user FQCN so roles keep matching without data migrations.
 
 ---
 

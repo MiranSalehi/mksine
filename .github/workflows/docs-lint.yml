@@ -1,0 +1,30 @@
+name: Docs lint
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'scripts/lint-docs.php'
+      - '.github/workflows/docs-lint.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'scripts/lint-docs.php'
+      - '.github/workflows/docs-lint.yml'
+
+jobs:
+  lint:
+    name: Validate _nav.yml and front matter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: none
+
+      - name: Run docs lint
+        run: php scripts/lint-docs.php
