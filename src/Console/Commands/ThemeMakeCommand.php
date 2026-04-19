@@ -527,7 +527,7 @@ BLADE;
             </header>
 
             @if($page->usesBuilder() && !empty($page->builder_payload))
-                <div class="builder-content space-y-8">
+                <div class="builder-content space-y-0">
                     @foreach($page->builder_payload as $block)
                         @include('mksine::page-builder.render.block', ['block' => $block])
                     @endforeach

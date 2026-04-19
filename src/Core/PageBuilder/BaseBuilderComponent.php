@@ -18,6 +18,11 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
     public const CATEGORY_INTERACTIVE = 'interactive';
 
     /**
+     * Full-width marketing / theme sections (MKSine home blocks, etc.).
+     */
+    public const CATEGORY_SECTIONS = 'sections';
+
+    /**
      * Get the unique type identifier for this component.
      */
     abstract public static function getType(): string;
@@ -62,6 +67,15 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
     public static function getDefaultData(): array
     {
         return [];
+    }
+
+    /**
+     * Blade view for front-end rendering (e.g. mksine::page-builder.render.heading).
+     * Plugins/themes override this to ship views under their own namespace.
+     */
+    public static function getRenderView(): string
+    {
+        return 'mksine::page-builder.render.'.static::getType();
     }
 
     /**
@@ -116,5 +130,13 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
             'data' => static::getDefaultData(),
             'children' => static::supportsChildren() ? [] : null,
         ];
+    }
+
+    /**
+     * Label for a child region in the page builder (e.g. "Column 1" or "Content").
+     */
+    public static function getBuilderChildRegionLabel(int $columnIndex, int $columnCount): string
+    {
+        return __('mksine::page_builder.column').' '.($columnIndex + 1);
     }
 }

@@ -68,6 +68,11 @@ class PageBuilder extends Component
     public ?string $insertInParent = null;
 
     /**
+     * Active category tab in the add-component modal.
+     */
+    public string $componentPickerTab = '';
+
+    /**
      * History stack for undo/redo.
      */
     public array $historyStack = [];
@@ -269,6 +274,10 @@ class PageBuilder extends Component
                 $previewText = \Illuminate\Support\Str::limit(strip_tags($data['content']), 40);
             } elseif (($block['type'] ?? '') === 'button' && ! empty($data['text'])) {
                 $previewText = $data['text'];
+            } elseif (($block['type'] ?? '') === 'container_inset') {
+                $previewText = trim(
+                    ($data['padding_inline'] ?? 'md').' · '.($data['max_width'] ?? 'full')
+                );
             }
         }
 
@@ -307,6 +316,10 @@ class PageBuilder extends Component
 
         $this->dispatch('builder:updated');
         $this->emitValue();
+
+        if ($this->showComponentPanel) {
+            $this->closeComponentPanel();
+        }
     }
 
     /**
@@ -752,6 +765,8 @@ class PageBuilder extends Component
         $this->insertAtPosition = $position;
         $this->insertInParent = $parentId;
         $this->insertInColumn = $columnIndex !== null ? (string) $columnIndex : null;
+        $this->componentPickerTab = $this->resolveInitialComponentPickerTab();
+        $this->dispatch('open-modal', id: 'component-picker-modal');
     }
 
     /**
@@ -759,10 +774,43 @@ class PageBuilder extends Component
      */
     public function closeComponentPanel(): void
     {
+        $wasOpen = $this->showComponentPanel;
         $this->showComponentPanel = false;
         $this->insertAtPosition = null;
         $this->insertInParent = null;
         $this->insertInColumn = null;
+        $this->componentPickerTab = '';
+        if ($wasOpen) {
+            $this->dispatch('close-modal', id: 'component-picker-modal');
+        }
+    }
+
+    /**
+     * Switch add-component modal tab (only to categories that have blocks).
+     */
+    public function setComponentPickerTab(string $tab): void
+    {
+        if (empty($this->components[$tab] ?? [])) {
+            return;
+        }
+
+        $this->componentPickerTab = $tab;
+    }
+
+    /**
+     * First category that has at least one component (for default modal tab).
+     */
+    protected function resolveInitialComponentPickerTab(): string
+    {
+        foreach ($this->sortedCategories as $category) {
+            if (! empty($this->components[$category] ?? [])) {
+                return $category;
+            }
+        }
+
+        $first = $this->sortedCategories[0] ?? null;
+
+        return ($first !== null && $first !== '') ? $first : 'content';
     }
 
     /**
@@ -793,16 +841,61 @@ class PageBuilder extends Component
      */
     public function reorderColumnBlocks(string $parentId, int $columnIndex, array $order): void
     {
+        if (! $this->columnItemsExist($parentId, $columnIndex)) {
+            return;
+        }
+
         $this->saveHistory();
 
-        foreach ($this->blocks as &$block) {
-            if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
+        $blocks = &$this->blocks;
+        $this->applyColumnReorder($blocks, $parentId, $columnIndex, $order);
+        $this->emitValue();
+    }
+
+    protected function columnItemsExist(string $parentId, int $columnIndex): bool
+    {
+        return $this->findColumnItemsList($this->blocks, $parentId, $columnIndex) !== null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $blockList
+     * @return array<int, array<string, mixed>>|null
+     */
+    protected function findColumnItemsList(array $blockList, string $parentId, int $columnIndex): ?array
+    {
+        foreach ($blockList as $block) {
+            if (($block['id'] ?? '') === $parentId && isset($block['children'][$columnIndex]['items']) && is_array($block['children'][$columnIndex]['items'])) {
+                return $block['children'][$columnIndex]['items'];
+            }
+            if (! empty($block['children']) && is_array($block['children'])) {
+                foreach ($block['children'] as $col) {
+                    if (! isset($col['items']) || ! is_array($col['items'])) {
+                        continue;
+                    }
+                    $found = $this->findColumnItemsList($col['items'], $parentId, $columnIndex);
+                    if ($found !== null) {
+                        return $found;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $blockList
+     */
+    protected function applyColumnReorder(array &$blockList, string $parentId, int $columnIndex, array $order): bool
+    {
+        foreach ($blockList as &$block) {
+            if (($block['id'] ?? '') === $parentId && isset($block['children'][$columnIndex]['items']) && is_array($block['children'][$columnIndex]['items'])) {
                 $items = $block['children'][$columnIndex]['items'];
                 $reordered = [];
 
                 foreach ($order as $id) {
                     foreach ($items as $item) {
-                        if ($item['id'] === $id) {
+                        if (($item['id'] ?? '') === $id) {
                             $reordered[] = $item;
 
                             break;
@@ -812,11 +905,25 @@ class PageBuilder extends Component
 
                 $block['children'][$columnIndex]['items'] = $reordered;
 
-                break;
+                return true;
+            }
+
+            if (! empty($block['children']) && is_array($block['children'])) {
+                foreach ($block['children'] as &$col) {
+                    if (! isset($col['items']) || ! is_array($col['items'])) {
+                        continue;
+                    }
+                    $itemsRef = &$col['items'];
+                    if ($this->applyColumnReorder($itemsRef, $parentId, $columnIndex, $order)) {
+                        return true;
+                    }
+                }
+                unset($col);
             }
         }
+        unset($block);
 
-        $this->emitValue();
+        return false;
     }
 
     /**
@@ -881,6 +988,240 @@ class PageBuilder extends Component
 
         $this->dispatch('builder:updated');
         $this->emitValue();
+    }
+
+    /**
+     * Move a block between the root list and a nested column (or between columns / parents) after a Sortable drag.
+     */
+    public function moveBlockAfterDrag(
+        string $blockId,
+        ?string $fromParentId,
+        mixed $fromColumnIndex,
+        ?string $toParentId,
+        mixed $toColumnIndex,
+        int $newIndex
+    ): void {
+        $fromParentId = ($fromParentId !== null && $fromParentId !== '') ? $fromParentId : null;
+        $toParentId = ($toParentId !== null && $toParentId !== '') ? $toParentId : null;
+        $fromColumnIndex = ($fromColumnIndex === null || $fromColumnIndex === '') ? null : (int) $fromColumnIndex;
+        $toColumnIndex = ($toColumnIndex === null || $toColumnIndex === '') ? null : (int) $toColumnIndex;
+
+        if ($fromParentId === $toParentId && $fromColumnIndex === $toColumnIndex) {
+            return;
+        }
+
+        $this->saveHistory();
+
+        $snapshot = $this->findBlockSnapshot($blockId);
+        if ($snapshot === null) {
+            $this->emitValue();
+
+            return;
+        }
+
+        if ($toParentId !== null && $this->blockTreeContainsId($snapshot, $toParentId)) {
+            $this->emitValue();
+
+            return;
+        }
+
+        $removed = $this->removeBlockById($blockId);
+        if ($removed === null) {
+            $this->emitValue();
+
+            return;
+        }
+
+        $newIndex = max(0, $newIndex);
+
+        if (! $this->insertBlockAtLocation($toParentId, $toColumnIndex, $newIndex, $removed)) {
+            $this->insertBlockAtLocation($fromParentId, $fromColumnIndex, 0, $removed);
+        }
+
+        $this->dispatch('builder:updated');
+        $this->emitValue();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function findBlockSnapshot(string $blockId): ?array
+    {
+        foreach ($this->blocks as $b) {
+            if (($b['id'] ?? '') === $blockId) {
+                return $b;
+            }
+        }
+        foreach ($this->blocks as $b) {
+            $found = $this->findBlockSnapshotInNode($b, $blockId);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     * @return array<string, mixed>|null
+     */
+    protected function findBlockSnapshotInNode(array $node, string $blockId): ?array
+    {
+        if (empty($node['children']) || ! is_array($node['children'])) {
+            return null;
+        }
+        foreach ($node['children'] as $col) {
+            foreach ($col['items'] ?? [] as $item) {
+                if (($item['id'] ?? '') === $blockId) {
+                    return $item;
+                }
+                $nested = $this->findBlockSnapshotInNode($item, $blockId);
+                if ($nested !== null) {
+                    return $nested;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     */
+    protected function blockTreeContainsId(array $node, string $id): bool
+    {
+        if (($node['id'] ?? '') === $id) {
+            return true;
+        }
+        if (empty($node['children']) || ! is_array($node['children'])) {
+            return false;
+        }
+        foreach ($node['children'] as $col) {
+            foreach ($col['items'] ?? [] as $item) {
+                if ($this->blockTreeContainsId($item, $id)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function removeBlockById(string $blockId): ?array
+    {
+        foreach ($this->blocks as $i => $b) {
+            if (($b['id'] ?? '') === $blockId) {
+                return array_splice($this->blocks, $i, 1)[0];
+            }
+        }
+        foreach ($this->blocks as &$root) {
+            $removed = $this->removeBlockFromNodeChildren($root, $blockId);
+            if ($removed !== null) {
+                return $removed;
+            }
+        }
+        unset($root);
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     * @return array<string, mixed>|null
+     */
+    protected function removeBlockFromNodeChildren(array &$node, string $blockId): ?array
+    {
+        if (empty($node['children']) || ! is_array($node['children'])) {
+            return null;
+        }
+        foreach ($node['children'] as $ci => &$col) {
+            if (! isset($col['items']) || ! is_array($col['items'])) {
+                continue;
+            }
+            foreach ($col['items'] as $ii => $item) {
+                if (($item['id'] ?? '') === $blockId) {
+                    $out = array_splice($col['items'], $ii, 1)[0];
+                    $col['items'] = array_values($col['items']);
+                    $node['children'][$ci] = $col;
+
+                    return $out;
+                }
+            }
+            foreach ($col['items'] as $ii => &$item) {
+                $removed = $this->removeBlockFromNodeChildren($item, $blockId);
+                if ($removed !== null) {
+                    $col['items'][$ii] = $item;
+
+                    return $removed;
+                }
+            }
+            unset($item);
+        }
+        unset($col);
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $block
+     */
+    protected function insertBlockAtLocation(?string $parentId, ?int $columnIndex, int $index, array $block): bool
+    {
+        if ($parentId === null && $columnIndex === null) {
+            $index = min($index, count($this->blocks));
+            array_splice($this->blocks, $index, 0, [$block]);
+            $this->blocks = array_values($this->blocks);
+
+            return true;
+        }
+        if ($parentId === null || $columnIndex === null) {
+            return false;
+        }
+        foreach ($this->blocks as &$root) {
+            if ($this->insertIntoNode($root, $parentId, $columnIndex, $index, $block)) {
+                return true;
+            }
+        }
+        unset($root);
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $node
+     */
+    protected function insertIntoNode(array &$node, string $parentId, int $columnIndex, int $index, array $block): bool
+    {
+        if (($node['id'] ?? '') === $parentId && isset($node['children'][$columnIndex]['items']) && is_array($node['children'][$columnIndex]['items'])) {
+            $items = &$node['children'][$columnIndex]['items'];
+            $index = min($index, count($items));
+            array_splice($items, $index, 0, [$block]);
+            $node['children'][$columnIndex]['items'] = array_values($items);
+
+            return true;
+        }
+        if (empty($node['children']) || ! is_array($node['children'])) {
+            return false;
+        }
+        foreach ($node['children'] as &$col) {
+            $colItems = $col['items'] ?? [];
+            if (! is_array($colItems)) {
+                continue;
+            }
+            foreach ($colItems as &$item) {
+                if ($this->insertIntoNode($item, $parentId, $columnIndex, $index, $block)) {
+                    return true;
+                }
+            }
+            unset($item);
+        }
+        unset($col);
+
+        return false;
     }
 
     /**

@@ -12,12 +12,33 @@ export function pageBuilderAlpineData() {
       const previewUrl = this.$wire.get('previewUrl') || '';
       if (!previewUrl) return;
       const blocks = this.$wire.blocks;
+      const token = document.querySelector('meta[name=csrf-token]')?.content || '';
+      let showPageHeader = true;
+      let builderContentWidth = 'contained';
+      const headerEl = document.querySelector('[data-mksine-preview="show_page_header"]');
+      if (headerEl) {
+        if (headerEl.type === 'checkbox') {
+          showPageHeader = headerEl.checked;
+        } else {
+          const ac = headerEl.getAttribute('aria-checked');
+          showPageHeader = ac === 'true';
+        }
+      }
+      const widthEl = document.querySelector('[data-mksine-preview="builder_content_width"]');
+      if (widthEl && widthEl.value && (widthEl.value === 'contained' || widthEl.value === 'full')) {
+        builderContentWidth = widthEl.value;
+      }
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = previewUrl;
       form.target = '_blank';
-      const token = document.querySelector('meta[name=csrf-token]')?.content || '';
-      form.innerHTML = `<input type=hidden name=_token value=${token}><input type=hidden name=blocks value='${JSON.stringify(blocks).replace(/'/g, String.fromCharCode(38, 35, 51, 57))}'><input type=hidden name=title value=Preview>`;
+      const blocksJson = JSON.stringify(blocks).replace(/'/g, String.fromCharCode(38, 35, 51, 57));
+      form.innerHTML =
+        `<input type="hidden" name="_token" value="${token}">` +
+        `<input type="hidden" name="blocks" value='${blocksJson}'>` +
+        `<input type="hidden" name="title" value="Preview">` +
+        `<input type="hidden" name="show_page_header" value="${showPageHeader ? '1' : '0'}">` +
+        `<input type="hidden" name="builder_content_width" value="${builderContentWidth}">`;
       document.body.appendChild(form);
       form.submit();
       form.remove();

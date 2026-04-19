@@ -7,6 +7,8 @@ export default {
         '../../components/**/*.blade.php',
         // Page Builder components and render views
         '../../page-builder/**/*.blade.php',
+        // Modireshop plugin blocks (pricing, etc.)
+        '../../../../../../plugins/modireshop/resources/views/**/*.blade.php',
         // Filament form fields
         '../../filament/**/*.blade.php',
     ],

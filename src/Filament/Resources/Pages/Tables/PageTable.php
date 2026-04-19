@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Filament\Resources\Pages\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -10,11 +11,16 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use Miran\Mksine\Core\Hooks\TableHookManager;
+use Miran\Mksine\Filament\Resources\Pages\PageResource;
+use Miran\Mksine\Models\Page;
 
 class PageTable
 {
@@ -91,6 +97,22 @@ class PageTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('duplicate')
+                    ->label(__('mksine::pages.duplicate'))
+                    ->icon(Heroicon::Square2Stack)
+                    ->color('gray')
+                    ->authorize('replicate')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('mksine::pages.duplicate_modal_heading'))
+                    ->modalDescription(__('mksine::pages.duplicate_modal_description'))
+                    ->action(function (Page $record, Action $action): void {
+                        $duplicate = $record->duplicateAsDraft(Auth::id());
+                        Notification::make()
+                            ->title(__('mksine::pages.duplicate_success'))
+                            ->success()
+                            ->send();
+                        $action->redirect(PageResource::getUrl('edit', ['record' => $duplicate]));
+                    }),
                 ViewAction::make(),
                 DeleteAction::make(),
                 RestoreAction::make(),

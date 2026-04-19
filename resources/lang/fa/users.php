@@ -13,6 +13,7 @@ return array (
   'phone_number' => 'شماره تلفن',
   'phone_placeholder' => 'مثلاً ۹۱۲ ۱۲۳ ۴۵۶۷',
   'password' => 'رمز عبور',
+  'password_leave_blank' => 'خالی بگذارید تا رمز فعلی تغییر نکند.',
   'created_at' => 'تاریخ ایجاد',
   'placeholder_dash' => '—',
   'section_profile' => 'پروفایل',

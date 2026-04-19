@@ -39,6 +39,14 @@ class Comment extends Model
     ];
 
     /**
+     * @return \Miran\Mksine\Database\Factories\CommentFactory
+     */
+    protected static function newFactory()
+    {
+        return \Miran\Mksine\Database\Factories\CommentFactory::new();
+    }
+
+    /**
      * Get the post that owns the comment.
      */
     public function post(): BelongsTo

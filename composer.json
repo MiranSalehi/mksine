@@ -50,7 +50,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Miran\\Mksine\\Tests\\": "tests/"
+            "Miran\\Mksine\\Tests\\": "tests/",
+            "Themes\\": "tests/Fixtures/Themes/"
         }
     },
     "scripts": {

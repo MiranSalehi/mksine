@@ -15,6 +15,11 @@ class PagePreviewController extends Controller
     {
         $blocks = $request->input('blocks', []);
         $title = $request->input('title', 'Preview');
+        $showPageHeader = $request->boolean('show_page_header', true);
+        $builderContentWidth = $request->input('builder_content_width', 'contained');
+        if (! in_array($builderContentWidth, ['contained', 'full'], true)) {
+            $builderContentWidth = 'contained';
+        }
 
         if (is_string($blocks)) {
             $blocks = json_decode($blocks, true) ?? [];
@@ -37,6 +42,8 @@ class PagePreviewController extends Controller
             'blocks' => $blocks,
             'title' => $title,
             'theme' => $theme,
+            'showPageHeader' => $showPageHeader,
+            'builderContentWidth' => $builderContentWidth,
         ]);
     }
 }

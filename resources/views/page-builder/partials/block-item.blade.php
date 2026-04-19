@@ -117,7 +117,7 @@
                 @foreach($block['children'] as $colIndex => $column)
                     <div class="min-h-[120px] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900/50">
                         <div class="mb-3 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.column') }} {{ $colIndex + 1 }}</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ $componentClass ? $componentClass::getBuilderChildRegionLabel($colIndex, count($block['children'])) : __('mksine::page_builder.column').' '.($colIndex + 1) }}</span>
                             <button
                                 type="button"
                                 wire:click="openComponentPanel(null, '{{ $block['id'] }}', {{ $colIndex }})"
@@ -128,8 +128,13 @@
                             </button>
                         </div>
 
-                        @if(!empty($column['items']))
-                            <div class="space-y-2" data-sortable-column data-parent-id="{{ $block['id'] }}" data-column-index="{{ $colIndex }}">
+                        <div class="relative min-h-[4.5rem]">
+                            <div
+                                class="space-y-2 min-h-[4.5rem]"
+                                data-sortable-column
+                                data-parent-id="{{ $block['id'] }}"
+                                data-column-index="{{ $colIndex }}"
+                            >
                                 @foreach($column['items'] as $itemIndex => $item)
                                     @include('mksine::page-builder.partials.block-item', [
                                         'block' => $item,
@@ -139,21 +144,22 @@
                                     ])
                                 @endforeach
                             </div>
-                        @else
-                            <div class="flex flex-col items-center justify-center py-6 text-center">
-                                <div class="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-200/80 dark:bg-gray-700/50">
-                                    <x-heroicon-o-inbox class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                            @if(empty($column['items']))
+                                <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center py-6 text-center">
+                                    <div class="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-200/80 dark:bg-gray-700/50">
+                                        <x-heroicon-o-inbox class="h-6 w-6 text-gray-400 dark:text-gray-500" />
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.empty_column') }}</p>
+                                    <button
+                                        type="button"
+                                        wire:click="openComponentPanel(0, '{{ $block['id'] }}', {{ $colIndex }})"
+                                        class="pointer-events-auto mt-2 text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                                    >
+                                        + {{ __('mksine::page_builder.add_component_short') }}
+                                    </button>
                                 </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.empty_column') }}</p>
-                                <button
-                                    type="button"
-                                    wire:click="openComponentPanel(0, '{{ $block['id'] }}', {{ $colIndex }})"
-                                    class="mt-2 text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
-                                >
-                                    + {{ __('mksine::page_builder.add_component_short') }}
-                                </button>
-                            </div>
-                        @endif
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>

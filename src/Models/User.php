@@ -3,6 +3,11 @@
 namespace Miran\Mksine\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use BezhanSalleh\FilamentShield\Support\Utils;
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,10 +16,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Miran\Mksine\Traits\HasMediaAttachments;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasMediaAttachments, Notifiable, TwoFactorAuthenticatable, HasRoles;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, HasMediaAttachments, HasPanelShield, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -89,5 +94,23 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Same policy as the application User model when using Filament Shield: allow
+     * super_admin, panel_user (when enabled), or any user that already has explicit
+     * permissions from Shield-managed roles.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($this->hasRole(Utils::getSuperAdminName())) {
+            return true;
+        }
+
+        if (Utils::isPanelUserRoleEnabled() && $this->hasRole(Utils::getPanelUserRoleName())) {
+            return true;
+        }
+
+        return $this->getAllPermissions()->isNotEmpty();
     }
 }

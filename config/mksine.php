@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 /**
  * MKSine Configuration
  *
@@ -43,7 +45,7 @@ return [
         // Theme management (coming soon)
         'theme_management' => env('MKS_CMS_THEME_MANAGEMENT', false),
 
-        // Page builder (coming soon)
+        // Visual page builder (Page type "builder" and PageBuilderField)
         'page_builder' => env('MKS_CMS_PAGE_BUILDER', false),
     ],
 
@@ -78,7 +80,20 @@ return [
     | This should be the fully qualified class name of your User model.
     |
     */
-    'user_model' => env('MKS_CMS_USER_MODEL', \App\Models\User::class),
+    'user_model' => env('MKS_CMS_USER_MODEL', User::class),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sync Laravel auth + Filament Shield user class
+    |--------------------------------------------------------------------------
+    |
+    | When true, auth.providers.users.model and filament-shield.auth_provider_model
+    | are set from user_model so installers do not duplicate the FQCN in auth.php
+    | or multiple .env keys. Plugins may still override at boot (e.g. a subclass).
+    | Set MKS_CMS_SYNC_AUTH_USER_MODEL=false only if you manage those keys yourself.
+    |
+    */
+    'sync_auth_user_model' => env('MKS_CMS_SYNC_AUTH_USER_MODEL', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -188,6 +203,20 @@ return [
     |
     */
     'hooks' => [
+        /*
+        |--------------------------------------------------------------------------
+        | Extra hook listener discovery paths
+        |--------------------------------------------------------------------------
+        |
+        | php artisan mks:discover always scans the package Core/Listeners tree first.
+        | Add absolute paths (e.g. app_path('Hooks/Listeners')) for app or plugin
+        | listener classes. Missing directories are skipped with a warning.
+        |
+        */
+        'discovery_paths' => [
+            // base_path('app/Hooks/Listeners'),
+        ],
+
         // Log slow hooks (execution time > threshold in ms)
         'log_slow_hooks' => env('MKS_CMS_LOG_SLOW_HOOKS', true),
 

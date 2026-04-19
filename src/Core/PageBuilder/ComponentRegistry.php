@@ -126,6 +126,11 @@ class ComponentRegistry
                 'icon' => 'heroicon-o-cursor-arrow-rays',
                 'order' => 4,
             ],
+            BaseBuilderComponent::CATEGORY_SECTIONS => [
+                'name' => __('mksine::page_builder.category_sections'),
+                'icon' => 'heroicon-o-rectangle-stack',
+                'order' => 5,
+            ],
         ];
     }
 
@@ -169,5 +174,19 @@ class ComponentRegistry
         }
 
         return $class::validate($data);
+    }
+
+    /**
+     * Resolve the Blade view name for a block type (registered class or core convention).
+     */
+    public function resolveRenderView(string $type): string
+    {
+        $class = $this->get($type);
+
+        if ($class !== null && is_subclass_of($class, BaseBuilderComponent::class)) {
+            return $class::getRenderView();
+        }
+
+        return 'mksine::page-builder.render.'.$type;
     }
 }

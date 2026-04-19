@@ -6,6 +6,7 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
+use Filament\Support\Colors\Color as FilamentColor;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
@@ -14,7 +15,6 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
-use Filament\Support\Colors\Color;
 
 class MksinePlugin implements Plugin
 {
@@ -31,7 +31,7 @@ class MksinePlugin implements Plugin
                 ->navigationGroup(fn() => __('mksine::common.access_control')),
         ])
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => FilamentColor::Violet,
             ]);
 
         // Register core MKS CMS resources and pages

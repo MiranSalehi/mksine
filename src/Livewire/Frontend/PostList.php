@@ -17,6 +17,7 @@ class PostList extends Component
     {
         $posts = Post::query()
             ->where('status', 'published')
+            ->with(['author', 'featuredImage', 'categories'])
             ->latest('published_at')
             ->paginate(12);
 

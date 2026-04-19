@@ -19,8 +19,10 @@
 
 /* CSS Variables */
 :root {
-    --color-primary: #3b82f6;
-    /* Tailwind blue-500 */
+    --color-primary: #f59e0b;
+    /* amber-500 — default theme accent (buttons / general) */
+    --header-accent: #f97316;
+    /* orange-500 — MrDomain-style header brand + nav hover */
     --color-secondary: #4f46e5;
     /* Tailwind indigo-600 */
     --bg-primary: #ffffff;
@@ -67,30 +69,82 @@ html.dark {
     }
 
     .btn-primary:hover {
-        background-color: #2563eb;
-        /* Tailwind blue-600 */
+        background-color: #d97706;
+        /* amber-600 */
     }
 
     .btn-secondary {
         @apply px-6 py-2 bg-gray-200 text-gray-800 rounded font-semibold hover:bg-gray-300 transition-colors;
     }
 
-    .theme-toggle,
-    .direction-toggle {
+    .theme-toggle {
         @apply relative inline-flex items-center justify-center w-10 h-10 cursor-pointer rounded-md bg-transparent transition-all;
         border: 1px solid var(--border-color);
         color: var(--text-primary);
     }
 
-    .theme-toggle:hover,
-    .direction-toggle:hover {
+    .theme-toggle:hover {
         background-color: var(--bg-secondary);
         border-color: var(--color-primary);
     }
 
-    .theme-toggle svg,
-    .direction-toggle svg {
+    .theme-toggle svg {
         @apply w-5 h-5;
+    }
+
+    /**
+     * Single post HTML body (no @tailwindcss/typography in theme — mirror readable defaults).
+     */
+    .single-post-body {
+        @apply max-w-none text-base leading-relaxed text-stone-800 dark:text-stone-200;
+    }
+
+    .single-post-body :where(p) {
+        @apply mb-4 last:mb-0;
+    }
+
+    .single-post-body :where(a) {
+        @apply font-medium text-violet-600 underline-offset-2 hover:text-violet-700 hover:underline dark:text-violet-400 dark:hover:text-violet-300;
+    }
+
+    .single-post-body :where(ul, ol) {
+        @apply mb-4 space-y-1 ps-6 last:mb-0;
+    }
+
+    .single-post-body :where(ul) {
+        @apply list-disc;
+    }
+
+    .single-post-body :where(ol) {
+        @apply list-decimal;
+    }
+
+    .single-post-body :where(blockquote) {
+        @apply my-6 border-s-4 border-violet-200 bg-stone-50/80 py-2 pe-4 ps-4 text-stone-700 italic dark:border-violet-800 dark:bg-slate-800/50 dark:text-stone-300;
+    }
+
+    .single-post-body :where(h2) {
+        @apply mt-10 mb-3 scroll-mt-24 text-2xl font-bold tracking-tight text-stone-900 first:mt-0 dark:text-stone-50;
+    }
+
+    .single-post-body :where(h3) {
+        @apply mt-8 mb-2 scroll-mt-24 text-xl font-bold text-stone-900 dark:text-stone-50;
+    }
+
+    .single-post-body :where(h4) {
+        @apply mt-6 mb-2 text-lg font-semibold text-stone-900 dark:text-stone-50;
+    }
+
+    .single-post-body :where(img) {
+        @apply my-6 h-auto max-w-full rounded-xl;
+    }
+
+    .single-post-body :where(pre, code) {
+        @apply text-sm;
+    }
+
+    .single-post-body :where(pre) {
+        @apply my-6 overflow-x-auto rounded-xl bg-stone-900 p-4 text-stone-100 dark:bg-slate-950;
     }
 }
 
@@ -102,33 +156,6 @@ html.dark {
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--color-primary);
-    border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #2563eb;
-    /* Tailwind blue-600 */
-}
-
-html.dark ::-webkit-scrollbar-track {
-    background: #1e293b;
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-    background: #64748b;
 }
 
 /* Dark Mode Overrides */
@@ -175,6 +202,75 @@ html.dark .border-gray-200 {
 
 
 /* =========================================================================
+   Site header bar (MrDomain-style: flat, no shadow on the bar)
+   ========================================================================= */
+
+.site-header-bar {
+    box-shadow: none;
+}
+
+.site-header-icon-btn {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200/90 bg-gray-100 text-gray-600 transition-colors;
+}
+
+.site-header-icon-btn:hover {
+    @apply border-amber-200 bg-amber-50 text-amber-700;
+}
+
+.dark .site-header-icon-btn {
+    @apply border-gray-600 bg-gray-800 text-gray-300;
+}
+
+.dark .site-header-icon-btn:hover {
+    @apply border-amber-600/50 bg-gray-700 text-amber-400;
+}
+
+.dark .site-header-bar {
+    @apply border-gray-700 bg-gray-900;
+}
+
+/* Logo mark + brand accent (orange block + split word) */
+.site-header-logo-mark {
+    border-radius: 0.2rem;
+    background-color: var(--header-accent);
+}
+
+.site-header-brand-accent {
+    color: var(--header-accent);
+}
+
+.site-header-brand:hover .site-header-brand-accent {
+    color: #ea580c;
+ /* orange-600 */
+}
+
+/* Merged EUR/locale label + RTL/LTR toggle (one control) */
+.site-header-locale-toggle {
+    @apply cursor-pointer rounded-full border border-gray-200/90 bg-gray-100 px-3 py-2 text-gray-600 transition-colors;
+    @apply hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800;
+}
+
+.dark .site-header-locale-toggle {
+    @apply border-gray-600 bg-gray-800 text-gray-300;
+}
+
+.dark .site-header-locale-toggle:hover {
+    @apply border-amber-600/50 bg-gray-700 text-amber-400;
+}
+
+.site-header-locale-toggle__dir-icon .locale-dir-icon--rtl {
+    display: none;
+}
+
+html[dir='rtl'] .site-header-locale-toggle__dir-icon .locale-dir-icon--ltr {
+    display: none;
+}
+
+html[dir='rtl'] .site-header-locale-toggle__dir-icon .locale-dir-icon--rtl {
+    display: block;
+}
+
+/* =========================================================================
    Modern Menu Styling (e.g. mksine-menu-header_primary)
    ========================================================================= */
 
@@ -184,8 +280,9 @@ html.dark .border-gray-200 {
     list-style: none;
 }
 
-/* Base anchor links */
-[class*="mksine-menu-"] a {
+/* Links + non-clickable parents (items that have children) */
+[class*="mksine-menu-"] a,
+[class*="mksine-menu-"] .mksine-menu-parent-trigger {
     display: block;
     padding: 0.75rem 1rem;
     color: #4b5563;
@@ -197,8 +294,14 @@ html.dark .border-gray-200 {
     white-space: nowrap;
 }
 
+[class*="mksine-menu-"] .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
 /* Hover effect on links */
-[class*="mksine-menu-"] a:hover {
+[class*="mksine-menu-"] a:hover,
+[class*="mksine-menu-"] .mksine-menu-parent-trigger:hover {
     color: #3b82f6;
     /* Tailwind blue-500 */
     background-color: rgba(59, 130, 246, 0.05);
@@ -266,12 +369,14 @@ html.dark .border-gray-200 {
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
 }
 
-.dark [class*="mksine-menu-"] a {
+.dark [class*="mksine-menu-"] a,
+.dark [class*="mksine-menu-"] .mksine-menu-parent-trigger {
     color: #d1d5db;
     /* Tailwind gray-300 */
 }
 
-.dark [class*="mksine-menu-"] a:hover {
+.dark [class*="mksine-menu-"] a:hover,
+.dark [class*="mksine-menu-"] .mksine-menu-parent-trigger:hover {
     color: #60a5fa;
     /* Tailwind blue-400 */
     background-color: rgba(96, 165, 250, 0.1);
@@ -279,68 +384,565 @@ html.dark .border-gray-200 {
 }
 
 /* =========================================================================
-   Footer Menu Styling (via layout columns)
+   Site footer (light layout; menu location key = footer_links in admin)
    ========================================================================= */
 
-/* Top-level list acts as a grid of columns */
-.mksine-menu-footer_links {
-    display: grid !important;
-    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-    gap: 2rem !important;
-}
-
-@media (min-width: 640px) {
-    .mksine-menu-footer_links {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-}
-
-/* Top-level list items (act as columns) */
-.mksine-menu-footer_links>li {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Top-level links (act as Column Headers) */
-.mksine-menu-footer_links>li>a {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    /* font-bold */
-    margin-bottom: 1rem !important;
-    /* mb-4 */
-    font-size: 1rem !important;
+/*
+ * Footer columns: root <ul> uses display:contents so each top-level <li> is a cell of .footer-main
+ * (grid-cols-2 md:grid-cols-4 lg:grid-cols-5) — matches MrDomain-style layout.
+ */
+ul.mksine-menu-footer_columns {
+    display: contents !important;
+    margin: 0 !important;
     padding: 0 !important;
+    list-style: none !important;
+}
+
+.mksine-menu-footer_columns > li {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0;
+}
+
+.mksine-menu-footer_columns > li > .mksine-menu-parent-trigger,
+.mksine-menu-footer_columns > li > a {
+    margin: 0 0 1rem !important;
+    /* mb-4 like reference column heading */
+    background: transparent !important;
+    padding: 0 !important;
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    color: #374151 !important;
+    white-space: nowrap;
+}
+
+.dark .mksine-menu-footer_columns > li > .mksine-menu-parent-trigger,
+.dark .mksine-menu-footer_columns > li > a {
+    color: #e5e7eb !important;
+}
+
+.mksine-menu-footer_columns > li > .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
+.mksine-menu-footer_columns [class*="mksine-submenu-"] {
+    position: static !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    margin: 0 !important;
+    min-width: unset !important;
+    list-style: none !important;
+    border: none !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.mksine-menu-footer_columns [class*="mksine-submenu-"] a {
+    background-color: transparent !important;
+    padding: 0 !important;
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    color: #4b5563 !important;
+}
+
+.mksine-menu-footer_columns [class*="mksine-submenu-"] a:hover {
+    background-color: transparent !important;
+    color: #111827 !important;
+}
+
+.dark .mksine-menu-footer_columns [class*="mksine-submenu-"] a {
+    color: #9ca3af !important;
+}
+
+.dark .mksine-menu-footer_columns [class*="mksine-submenu-"] a:hover {
+    color: #f3f4f6 !important;
+}
+
+/* =========================================================================
+   Header primary — horizontal strip (logo + centered nav + utilities)
+   ========================================================================= */
+
+ul.mksine-menu-header_primary {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+ul.mksine-menu-header_primary > li {
+    position: relative;
+    margin: 0;
+    padding: 0;
+}
+
+ul.mksine-menu-header_primary > li > a,
+ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.125rem !important;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #4b5563 !important;
+    /* gray-600 */
+    background: transparent !important;
+    border-radius: 0 !important;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+}
+
+ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
+ul.mksine-menu-header_primary > li > a:hover,
+ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger:hover {
+    color: var(--header-accent) !important;
     background: transparent !important;
 }
 
-/* Sub-menus (The actual bottom links lists) */
-.mksine-menu-footer_links [class*="mksine-submenu-"] {
+/* Dropdown chevron (top level with children) — small “v” like MrDomain */
+ul.mksine-menu-header_primary > li:has(> ul) > .mksine-menu-parent-trigger::after {
+    content: '';
+    display: inline-block;
+    width: 0.4rem;
+    height: 0.4rem;
+    margin-top: -0.05rem;
+    margin-left: 0.05rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.65;
+}
+
+/* Dropdown panels: border only, no heavy shadow */
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.35rem 0;
+    background: #fff;
+}
+
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] a,
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem;
+    font-weight: 400;
+    border-radius: 0.25rem;
+}
+
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] a:hover,
+ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger:hover {
+    color: var(--header-accent) !important;
+    background-color: rgba(249, 115, 22, 0.08) !important;
+}
+
+.dark ul.mksine-menu-header_primary > li > a,
+.dark ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    color: #9ca3af !important;
+}
+
+.dark ul.mksine-menu-header_primary > li > a:hover,
+.dark ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger:hover {
+    color: #fb923c !important;
+    /* orange-400 */
+}
+
+.dark ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+/* Mobile stacked modifier (passed as extra class on component) */
+ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked,
+.mksine-menu-header_primary--stacked.mksine-menu-header_primary {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0 !important;
+    width: 100%;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked > li > a,
+ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked > li > .mksine-menu-parent-trigger,
+.mksine-menu-header_primary--stacked.mksine-menu-header_primary > li > a,
+.mksine-menu-header_primary--stacked.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    width: 100%;
+    padding: 0.65rem 0 !important;
+    white-space: normal;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked [class*='mksine-submenu-header_primary'],
+.mksine-menu-header_primary--stacked [class*='mksine-submenu-header_primary'] {
     position: static !important;
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
     box-shadow: none !important;
     border: none !important;
-    background-color: transparent !important;
+    border-left: 2px solid #e5e7eb;
+    margin: 0.25rem 0 0.5rem 0.5rem !important;
+    padding-left: 0.75rem !important;
     min-width: unset !important;
-    padding: 0 !important;
+}
+
+.dark ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked [class*='mksine-submenu-header_primary'] {
+    border-left-color: #4b5563;
+}
+
+/* =========================================================================
+   Desktop mega dropdown (MrDomain-style; lg+ only)
+   ========================================================================= */
+
+.site-header-mega-panels {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    z-index: 40;
+    margin-top: 0.25rem;
+    width: min(90vw, 87.5rem);
+    max-width: 1400px;
+    transform: translate3d(-50%, 0.5rem, 0) scale(0.99);
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0.2s;
+}
+
+.site-header-mega-panels.is-open {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(-50%, 0, 0) scale(1);
+}
+
+@media (max-width: 1023px) {
+    .site-header-mega-panels {
+        display: none !important;
+    }
+}
+
+.site-header-mega-trigger.is-active {
+    background-color: rgb(237 233 254);
+    color: rgb(91 33 182);
+}
+
+.dark .site-header-mega-trigger.is-active {
+    background-color: rgb(76 29 149 / 0.35);
+    color: rgb(196 181 253);
+}
+
+/* =========================================================================
+   Mobile menu trigger (hamburger — lg and below only via Blade wrapper)
+   ========================================================================= */
+
+.site-mobile-menu-trigger {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200/90 bg-white text-gray-700 shadow-sm transition-all duration-200;
+}
+
+.site-mobile-menu-trigger:hover {
+    @apply border-orange-200 bg-orange-50 text-orange-700;
+}
+
+.dark .site-mobile-menu-trigger {
+    @apply border-gray-600 bg-gray-900 text-gray-200;
+}
+
+.dark .site-mobile-menu-trigger:hover {
+    @apply border-orange-500/40 bg-gray-800 text-orange-400;
+}
+
+/* =========================================================================
+   Mobile drawer (slide-in sidebar + backdrop)
+   ========================================================================= */
+
+body.site-mobile-drawer-open {
+    overflow: hidden;
+}
+
+.site-mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(15, 23, 42, 0.45);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+        opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.site-mobile-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+    .site-mobile-backdrop,
+    .site-mobile-drawer {
+        display: none !important;
+    }
+
+    body.site-mobile-drawer-open {
+        overflow: unset;
+    }
+}
+
+.site-mobile-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: 70;
+    width: min(22rem, calc(100vw - 1.25rem));
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
+    border-inline-start: 1px solid rgba(226, 232, 240, 0.9);
+    inset-inline-end: 0;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+        transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+        visibility 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+[dir='rtl'] .site-mobile-drawer {
+    transform: translateX(-100%);
+    box-shadow: 12px 0 40px rgba(15, 23, 42, 0.12);
+}
+
+.site-mobile-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+}
+
+.site-mobile-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%);
+    border-bottom: 1px solid rgba(254, 215, 170, 0.5);
+}
+
+.site-mobile-drawer__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1e293b;
+}
+
+.site-mobile-drawer__close {
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.site-mobile-drawer__close:hover {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #e11d48;
+    transform: scale(1.05);
+}
+
+.site-mobile-drawer__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.1rem 1.5rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dark .site-mobile-drawer {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    border-inline-start-color: #334155;
+    box-shadow: -12px 0 48px rgba(0, 0, 0, 0.45);
+}
+
+.dark [dir='rtl'] .site-mobile-drawer {
+    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.45);
+}
+
+.dark .site-mobile-drawer__header {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, #0f172a 60%);
+    border-bottom-color: #334155;
+}
+
+.dark .site-mobile-drawer__title {
+    color: #f1f5f9;
+}
+
+.dark .site-mobile-drawer__close {
+    background: #1e293b;
+    border-color: #475569;
+    color: #94a3b8;
+}
+
+.dark .site-mobile-drawer__close:hover {
+    background: rgba(225, 29, 72, 0.15);
+    border-color: #fb7185;
+    color: #fda4af;
+}
+
+/* Drawer menu list (modern stacked links) */
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary {
     display: flex !important;
     flex-direction: column !important;
-    gap: 0.5rem !important;
-    /* space-y-2 */
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 0.35rem !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-/* Sub-menu links */
-.mksine-menu-footer_links [class*="mksine-submenu-"] a {
-    padding: 0 !important;
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid #e2e8f0;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li:hover,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li:hover {
+    border-color: rgba(249, 115, 22, 0.35);
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.08);
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > a,
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > .mksine-menu-parent-trigger,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > a,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+    padding: 0.85rem 1rem !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    white-space: normal;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > .mksine-menu-parent-trigger,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > a:hover,
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > .mksine-menu-parent-trigger:hover,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > a:hover,
+.mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > .mksine-menu-parent-trigger:hover {
+    color: var(--header-accent) !important;
+    background: transparent !important;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'],
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] {
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: rgba(248, 250, 252, 0.95) !important;
+    border-top: 1px dashed #e2e8f0 !important;
+    margin: 0 !important;
+    padding: 0.35rem 0.5rem 0.65rem !important;
+    min-width: unset !important;
+    border-radius: 0 0 0.65rem 0.65rem !important;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] a,
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger,
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] a,
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger {
+    padding: 0.55rem 0.85rem !important;
     font-size: 0.875rem !important;
-    /* text-sm */
-    color: #9ca3af !important;
-    /* text-gray-400 */
-    font-weight: 400 !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    border-radius: 0.5rem !important;
 }
 
-.mksine-menu-footer_links [class*="mksine-submenu-"] a:hover {
-    color: #ffffff !important;
-    background-color: transparent !important;
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger,
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger {
+    cursor: default;
+    user-select: none;
+}
+
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] a:hover,
+ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger:hover,
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] a:hover,
+.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger:hover {
+    color: var(--header-accent) !important;
+    background-color: rgba(249, 115, 22, 0.08) !important;
+}
+
+.dark ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li,
+.dark .mksine-menu-header_primary--drawer.mksine-menu-header_primary > li {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: #475569;
+}
+
+.dark ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > a,
+.dark ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > .mksine-menu-parent-trigger,
+.dark .mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > a,
+.dark .mksine-menu-header_primary--drawer.mksine-menu-header_primary > li > .mksine-menu-parent-trigger {
+    color: #e2e8f0 !important;
+}
+
+.dark ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'],
+.dark .mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-top-color: #475569 !important;
 }

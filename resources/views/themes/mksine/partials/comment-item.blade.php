@@ -1,40 +1,44 @@
 @props(['comment', 'isReply' => false])
 
-<div class="{{ $isReply ? 'ml-6 sm:ml-10 mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600' : '' }} border-b border-gray-200 dark:border-gray-700 pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0">
-    <div class="flex gap-4 mb-3">
+<div
+    class="{{ $isReply ? 'ms-4 mt-4 border-s-2 border-violet-200/80 ps-4 first:pt-0 pt-4 dark:border-violet-800/60 sm:ms-8 sm:ps-5' : 'first:pt-0 pt-6' }} border-b border-stone-100 pb-6 last:mb-0 last:border-b-0 last:pb-0 dark:border-slate-800"
+    @if (! $isReply) id="comment-{{ $comment->id }}" @endif
+>
+    <div class="mb-3 flex gap-3 sm:gap-4">
         @php
             $user = $comment->user;
             $avatarUrl = $user && method_exists($user, 'avatar_url') ? $user->avatar_url : null;
             $initials = $user && method_exists($user, 'initials') ? $user->initials() : strtoupper(mb_substr($comment->author_display_name, 0, 2));
         @endphp
-        @if($avatarUrl)
-            <img src="{{ $avatarUrl }}" alt="{{ $comment->author_display_name }}" class="w-10 h-10 rounded-full object-cover">
+        @if ($avatarUrl)
+            <img src="{{ $avatarUrl }}" alt="" class="h-11 w-11 shrink-0 rounded-2xl object-cover ring-2 ring-stone-100 dark:ring-slate-700" loading="lazy" />
         @else
-            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400 shrink-0">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-xs font-bold text-white" aria-hidden="true">
                 {{ $initials }}
             </div>
         @endif
         <div class="min-w-0 flex-1">
-            <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $comment->author_display_name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $comment->created_at->diffForHumans() }}</p>
+            <p class="font-semibold text-stone-900 dark:text-stone-100">{{ $comment->author_display_name }}</p>
+            <p class="text-xs text-stone-500 dark:text-stone-400">{{ $comment->created_at->diffForHumans() }}</p>
         </div>
-        @if(!$isReply)
-            <button type="button" wire:click="setReply({{ $comment->id }})"
-                    class="text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400">{{ __('Reply') }}</button>
+        @if (! $isReply)
+            <button type="button" wire:click="setReply({{ $comment->id }})" class="shrink-0 text-sm font-semibold text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300">
+                {{ __('mksine::frontend.reply') }}
+            </button>
         @endif
     </div>
-    @if($comment->hasRating())
-        <div class="flex gap-0.5 mb-2" aria-label="{{ $comment->rating }} {{ __('stars') }}">
-            @for($i = 1; $i <= 5; $i++)
-                <span class="text-lg {{ $i <= $comment->rating ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}">★</span>
+    @if ($comment->hasRating())
+        <div class="mb-2 flex gap-0.5" aria-label="{{ __('mksine::frontend.rating') }}: {{ $comment->rating }} {{ __('mksine::frontend.stars') }}">
+            @for ($i = 1; $i <= 5; $i++)
+                <span class="text-lg {{ $i <= $comment->rating ? 'text-amber-400' : 'text-stone-300 dark:text-stone-600' }}">★</span>
             @endfor
         </div>
     @endif
-    <p class="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">{{ $comment->content }}</p>
+    <p class="text-sm leading-relaxed whitespace-pre-wrap text-stone-700 dark:text-stone-300">{{ $comment->content }}</p>
 
-    @if($comment->replies->isNotEmpty())
+    @if ($comment->replies->isNotEmpty())
         <div class="mt-4 space-y-0">
-            @foreach($comment->replies as $reply)
+            @foreach ($comment->replies as $reply)
                 @include('mksine::themes.mksine.partials.comment-item', ['comment' => $reply, 'isReply' => true])
             @endforeach
         </div>
