@@ -17,7 +17,7 @@ MKSine is a Laravel + **Filament 4** CMS foundation: content, themes, plugins, h
 | [docs/50-troubleshooting.md](docs/50-troubleshooting.md) | Common failures |
 | [docs/60-deployment-hosting.md](docs/60-deployment-hosting.md) | Production web server, document root, release archive `public/` rules |
 | [docs/99-validation-checklist.md](docs/99-validation-checklist.md) | Done criteria |
-| [docs/DEVELOPER-SLO.md](docs/DEVELOPER-SLO.md) | Audience, SLO, `mks-starter` policy |
+| [docs/DEVELOPER-SLO.md](docs/DEVELOPER-SLO.md) | Audience and SLO |
 
 **Architecture decisions:** [docs/adr/](docs/adr/)
 
@@ -82,11 +82,6 @@ Plugin/app listener directories must be listed under `config('mksine.hooks.disco
 ### User model and auth
 
 `config/mksine.php` → **`user_model`** (default `App\Models\User`). When **`sync_auth_user_model`** is `true`, the package aligns `auth.providers.users.model` and `filament-shield.auth_provider_model`. Plugins that replace the user class must set all three in `boot()` — see [docs/40-security-auth.md](docs/40-security-auth.md).
-
-## Reference plugins (this monorepo)
-
-- **Minimal:** `plugins/mks-starter`
-- **Advanced:** `plugins/mks-booking`
 
 ## License
 
