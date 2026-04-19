@@ -1,3 +1,7 @@
+---
+title: ADR 002: Commit published plugin assets for ZIP deploy
+---
+
 # ADR 002: Commit published plugin assets for ZIP deploy
 
 ## Context

@@ -1,0 +1,114 @@
+# MKSine documentation navigation (SSG-agnostic).
+# Each item is { title, path } relative to this file. SSG adapters
+# (VitePress, Docusaurus, Starlight, Mintlify) consume this to build
+# the sidebar; on-disk order also follows the same sequence.
+#
+# Invariants enforced by `php scripts/lint-docs.php` and the Pest
+# `tests/DocsNavTest.php` suite:
+#   1. Every .md file under docs/ (excluding archive/ and internal/)
+#      appears here exactly once.
+#   2. Every entry below points to an existing .md file on disk.
+#   3. Every referenced page starts with YAML front matter that
+#      contains a non-empty `title:` field.
+# Run the lint locally before opening a PR that touches docs/.
+
+sidebar:
+  - section: Getting started
+    items:
+      - { title: Introduction, path: 00-introduction.md }
+      - { title: Installation, path: 01-installation.md }
+      - { title: Quickstart, path: 02-quickstart.md }
+
+  - section: Concepts
+    items:
+      - { title: Architecture, path: concepts/architecture.md }
+      - { title: Plugins, path: concepts/plugins.md }
+      - { title: Hooks, path: concepts/hooks.md }
+      - { title: Themes, path: concepts/themes.md }
+      - { title: Page builder, path: concepts/page-builder.md }
+      - { title: Menus, path: concepts/menus.md }
+
+  - section: Plugin guides
+    items:
+      - { title: Golden path, path: guides/plugins/golden-path.md }
+      - { title: Lifecycle, path: guides/plugins/lifecycle.md }
+      - { title: Filament resources, path: guides/plugins/filament-resources.md }
+      - { title: Filament pages and widgets, path: guides/plugins/filament-pages-widgets.md }
+      - { title: Models and migrations, path: guides/plugins/models-migrations.md }
+      - { title: Assets and Vite, path: guides/plugins/assets-vite.md }
+      - { title: Translations, path: guides/plugins/translations.md }
+      - { title: Composer and publishes presets, path: guides/plugins/composer-and-publishes.md }
+      - { title: Plugin-to-plugin API, path: guides/plugins/plugin-api.md }
+      - { title: Registering Filament plugins, path: guides/plugins/filament-plugins.md }
+
+  - section: Theme guides
+    items:
+      - { title: Creating a theme, path: guides/themes/creating-a-theme.md }
+      - { title: Views and layouts, path: guides/themes/views-and-layouts.md }
+      - { title: Assets and publish, path: guides/themes/assets-and-publish.md }
+      - { title: Translations, path: guides/themes/translations.md }
+      - { title: Custom asset storage, path: guides/themes/custom-asset-storage.md }
+
+  - section: Hook guides
+    items:
+      - { title: Two families overview, path: guides/hooks/overview-two-families.md }
+      - { title: Event hooks, path: guides/hooks/event-hooks.md }
+      - { title: Form hooks, path: guides/hooks/form-hooks.md }
+      - { title: Table hooks, path: guides/hooks/table-hooks.md }
+      - { title: Resource hooks, path: guides/hooks/resource-hooks.md }
+      - { title: Page header hooks, path: guides/hooks/page-header-hooks.md }
+      - { title: Runtime registration, path: guides/hooks/runtime-registration.md }
+      - { title: Async and queues, path: guides/hooks/async-and-queues.md }
+      - { title: Discovery paths, path: guides/hooks/discovery-paths.md }
+      - { title: Slow-hook logging, path: guides/hooks/slow-hook-logging.md }
+
+  - section: Page builder guides
+    items:
+      - { title: Concepts and feature flag, path: guides/page-builder/concepts-and-feature-flag.md }
+      - { title: Creating a block, path: guides/page-builder/creating-a-block.md }
+      - { title: Nesting, path: guides/page-builder/nesting.md }
+      - { title: Validation, path: guides/page-builder/validation.md }
+      - { title: Rendering, path: guides/page-builder/rendering.md }
+
+  - section: Menu guides
+    items:
+      - { title: Locations, path: guides/menus/locations.md }
+      - { title: Item sources, path: guides/menus/item-sources.md }
+
+  - section: Media, settings, localization, auth
+    items:
+      - { title: Media library, path: guides/media/library.md }
+      - { title: Adding settings tabs, path: guides/settings/adding-tabs.md }
+      - { title: Translations workflow, path: guides/localization/translations.md }
+      - { title: User subclass, path: guides/auth/user-subclass.md }
+      - { title: Shield and policies, path: guides/auth/shield-and-policies.md }
+
+  - section: Reference
+    items:
+      - { title: Commands, path: reference/commands.md }
+      - { title: Configuration, path: reference/configuration.md }
+      - { title: Contracts, path: reference/contracts.md }
+      - { title: Facades and managers, path: reference/facades-and-managers.md }
+      - { title: API stability, path: reference/stability.md }
+
+  - section: Operations
+    items:
+      - { title: Deployment and hosting, path: operations/deployment-hosting.md }
+      - { title: Release archive, path: operations/release-archive.md }
+      - { title: Troubleshooting, path: operations/troubleshooting.md }
+      - { title: Validation checklist, path: operations/validation-checklist.md }
+
+  - section: Project meta
+    items:
+      - { title: Versioning, path: meta/versioning.md }
+      - { title: Upgrade guide, path: meta/upgrade-guide.md }
+      - { title: Contributing, path: meta/contributing.md }
+      - { title: SLO, path: meta/slo.md }
+
+  - section: Architecture decisions
+    items:
+      - { title: Two hook families, path: adr/001-two-hook-families.md }
+      - { title: Committed plugin assets, path: adr/002-committed-plugin-assets.md }
+      - { title: Plugin user subclass, path: adr/003-plugin-user-subclass.md }
+      - { title: No core vendor publish command, path: adr/004-no-core-vendor-publish-command.md }
+      - { title: Split package README, path: adr/005-split-package-readme.md }

@@ -1,3 +1,7 @@
+---
+title: ADR 001: Two hook families (DB-synced vs runtime)
+---
+
 # ADR 001: Two hook families (DB-synced vs runtime)
 
 ## Context

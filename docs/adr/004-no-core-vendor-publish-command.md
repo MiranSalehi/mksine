@@ -1,3 +1,7 @@
+---
+title: ADR 004: No mks-plugin:publish-vendor in core
+---
+
 # ADR 004: No `mks-plugin:publish-vendor` in core
 
 ## Context

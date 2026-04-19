@@ -1,3 +1,7 @@
+---
+title: ADR 003: Plugin user subclass instead of patching host User
+---
+
 # ADR 003: Plugin user subclass instead of patching host User
 
 ## Context
@@ -16,10 +20,10 @@ Handle Spatie morph `model_type` deliberately (often `getMorphClass()`), not ad 
 
 ## Consequences
 
-- More setup code in complex plugins (wiring in `boot()` per [40-security-auth.md](../40-security-auth.md)).
+- More setup code in complex plugins (wiring in `boot()` per [guides/auth/user-subclass.md](../guides/auth/user-subclass.md)).
 - Correctness of Shield + Filament contracts remains the plugin author’s responsibility.
 
 ## References
 
 - `MksineServiceProvider::syncAuthUserModelWithMksineConfig`
-- [40-security-auth.md](../40-security-auth.md)
+- [guides/auth/user-subclass.md](../guides/auth/user-subclass.md)
