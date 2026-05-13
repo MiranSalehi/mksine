@@ -37,7 +37,8 @@ class PageShow extends Component
 
     public function render()
     {
-        View::share('title', $this->pageModel->title . ' - ' . (config('app.name', 'MKS CMS')));
+        View::share('title', mksine_document_title($this->pageModel->meta_title, $this->pageModel->title));
+        View::share('metaDescription', mksine_meta_description($this->pageModel->meta_description, $this->pageModel->content));
 
         $view = view(theme_view('page'), ['page' => $this->pageModel]);
 

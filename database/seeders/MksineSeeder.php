@@ -3,8 +3,10 @@
 namespace Miran\Mksine\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
 use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Comment;
 use Miran\Mksine\Models\Menu;
@@ -149,7 +151,7 @@ class MksineSeeder extends Seeder
         foreach ($roots as $root) {
             if (fake()->boolean(30)) {
                 Comment::factory()
-                    ->forPost($root->post_id)
+                    ->forPost((int) $root->commentable_id)
                     ->replyTo($root)
                     ->approved()
                     ->create();
@@ -223,10 +225,9 @@ class MksineSeeder extends Seeder
 
     protected function seedMenus(): void
     {
-        MenuLocation::registerDefaults([
-            'header_primary' => 'Header (primary)',
-            'footer_links' => 'Footer links',
-        ]);
+        // Same keys/labels as resources/views/themes/mksine/theme.php (default theme).
+        app(ThemeBootstrap::class)->boot();
+        app(MenuLocationManager::class)->syncToDatabase();
 
         $headerMenu = Menu::query()->firstOrCreate(
             ['slug' => 'main-header'],

@@ -4,6 +4,8 @@ namespace Miran\Mksine\Core\PageBuilder\Livewire;
 
 use Livewire\Component;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
+use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
+use Miran\Mksine\Core\PageBuilder\Support\TwelveColumnSpanNormalizer;
 use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
 
 class PageBuilder extends Component
@@ -88,11 +90,6 @@ class PageBuilder extends Component
     public ?string $copyBlockJson = null;
 
     /**
-     * Preview form action URL (so frontend always has it after Livewire updates).
-     */
-    public string $previewUrl = '';
-
-    /**
      * Maximum history size.
      */
     protected int $maxHistorySize = 50;
@@ -121,7 +118,6 @@ class PageBuilder extends Component
     public function mount(array $value = []): void
     {
         $this->blocks = $value;
-        $this->previewUrl = route('mksine.page-builder.preview');
         $this->saveHistory();
         $this->mountedAt = microtime(true);
     }
@@ -275,9 +271,11 @@ class PageBuilder extends Component
             } elseif (($block['type'] ?? '') === 'button' && ! empty($data['text'])) {
                 $previewText = $data['text'];
             } elseif (($block['type'] ?? '') === 'container_inset') {
-                $previewText = trim(
-                    ($data['padding_inline'] ?? 'md').' · '.($data['max_width'] ?? 'full')
-                );
+                $mw = (string) ($data['max_width'] ?? 'full');
+                $bleed = filter_var($data['background_full_bleed'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $previewText = $bleed
+                    ? trim($mw.' '.__('mksine::page_builder.container_inset_preview_bleed_suffix'))
+                    : $mw;
             }
         }
 
@@ -327,17 +325,15 @@ class PageBuilder extends Component
      */
     protected function addBlockToColumn(array $instance, string $parentId, int $columnIndex, ?int $position = null): void
     {
-        foreach ($this->blocks as &$block) {
-            if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                if ($position !== null) {
-                    array_splice($block['children'][$columnIndex]['items'], $position, 0, [$instance]);
-                } else {
-                    $block['children'][$columnIndex]['items'][] = $instance;
-                }
-
-                break;
+        $this->mutateColumnItemsByParent($this->blocks, $parentId, $columnIndex, function (array &$items) use ($instance, $position): void {
+            if ($position !== null) {
+                array_splice($items, $position, 0, [$instance]);
+            } else {
+                $items[] = $instance;
             }
-        }
+
+            $items = array_values($items);
+        });
     }
 
     /**
@@ -348,16 +344,11 @@ class PageBuilder extends Component
         $this->saveHistory();
 
         if ($parentId !== null && $columnIndex !== null) {
-            // Remove from column
-            foreach ($this->blocks as &$block) {
-                if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                    $block['children'][$columnIndex]['items'] = array_values(
-                        array_filter($block['children'][$columnIndex]['items'], fn ($item) => $item['id'] !== $blockId)
-                    );
-
-                    break;
-                }
-            }
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, $columnIndex, function (array &$items) use ($blockId): void {
+                $items = array_values(
+                    array_filter($items, fn (array $item): bool => ($item['id'] ?? '') !== $blockId)
+                );
+            });
         } else {
             // Remove from root
             $this->blocks = array_values(
@@ -386,18 +377,13 @@ class PageBuilder extends Component
         $duplicate = $this->deepCopyBlock($block);
 
         if ($parentId !== null && $columnIndex !== null) {
-            // Add to column after original
-            foreach ($this->blocks as &$parentBlock) {
-                if ($parentBlock['id'] === $parentId && isset($parentBlock['children'][$columnIndex])) {
-                    $items = &$parentBlock['children'][$columnIndex]['items'];
-                    $index = array_search($blockId, array_column($items, 'id'));
-                    if ($index !== false) {
-                        array_splice($items, $index + 1, 0, [$duplicate]);
-                    }
-
-                    break;
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, $columnIndex, function (array &$items) use ($blockId, $duplicate): void {
+                $index = array_search($blockId, array_column($items, 'id'), true);
+                if ($index !== false) {
+                    array_splice($items, (int) $index + 1, 0, [$duplicate]);
+                    $items = array_values($items);
                 }
-            }
+            });
         } else {
             // Add to root after original
             $index = array_search($blockId, array_column($this->blocks, 'id'));
@@ -425,8 +411,10 @@ class PageBuilder extends Component
                     foreach ($column['items'] as &$item) {
                         $item = $this->deepCopyBlock($item);
                     }
+                    unset($item);
                 }
             }
+            unset($column);
         }
 
         return $copy;
@@ -574,12 +562,11 @@ class PageBuilder extends Component
     protected function findBlock(string $blockId, ?string $parentId = null, ?int $columnIndex = null): ?array
     {
         if ($parentId !== null && $columnIndex !== null) {
-            foreach ($this->blocks as $block) {
-                if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                    foreach ($block['children'][$columnIndex]['items'] as $item) {
-                        if ($item['id'] === $blockId) {
-                            return $item;
-                        }
+            $items = $this->findColumnItemsList($this->blocks, $parentId, $columnIndex);
+            if ($items !== null) {
+                foreach ($items as $item) {
+                    if (($item['id'] ?? '') === $blockId) {
+                        return $item;
                     }
                 }
             }
@@ -642,38 +629,64 @@ class PageBuilder extends Component
         $parentId = $this->editingBlockData['parentId'] ?? null;
         $columnIndex = $this->editingBlockData['columnIndex'] ?? null;
 
-        if ($parentId !== null && $columnIndex !== null) {
-            // Update in column
-            foreach ($this->blocks as &$block) {
-                if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                    foreach ($block['children'][$columnIndex]['items'] as &$item) {
-                        if ($item['id'] === $this->editingBlockId) {
-                            $item['data'] = $data;
+        $registry = app(ComponentRegistry::class);
 
-                            break 2;
+        if ($parentId !== null && $columnIndex !== null) {
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, (int) $columnIndex, function (array &$items) use ($data, $registry): void {
+                foreach ($items as &$item) {
+                    if (($item['id'] ?? '') === $this->editingBlockId) {
+                        $validated = $registry->validateComponent((string) ($item['type'] ?? ''), $data);
+                        $item['data'] = $validated;
+                        if ((($item['type'] ?? '') === 'columns' && isset($validated['columns']))
+                            || (($item['type'] ?? '') === 'grid_layout' && isset($validated['column_spans']))) {
+                            $this->adjustColumns(
+                                $item,
+                                $this->layoutChildBucketCount((string) ($item['type'] ?? ''), $validated),
+                            );
                         }
+
+                        break;
                     }
                 }
-            }
+                unset($item);
+            });
         } else {
             // Update in root
             foreach ($this->blocks as &$block) {
                 if ($block['id'] === $this->editingBlockId) {
-                    $block['data'] = $data;
+                    $validated = $registry->validateComponent((string) ($block['type'] ?? ''), $data);
+                    $block['data'] = $validated;
 
                     // Handle column count changes for Columns component
-                    if ($block['type'] === 'columns' && isset($data['columns'])) {
-                        $this->adjustColumns($block, (int) $data['columns']);
+                    if (($block['type'] === 'columns' && isset($validated['columns']))
+                        || ($block['type'] === 'grid_layout' && isset($validated['column_spans']))) {
+                        $this->adjustColumns(
+                            $block,
+                            $this->layoutChildBucketCount((string) $block['type'], $validated),
+                        );
                     }
 
                     break;
                 }
             }
+            unset($block);
         }
 
         $this->closeEditor();
         $this->dispatch('builder:updated');
         $this->emitValue();
+    }
+
+    /**
+     * Child column bucket count after validation: `columns` for Columns, repeater length for `grid_layout`.
+     */
+    protected function layoutChildBucketCount(string $type, array $validated): int
+    {
+        if ($type === 'grid_layout') {
+            return max(2, min(12, count($validated['column_spans'] ?? [])));
+        }
+
+        return max(2, min(12, (int) ($validated['columns'] ?? 2)));
     }
 
     /**
@@ -694,6 +707,20 @@ class PageBuilder extends Component
         } elseif ($newCount < $currentCount) {
             // Remove extra columns (from the end)
             $block['children'] = array_slice($block['children'], 0, $newCount);
+        }
+
+        $payload = $block['data'] ?? [];
+
+        if (($block['type'] ?? '') === 'grid_layout') {
+            $spans = array_values((array) ($payload['column_spans'] ?? []));
+            if (count($spans) > $newCount) {
+                $spans = array_slice($spans, 0, $newCount);
+            }
+            while (count($spans) < $newCount) {
+                $spans[] = ['span' => 6];
+            }
+            $payload['column_spans'] = $spans;
+            $block['data'] = GridLayoutComponent::validate($payload);
         }
     }
 
@@ -884,6 +911,37 @@ class PageBuilder extends Component
     }
 
     /**
+     * Walk the tree and mutate the `items` list for the column whose parent block id is $parentId.
+     *
+     * @param  array<int, array<string, mixed>>  $blockList
+     * @param  callable(array<int, array<string, mixed>> &$items): void  $mutator
+     */
+    protected function mutateColumnItemsByParent(array &$blockList, string $parentId, int $columnIndex, callable $mutator): void
+    {
+        foreach ($blockList as &$block) {
+            if (($block['id'] ?? '') === $parentId && isset($block['children'][$columnIndex]['items']) && is_array($block['children'][$columnIndex]['items'])) {
+                $targetItems = &$block['children'][$columnIndex]['items'];
+                $mutator($targetItems);
+
+                unset($block);
+
+                return;
+            }
+            if (! empty($block['children']) && is_array($block['children'])) {
+                foreach ($block['children'] as &$col) {
+                    if (! isset($col['items']) || ! is_array($col['items'])) {
+                        continue;
+                    }
+                    $itemsRef = &$col['items'];
+                    $this->mutateColumnItemsByParent($itemsRef, $parentId, $columnIndex, $mutator);
+                }
+                unset($col);
+            }
+        }
+        unset($block);
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $blockList
      */
     protected function applyColumnReorder(array &$blockList, string $parentId, int $columnIndex, array $order): bool
@@ -905,6 +963,8 @@ class PageBuilder extends Component
 
                 $block['children'][$columnIndex]['items'] = $reordered;
 
+                unset($block);
+
                 return true;
             }
 
@@ -915,6 +975,8 @@ class PageBuilder extends Component
                     }
                     $itemsRef = &$col['items'];
                     if ($this->applyColumnReorder($itemsRef, $parentId, $columnIndex, $order)) {
+                        unset($col, $block);
+
                         return true;
                     }
                 }
@@ -934,18 +996,13 @@ class PageBuilder extends Component
         $this->saveHistory();
 
         if ($parentId !== null && $columnIndex !== null) {
-            foreach ($this->blocks as &$block) {
-                if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                    $items = &$block['children'][$columnIndex]['items'];
-                    $index = array_search($blockId, array_column($items, 'id'));
-                    if ($index !== false && $index > 0) {
-                        [$items[$index - 1], $items[$index]] = [$items[$index], $items[$index - 1]];
-                        $items = array_values($items);
-                    }
-
-                    break;
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, $columnIndex, function (array &$items) use ($blockId): void {
+                $index = array_search($blockId, array_column($items, 'id'), true);
+                if ($index !== false && $index > 0) {
+                    [$items[$index - 1], $items[$index]] = [$items[$index], $items[$index - 1]];
+                    $items = array_values($items);
                 }
-            }
+            });
         } else {
             $index = array_search($blockId, array_column($this->blocks, 'id'));
             if ($index !== false && $index > 0) {
@@ -966,18 +1023,13 @@ class PageBuilder extends Component
         $this->saveHistory();
 
         if ($parentId !== null && $columnIndex !== null) {
-            foreach ($this->blocks as &$block) {
-                if ($block['id'] === $parentId && isset($block['children'][$columnIndex])) {
-                    $items = &$block['children'][$columnIndex]['items'];
-                    $index = array_search($blockId, array_column($items, 'id'));
-                    if ($index !== false && $index < count($items) - 1) {
-                        [$items[$index], $items[$index + 1]] = [$items[$index + 1], $items[$index]];
-                        $items = array_values($items);
-                    }
-
-                    break;
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, $columnIndex, function (array &$items) use ($blockId): void {
+                $index = array_search($blockId, array_column($items, 'id'), true);
+                if ($index !== false && $index < count($items) - 1) {
+                    [$items[$index], $items[$index + 1]] = [$items[$index + 1], $items[$index]];
+                    $items = array_values($items);
                 }
-            }
+            });
         } else {
             $index = array_search($blockId, array_column($this->blocks, 'id'));
             if ($index !== false && $index < count($this->blocks) - 1) {
@@ -1121,6 +1173,8 @@ class PageBuilder extends Component
         foreach ($this->blocks as &$root) {
             $removed = $this->removeBlockFromNodeChildren($root, $blockId);
             if ($removed !== null) {
+                unset($root);
+
                 return $removed;
             }
         }
@@ -1147,6 +1201,7 @@ class PageBuilder extends Component
                     $out = array_splice($col['items'], $ii, 1)[0];
                     $col['items'] = array_values($col['items']);
                     $node['children'][$ci] = $col;
+                    unset($col);
 
                     return $out;
                 }
@@ -1155,6 +1210,7 @@ class PageBuilder extends Component
                 $removed = $this->removeBlockFromNodeChildren($item, $blockId);
                 if ($removed !== null) {
                     $col['items'][$ii] = $item;
+                    unset($item, $col);
 
                     return $removed;
                 }
@@ -1183,6 +1239,8 @@ class PageBuilder extends Component
         }
         foreach ($this->blocks as &$root) {
             if ($this->insertIntoNode($root, $parentId, $columnIndex, $index, $block)) {
+                unset($root);
+
                 return true;
             }
         }
@@ -1208,12 +1266,13 @@ class PageBuilder extends Component
             return false;
         }
         foreach ($node['children'] as &$col) {
-            $colItems = $col['items'] ?? [];
-            if (! is_array($colItems)) {
+            if (! isset($col['items']) || ! is_array($col['items'])) {
                 continue;
             }
-            foreach ($colItems as &$item) {
+            foreach ($col['items'] as &$item) {
                 if ($this->insertIntoNode($item, $parentId, $columnIndex, $index, $block)) {
+                    unset($item, $col);
+
                     return true;
                 }
             }

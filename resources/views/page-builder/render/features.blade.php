@@ -13,9 +13,9 @@
     };
 
     $cardClasses = match ($style) {
-        'bordered' => 'rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900/40',
-        'shadowed' => 'rounded-2xl bg-white p-6 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/5 dark:bg-zinc-900/50 dark:shadow-black/40 dark:ring-white/10',
-        'filled' => 'rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-900/50',
+        'bordered' => 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/40',
+        'shadowed' => 'rounded-2xl bg-white p-6 shadow-md shadow-slate-900/5 ring-1 ring-slate-900/5 dark:bg-slate-900/50 dark:shadow-black/40 dark:ring-white/10',
+        'filled' => 'rounded-2xl bg-slate-50 p-6 dark:bg-slate-900/50',
         default => 'py-2',
     };
 
@@ -30,13 +30,13 @@
     @if ($heading || $subheading)
         <div class="mb-10 text-center sm:mb-12">
             @if ($heading)
-                <h2 class="mb-4 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
+                <h2 class="mb-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-slate-50">
                     {{ $heading }}
                 </h2>
             @endif
 
             @if ($subheading)
-                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
                     {{ $subheading }}
                 </p>
             @endif
@@ -63,19 +63,19 @@
                     @if ($title)
                         @if ($link)
                             <a href="{{ $link }}" class="group/block">
-                                <h3 class="mb-2 text-lg font-semibold tracking-tight text-zinc-900 transition-colors group-hover/block:text-amber-600 dark:text-zinc-50 dark:group-hover/block:text-amber-400">
+                                <h3 class="mb-2 text-lg font-semibold tracking-tight text-slate-900 transition-colors group-hover/block:text-amber-600 dark:text-slate-50 dark:group-hover/block:text-amber-400">
                                     {{ $title }}
                                 </h3>
                             </a>
                         @else
-                            <h3 class="mb-2 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                            <h3 class="mb-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">
                                 {{ $title }}
                             </h3>
                         @endif
                     @endif
 
                     @if ($description)
-                        <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                             {{ $description }}
                         </p>
                     @endif

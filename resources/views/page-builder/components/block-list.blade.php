@@ -3,9 +3,7 @@
         @if($index === 0)
             @include('mksine::page-builder.components.insertion-point', ['position' => 0])
         @endif
-        <div wire:key="block-{{ $block['id'] ?? $index }}">
-            @include('mksine::page-builder.partials.block-item', ['block' => $block, 'index' => $index, 'parentId' => null, 'columnIndex' => null])
-        </div>
+        @include('mksine::page-builder.partials.block-item', ['block' => $block, 'index' => $index, 'parentId' => null, 'columnIndex' => null])
         @include('mksine::page-builder.components.insertion-point', ['position' => $index + 1])
     @endforeach
     @if(empty($blocks))

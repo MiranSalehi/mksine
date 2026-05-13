@@ -4,6 +4,7 @@ namespace Miran\Mksine\Filament\Pages;
 
 use Miran\Mksine\Core\Hooks\SettingsTabManager;
 use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Models\Page as PageModel;
 use Miran\Mksine\Models\Setting;
 use Filament\Actions\Action;
@@ -49,6 +50,8 @@ class Settings extends Page implements HasSchemas, HasActions
 
     public function mount()
     {
+        app(ThemeBootstrap::class)->boot();
+
         $this->propsMaker($this->form->getFlatFields());
 
         $this->form->fill($this->data);
@@ -180,7 +183,6 @@ class Settings extends Page implements HasSchemas, HasActions
         $this->validate();
 
         $state = $this->form->getState();
-        $permalinkKeys = array_keys(Permalink::getDefaults());
 
         foreach ($state as $key => $item) {
             Setting::updateOrCreate(
@@ -189,7 +191,16 @@ class Settings extends Page implements HasSchemas, HasActions
             );
         }
 
-        if (count(array_intersect($permalinkKeys, array_keys($state))) > 0) {
+        $shouldClearRoutes = collect(array_keys($state))->contains(function ($key): bool {
+            $k = (string) $key;
+
+            return array_key_exists($k, Permalink::getDefaults())
+                || str_starts_with($k, 'ecom_permalink_')
+                || $k === 'ecom_storefront_path_prefix'
+                || $k === 'ecom_storefront_at_root';
+        });
+
+        if ($shouldClearRoutes) {
             \Illuminate\Support\Facades\Artisan::call('route:clear');
         }
 

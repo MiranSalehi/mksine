@@ -6,6 +6,7 @@ return [
     'select_multiple' => 'یەک یان زیاتر ئایتمی میدیا هەڵبژێرە',
     'search_placeholder' => 'گەڕان بە ناو...',
     'click_to_upload' => 'کرتە بکە بۆ بارکردنی فایلەکان',
+    'drag_to_upload' => 'یان فایلەکان بکێشە و لێرە دایبنێ',
     'browse_files' => 'فایلەکان بگەڕێ',
     'files_ready_to_upload' => ':count فایل ئامادەی بارکردنە',
     'upload' => 'بارکردن',

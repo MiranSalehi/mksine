@@ -462,6 +462,114 @@ class MenuBuilder extends Page implements HasForms
             });
     }
 
+    /**
+     * Make the item a child of the sibling immediately above it at the same level.
+     * If there is no sibling above, does nothing.
+     */
+    public function indentItem(int $itemId): void
+    {
+        $this->menuItems = $this->indentInTree($this->menuItems, $itemId);
+        $this->persistAndReload();
+    }
+
+    /**
+     * Recursive worker for indentItem.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function indentInTree(array $items, int $itemId): array
+    {
+        // Find item index at this level
+        $idx = null;
+        foreach ($items as $i => $item) {
+            if ($item['id'] === $itemId) {
+                $idx = $i;
+                break;
+            }
+        }
+
+        if ($idx !== null && $idx > 0) {
+            // Detach item and append to previous sibling's children
+            $target = $items[$idx];
+            $newParent = $items[$idx - 1];
+            $newParent['children'][] = $target;
+            $items[$idx - 1] = $newParent;
+            array_splice($items, $idx, 1);
+
+            return array_values($items);
+        }
+
+        // Recurse into children
+        return array_map(function (array $item) use ($itemId): array {
+            $item['children'] = $this->indentInTree($item['children'], $itemId);
+
+            return $item;
+        }, $items);
+    }
+
+    /**
+     * Move the item one level up (out of its current parent), placing it after the parent.
+     * If the item is already at root level, does nothing.
+     */
+    public function outdentItem(int $itemId): void
+    {
+        [$newItems, ] = $this->outdentInTree($this->menuItems, $itemId, null, null);
+        $this->menuItems = $newItems;
+        $this->persistAndReload();
+    }
+
+    /**
+     * Recursive worker for outdentItem.
+     * Returns [updatedItems, extractedItem|null].
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array{array<int, array<string, mixed>>, array<string, mixed>|null}
+     */
+    private function outdentInTree(array $items, int $itemId, ?int $parentId, ?int $parentIdx): array
+    {
+        foreach ($items as $i => $item) {
+            if ($item['id'] === $itemId) {
+                if ($parentId === null) {
+                    // Already at root — nothing to do
+                    return [$items, null];
+                }
+                // Extract: remove from current list; caller will insert after parent
+                $extracted = $item;
+                array_splice($items, $i, 1);
+
+                return [array_values($items), $extracted];
+            }
+
+            // Recurse into children
+            [$newChildren, $extracted] = $this->outdentInTree($item['children'], $itemId, $item['id'], $i);
+            if ($extracted !== null) {
+                $item['children'] = $newChildren;
+                $items[$i] = $item;
+                // Insert extracted right after this item in the current level
+                array_splice($items, $i + 1, 0, [$extracted]);
+
+                return [array_values($items), null]; // bubble up with null = already placed
+            }
+        }
+
+        return [$items, null];
+    }
+
+    /**
+     * Persist current in-memory menuItems tree to DB and reload.
+     */
+    private function persistAndReload(): void
+    {
+        if (! $this->selectedMenu) {
+            return;
+        }
+
+        $order = 0;
+        $this->saveStructureRecursive($this->menuItems, null, $order);
+        $this->loadMenuItems();
+    }
+
     public function updateMenuStructure(array $structure): void
     {
         if (! $this->selectedMenu) {

@@ -32,6 +32,12 @@
             : implode('/', $localePairShort);
     @endphp
     <title>{{ $title ?? $siteName }}</title>
+    @php
+        $__metaDesc = isset($metaDescription) ? trim((string) $metaDescription) : '';
+    @endphp
+    @if ($__metaDesc !== '')
+        <meta name="description" content="{{ $__metaDesc }}">
+    @endif
 
     @themeAssets
     @if ($siteFaviconUrl)

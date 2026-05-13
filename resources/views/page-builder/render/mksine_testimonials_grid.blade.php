@@ -50,10 +50,25 @@
                 @php
                     $g = $item['gradient'] ?? 'from-violet-500 to-purple-600';
                     $initial = \Illuminate\Support\Str::substr(trim((string) ($item['name'] ?? '')), 0, 1);
+                    $itemLink = trim((string) ($item['link_url'] ?? ''));
+                    if ($itemLink !== '' && preg_match('/^\s*javascript:/i', $itemLink)) {
+                        $itemLink = '';
+                    }
+                    $itemNewTab = (bool) ($item['link_new_tab'] ?? false);
+                    $itemIsLink = $itemLink !== '';
+                    $itemShellClass =
+                        'group relative flex flex-col overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-5 shadow-lg shadow-violet-900/5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet-200/80 hover:shadow-xl hover:shadow-violet-900/10 sm:p-6 dark:border-slate-700/60 dark:bg-slate-800/95 dark:shadow-black/25 dark:hover:border-violet-600/40'
+                        . ($itemIsLink ? ' cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-violet-400' : '');
                 @endphp
-                <article
-                    class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-5 shadow-lg shadow-violet-900/5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet-200/80 hover:shadow-xl hover:shadow-violet-900/10 sm:p-6 dark:border-slate-700/60 dark:bg-slate-800/95 dark:shadow-black/25 dark:hover:border-violet-600/40"
-                >
+                @if ($itemIsLink)
+                    <a
+                        href="{{ $itemLink }}"
+                        @if ($itemNewTab) target="_blank" rel="noopener noreferrer" @endif
+                        class="{{ $itemShellClass }} text-inherit no-underline"
+                    >
+                @else
+                    <article class="{{ $itemShellClass }}">
+                @endif
                     <div
                         class="pointer-events-none absolute -end-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br opacity-15 blur-2xl transition group-hover:opacity-25 {{ $g }}"
                         aria-hidden="true"
@@ -79,7 +94,11 @@
                             “{{ $item['quote'] ?? '' }}”
                         </p>
                     </blockquote>
-                </article>
+                @if ($itemIsLink)
+                    </a>
+                @else
+                    </article>
+                @endif
             @endforeach
         </div>
     </div>

@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
-use Miran\Mksine\Core\PageBuilder\PagePreviewController;
 
 Route::middleware(['web'])->group(function () {
     // Load active theme's theme.php (overrides + route callbacks)
@@ -68,11 +67,6 @@ Route::middleware(['web'])->group(function () {
             'Cache-Control' => 'public, max-age=3600',
         ]);
     })->where('type', 'css|js')->name('mksine.theme.custom.asset');
-
-    // Page Builder Preview
-    Route::post('/mksine/page-builder/preview', [PagePreviewController::class, 'preview'])
-        ->name('mksine.page-builder.preview')
-        ->middleware(['auth']);
 
     // Frontend pages (resolved via FrontendResolver: theme override or default component)
     Route::get('/author/{id}', FrontendResolver::class)->defaults('page', 'author-show')->name('authors.show');

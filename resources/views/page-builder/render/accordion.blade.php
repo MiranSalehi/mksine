@@ -7,21 +7,21 @@
     $items = $data['items'] ?? [];
 
     $containerClasses = match ($style) {
-        'simple' => 'divide-y divide-zinc-200 dark:divide-zinc-700/80',
-        'bordered' => 'divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white ring-1 ring-zinc-900/5 dark:divide-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/30 dark:ring-white/10',
+        'simple' => 'divide-y divide-slate-200 dark:divide-slate-700/80',
+        'bordered' => 'divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200/90 bg-white ring-1 ring-slate-900/5 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/30 dark:ring-white/10',
         'separated' => 'space-y-4',
-        default => 'divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white ring-1 ring-zinc-900/5 dark:divide-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/30 dark:ring-white/10',
+        default => 'divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200/90 bg-white ring-1 ring-slate-900/5 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/30 dark:ring-white/10',
     };
 
     $itemClasses = match ($style) {
-        'separated' => 'overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-900/40 dark:ring-white/10',
+        'separated' => 'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/5 dark:border-slate-700 dark:bg-slate-900/40 dark:ring-white/10',
         default => '',
     };
 @endphp
 
 <section class="mb-10 md:mb-14">
     @if ($heading)
-        <h2 class="mb-8 text-3xl font-bold tracking-tight text-zinc-900 sm:mb-10 sm:text-4xl dark:text-zinc-50">
+        <h2 class="mb-8 text-3xl font-bold tracking-tight text-slate-900 sm:mb-10 sm:text-4xl dark:text-slate-50">
             {{ $heading }}
         </h2>
     @endif
@@ -54,10 +54,10 @@
                     <button
                         type="button"
                         @click="toggle({{ $index }})"
-                        class="{{ $iconPosition === 'left' ? 'flex-row-reverse rtl:flex-row' : 'rtl:flex-row-reverse' }} flex w-full items-center justify-between gap-4 px-4 py-4 text-start transition-colors hover:bg-zinc-50 sm:px-6 sm:py-5 dark:hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/80"
+                        class="{{ $iconPosition === 'left' ? 'flex-row-reverse rtl:flex-row' : 'rtl:flex-row-reverse' }} flex w-full items-center justify-between gap-4 px-4 py-4 text-start transition-colors hover:bg-slate-50 sm:px-6 sm:py-5 dark:hover:bg-slate-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/80"
                         :aria-expanded="isOpen({{ $index }})"
                     >
-                        <span class="pe-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">{{ $question }}</span>
+                        <span class="pe-2 text-base font-semibold text-slate-900 dark:text-slate-50">{{ $question }}</span>
                         <svg
                             class="h-5 w-5 flex-shrink-0 text-amber-600 transition-transform duration-200 dark:text-amber-400"
                             :class="{ 'rotate-180': isOpen({{ $index }}) }"
@@ -75,7 +75,7 @@
                         x-collapse
                         x-cloak
                     >
-                        <div class="border-t border-zinc-100 px-4 pb-5 ps-4 pe-4 pt-4 text-sm leading-relaxed text-zinc-600 dark:border-zinc-800 dark:text-zinc-300 sm:px-6 sm:pb-6 sm:ps-6 sm:pe-6 prose prose-sm dark:prose-invert max-w-none">
+                        <div class="border-t border-slate-100 px-4 pb-5 ps-4 pe-4 pt-4 text-sm leading-relaxed text-slate-600 dark:border-slate-800 dark:text-slate-300 sm:px-6 sm:pb-6 sm:ps-6 sm:pe-6 prose prose-sm dark:prose-invert max-w-none">
                             {!! $answer !!}
                         </div>
                     </div>

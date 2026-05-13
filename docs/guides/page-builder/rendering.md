@@ -96,18 +96,17 @@ If you ship a theme, copy this pattern into your `page.blade.php`:
 @endif
 ```
 
-Two flags also live on the model and are worth honouring:
+The `Page` model still carries `show_page_header` and `builder_content_width` for themes that read them (defaults: header on, `contained` width). Those columns are **not** editable in Filament anymore — adjust behaviour in your theme template or via database/programmatic updates if you need different defaults.
 
-- `Page::show_page_header` — whether the title/breadcrumb area should render.
-- `Page::builder_content_width` — `'contained'` or `'full'`. Use to wrap the loop in your container or skip it for full-bleed landing pages.
+## Live render only
 
-## Preview vs. live render
+There is **no** separate admin “preview” window. Blocks render through the same dispatcher as the public page (`mksine::page-builder.render.block` inside your theme). Validate layout by opening the page on the storefront (or a local route that uses the theme layout).
 
-Previews use `packages/mksine/resources/views/page-builder/preview.blade.php`, which loops the same dispatcher. The shape and contract are identical. If your block renders fine in preview but breaks live, the difference is almost always:
+If a block looks wrong on the site but seemed fine while editing, the difference is almost always:
 
 - A theme wrapper class (`.prose`) restyling your block.
-- Missing CSS/JS — preview pulls package assets, the live page pulls theme assets. Enqueue scripts via `theme_enqueue_*` if you need them in both.
-- A missing layout context (`$page` exists in both, but theme actions like `page.before_content` only fire on the live render).
+- Missing CSS/JS — the live page pulls theme assets. Enqueue scripts via `theme_enqueue_*` when needed.
+- Theme actions like `page.before_content` only fire on the live render, not inside the Filament field.
 
 ## Hooking renders
 

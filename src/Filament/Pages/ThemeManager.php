@@ -6,13 +6,21 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CodeEditor;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
+use Miran\Mksine\Core\Updater\RollbackManager;
+use Miran\Mksine\Core\Updater\SuperAdminGate;
+use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
+use Miran\Mksine\Core\Updater\UpdateResult;
+use Miran\Mksine\Core\Updater\UpdateRunner;
 use ZipArchive;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
@@ -126,7 +134,131 @@ class ThemeManager extends Page
 
                     $this->redirect(static::getUrl());
                 }),
+
+            Action::make('update_theme')
+                ->label(__('mksine::updater.update_theme'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->visible(fn () => SuperAdminGate::check() && (bool) config('mksine.updater.enabled', true))
+                ->schema([
+                    Placeholder::make('warning')
+                        ->label(__('mksine::updater.theme_risk_label'))
+                        ->content(__('mksine::updater.theme_risk_body')),
+
+                    Select::make('theme_id')
+                        ->label(__('mksine::updater.select_theme'))
+                        ->options(fn () => $this->getUpdatableThemeOptions())
+                        ->required()
+                        ->searchable(),
+
+                    FileUpload::make('theme_file')
+                        ->label(__('mksine::updater.zip_file'))
+                        ->helperText(__('mksine::updater.theme_zip_helper'))
+                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
+                        ->required()
+                        ->storeFiles(false),
+
+                    Toggle::make('force')
+                        ->label(__('mksine::updater.force_toggle'))
+                        ->helperText(__('mksine::updater.force_helper'))
+                        ->default(false),
+                ])
+                ->action(function (array $data): void {
+                    $this->handleThemeUpdate($data);
+                }),
         ];
+    }
+
+    /**
+     * Only project themes are updatable; package themes (shipped via composer)
+     * must be updated through composer on the dev machine.
+     *
+     * @return array<string,string>
+     */
+    private function getUpdatableThemeOptions(): array
+    {
+        $manager = app(ThemeManagerService::class);
+        $options = [];
+
+        foreach ($manager->discover() as $theme) {
+            if (! $theme->isProjectTheme()) {
+                continue;
+            }
+            $options[$theme->identifier] = sprintf('%s (v%s)', $theme->name, $theme->version);
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
+    public function handleThemeUpdate(array $data): void
+    {
+        SuperAdminGate::authorize();
+
+        $themeId = (string) ($data['theme_id'] ?? '');
+        $force = (bool) ($data['force'] ?? false);
+        $path = $this->resolveUploadedZipPath($data['theme_file'] ?? null);
+
+        if ($themeId === '' || $path === null) {
+            Notification::make()
+                ->title(__('mksine::updater.upload_failed'))
+                ->body(__('mksine::updater.invalid_upload'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $updater = new ThemeUpdater(new UpdateRunner, app(ThemeManagerService::class));
+        $result = $updater->update($themeId, $path, $force);
+
+        $this->sendUpdateResultNotification($result, __('mksine::updater.theme_update_title'));
+        $this->redirect(static::getUrl());
+    }
+
+    public function rollbackThemeAction(string $themeId): void
+    {
+        SuperAdminGate::authorize();
+
+        $result = (new RollbackManager)->rollbackTheme($themeId);
+        $this->sendUpdateResultNotification($result, __('mksine::updater.theme_rollback_title'));
+        $this->redirect(static::getUrl());
+    }
+
+    private function sendUpdateResultNotification(UpdateResult $result, string $title): void
+    {
+        $body = sprintf(
+            "%s → %s\nSteps: %s\n%s%s",
+            $result->fromVersion ?? '?',
+            $result->toVersion ?? '?',
+            implode(', ', $result->steps),
+            $result->success ? '' : ("Error: " . $result->errorMessage . "\n"),
+            'Log: ' . $result->logPath
+        );
+
+        $notification = Notification::make()->title($title)->body($body);
+        $result->success
+            ? $notification->success()->send()
+            : $notification->danger()->persistent()->send();
+    }
+
+    private function resolveUploadedZipPath(mixed $uploaded): ?string
+    {
+        if ($uploaded instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            return $uploaded->getRealPath();
+        }
+        if ($uploaded instanceof \Illuminate\Http\UploadedFile) {
+            return $uploaded->getRealPath();
+        }
+        if (is_string($uploaded) && $uploaded !== '') {
+            $full = storage_path('app/' . $uploaded);
+
+            return is_file($full) ? $full : null;
+        }
+
+        return null;
     }
 
     /**

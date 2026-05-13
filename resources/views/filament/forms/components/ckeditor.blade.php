@@ -17,11 +17,14 @@
     >
         <div wire:ignore class="ckeditor-field-wrapper">
             <style>
+                [data-ckeditor-id="{{ $editorId }}"] {
+                    --mks-ckeditor-min-height: {{ $height }};
+                }
                 [data-ckeditor-id="{{ $editorId }}"] .ck-editor__main {
-                    min-height: {{ $height }};
+                    min-height: var(--mks-ckeditor-min-height);
                 }
                 [data-ckeditor-id="{{ $editorId }}"] .ck-editor__editable {
-                    min-height: {{ $height }};
+                    min-height: var(--mks-ckeditor-min-height);
                 }
             </style>
             <div
@@ -127,9 +130,9 @@
                     }
                 }"
                 x-load-js="[@js(\Filament\Support\Facades\FilamentAsset::getScriptSrc('mks-ckeditor-field', package: 'miran/mksine'))]"
-                x-load-css="[@js(\Filament\Support\Facades\FilamentAsset::getStyleHref('mks-ckeditor-field', package: 'miran/mksine'))]"
+                x-load-css="[@js(\Filament\Support\Facades\FilamentAsset::getStyleHref('mks-ckeditor-field', package: 'miran/mksine')), @js(\Filament\Support\Facades\FilamentAsset::getStyleHref('mks-ckeditor-filament', package: 'miran/mksine'))]"
                 data-ckeditor-id="{{ $editorId }}"
-                style="min-height: {{ $height }}; resize: vertical; overflow: auto;"
+                style="min-height: var(--mks-ckeditor-min-height, {{ $height }}); resize: vertical; overflow: auto;"
             >
                 <textarea
                     id="ckeditor-{{ $editorId }}"

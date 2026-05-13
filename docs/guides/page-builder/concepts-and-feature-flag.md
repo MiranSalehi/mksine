@@ -113,7 +113,7 @@ The page builder is **opinionated and limited** by design:
 - Blocks are configured via a Filament form returned from `getSchema()`. You get whatever Filament can render — no custom JS UI per block.
 - Storage is JSON inside one column. There is no normalised block table; you cannot SQL-query "all pages with a heading containing X" without a JSONB scan.
 - There is no per-block ACL. If a user can edit a builder page, they can edit any block on it.
-- There is no live preview by default — preview is a separate route (`PagePreviewController`) that renders the current payload.
+- There is no separate builder preview route; use the live themed page to verify layout.
 - There is no draft/publish per block; the whole page is one record.
 
 If you need a richer authoring tool, this is not the right primitive. For typical content sites it is fine.

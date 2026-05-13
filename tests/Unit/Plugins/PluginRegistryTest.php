@@ -100,6 +100,21 @@ PHP;
         expect($this->registry->getStatus('test-plugin'))->toBe('not_installed');
     });
 
+    it('load drops stale db record cache before reloading', function () {
+        $manifest = PluginManifest::fromPath($this->tempDir);
+        $this->registry->load(['test-plugin' => $manifest]);
+
+        $stale = new \Miran\Mksine\Models\Plugin([
+            'plugin_id' => 'stale-cache-only',
+            'status' => \Miran\Mksine\Models\Plugin::STATUS_INSTALLED,
+        ]);
+        $this->registry->setDbRecord('stale-cache-only', $stale);
+
+        $this->registry->load(['test-plugin' => $manifest]);
+
+        expect($this->registry->getDbRecord('stale-cache-only'))->toBeNull();
+    });
+
     it('can clear registry', function () {
         $manifest = PluginManifest::fromPath($this->tempDir);
         $this->registry->load(['test-plugin' => $manifest]);

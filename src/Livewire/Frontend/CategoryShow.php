@@ -25,7 +25,8 @@ class CategoryShow extends Component
 
     public function render()
     {
-        View::share('title', $this->category->name.' - '.__('mksine::frontend.category'));
+        View::share('title', mksine_document_title($this->category->meta_title, $this->category->name));
+        View::share('metaDescription', mksine_meta_description($this->category->meta_description, $this->category->description));
 
         $posts = $this->category->posts()
             ->where('posts.status', 'published')

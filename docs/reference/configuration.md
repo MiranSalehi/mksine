@@ -115,6 +115,22 @@ Tuning guidance:
 - **Increase** if you have legitimate cold-boot cost (e.g. heavy plugin with cache warmup) and you see false `boot_failed` entries.
 - **Do not lower** below your slowest realistic boot — you will start flapping plugins offline mid-request.
 
+## `updater`
+
+ZIP-based updater used by the Filament "Update" actions on the Plugins and Themes pages, the System Update page, and the matching CLI commands. See [ZIP updater](../operations/zip-updater.md).
+
+| Key | Env | Default | Notes |
+|-----|-----|---------|-------|
+| `enabled` | `MKS_CMS_UPDATER_ENABLED` | `true` | Master switch. When `false`, updater UI is hidden and CLI invocations fail early. |
+| `keep_backups` | `MKS_CMS_UPDATER_KEEP_BACKUPS` | `3` | Number of historical backups kept per target under `{target-parent}/.mks-backups/`. Older entries are pruned after each successful update. |
+| `max_zip_size_mb` | `MKS_CMS_UPDATER_MAX_ZIP_MB` | `256` | Hard upload cap per ZIP. Applies to both UI and CLI. |
+| `lock_timeout_sec` | `MKS_CMS_UPDATER_LOCK_TTL` | `300` | Informational stale-lock threshold. `flock()` itself is non-blocking — the updater fails fast if another run is already holding the lock. |
+| `allow_same_version_reinstall` | `MKS_CMS_UPDATER_ALLOW_REINSTALL` | `false` | When `true`, same-version uploads are accepted without `--force`. Useful only for recovery from corrupted files. |
+
+Permissions: updater actions require the Shield Super Admin role (`config('filament-shield.super_admin.name')`, default `super_admin`). There is no way to relax this — only super admins can replace on-disk code.
+
+Logs: `storage/logs/mksine-updates/{target}-{id}-{TS}.log` per run.
+
 ## `media`
 
 Media-library configuration used by the Media resource and uploaders.

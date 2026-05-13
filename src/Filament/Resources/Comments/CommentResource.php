@@ -7,6 +7,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
 use Miran\Mksine\Filament\Resources\Comments\Pages\CreateComment;
 use Miran\Mksine\Filament\Resources\Comments\Pages\EditComment;
@@ -51,6 +52,11 @@ class CommentResource extends Resource
     public static function table(Table $table): Table
     {
         return CommentTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('commentable');
     }
 
     public static function getRelations(): array

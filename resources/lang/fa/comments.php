@@ -5,6 +5,7 @@ return array (
   'model_label' => 'دیدگاه',
   'plural_model_label' => 'دیدگاه‌ها',
   'post' => 'نوشته',
+  'commentable' => 'هدف دیدگاه',
   'author' => 'نویسنده',
   'content' => 'محتوا',
   'rating' => 'امتیاز',

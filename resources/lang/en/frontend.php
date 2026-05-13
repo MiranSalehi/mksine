@@ -1,6 +1,6 @@
 <?php
 
-return array (
+return array(
   'home' => 'Home',
   'categories' => 'Categories',
   'all_categories' => 'All Categories',
@@ -236,7 +236,7 @@ return array (
   'footer_logo_sectigo_alt' => 'Sectigo Platinum Partner',
   'footer_logo_icann_alt' => 'ICANN Accredited Registrar',
   'footer_logo_scip_alt' => 'SCIP',
-  'header_mega' => array (
+  'header_mega' => array(
     'nav_domains' => 'Domains',
     'nav_hosting' => 'Hosting and email',
     'nav_ssl' => 'SSL',

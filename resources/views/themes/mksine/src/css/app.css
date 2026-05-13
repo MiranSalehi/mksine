@@ -1,6 +1,41 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/forms";
 
+/*
+ * IRANSansWeb — files in dist/fonts/ (paths relative to compiled dist/app.css).
+ * Ensure your use complies with the font vendor’s license.
+ */
+@font-face {
+    font-family: 'IRANSansWeb';
+    src: url('fonts/IRANSansWeb.eot');
+    src:
+        url('fonts/IRANSansWeb.eot?#iefix') format('embedded-opentype'),
+        url('fonts/IRANSansWeb.woff2') format('woff2'),
+        url('fonts/IRANSansWeb.woff') format('woff'),
+        url('fonts/IRANSansWeb.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'IRANSansWeb';
+    src: url('fonts/IRANSansWeb_Bold.eot');
+    src:
+        url('fonts/IRANSansWeb_Bold.eot?#iefix') format('embedded-opentype'),
+        url('fonts/IRANSansWeb_Bold.woff2') format('woff2'),
+        url('fonts/IRANSansWeb_Bold.woff') format('woff'),
+        url('fonts/IRANSansWeb_Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@theme {
+    --font-sans:
+        'IRANSansWeb', 'Tahoma', ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Enable class-based dark mode (using .dark class on html element) */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -44,6 +79,12 @@ html.dark {
 @layer base {
     body {
         @apply antialiased;
+        font-family:
+            'IRANSansWeb',
+            'Tahoma',
+            ui-sans-serif,
+            system-ui,
+            sans-serif;
         background-color: var(--bg-secondary);
         color: var(--text-primary);
         transition: background-color 0.3s ease, color 0.3s ease;
@@ -55,7 +96,12 @@ html.dark {
     h4,
     h5,
     h6 {
-        font-family: 'IranSans', system-ui, sans-serif;
+        font-family:
+            'IRANSansWeb',
+            'Tahoma',
+            ui-sans-serif,
+            system-ui,
+            sans-serif;
         @apply font-bold;
     }
 }

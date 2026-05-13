@@ -122,6 +122,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Updater Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the ZIP updater (plugins, themes, core).
+    |
+    | The updater is Super-Admin-only and performs atomic on-disk swaps with
+    | backups next to each target. Production servers do NOT need composer or
+    | npm: ZIPs must contain pre-built assets and must NOT introduce new
+    | Composer dependencies (for core). See docs/operations/zip-updater.md.
+    |
+    */
+    'updater' => [
+        // Master switch. Disable to hide updater UI and reject CLI invocations.
+        'enabled' => env('MKS_CMS_UPDATER_ENABLED', true),
+
+        // How many historical backups to retain per target (oldest pruned).
+        'keep_backups' => (int) env('MKS_CMS_UPDATER_KEEP_BACKUPS', 3),
+
+        // Upload size cap for ZIPs (in megabytes).
+        'max_zip_size_mb' => (int) env('MKS_CMS_UPDATER_MAX_ZIP_MB', 256),
+
+        // Lock file staleness threshold (informational; flock itself is blocking).
+        'lock_timeout_sec' => (int) env('MKS_CMS_UPDATER_LOCK_TTL', 300),
+
+        // When true, same-version re-uploads are accepted (useful for recovering
+        // corrupted files). Default rejects same-version as a safety rail.
+        'allow_same_version_reinstall' => env('MKS_CMS_UPDATER_ALLOW_REINSTALL', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Media Settings
     |--------------------------------------------------------------------------
     |
@@ -500,6 +531,20 @@ return [
         '+967' => 'Yemen (+967)',
         '+260' => 'Zambia (+260)',
         '+263' => 'Zimbabwe (+263)',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Comment targets (polymorphic)
+    |--------------------------------------------------------------------------
+    |
+    | Models listed here appear in the Filament comment form and may receive
+    | public comments via Livewire. Plugins (e.g. ecom) can merge Product into
+    | this list at boot.
+    |
+    */
+    'commentable_types' => [
+        \Miran\Mksine\Models\Post::class,
     ],
 
     /*

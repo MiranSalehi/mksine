@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Miran\Mksine\Contracts\AllowsPublicComments;
 use Miran\Mksine\Traits\HasMediaAttachments;
 
-class Post extends Model
+class Post extends Model implements AllowsPublicComments
 {
     use HasFactory;
     use HasMediaAttachments;
@@ -72,20 +73,25 @@ class Post extends Model
         return $this->belongsTo(Media::class, 'featured_image');
     }
 
+    public function allowsPublicComments(): bool
+    {
+        return true;
+    }
+
     /**
      * Get all comments for this post.
      */
-    public function comments(): HasMany
+    public function comments(): MorphMany
     {
-        return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
+        return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at', 'desc');
     }
 
     /**
      * Get only approved comments for this post.
      */
-    public function approvedComments(): HasMany
+    public function approvedComments(): MorphMany
     {
-        return $this->hasMany(Comment::class)
+        return $this->morphMany(Comment::class, 'commentable')
             ->where('status', Comment::STATUS_APPROVED)
             ->whereNull('parent_id')
             ->orderBy('created_at', 'desc');

@@ -42,6 +42,7 @@ class MediaPickerModal extends Component
         $this->selectedIds = $currentSelection;
         $this->search = '';
         $this->typeFilter = '';
+        $this->uploadedFiles = [];
         $this->isOpen = true;
     }
 

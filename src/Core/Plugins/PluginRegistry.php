@@ -51,6 +51,9 @@ final class PluginRegistry
     public function load(array $manifests): void
     {
         $this->manifests = $manifests;
+        // Always replace DB cache on load; otherwise removed plugins (or a failed first
+        // hydration) can leave stale rows in memory and confuse isInstalled/getStatus.
+        $this->dbRecords = [];
         $this->loadDatabaseRecords();
         $this->loaded = true;
     }
@@ -60,7 +63,15 @@ final class PluginRegistry
      */
     private function loadDatabaseRecords(): void
     {
+        if (! function_exists('app')) {
+            return;
+        }
+
         try {
+            if (! app()->bound('db')) {
+                return;
+            }
+
             $pluginIds = array_keys($this->manifests);
 
             if (empty($pluginIds)) {
@@ -72,8 +83,8 @@ final class PluginRegistry
             foreach ($records as $record) {
                 $this->dbRecords[$record->plugin_id] = $record;
             }
-        } catch (\Exception $e) {
-            // Database may not be ready (e.g., during migrations)
+        } catch (\Throwable $e) {
+            // Database may not be ready (e.g., during migrations, or PHPUnit without Laravel)
             // This is fine, we just won't have DB state
         }
     }
@@ -232,6 +243,10 @@ final class PluginRegistry
     public function refreshDbRecord(string $pluginId): void
     {
         try {
+            if (! function_exists('app') || ! app()->bound('db')) {
+                return;
+            }
+
             $record = PluginModel::where('plugin_id', $pluginId)->first();
 
             if ($record) {
@@ -239,7 +254,7 @@ final class PluginRegistry
             } else {
                 unset($this->dbRecords[$pluginId]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Ignore database errors
         }
     }

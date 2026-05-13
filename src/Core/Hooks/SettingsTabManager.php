@@ -41,6 +41,12 @@ class SettingsTabManager
      */
     public function registerTab(string $id, string|\Closure $label, array|callable $schema, int $sortOrder = 0): void
     {
+        foreach ($this->tabs as $existing) {
+            if ($existing['id'] === $id) {
+                return;
+            }
+        }
+
         $this->tabs[] = [
             'id' => $id,
             'label' => $label,

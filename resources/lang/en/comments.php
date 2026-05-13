@@ -5,6 +5,7 @@ return [
     'model_label' => 'Comment',
     'plural_model_label' => 'Comments',
     'post' => 'Post',
+    'commentable' => 'Comment target',
     'author' => 'Author',
     'content' => 'Content',
     'rating' => 'Rating',

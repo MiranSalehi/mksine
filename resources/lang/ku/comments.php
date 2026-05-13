@@ -5,6 +5,7 @@ return [
     'model_label' => 'کۆمێنت',
     'plural_model_label' => 'کۆمێنتەکان',
     'post' => 'پۆست',
+    'commentable' => 'ئامانجی لێدوان',
     'author' => 'نووسەر',
     'content' => 'ناوەڕۆک',
     'rating' => 'هەڵسەنگاندن',

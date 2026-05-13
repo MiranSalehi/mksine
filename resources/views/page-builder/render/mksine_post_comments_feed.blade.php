@@ -23,7 +23,7 @@
     }
 
     $commentWith = [
-        'post',
+        'commentable',
         'user',
         'replies' => fn ($q) => $q->approved()->with('user')->orderBy('created_at'),
     ];
@@ -32,7 +32,8 @@
     if (! $postMissing) {
         if ($post) {
             $comments = \Miran\Mksine\Models\Comment::query()
-                ->where('post_id', $post->id)
+                ->where('commentable_type', \Miran\Mksine\Models\Post::class)
+                ->where('commentable_id', $post->id)
                 ->approved()
                 ->root()
                 ->with($commentWith)
@@ -43,7 +44,8 @@
             $comments = \Miran\Mksine\Models\Comment::query()
                 ->approved()
                 ->root()
-                ->whereHas('post', fn ($q) => $q->where('status', 'published'))
+                ->where('commentable_type', \Miran\Mksine\Models\Post::class)
+                ->whereHasMorph('commentable', [\Miran\Mksine\Models\Post::class], fn ($q) => $q->where('status', 'published'))
                 ->with($commentWith)
                 ->orderByDesc('created_at')
                 ->limit($maxRoot)
@@ -53,7 +55,7 @@
 
     $palettes = [
         ['glow' => 'from-violet-500 to-purple-600', 'border' => 'border-violet-200/90 dark:border-violet-800/55', 'avatar' => 'from-violet-500 to-purple-600'],
-        ['glow' => 'from-sky-500 to-indigo-600', 'border' => 'border-sky-200/90 dark:border-sky-800/55', 'avatar' => 'from-sky-500 to-indigo-600'],
+        ['glow' => 'from-indigo-500 to-indigo-600', 'border' => 'border-indigo-200/90 dark:border-indigo-800/55', 'avatar' => 'from-indigo-500 to-indigo-600'],
         ['glow' => 'from-emerald-500 to-teal-600', 'border' => 'border-emerald-200/90 dark:border-emerald-800/55', 'avatar' => 'from-emerald-500 to-teal-600'],
         ['glow' => 'from-amber-500 to-orange-600', 'border' => 'border-amber-200/90 dark:border-amber-800/55', 'avatar' => 'from-amber-500 to-orange-600'],
         ['glow' => 'from-fuchsia-500 to-pink-600', 'border' => 'border-fuchsia-200/90 dark:border-fuchsia-800/55', 'avatar' => 'from-fuchsia-500 to-pink-600'],
@@ -144,7 +146,7 @@
                             $plainBody = trim(strip_tags((string) $comment->content));
                             $quoteVisible = Str::limit($plainBody, $quoteMaxChars, '…');
                             $replyCount = $comment->replies->count();
-                            $targetPost = $post ?? $comment->post;
+                            $targetPost = $post ?? ($comment->commentable instanceof \Miran\Mksine\Models\Post ? $comment->commentable : null);
                         @endphp
                         <article
                             class="group relative flex min-h-[11rem] flex-col overflow-hidden rounded-2xl border bg-white/90 p-5 backdrop-blur-xl dark:bg-slate-800/95 {{ $palette['border'] }} border-white/40 dark:border-slate-700/60"
@@ -177,12 +179,12 @@
                                     <p class="mt-0.5 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
                                         {{ $comment->created_at->diffForHumans() }}
                                     </p>
-                                    @if (! $post && $comment->post)
+                                    @if (! $post && $comment->commentable instanceof \Miran\Mksine\Models\Post)
                                         <p class="mt-1 truncate text-xs font-medium text-violet-600/90 dark:text-violet-400/90">
                                             <a
-                                                href="{{ route('posts.show', $comment->post->slug) }}#comments-section"
+                                                href="{{ route('posts.show', $comment->commentable->slug) }}#comments-section"
                                                 class="hover:underline"
-                                            >{{ $comment->post->title }}</a>
+                                            >{{ $comment->commentable->title }}</a>
                                         </p>
                                     @endif
                                 </div>

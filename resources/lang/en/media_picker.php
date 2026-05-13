@@ -6,6 +6,7 @@ return [
     'select_multiple' => 'Select one or more media items',
     'search_placeholder' => 'Search by name...',
     'click_to_upload' => 'Click to upload files',
+    'drag_to_upload' => 'or drag and drop files here',
     'browse_files' => 'Browse Files',
     'files_ready_to_upload' => ':count file(s) ready to upload',
     'upload' => 'Upload',

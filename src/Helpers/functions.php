@@ -114,6 +114,61 @@ if (! function_exists('theme_layout')) {
     }
 }
 
+if (! function_exists('mksine_site_display_name')) {
+    /**
+     * Public site name for titles (settings or app name).
+     */
+    function mksine_site_display_name(): string
+    {
+        $name = trim((string) (mks_setting('site_name') ?: config('app.name', 'MKSine')));
+
+        return $name !== '' ? $name : 'MKSine';
+    }
+}
+
+if (! function_exists('mksine_document_title')) {
+    /**
+     * Browser <title>: use meta_title when set, otherwise "defaultTitle — site name".
+     */
+    function mksine_document_title(?string $metaTitle, string $defaultTitle): string
+    {
+        $meta = trim((string) $metaTitle);
+        if ($meta !== '') {
+            return $meta;
+        }
+
+        $base = trim($defaultTitle);
+        $site = mksine_site_display_name();
+        if ($base === '') {
+            return $site;
+        }
+
+        return $base.' — '.$site;
+    }
+}
+
+if (! function_exists('mksine_meta_description')) {
+    /**
+     * Meta description: meta_description when set, otherwise plain text from HTML body (truncated).
+     *
+     * @return string|null Plain text; escape when outputting in Blade.
+     */
+    function mksine_meta_description(?string $metaDescription, ?string $fallbackHtmlOrText, int $maxLength = 160): ?string
+    {
+        $meta = trim((string) $metaDescription);
+        if ($meta !== '') {
+            return $meta;
+        }
+
+        $plain = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $fallbackHtmlOrText)) ?? '');
+        if ($plain === '') {
+            return null;
+        }
+
+        return \Illuminate\Support\Str::limit($plain, $maxLength, '');
+    }
+}
+
 if (! function_exists('active_theme')) {
     /**
      * Get the active theme data.

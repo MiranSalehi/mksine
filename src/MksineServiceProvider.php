@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Translation\FileLoader;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Miran\Mksine\Commands\ArtisanCommand;
@@ -45,12 +46,19 @@ use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
+use Miran\Mksine\Console\Commands\RollbackCoreCommand;
+use Miran\Mksine\Console\Commands\RollbackPluginCommand;
+use Miran\Mksine\Console\Commands\RollbackThemeCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
+use Miran\Mksine\Console\Commands\UpdateCoreCommand;
+use Miran\Mksine\Console\Commands\UpdatePluginCommand;
+use Miran\Mksine\Console\Commands\UpdateThemeCommand;
 use Miran\Mksine\Console\Commands\ThemePublishCommand;
 use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
+use Miran\Mksine\Core\Hooks\HookFilterRegistry;
 use Miran\Mksine\Core\Hooks\HookManager;
 use Miran\Mksine\Core\Hooks\LaravelHookAsyncDispatcher;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
@@ -69,6 +77,7 @@ use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
+use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent;
 use Miran\Mksine\Core\PageBuilder\Components\DividerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\FeatureListComponent;
@@ -98,12 +107,14 @@ use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Theme\ThemeActionManager;
+use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
 use Miran\Mksine\Core\Theme\ThemeEnqueue;
 use Miran\Mksine\Core\Theme\ThemeLivewireMissingComponentResolver;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
+use Miran\Mksine\Core\Translation\MksineFileLoader;
 use Miran\Mksine\Core\Translation\TranslationFileManager;
 use Miran\Mksine\Livewire\Frontend\CategoryList;
 use Miran\Mksine\Livewire\Frontend\CategoryShow;
@@ -174,8 +185,33 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         require_once __DIR__.'/Helpers/functions.php';
 
+        $this->app->extend('translation.loader', function (FileLoader $loader, $app) {
+            $merged = new MksineFileLoader($app['files'], $loader->paths());
+            foreach ($loader->namespaces() as $namespace => $hint) {
+                $merged->addNamespace($namespace, $hint);
+            }
+            foreach ($loader->jsonPaths() as $jsonPath) {
+                $merged->addJsonPath($jsonPath);
+            }
+
+            // Register mksine on the loader immediately. Translator::fireResolvingCallbacks runs
+            // global "resolving" listeners before "afterResolving" (where loadTranslationsFrom adds
+            // namespaces). If those listeners call __() for mksine::*, hints were empty and
+            // MksineFileLoader cached an empty group forever.
+            $mksinePackageLang = realpath(__DIR__.'/../resources/lang');
+            if ($mksinePackageLang !== false) {
+                $merged->addNamespace('mksine', $mksinePackageLang);
+            }
+
+            return $merged;
+        });
+
         $this->app->singleton(Mksine::class, function () {
             return new Mksine;
+        });
+
+        $this->app->singleton(HookFilterRegistry::class, function () {
+            return new HookFilterRegistry;
         });
 
         // Register async dispatcher only when queue is enabled (HookManager depends on interface, not Laravel)
@@ -295,6 +331,7 @@ class MksineServiceProvider extends PackageServiceProvider
                 SpacerComponent::class,
                 DividerComponent::class,
                 ColumnsComponent::class,
+                GridLayoutComponent::class,
                 ContainerInsetComponent::class,
                 HeroComponent::class,
                 TabsComponent::class,
@@ -341,11 +378,9 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         $this->syncAuthUserModelWithMksineConfig();
 
-        // Load package defaults first, then project lang so project overrides (Languages page edits project files).
-        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'mksine');
-        if (function_exists('lang_path') && is_dir(lang_path())) {
-            $this->loadTranslationsFrom(lang_path(), 'mksine');
-        }
+        // mksine:: lines: Spatie bootPackageTranslations() registers the package path; MksineFileLoader
+        // merges lang/{locale}/*.php on top (do not call loadTranslationsFrom(lang_path(), 'mksine') — it
+        // replaces the namespace hint and drops package keys).
 
         $this->registerPublishableLang();
         $this->registerPublishableFonts();
@@ -447,6 +482,11 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Initialize and boot plugins
         $this->initializePluginSystem();
+
+        // Active theme's theme.php (page-builder blocks, menu locations, route callbacks) normally loads
+        // from package routes during bootPackageRoutes(). When routes are cached, that file may not run,
+        // so components like voltech.special_offers never register and the front shows "unknown component".
+        app(ThemeBootstrap::class)->boot();
 
         // Register default listeners (always available, even without database)
         $this->registerDefaultListeners();
@@ -578,10 +618,15 @@ class MksineServiceProvider extends PackageServiceProvider
         $cssPath = __DIR__.'/../resources/dist/mksine.css';
         $jsPath = __DIR__.'/../resources/dist/mksine.js';
         $ckeditorCssPath = __DIR__.'/../resources/dist/mks-ckeditor-field.css';
+        $ckeditorFilamentCssPath = __DIR__.'/../resources/css/mks-ckeditor-filament-overrides.css';
         $ckeditorJsPath = __DIR__.'/../resources/dist/mks-ckeditor-field.js';
 
         if (file_exists($ckeditorCssPath)) {
             $assets[] = Css::make('mks-ckeditor-field', $ckeditorCssPath);
+        }
+
+        if (file_exists($ckeditorFilamentCssPath)) {
+            $assets[] = Css::make('mks-ckeditor-filament', $ckeditorFilamentCssPath);
         }
 
         if (file_exists($ckeditorJsPath)) {
@@ -628,6 +673,13 @@ class MksineServiceProvider extends PackageServiceProvider
             ThemeMakeCommand::class,
             ThemePublishCommand::class,
             ThemePublishLangCommand::class,
+            // Updater commands (ZIP-based plugin / theme / core updates)
+            UpdatePluginCommand::class,
+            UpdateThemeCommand::class,
+            UpdateCoreCommand::class,
+            RollbackPluginCommand::class,
+            RollbackThemeCommand::class,
+            RollbackCoreCommand::class,
             ReleaseArchiveCommand::class,
             FreshSuperAdminCommand::class,
         ];

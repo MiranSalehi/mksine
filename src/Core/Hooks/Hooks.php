@@ -22,6 +22,12 @@ namespace Miran\Mksine\Core\Hooks;
  * Hooks::extendTable('post.table', function ($table) {
  *     return $table->columns([...]);
  * });
+ *
+ * // Runtime filter (mutable value passed through callbacks; lower priority runs first)
+ * Hooks::addFilter('ecom.checkout.available_payment_methods', function (array $keys, $cart) {
+ *     return $keys;
+ * });
+ * $keys = Hooks::filter('ecom.checkout.available_payment_methods', $keys, $cart);
  */
 class Hooks
 {
@@ -205,5 +211,26 @@ class Hooks
     public static function extendPageHeaderActions(string $pageName, callable $callback): void
     {
         static::pageManager()->extendHeaderActions($pageName, $callback);
+    }
+
+    /**
+     * Register a filter callback. Lower {@code $priority} runs first (default 10).
+     */
+    public static function addFilter(string $name, callable $callback, int $priority = 10): void
+    {
+        app(HookFilterRegistry::class)->add($name, $callback, $priority);
+    }
+
+    /**
+     * Apply all registered filters for {@code $name} to {@code $value}.
+     *
+     * @template T
+     *
+     * @param  T  $value
+     * @return T
+     */
+    public static function filter(string $name, mixed $value, mixed ...$args): mixed
+    {
+        return app(HookFilterRegistry::class)->apply($name, $value, ...$args);
     }
 }

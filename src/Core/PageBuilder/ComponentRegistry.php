@@ -131,6 +131,11 @@ class ComponentRegistry
                 'icon' => 'heroicon-o-rectangle-stack',
                 'order' => 5,
             ],
+            BaseBuilderComponent::CATEGORY_VOLTECH => [
+                'name' => __('mksine::page_builder.category_voltech'),
+                'icon' => 'heroicon-o-building-storefront',
+                'order' => 6,
+            ],
         ];
     }
 

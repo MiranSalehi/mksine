@@ -23,6 +23,11 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
     public const CATEGORY_SECTIONS = 'sections';
 
     /**
+     * Theme-specific storefront sections (e.g. Voltech home blocks).
+     */
+    public const CATEGORY_VOLTECH = 'voltech';
+
+    /**
      * Get the unique type identifier for this component.
      */
     abstract public static function getType(): string;

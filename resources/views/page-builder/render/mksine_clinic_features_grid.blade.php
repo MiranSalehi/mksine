@@ -33,10 +33,30 @@
         </header>
         <div class="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-5">
             @foreach ($cards as $index => $card)
-                <article
-                    class="group relative cursor-pointer overflow-hidden rounded-2xl border border-transparent bg-white/90 p-6 shadow-lg shadow-gray-900/5 backdrop-blur-xl transition-all duration-700 hover:shadow-xl hover:shadow-gray-900/10 transform-gpu dark:border-slate-700/50 dark:bg-slate-800 dark:shadow-black/30 dark:hover:shadow-black/40"
-                    style="animation-delay: {{ $index * 100 }}ms"
-                >
+                @php
+                    $cardLink = trim((string) ($card['link_url'] ?? ''));
+                    if ($cardLink !== '' && preg_match('/^\s*javascript:/i', $cardLink)) {
+                        $cardLink = '';
+                    }
+                    $cardNewTab = (bool) ($card['link_new_tab'] ?? false);
+                    $cardIsLink = $cardLink !== '';
+                    $cardShellClass =
+                        'group relative overflow-hidden rounded-2xl border border-transparent bg-white/90 p-6 shadow-lg shadow-gray-900/5 backdrop-blur-xl transition-all duration-700 hover:shadow-xl hover:shadow-gray-900/10 transform-gpu dark:border-slate-700/50 dark:bg-slate-800 dark:shadow-black/30 dark:hover:shadow-black/40'
+                        . ($cardIsLink ? ' cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-indigo-400' : '');
+                @endphp
+                @if ($cardIsLink)
+                    <a
+                        href="{{ $cardLink }}"
+                        @if ($cardNewTab) target="_blank" rel="noopener noreferrer" @endif
+                        class="{{ $cardShellClass }} block text-inherit no-underline"
+                        style="animation-delay: {{ $index * 100 }}ms"
+                    >
+                @else
+                    <article
+                        class="{{ $cardShellClass }}"
+                        style="animation-delay: {{ $index * 100 }}ms"
+                    >
+                @endif
                     <div
                         class="absolute inset-0 rounded-2xl bg-gradient-to-br p-px opacity-0 transition-all duration-300 group-hover:opacity-100 {{ $card['gradient'] ?? '' }}"
                     >
@@ -62,7 +82,11 @@
                             class="mt-4 h-0.5 w-0 rounded-full bg-gradient-to-r transition-all duration-500 group-hover:w-full {{ $card['gradient'] ?? '' }}"
                         ></div>
                     </div>
-                </article>
+                @if ($cardIsLink)
+                    </a>
+                @else
+                    </article>
+                @endif
             @endforeach
         </div>
     </div>

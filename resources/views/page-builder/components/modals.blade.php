@@ -24,9 +24,7 @@
 @endif
 
 @if($showComponentPanel)
-    @php
-        $pickerItems = $this->components[$componentPickerTab] ?? [];
-    @endphp
+    @php $pickerItems = $this->components[$componentPickerTab] ?? []; @endphp
     <x-filament::modal
         id="component-picker-modal"
         :heading="__('mksine::page_builder.add_component')"
@@ -34,13 +32,14 @@
         role="dialog"
         aria-modal="true"
     >
-        <div class="space-y-5">
+        <div class="space-y-4">
+            {{-- Category tabs --}}
             <div
-                class="rounded-xl bg-gray-50/90 p-1.5 ring-1 ring-gray-200/80 dark:bg-gray-900/50 dark:ring-gray-700/80"
+                class="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60"
                 role="tablist"
                 aria-label="{{ __('mksine::page_builder.components') }}"
             >
-                <div class="-mx-0.5 flex max-w-full gap-1 overflow-x-auto px-0.5 pb-0.5 sm:flex-wrap sm:overflow-visible">
+                <div class="-mx-0.5 flex w-full max-w-full gap-1 overflow-x-auto px-0.5 pb-0.5 sm:flex-wrap sm:overflow-visible">
                     @foreach($this->categoryDisplayMeta as $category => $meta)
                         @if(empty($this->components[$category] ?? []))
                             @continue
@@ -55,63 +54,65 @@
                             wire:key="component-picker-tabbtn-{{ $category }}"
                             aria-label="{{ $meta['name'] ?? $category }}"
                             @if($componentPickerTab === $category) aria-selected="true" @else aria-selected="false" @endif
-                            class="relative inline-flex min-h-9 shrink-0 items-center justify-center overflow-hidden rounded-lg px-3.5 py-2 text-sm font-medium outline-none transition-[color,background-color,box-shadow,transform] duration-300 ease-out will-change-transform active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 {{ $componentPickerTab === $category ? 'bg-white text-violet-800 shadow-sm ring-1 ring-gray-200/90 dark:bg-gray-800 dark:text-violet-200 dark:ring-gray-600' : 'text-gray-600 hover:bg-white/70 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/80 dark:hover:text-gray-200' }}"
+                            class="relative inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold outline-none transition-all duration-200 active:scale-[0.98] motion-reduce:active:scale-100
+                                {{ $componentPickerTab === $category
+                                    ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-50'
+                                    : 'text-zinc-500 hover:bg-white/60 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700/60 dark:hover:text-zinc-200' }}"
                         >
                             <span
-                                class="inline-flex items-center gap-2"
+                                class="inline-flex items-center gap-1.5"
                                 wire:loading.delay.short.remove
                                 wire:target='setComponentPickerTab(@json($category))'
                             >
-                                @if(! empty($meta['icon']))
-                                    <x-dynamic-component :component="$meta['icon']" class="h-4 w-4 shrink-0 opacity-90" aria-hidden="true" />
+                                @if(!empty($meta['icon']))
+                                    <x-dynamic-component :component="$meta['icon']" class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                 @endif
                                 <span class="whitespace-nowrap">{{ $meta['name'] ?? $category }}</span>
                             </span>
                             <span
-                                class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-lg bg-inherit"
+                                class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-md bg-inherit"
                                 wire:loading.delay.short.flex
                                 wire:target='setComponentPickerTab(@json($category))'
                             >
-                                <x-filament::loading-indicator class="h-5 w-5 shrink-0 text-violet-600 dark:text-violet-400" />
+                                <x-filament::loading-indicator class="h-4 w-4 shrink-0" />
                             </span>
                         </button>
                     @endforeach
                 </div>
             </div>
 
+            {{-- Components grid --}}
             <div
                 wire:key="component-picker-panel-{{ $componentPickerTab }}"
-                class="mksine-component-picker-panel min-h-[12rem] rounded-xl border border-gray-100 bg-gradient-to-b from-gray-50/40 to-transparent p-4 dark:border-gray-700/80 dark:from-gray-800/30"
+                class="mksine-component-picker-panel min-h-[12rem] rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 dark:border-white/[0.06] dark:bg-zinc-900/30"
                 role="tabpanel"
                 tabindex="0"
                 aria-labelledby="component-tab-{{ $componentPickerTab }}"
             >
                 @if(empty($pickerItems))
-                    <div class="flex flex-col items-center justify-center gap-2 py-16 text-center text-sm text-gray-500 dark:text-gray-400">
-                        <x-heroicon-o-squares-2x2 class="h-10 w-10 opacity-40" aria-hidden="true" />
-                        <p>{{ __('mksine::page_builder.no_components_in_category') }}</p>
+                    <div class="flex flex-col items-center justify-center gap-2 py-16 text-center">
+                        <x-heroicon-o-squares-2x2 class="h-9 w-9 text-zinc-300 dark:text-zinc-600" aria-hidden="true" />
+                        <p class="text-sm text-zinc-400 dark:text-zinc-500">{{ __('mksine::page_builder.no_components_in_category') }}</p>
                     </div>
                 @else
-                    <div class="max-h-[min(28rem,calc(100vh-14rem))] overflow-y-auto overflow-x-hidden pr-1 [-ms-overflow-style:thin] [scrollbar-gutter:stable]">
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="max-h-[min(28rem,calc(100vh-14rem))] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             @foreach($pickerItems as $info)
                                 <button
                                     type="button"
                                     wire:click="addBlock('{{ $info['type'] }}', {{ $insertAtPosition ?? 'null' }}, {{ $insertInParent ? "'{$insertInParent}'" : 'null' }}, {{ $insertInColumn !== null ? $insertInColumn : 'null' }})"
                                     wire:loading.attr="disabled"
                                     wire:key="component-picker-card-{{ $componentPickerTab }}-{{ $info['type'] }}"
-                                    class="group flex min-w-0 flex-col items-start gap-2 rounded-xl border border-gray-200/90 bg-white p-4 text-start transition-colors duration-200 hover:border-violet-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 dark:border-gray-600 dark:bg-gray-900/60 dark:hover:border-violet-500/70"
+                                    class="group flex min-w-0 items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-3.5 text-start shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30 dark:focus-visible:ring-violet-400"
                                 >
-                                    <div class="flex w-full items-start gap-3">
-                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100/80 ring-1 ring-violet-200/50 dark:from-violet-950/50 dark:to-fuchsia-950/30 dark:ring-violet-800/40">
-                                            <x-dynamic-component :component="$info['icon']" class="h-6 w-6 text-violet-600 dark:text-violet-300" aria-hidden="true" />
-                                        </div>
-                                        <div class="min-w-0 flex-1 pt-0.5">
-                                            <span class="block text-sm font-semibold text-gray-900 group-hover:text-violet-900 dark:text-white dark:group-hover:text-violet-100">{{ $info['name'] }}</span>
-                                            @if(! empty($info['description']))
-                                                <span class="mt-1 block text-xs leading-relaxed text-gray-500 line-clamp-2 dark:text-gray-400">{{ $info['description'] }}</span>
-                                            @endif
-                                        </div>
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
+                                        <x-dynamic-component :component="$info['icon']" class="h-5 w-5" aria-hidden="true" />
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-0.5">
+                                        <span class="block text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">{{ $info['name'] }}</span>
+                                        @if(!empty($info['description']))
+                                            <span class="mt-0.5 block text-[11px] leading-relaxed text-zinc-400 line-clamp-2 dark:text-zinc-500">{{ $info['description'] }}</span>
+                                        @endif
                                     </div>
                                 </button>
                             @endforeach

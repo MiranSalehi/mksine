@@ -14,6 +14,23 @@ class ThemeRegistry
     /** @var array<int, callable> Callbacks that register routes (receive Route facade) */
     protected array $routeCallbacks = [];
 
+    /**
+     * Identifier of the theme whose theme.php was already executed this request (prevents
+     * duplicate route callbacks when {@see ThemeBootstrap::boot()} runs multiple times for the
+     * same active theme).
+     */
+    protected ?string $themePhpLoadedIdentifier = null;
+
+    public function getThemePhpLoadedIdentifier(): ?string
+    {
+        return $this->themePhpLoadedIdentifier;
+    }
+
+    public function markThemePhpLoaded(string $identifier): void
+    {
+        $this->themePhpLoadedIdentifier = $identifier;
+    }
+
     public function registerOverride(string $page, string $componentClass): void
     {
         $this->overrides[$page] = $componentClass;

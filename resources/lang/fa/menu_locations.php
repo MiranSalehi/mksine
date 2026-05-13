@@ -12,4 +12,8 @@ return array (
   'assigned_menu_helper' => 'منویی را که در این موقعیت نمایش داده شود انتخاب کنید.',
   'not_assigned' => '— اختصاص داده نشده —',
   'updated' => 'به‌روزرسانی',
+  'theme_defaults' => [
+    'header_primary' => 'هدر (اصلی)',
+    'footer_links' => 'لینک‌های فوتر',
+  ],
 );

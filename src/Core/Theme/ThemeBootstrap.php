@@ -30,6 +30,11 @@ class ThemeBootstrap
         self::registerAutoloadForTheme($theme->identifier, $themePath);
 
         $registry = app(ThemeRegistry::class);
+
+        if ($registry->getThemePhpLoadedIdentifier() === $theme->identifier) {
+            return;
+        }
+
         $registrar = new ThemeRegistrar($registry);
 
         (function () use ($themeFile, $registrar) {
@@ -41,13 +46,15 @@ class ThemeBootstrap
             };
             require $themeFile;
         })();
+
+        $registry->markThemePhpLoaded($theme->identifier);
     }
 
     /**
      * Register PSR-4 for the active theme's php/ directory. Idempotent; safe to call multiple times.
      *
-     * Livewire sub-requests (e.g. POST /livewire/update) do not load mksine routes/web.php, so
-     * {@see boot()} never runs and theme classes would not autoload without this.
+     * Call sites that cannot rely on {@see boot()} having run yet (e.g. Livewire resolves a missing
+     * theme component before routes execute) should invoke this so theme PHP classes autoload.
      */
     public static function ensureActiveThemeAutoloadRegistered(): void
     {

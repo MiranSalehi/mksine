@@ -1,18 +1,9 @@
 @php
     $data = is_array($data ?? null) ? $data : [];
-    $padding = $data['padding_inline'] ?? 'md';
     $maxWidth = $data['max_width'] ?? 'full';
+    $fullBleed = filter_var($data['background_full_bleed'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-    $paddingClass = match ($padding) {
-        'none' => 'px-0',
-        'xs' => 'px-3 sm:px-4',
-        'sm' => 'px-4 sm:px-5',
-        'md' => 'px-4 sm:px-6 lg:px-8',
-        'lg' => 'px-6 sm:px-8 lg:px-10',
-        'xl' => 'px-6 sm:px-10 lg:px-12',
-        '2xl' => 'px-8 sm:px-12 lg:px-16',
-        default => 'px-4 sm:px-6 lg:px-8',
-    };
+    $innerPadding = 'px-4 sm:px-6 lg:px-8';
 
     $widthClass = match ($maxWidth) {
         'prose' => 'max-w-prose w-full mx-auto',
@@ -27,9 +18,31 @@
     if (isset($children[0]) && is_array($children[0]) && ! empty($children[0]['items']) && is_array($children[0]['items'])) {
         $items = $children[0]['items'];
     }
+
+    $gradient = \Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent::normalizedBackgroundGradient($data['background_gradient'] ?? null);
+    $bgHex = \Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent::normalizedBackgroundColor($data['background_color'] ?? null);
+
+    $bgStyleParts = [];
+    if ($bgHex !== null) {
+        $bgStyleParts[] = 'background-color: '.$bgHex;
+    }
+    if ($gradient !== null) {
+        $bgStyleParts[] = 'background-image: '.$gradient;
+    }
+    $bgStyle = $bgStyleParts === [] ? null : implode('; ', $bgStyleParts).';';
 @endphp
-<div class="mksine-container-inset {{ $paddingClass }} {{ $widthClass }}">
-    @foreach ($items as $item)
+@if ($fullBleed && $bgStyle !== null)
+  <div class="w-full mksine-container-inset--bleed" style="{{ e($bgStyle) }}">
+    <div class="mksine-container-inset {{ $innerPadding }} {{ $widthClass }}">
+      @foreach ($items as $item)
         @include('mksine::page-builder.render.block', ['block' => $item])
+      @endforeach
+    </div>
+  </div>
+@else
+  <div class="mksine-container-inset {{ $innerPadding }} {{ $widthClass }}"@if ($bgStyle !== null) style="{{ e($bgStyle) }}"@endif>
+    @foreach ($items as $item)
+      @include('mksine::page-builder.render.block', ['block' => $item])
     @endforeach
-</div>
+  </div>
+@endif

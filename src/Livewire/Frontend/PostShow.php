@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Livewire\Frontend;
 
+use Illuminate\Support\Facades\View;
 use Livewire\Component;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Post;
@@ -56,6 +57,12 @@ class PostShow extends Component
             ->orderBy('name')
             ->take(12)
             ->get();
+
+        View::share('title', mksine_document_title($this->post->meta_title, $this->post->title));
+        $fallbackDesc = trim((string) ($this->post->excerpt ?? '')) !== ''
+            ? $this->post->excerpt
+            : (string) ($this->post->content ?? '');
+        View::share('metaDescription', mksine_meta_description($this->post->meta_description, $fallbackDesc));
 
         $view = view(theme_view('single'), [
             'post' => $this->post,

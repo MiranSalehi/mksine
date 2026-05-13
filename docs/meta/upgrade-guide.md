@@ -48,12 +48,13 @@ When adding an entry, copy this skeleton:
 - `mksine.hooks.cache_discovery` is documented as **configured but not yet honoured** by `DiscoverHooksCommand`. Same status.
 - `TableHookManager` `extend*` methods accept and return the full `Table` object (not arrays of components). Older docstrings implied otherwise; the implementation has always taken `Table`. Inline PHPDoc was updated for clarity.
 - `TableHookManager::apply()` does **not** catch exceptions raised by registered callbacks (unlike `FormHookManager::apply()`, which logs and continues). This asymmetry is intentional but now explicitly documented.
-- The `ComponentRegistry::validateComponent()` exists but is **not** called automatically anywhere in the framework. Plugin authors who rely on `BuilderComponent::validate()` must invoke it themselves at save time. See [Validation](../guides/page-builder/validation.md).
+- The `ComponentRegistry::validateComponent()` is invoked automatically when editors save block settings via **`PageBuilder::saveBlock`**. Imports, programmatic `builder_payload` writes, and integrations that bypass the modal must still recurse `validateComponent()` themselves. See [Validation](../guides/page-builder/validation.md).
 - `MenuLocationManager::syncToDatabase()` only inserts new locations; it never updates `label` on existing rows or deletes removed locations. Document this whenever you change a location’s label in code.
 - Page builder docs introduce the `{plugin_root}/{plugin_id}` convention for examples and stop referencing client-specific plugin IDs.
 
 ### New
 
+- **ZIP updater.** New first-class upgrade path for plugins, themes, and the core package via ZIP uploads. Available through the Filament UI (Manage Plugins, Theme Manager, System Update) and via CLI (`mks-plugin:update`, `mks:theme-update`, `mksine:update`, plus matching `*:rollback` commands). Designed for production servers without Composer or npm access — ZIPs must ship pre-built `dist/` assets and pre-vendored Composer dependencies. See [Operations → ZIP updater](../operations/zip-updater.md) and the new `updater.*` keys in [configuration](../reference/configuration.md#updater). No migration needed for existing installs; the feature is gated behind the Shield super-admin role and `config('mksine.updater.enabled')`.
 - Documentation: full guide tree for plugins, hooks, themes, page builder, menus, media, settings, localization, auth.
 - Documentation: deep dive on `mks:release-archive` covering build root discovery, the `public/` allowlist, and verification steps.
 - Documentation: per-area troubleshooting and validation checklist sections expanded to cover menus, settings, translations, and media.

@@ -95,6 +95,7 @@ sidebar:
     items:
       - { title: Deployment and hosting, path: operations/deployment-hosting.md }
       - { title: Release archive, path: operations/release-archive.md }
+      - { title: ZIP updater, path: operations/zip-updater.md }
       - { title: Troubleshooting, path: operations/troubleshooting.md }
       - { title: Validation checklist, path: operations/validation-checklist.md }
 

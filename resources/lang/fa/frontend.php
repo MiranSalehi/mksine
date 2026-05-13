@@ -1,6 +1,6 @@
 <?php
 
-return array (
+return array(
   'home' => 'خانه',
   'categories' => 'دسته‌ها',
   'all_categories' => 'همهٔ دسته‌ها',
@@ -236,7 +236,7 @@ return array (
   'footer_logo_sectigo_alt' => 'شریک پلاتین Sectigo',
   'footer_logo_icann_alt' => 'ثبت‌کنندهٔ دارای مجوز ICANN',
   'footer_logo_scip_alt' => 'SCIP',
-  'header_mega' => array (
+  'header_mega' => array(
     'nav_domains' => 'دامنه‌ها',
     'nav_hosting' => 'هاست و ایمیل',
     'nav_ssl' => 'SSL',

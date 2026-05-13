@@ -2,13 +2,17 @@
 
 namespace Miran\Mksine\Filament\Resources\Comments\Schemas;
 
+use Filament\Forms\Components\MorphToSelect;
+use Filament\Forms\Components\MorphToSelect\Type;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Models\Comment;
+use Miran\Mksine\Models\Post;
 
 class CommentForm
 {
@@ -18,18 +22,34 @@ class CommentForm
             ->components([
                 Section::make(__('mksine::comments.comment_information'))
                     ->schema([
-                        Select::make('post_id')
-                            ->label(__('mksine::comments.post'))
-                            ->relationship('post', 'title')
-                            ->required()
+                        MorphToSelect::make('commentable')
+                            ->label(__('mksine::comments.commentable'))
+                            ->types(static function (): array {
+                                return collect(config('mksine.commentable_types', [Post::class]))
+                                    ->filter(static fn (string $class): bool => class_exists($class))
+                                    ->map(static fn (string $class): Type => Type::make($class)->titleAttribute('title'))
+                                    ->all();
+                            })
                             ->searchable()
                             ->preload()
-                            ->native(false)
+                            ->required()
+                            ->live()
                             ->columnSpanFull(),
                         Select::make('parent_id')
                             ->label(__('mksine::comments.reply_to'))
-                            ->relationship('parent', 'content', fn ($query) => $query->limit(50))
-                            ->getOptionLabelFromRecordUsing(fn (Comment $record) => \Illuminate\Support\Str::limit($record->content, 50))
+                            ->relationship(
+                                'parent',
+                                'content',
+                                modifyQueryUsing: static function ($query, Get $get): void {
+                                    $type = $get('commentable_type');
+                                    $id = $get('commentable_id');
+                                    if (filled($type) && filled($id)) {
+                                        $query->where('commentable_type', $type)
+                                            ->where('commentable_id', $id);
+                                    }
+                                },
+                            )
+                            ->getOptionLabelFromRecordUsing(fn (Comment $record): string => \Illuminate\Support\Str::limit($record->content, 50))
                             ->searchable()
                             ->preload()
                             ->native(false)

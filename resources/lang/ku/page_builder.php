@@ -1,6 +1,6 @@
 <?php
 
-return array (
+return array(
   'title' => 'دروستکەری پەڕە',
   'components_count' => 'کۆمپۆنێنت',
   'use_template' => 'بەکارهێنانی قاڵب',
@@ -43,6 +43,7 @@ return array (
   'delete_confirm' => 'دڵنیایت کە دەتەوێت ئەم کۆمپۆنێنتە بسڕیتەوە؟',
   'column' => 'ستوون',
   'container_inset_nested_label' => 'بلۆکە ناوەوەکان',
+  'container_inset_preview_bleed_suffix' => '(edge-to-edge background)',
   'add_to_column' => 'زیادکردن بۆ ستوون',
   'empty_column' => 'ستوونی بەتاڵ',
   'add_component_short' => 'زیادکردنی کۆمپۆنێنت',
@@ -51,6 +52,7 @@ return array (
   'category_layout' => 'ڕێکخستن',
   'category_interactive' => 'پەیوەندی',
   'category_sections' => 'بەشەکانی تێم',
+  'category_voltech' => 'Voltech — فرۆشگا',
   'field_label' => 'بلۆکەکانی ناوەڕۆک',
   'save_changes' => 'پاشەکەوتکردنی گۆڕانکارییەکان',
   'no_image_selected' => 'هیچ وێنەیەک هەڵنەبژێردراوە',
@@ -59,14 +61,27 @@ return array (
   'no_content_yet' => 'هێشتا هیچ ناوەڕۆکێک نییە',
   'add_components_to_see_preview' => 'هەندێک کۆمپۆنێنت زیاد بکە بۆ بینینی پێشبینین.',
   'unknown_component_type' => 'جۆری کۆمپۆنێنتی نەزانراو:',
-  'component_labels' => 
-  array (
+  'component_labels' =>
+  array(
     'name_heading' => 'Heading',
     'name_text' => 'Text',
     'name_button' => 'Button',
     'name_image' => 'Image',
     'name_hero' => 'Hero Section',
     'name_columns' => 'Columns',
+    'name_grid_layout' => 'CSS grid (12-unit track)',
+    'desc_grid_layout' => 'Twelve-unit CSS Grid in the storefront: one repeater row per side-by-side drop zone. Prefer units that sum to 12 (e.g. 2 + 10). Optional sm / md / lg fields adjust col-span at those breakpoints when filled.',
+    'grid_track_count' => 'Side‑by‑side regions',
+    'grid_track_count_help' => 'How many zones sit next to each other on desktop. For narrow + wide columns: choose 2 here and set widths below to 2 and 10 (sum out of 12).',
+    'grid_regions_option' => ':count zones',
+    'grid_regions_repeater_label' => 'Regions (one row per column)',
+    'grid_regions_repeater_help' => 'Add or remove rows to set how many zones share the track. Fill grid units per row; optional sm / md / lg values override spans only where set.',
+    'column_span_units_sm' => 'Grid units at sm',
+    'column_span_units_sm_hint' => 'Optional (1–12). When empty, base units apply from the first breakpoint where the 12‑column grid is active.',
+    'column_span_units_md' => 'Grid units at md',
+    'column_span_units_md_hint' => 'Optional (1–12). Applies from md upward unless lg is set separately.',
+    'column_span_units_lg' => 'Grid units at lg',
+    'column_span_units_lg_hint' => 'Optional (1–12). Applies from lg; smaller breakpoints cascade with Tailwind defaults.',
     'name_divider' => 'Divider',
     'name_spacer' => 'Spacer',
     'name_features' => 'Feature List',
@@ -82,15 +97,7 @@ return array (
     'desc_hero' => 'A full-width hero section with title, subtitle, and call-to-action.',
     'desc_columns' => 'Create multi-column layouts. Drag components into each column.',
     'name_container_inset' => 'Inset container',
-    'desc_container_inset' => 'Horizontal padding and optional max width; nest other blocks inside.',
-    'container_inset_padding_inline' => 'Horizontal inset (padding)',
-    'container_inset_padding_none' => 'None',
-    'container_inset_padding_xs' => 'Extra small',
-    'container_inset_padding_sm' => 'Small',
-    'container_inset_padding_md' => 'Medium',
-    'container_inset_padding_lg' => 'Large',
-    'container_inset_padding_xl' => 'Extra large',
-    'container_inset_padding_2xl' => '2× large',
+    'desc_container_inset' => 'Optional max width and background; nest other blocks inside.',
     'container_inset_max_width' => 'Content max width',
     'container_inset_width_full' => 'Full width (no max)',
     'container_inset_width_prose' => 'Prose (~65ch)',
@@ -98,6 +105,12 @@ return array (
     'container_inset_width_5xl' => '5XL',
     'container_inset_width_6xl' => '6XL',
     'container_inset_width_7xl' => '7XL',
+    'container_inset_background_full_bleed' => 'Background spans full width',
+    'container_inset_background_full_bleed_hint' => 'When on, color or gradient fills the viewport; content stays within max width. Ignored when background is empty.',
+    'container_inset_background_color' => 'Background color',
+    'container_inset_background_color_hint' => 'Optional. Use gradient field below for gradients; color can sit underneath transparent gradient stops.',
+    'container_inset_background_gradient' => 'Background gradient (CSS)',
+    'container_inset_background_gradient_hint' => 'One gradient only, no semicolons. Example: linear-gradient(135deg, #667eea 0%, #764ba2 100%). Supports linear, radial, conic, and repeating-* gradients.',
     'desc_divider' => 'Add a horizontal line separator.',
     'desc_spacer' => 'Add vertical spacing between elements.',
     'desc_features' => 'Display a grid of features with icons, titles, and descriptions.',
@@ -166,10 +179,15 @@ return array (
     'secondary_button_text' => 'Secondary Button Text',
     'secondary_button_url' => 'Secondary Button URL',
     'number_of_columns' => 'Number of Columns',
+    'n_columns' => ':count Columns',
     'two_columns' => '2 Columns',
     'three_columns' => '3 Columns',
     'four_columns' => '4 Columns',
     'column_layout' => 'Column Layout',
+    'column_custom_spans' => 'Width per region (shares out of 12)',
+    'column_custom_spans_help' => 'Units behave like Tailwind spans; totals should reach 12 (e.g. two regions: 2 + 10). Blank fields become 1 on save; mismatched totals are scaled on save.',
+    'column_span_units' => 'Grid units (1–12)',
+    'column_span_units_help' => 'Optional while typing; blanks default to 1 on save. Enter both widths for splits like 2 and 10.',
     'equal_width' => 'Equal Width',
     'gap_between_columns' => 'Gap Between Columns',
     'vertical_alignment' => 'Vertical Alignment',
@@ -284,7 +302,7 @@ return array (
     'button_url' => 'Button URL',
   ),
   'mksine_fields' =>
-  array (
+  array(
     'text_direction' => 'ئاراستەی دەق',
     'text_direction_auto' => 'خۆکار (زمان)',
     'direction_ltr' => 'LTR',
@@ -304,6 +322,12 @@ return array (
     'hero_cta_url' => 'بەستەری دوگمە',
     'hero_illustration' => 'وێنەی ڕوونکردنەوە',
     'hero_illustration_alt' => 'دەقی جێگرەوەی وێنە',
+    'hero_domain_background_image' => 'وێنەی پاشبنەما',
+    'hero_domain_background_color' => 'ڕەنگی پاشبنەما (دۆخی ڕووناک)',
+    'hero_domain_background_color_help' => 'ڕەنگی هێکس بە # (نموونە #FFD180). کاتێک وێنەی پاشبنەما نییە بەکاردێت؛ دۆخی تاریک پاشبنەمای تاریکی بنەڕەتی بەکاردەهێنێت.',
+    'hero_domain_illustration_position' => 'شوێنی وێنەی سەرەکی',
+    'hero_domain_illustration_left' => 'وێنە لە چەپ',
+    'hero_domain_illustration_right' => 'وێنە لە ڕاست',
     'fin_heading_prefix' => 'پێشگری سەردێڕ',
     'fin_accent_word' => 'وشەی بەرچاو',
     'fin_heading_suffix' => 'پاشگری سەردێڕ',
@@ -400,41 +424,41 @@ return array (
   'comments_feed_empty' => 'هێشتا هیچ لێدوانێکی پەسەندکراو نییە بۆ پیشاندان.',
   'comments_feed_reply_count' => '{1} بینینی ١ وەڵام|[2,*] بینینی :count وەڵام',
   'comments_feed_rating_stars' => 'هەڵسەنگاندن: :count لە ٥',
-  'templates' => 
-  array (
-    'categories' => 
-    array (
+  'templates' =>
+  array(
+    'categories' =>
+    array(
       'general' => 'General',
       'marketing' => 'Marketing',
       'business' => 'Business',
     ),
-    'landing_page' => 
-    array (
+    'landing_page' =>
+    array(
       'name' => 'Landing Page',
       'description' => 'Perfect for product launches, campaigns, or service pages',
     ),
-    'about_us' => 
-    array (
+    'about_us' =>
+    array(
       'name' => 'About Us',
       'description' => 'Professional about page with team highlights',
     ),
-    'contact' => 
-    array (
+    'contact' =>
+    array(
       'name' => 'Contact Us',
       'description' => 'Simple contact page with information sections',
     ),
-    'services' => 
-    array (
+    'services' =>
+    array(
       'name' => 'Services',
       'description' => 'Showcase your services with features and pricing',
     ),
-    'blank' => 
-    array (
+    'blank' =>
+    array(
       'name' => 'Blank Canvas',
       'description' => 'Start from scratch with an empty page',
     ),
-    'mksine_default_home' => 
-    array (
+    'mksine_default_home' =>
+    array(
       'name' => 'MKSine default home',
       'description' => 'Finance showcase, hero, services, domains, features, testimonials, pricing',
     ),

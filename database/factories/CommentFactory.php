@@ -16,7 +16,8 @@ class CommentFactory extends Factory
     public function definition(): array
     {
         return [
-            'post_id' => Post::factory()->published(),
+            'commentable_type' => Post::class,
+            'commentable_id' => Post::factory()->published(),
             'user_id' => null,
             'parent_id' => null,
             'author_name' => fake()->name(),
@@ -35,17 +36,19 @@ class CommentFactory extends Factory
 
     public function forPost(Post|int $post): static
     {
-        $id = $post instanceof Post ? $post->id : $post;
+        $id = $post instanceof Post ? (int) $post->getKey() : $post;
 
         return $this->state(fn (array $attributes) => [
-            'post_id' => $id,
+            'commentable_type' => Post::class,
+            'commentable_id' => $id,
         ]);
     }
 
     public function replyTo(Comment $parent): static
     {
         return $this->state(fn (array $attributes) => [
-            'post_id' => $parent->post_id,
+            'commentable_type' => $parent->commentable_type,
+            'commentable_id' => $parent->commentable_id,
             'parent_id' => $parent->id,
         ]);
     }

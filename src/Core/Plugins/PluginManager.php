@@ -233,10 +233,17 @@ final class PluginManager
     public function discover(bool $clearCache = false): array
     {
         if ($clearCache) {
-            return $this->discovery->rediscover();
+            $this->discoveredManifests = null;
+            $manifests = $this->discovery->rediscover();
+            $this->discoveredManifests = $manifests;
+            if ($this->initialized) {
+                $this->registry->load($manifests);
+            }
+
+            return $manifests;
         }
 
-        return $this->discovery->discover();
+        return $this->getDiscoveredManifests();
     }
 
     /**
@@ -457,6 +464,7 @@ final class PluginManager
      */
     public function clearCache(): void
     {
+        $this->discoveredManifests = null;
         $this->discovery->clearCache();
     }
 

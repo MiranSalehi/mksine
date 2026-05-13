@@ -13,16 +13,16 @@
 
     $cardClasses = match ($style) {
         'simple' => 'py-6',
-        'bordered' => 'rounded-2xl border border-zinc-200/90 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900/40',
-        'shadowed' => 'rounded-2xl bg-white p-6 shadow-md shadow-zinc-900/5 ring-1 ring-zinc-900/5 dark:bg-zinc-900/50 dark:shadow-black/40 dark:ring-white/10',
-        'quote' => 'rounded-2xl border-s-4 border-amber-500 bg-gradient-to-br from-zinc-50 to-white p-6 dark:border-amber-400 dark:from-zinc-900/60 dark:to-zinc-900/30',
-        default => 'rounded-2xl bg-white p-6 shadow-md ring-1 ring-zinc-900/5 dark:bg-zinc-900/50 dark:ring-white/10',
+        'bordered' => 'rounded-2xl border border-slate-200/90 bg-white p-6 dark:border-slate-700 dark:bg-slate-900/40',
+        'shadowed' => 'rounded-2xl bg-white p-6 shadow-md shadow-slate-900/5 ring-1 ring-slate-900/5 dark:bg-slate-900/50 dark:shadow-black/40 dark:ring-white/10',
+        'quote' => 'rounded-2xl border-s-4 border-amber-500 bg-gradient-to-br from-slate-50 to-white p-6 dark:border-amber-400 dark:from-slate-900/60 dark:to-slate-900/30',
+        default => 'rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-900/5 dark:bg-slate-900/50 dark:ring-white/10',
     };
 @endphp
 
 <section class="mb-10 md:mb-14">
     @if ($heading)
-        <h2 class="mb-10 text-center text-3xl font-bold tracking-tight text-zinc-900 sm:mb-12 sm:text-4xl dark:text-zinc-50">
+        <h2 class="mb-10 text-center text-3xl font-bold tracking-tight text-slate-900 sm:mb-12 sm:text-4xl dark:text-slate-50">
             {{ $heading }}
         </h2>
     @endif

@@ -63,13 +63,20 @@ class ComponentEditor extends Component implements HasActions, HasForms
 
     public function save(): void
     {
-        $data = $this->form->getState();
+        /*
+         * Use snapshot state, not `getState()`. Validated dehydrated state runs `pruneStateToMatchKeys()`
+         * against Laravel rules; components inside collapsible repeater rows are treated as concealed and
+         * their rules (and validated keys) are omitted, which drops nullable fields such as span_lg on save.
+         * Snapshot dehydrates from the full Livewire raw state instead; PageBuilder still runs ComponentRegistry::validateComponent().
+         */
+        $data = $this->form->getStateSnapshot();
 
-        $this->dispatch('saveBlockData', 
+        $this->dispatch(
+            'saveBlockData',
             blockId: $this->blockId,
             data: $data,
             parentId: $this->parentId,
-            columnIndex: $this->columnIndex
+            columnIndex: $this->columnIndex,
         );
 
         $this->reset();

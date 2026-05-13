@@ -1,0 +1,155 @@
+/**
+ * CKEditor 5 — align with Filament v4 fi-input-wrp (ring, rounded-lg, gray scale, primary focus).
+ * Loaded after mks-ckeditor-field.css; scoped so bundled :root variables do not leak globally.
+ */
+.ckeditor-field-wrapper {
+    --ck-border-radius: 0.5rem;
+    --ck-inner-shadow: none;
+    --ck-drop-shadow: none;
+    --ck-drop-shadow-active: none;
+    --ck-color-shadow-drop: transparent;
+    --ck-color-shadow-drop-active: transparent;
+    --ck-color-shadow-inner: transparent;
+    --ck-color-focus-outer-shadow: transparent;
+    --ck-focus-outer-shadow: none;
+    --ck-focus-disabled-outer-shadow: none;
+    --ck-focus-error-outer-shadow: none;
+    --ck-dialog-drop-shadow: none;
+    --ck-balloon-arrow-drop-shadow: none;
+
+    --ck-color-base-border: var(--gray-200);
+    --ck-color-toolbar-border: var(--gray-200);
+    /* Bottom edge of toolbar: slightly stronger than --gray-200 so it reads on gray-50 */
+    --mks-ckeditor-toolbar-bottom-border: var(--gray-300);
+    --ck-color-toolbar-background: var(--gray-50);
+    --ck-color-base-background: #fff;
+    --ck-color-base-foreground: var(--gray-50);
+    --ck-color-base-text: var(--gray-950);
+    --ck-color-text: var(--gray-950);
+    --ck-color-engine-placeholder-text: var(--gray-400);
+
+    --ck-color-button-default-hover-background: var(--gray-100);
+    --ck-color-button-default-active-background: var(--gray-100);
+    --ck-color-button-on-background: var(--primary-50);
+    --ck-color-button-on-hover-background: var(--primary-100);
+    --ck-color-button-on-active-background: var(--primary-100);
+    --ck-color-button-on-color: var(--primary-600);
+    --ck-color-base-active: var(--primary-600);
+    --ck-color-base-active-focus: var(--primary-700);
+    --ck-color-focus-border: var(--primary-500);
+    --ck-color-link-default: var(--primary-600);
+
+    --ck-color-input-border: var(--gray-200);
+    --ck-color-dropdown-panel-border: var(--gray-200);
+    --ck-color-panel-border: var(--gray-200);
+
+    --ck-color-base-action: var(--primary-600);
+    --ck-color-button-action-hover-background: var(--primary-700);
+    --ck-color-button-action-active-background: var(--primary-700);
+}
+
+/* Dark panel: match fi-input-wrp dark:bg-white/5 and dark:ring-white/20 feel */
+.dark .ckeditor-field-wrapper {
+    --ck-color-base-border: rgb(255 255 255 / 0.12);
+    --ck-color-toolbar-border: rgb(255 255 255 / 0.12);
+    --mks-ckeditor-toolbar-bottom-border: rgb(255 255 255 / 0.2);
+    --ck-color-toolbar-background: rgb(255 255 255 / 0.04);
+    --ck-color-base-background: rgb(255 255 255 / 0.03);
+    --ck-color-base-foreground: rgb(255 255 255 / 0.06);
+    --ck-color-base-text: var(--gray-100);
+    --ck-color-text: var(--gray-100);
+    --ck-color-engine-placeholder-text: var(--gray-500);
+
+    --ck-color-button-default-hover-background: rgb(255 255 255 / 0.08);
+    --ck-color-button-default-active-background: rgb(255 255 255 / 0.1);
+    --ck-color-button-on-background: color-mix(in oklab, var(--primary-400) 22%, transparent);
+    --ck-color-button-on-hover-background: color-mix(in oklab, var(--primary-400) 32%, transparent);
+    --ck-color-button-on-active-background: color-mix(in oklab, var(--primary-400) 32%, transparent);
+
+    --ck-color-input-border: rgb(255 255 255 / 0.12);
+    --ck-color-dropdown-panel-border: rgb(255 255 255 / 0.12);
+    --ck-color-panel-border: rgb(255 255 255 / 0.12);
+}
+
+/* Validation: follow fi-invalid ring (danger) on focus border inside the editor chrome */
+.fi-input-wrp.fi-invalid .ckeditor-field-wrapper {
+    --ck-color-focus-border: var(--danger-600);
+    --ck-color-base-error: var(--danger-600);
+    --ck-color-focus-error-shadow: transparent;
+}
+
+.dark .fi-input-wrp.fi-invalid .ckeditor-field-wrapper {
+    --ck-color-focus-border: var(--danger-500);
+    --ck-color-base-error: var(--danger-500);
+}
+
+.fi-input-wrp.fi-disabled .ckeditor-field-wrapper {
+    --ck-disabled-opacity: 0.65;
+    pointer-events: none;
+}
+
+/* Remove stacked “card” chrome; Filament wrapper already supplies ring + shadow-sm */
+.ckeditor-field-wrapper .ck.ck-editor {
+    border: none;
+    border-radius: var(--ck-border-radius);
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.ckeditor-field-wrapper .ck.ck-toolbar {
+    border: none !important;
+    border-bottom: 1px solid var(--mks-ckeditor-toolbar-bottom-border) !important;
+    border-radius: var(--ck-border-radius) var(--ck-border-radius) 0 0;
+    background: var(--ck-color-toolbar-background);
+    box-shadow: none;
+}
+
+/* Full-width bar when the toolbar lives inside a top stack (border on toolbar can be clipped in some builds) */
+.ckeditor-field-wrapper .ck.ck-editor__top {
+    border-bottom: 1px solid var(--mks-ckeditor-toolbar-bottom-border);
+}
+
+.ckeditor-field-wrapper .ck.ck-editor__top .ck.ck-toolbar {
+    border-bottom: none !important;
+}
+
+.ckeditor-field-wrapper .ck.ck-toolbar .ck.ck-toolbar__separator {
+    background: var(--ck-color-toolbar-border);
+}
+
+.ckeditor-field-wrapper .ck.ck-editor__main {
+    border: none;
+    border-radius: 0 0 var(--ck-border-radius) var(--ck-border-radius);
+    box-shadow: none;
+    background: var(--ck-color-base-background);
+}
+
+.ckeditor-field-wrapper .ck.ck-editor__editable {
+    border: none !important;
+    border-radius: 0 0 var(--ck-border-radius) var(--ck-border-radius) !important;
+    box-shadow: none !important;
+    background: var(--ck-color-base-background) !important;
+}
+
+.ckeditor-field-wrapper .ck.ck-editor__editable.ck-focused {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.ckeditor-field-wrapper .ck.ck-editor__editable_inline {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.ckeditor-field-wrapper .ck.ck-balloon-panel {
+    border: 1px solid var(--ck-color-base-border);
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.06),
+        0 2px 4px -2px rgb(0 0 0 / 0.06);
+}
+
+.dark .ckeditor-field-wrapper .ck.ck-balloon-panel {
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.25),
+        0 2px 4px -2px rgb(0 0 0 / 0.2);
+}

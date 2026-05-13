@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Comment extends Model
@@ -22,7 +23,8 @@ class Comment extends Model
     public const STATUS_TRASH = 'trash';
 
     protected $fillable = [
-        'post_id',
+        'commentable_type',
+        'commentable_id',
         'user_id',
         'parent_id',
         'author_name',
@@ -46,12 +48,9 @@ class Comment extends Model
         return \Miran\Mksine\Database\Factories\CommentFactory::new();
     }
 
-    /**
-     * Get the post that owns the comment.
-     */
-    public function post(): BelongsTo
+    public function commentable(): MorphTo
     {
-        return $this->belongsTo(Post::class);
+        return $this->morphTo();
     }
 
     /**

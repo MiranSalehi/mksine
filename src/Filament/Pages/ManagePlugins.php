@@ -6,11 +6,18 @@ namespace Miran\Mksine\Filament\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Updater\RollbackManager;
+use Miran\Mksine\Core\Updater\SuperAdminGate;
+use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
+use Miran\Mksine\Core\Updater\UpdateRunner;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use ZipArchive;
 
@@ -131,7 +138,141 @@ class ManagePlugins extends Page
 
                     $this->refreshPage();
                 }),
+
+            Action::make('update_plugin')
+                ->label(__('mksine::updater.update_plugin'))
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->visible(fn () => SuperAdminGate::check() && (bool) config('mksine.updater.enabled', true))
+                ->schema([
+                    Placeholder::make('warning')
+                        ->label(__('mksine::updater.plugin_risk_label'))
+                        ->content(__('mksine::updater.plugin_risk_body')),
+
+                    Select::make('plugin_id')
+                        ->label(__('mksine::updater.select_plugin'))
+                        ->options(fn () => $this->getUpdatablePluginOptions())
+                        ->required()
+                        ->searchable(),
+
+                    FileUpload::make('plugin_file')
+                        ->label(__('mksine::updater.zip_file'))
+                        ->helperText(__('mksine::updater.plugin_zip_helper'))
+                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
+                        ->required()
+                        ->storeFiles(false),
+
+                    Toggle::make('force')
+                        ->label(__('mksine::updater.force_toggle'))
+                        ->helperText(__('mksine::updater.force_helper'))
+                        ->default(false),
+                ])
+                ->action(function (array $data) {
+                    $this->handlePluginUpdate($data);
+                }),
         ];
+    }
+
+    /**
+     * Build the plugin-id -> label map for the update modal select.
+     *
+     * Only project plugins (living under base_path('plugins')) can be updated
+     * via ZIP. Composer-installed mks-plugin packages must be updated through
+     * composer on a machine that has composer available.
+     *
+     * @return array<string,string>
+     */
+    private function getUpdatablePluginOptions(): array
+    {
+        $manager = app(PluginManager::class);
+        $pluginsDir = realpath(base_path((string) config('mksine.plugins_path', 'plugins')));
+        $options = [];
+
+        foreach ($manager->getAllPlugins() as $plugin) {
+            $manifest = $manager->getManifest($plugin['id'] ?? '');
+            if ($manifest === null) {
+                continue;
+            }
+            $pathReal = realpath($manifest->basePath());
+            if ($pluginsDir === false || $pathReal === false || ! str_starts_with($pathReal, $pluginsDir . DIRECTORY_SEPARATOR)) {
+                continue;
+            }
+            $options[$manifest->id()] = sprintf('%s (v%s)', $manifest->name(), $manifest->version());
+        }
+
+        ksort($options);
+
+        return $options;
+    }
+
+    public function handlePluginUpdate(array $data): void
+    {
+        SuperAdminGate::authorize();
+
+        $pluginId = (string) ($data['plugin_id'] ?? '');
+        $force = (bool) ($data['force'] ?? false);
+        $path = $this->resolveUploadedZipPath($data['plugin_file'] ?? null);
+
+        if ($pluginId === '' || $path === null) {
+            Notification::make()
+                ->title(__('mksine::updater.upload_failed'))
+                ->body(__('mksine::updater.invalid_upload'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $updater = new PluginUpdater(new UpdateRunner, app(PluginManager::class));
+        $result = $updater->update($pluginId, $path, $force);
+
+        $this->sendUpdateResultNotification($result, __('mksine::updater.plugin_update_title'));
+        $this->refreshPage();
+    }
+
+    public function rollbackPluginAction(string $pluginId): void
+    {
+        SuperAdminGate::authorize();
+
+        $result = (new RollbackManager)->rollbackPlugin($pluginId);
+        $this->sendUpdateResultNotification($result, __('mksine::updater.plugin_rollback_title'));
+        $this->refreshPage();
+    }
+
+    private function sendUpdateResultNotification(\Miran\Mksine\Core\Updater\UpdateResult $result, string $title): void
+    {
+        $body = sprintf(
+            "%s → %s\nSteps: %s\n%s%s%s",
+            $result->fromVersion ?? '?',
+            $result->toVersion ?? '?',
+            implode(', ', $result->steps),
+            $result->success ? '' : ("Error: " . $result->errorMessage . "\n"),
+            $result->dbPossiblyDirty ? "(DB may be partially migrated — inspect manually)\n" : '',
+            'Log: ' . $result->logPath
+        );
+
+        $notification = Notification::make()->title($title)->body($body);
+        $result->success
+            ? $notification->success()->send()
+            : $notification->danger()->persistent()->send();
+    }
+
+    private function resolveUploadedZipPath(mixed $uploaded): ?string
+    {
+        if ($uploaded instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            return $uploaded->getRealPath();
+        }
+        if ($uploaded instanceof \Illuminate\Http\UploadedFile) {
+            return $uploaded->getRealPath();
+        }
+        if (is_string($uploaded) && $uploaded !== '') {
+            $full = storage_path('app/' . $uploaded);
+
+            return is_file($full) ? $full : null;
+        }
+
+        return null;
     }
 
     protected function processPluginUpload(string $tempPath): void

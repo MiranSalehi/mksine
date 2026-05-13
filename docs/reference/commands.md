@@ -364,6 +364,58 @@ The archive **excludes** `node_modules`, `.git`, and `.env*` (keeping `.env.exam
 
 See [Operations → release archive](../operations/deployment-hosting.md) for the deployment flow.
 
+## Updater commands
+
+See [Operations → ZIP updater](../operations/zip-updater.md) for the full pipeline description. All updater commands require Super Admin permission and honour `config('mksine.updater.enabled')`.
+
+### `mks-plugin:update`
+
+```
+mks-plugin:update {plugin} {file} [--force]
+```
+
+Source: [`UpdatePluginCommand`](../../src/Console/Commands/UpdatePluginCommand.php).
+
+Update a **project** plugin (`plugins/{id}`) from a ZIP. The ZIP's `plugin.php` must declare the same `id` as the target and a strictly higher `version` (unless `--force` is passed).
+
+Pipeline: validate → extract → deactivate old → atomic swap → publish-lang → publish assets → discover → `optimize:clear` → migrate last. On migration failure the plugin is marked `boot_failed=true` + `status=inactive` and the new code stays in place; see the operations doc for recovery.
+
+### `mks:theme-update`
+
+```
+mks:theme-update {theme} {file} [--force]
+```
+
+Source: [`UpdateThemeCommand`](../../src/Console/Commands/UpdateThemeCommand.php).
+
+Update a **project** theme (`resources/views/themes/{id}`) from a ZIP. The ZIP must contain `theme.json`, a higher `version`, and a `dist/` directory (production has no npm to build).
+
+### `mksine:update`
+
+```
+mksine:update {file} [--force]
+```
+
+Source: [`UpdateCoreCommand`](../../src/Console/Commands/UpdateCoreCommand.php).
+
+Update the core `miran/mksine` package in path-repository installs (`packages/mksine/`). Rejected if:
+
+- the ZIP's `composer.json` does not declare `"name": "miran/mksine"`,
+- the ZIP changes any entry in `require` or `require-dev` (production has no composer),
+- the new version is not strictly higher (override with `--force`).
+
+### `mks-plugin:rollback` / `mks:theme-rollback` / `mksine:rollback`
+
+```
+mks-plugin:rollback {plugin}
+mks:theme-rollback {theme}
+mksine:rollback
+```
+
+Sources: [`RollbackPluginCommand`](../../src/Console/Commands/RollbackPluginCommand.php), [`RollbackThemeCommand`](../../src/Console/Commands/RollbackThemeCommand.php), [`RollbackCoreCommand`](../../src/Console/Commands/RollbackCoreCommand.php).
+
+Restore the most recent backup in `{target-parent}/.mks-backups/`. **Code-only** rollback — migrations are **not** reversed. Combine with a DB snapshot restore if needed.
+
 ## Typical sequences
 
 **Onboarding a brand-new plugin:**

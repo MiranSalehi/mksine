@@ -42,4 +42,9 @@ return [
     'remove' => 'Remove',
     'remove_item_confirm' => 'Are you sure you want to remove this item?',
     'items' => ':count item|:count items',
+    'indent' => 'Make sub-item (nest under item above)',
+    'indent_short' => 'Sub',
+    'outdent' => 'Move out one level',
+    'outdent_short' => 'Out',
+    'drag_to_reorder' => 'Drag to reorder. Use Sub / Out buttons to nest or un-nest.',
 ];

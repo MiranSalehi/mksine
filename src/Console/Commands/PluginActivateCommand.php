@@ -39,7 +39,13 @@ class PluginActivateCommand extends Command
 
             if ($status === 'boot_failed') {
                 $this->warn('⚠️  This plugin previously failed during boot.');
-                if (! $this->confirm('Do you want to try activating it again?', false)) {
+
+                // Under --no-interaction (e.g. CI / tests), confirm() returns the default (false)
+                // and would skip activation entirely — leaving the plugin stuck in boot_failed.
+                $shouldRetry = $this->input->hasParameterOption(['--no-interaction', '-n'])
+                    || $this->confirm('Do you want to try activating it again?', false);
+
+                if (! $shouldRetry) {
                     return self::SUCCESS;
                 }
             }

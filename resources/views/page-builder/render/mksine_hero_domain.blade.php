@@ -1,12 +1,52 @@
 @php
     $d = $data ?? [];
     $imgUrl = mksine_pb_media_url($d['illustration'] ?? null, 'images/home-hero-domain.png');
+    $position = in_array($d['illustration_position'] ?? 'right', ['left', 'right'], true) ? $d['illustration_position'] : 'right';
+
+    $bgImageUrl = null;
+    if (is_numeric($d['background_image'] ?? null) && (int) $d['background_image'] > 0) {
+        $bgMedia = \Miran\Mksine\Models\Media::query()->find((int) $d['background_image']);
+        $bgImageUrl = $bgMedia?->full_url;
+    }
+
+    $bgColorRaw = $d['background_color'] ?? null;
+    $bgColor = is_string($bgColorRaw) && preg_match('/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/', trim($bgColorRaw)) ? trim($bgColorRaw) : null;
+    $solidLight = $bgColor ?? '#FFD180';
+    $hasBgImage = (bool) $bgImageUrl;
+
+    $headingId = 'home-hero-domain-heading-'.preg_replace('/[^a-zA-Z0-9_-]/', '-', (string) ($blockId ?? 'block'));
 @endphp
-<section class="home-hero-domain bg-[#FFD180] text-gray-900 dark:bg-slate-900 dark:text-gray-100" aria-labelledby="home-hero-domain-heading">
-    <div class="mx-auto w-[90%] max-w-[87.5rem]">
+<section
+    class="home-hero-domain relative overflow-hidden text-gray-900 dark:bg-slate-900 dark:text-gray-100"
+    aria-labelledby="{{ $headingId }}"
+>
+    @if (! $hasBgImage)
+        <div
+            class="pointer-events-none absolute inset-0 -z-10 dark:hidden"
+            style="background-color: {{ e($solidLight) }}"
+            aria-hidden="true"
+        ></div>
+    @endif
+    @if ($bgImageUrl)
+        <div
+            class="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+            style="background-image: url('{{ e($bgImageUrl) }}')"
+            aria-hidden="true"
+        ></div>
+        <div
+            class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-white/80 via-white/55 to-white/35 dark:from-slate-900/88 dark:via-slate-900/72 dark:to-slate-900/88"
+            aria-hidden="true"
+        ></div>
+    @endif
+
+    <div class="relative z-0 mx-auto w-[90%] max-w-[87.5rem]">
         <div class="py-12 md:py-14 lg:py-16 xl:py-20">
-            <div class="grid grid-cols-1 items-center justify-items-center gap-8 text-center md:grid-cols-2 md:gap-10 md:text-start lg:grid-cols-5 lg:gap-12">
-                <div class="w-full max-w-md px-6 md:order-2 md:max-w-none md:px-10 lg:col-span-2 lg:px-14">
+            <div
+                class="grid grid-cols-1 items-center justify-items-center gap-8 text-center md:grid-cols-2 md:gap-10 md:text-start lg:grid-cols-5 lg:gap-12"
+            >
+                <div
+                    class="w-full max-w-md px-6 md:max-w-none md:px-10 lg:col-span-2 lg:px-14 {{ $position === 'left' ? 'md:order-1' : 'md:order-2' }}"
+                >
                     <div class="relative mx-auto flex max-w-sm justify-center md:max-w-full">
                         <img
                             src="{{ $imgUrl }}"
@@ -20,8 +60,10 @@
                         />
                     </div>
                 </div>
-                <div class="w-full max-w-[min(100%,91.666667%)] md:order-1 md:max-w-full lg:col-span-3">
-                    <h1 id="home-hero-domain-heading" class="mb-4 font-extrabold tracking-tight text-gray-900 lg:mb-8 dark:text-gray-50">
+                <div
+                    class="w-full max-w-[min(100%,91.666667%)] md:max-w-full lg:col-span-3 {{ $position === 'left' ? 'md:order-2' : 'md:order-1' }}"
+                >
+                    <h1 id="{{ $headingId }}" class="mb-4 font-extrabold tracking-tight text-gray-900 lg:mb-8 dark:text-gray-50">
                         <div class="text-4xl leading-[1.08] md:text-5xl xl:text-6xl [&_span.home-hero-heading-accent]:text-violet-600 [&_span.home-hero-heading-accent]:dark:text-violet-400">
                             @if (trim((string) ($d['heading_line1'] ?? '')) !== '')
                                 <span class="block">{{ $d['heading_line1'] }}</span>

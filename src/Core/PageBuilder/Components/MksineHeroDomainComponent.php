@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Core\PageBuilder\Components;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
@@ -70,6 +71,29 @@ class MksineHeroDomainComponent extends BaseBuilderComponent
                 ->label(__('mksine::page_builder.mksine_fields.hero_illustration_alt'))
                 ->maxLength(255)
                 ->columnSpanFull(),
+            MediaPicker::make('background_image')
+                ->label(__('mksine::page_builder.mksine_fields.hero_domain_background_image'))
+                ->isRelation(false)
+                ->collection('page_builder')
+                ->acceptedFileTypes(['image/*'])
+                ->columnSpanFull(),
+            TextInput::make('background_color')
+                ->label(__('mksine::page_builder.mksine_fields.hero_domain_background_color'))
+                ->placeholder('#FFD180')
+                ->maxLength(7)
+                ->dehydrateStateUsing(fn (?string $state): ?string => ($state === null || trim($state) === '') ? null : trim($state))
+                ->rules(['nullable', 'string', 'max:7', 'regex:/^$|^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'])
+                ->helperText(__('mksine::page_builder.mksine_fields.hero_domain_background_color_help'))
+                ->columnSpanFull(),
+            Select::make('illustration_position')
+                ->label(__('mksine::page_builder.mksine_fields.hero_domain_illustration_position'))
+                ->options([
+                    'left' => __('mksine::page_builder.mksine_fields.hero_domain_illustration_left'),
+                    'right' => __('mksine::page_builder.mksine_fields.hero_domain_illustration_right'),
+                ])
+                ->default('right')
+                ->required()
+                ->native(false),
         ];
     }
 
@@ -85,6 +109,9 @@ class MksineHeroDomainComponent extends BaseBuilderComponent
             'cta_url' => '#',
             'illustration' => null,
             'illustration_alt' => 'Illustration of domain and hosting dashboard',
+            'background_image' => null,
+            'background_color' => null,
+            'illustration_position' => 'right',
         ];
     }
 }

@@ -89,13 +89,36 @@
                             </div>
                         </div>
 
-                        {{-- Upload Zone --}}
+                        {{-- Upload Zone (click + drag-and-drop → Livewire WithFileUploads) --}}
+                        @php
+                            $mediaUploadInputId = 'media-upload-input-'.$this->getId();
+                        @endphp
                         <div
-                            class="mb-6 rounded-2xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100/50 p-8 transition-colors dark:border-gray-600 dark:from-gray-800/50 dark:to-gray-800/30"
-                            x-data="{ dragged: false }"
-                            x-on:dragover.prevent="dragged = true"
-                            x-on:dragleave.prevent="dragged = false"
-                            x-on:drop.prevent="dragged = false"
+                            class="mb-6 rounded-2xl border-2 border-dashed bg-gradient-to-br from-gray-50 to-gray-100/50 p-8 transition-colors dark:from-gray-800/50 dark:to-gray-800/30"
+                            :class="dragged
+                                ? 'border-primary-500 from-primary-50/90 to-primary-100/40 ring-2 ring-primary-500/20 dark:border-primary-400 dark:from-primary-500/15 dark:to-primary-500/5 dark:ring-primary-400/20'
+                                : 'border-gray-300 dark:border-gray-600'"
+                            x-data="{ dragged: false, accepted: @js($acceptedFileTypes) }"
+                            x-on:dragenter.prevent="dragged = true"
+                            x-on:dragleave.prevent="if (! $event.currentTarget.contains($event.relatedTarget)) dragged = false"
+                            x-on:dragover.prevent="$event.dataTransfer.dropEffect = 'copy'; dragged = true"
+                            x-on:drop.prevent="
+                                dragged = false;
+                                const acc = accepted || [];
+                                const isOk = (f) => {
+                                    const t = f.type || '';
+                                    if (!acc.length) return true;
+                                    for (const p of acc) {
+                                        if (p.endsWith('/*') && t.startsWith(p.slice(0, -1))) return true;
+                                        if (p === t) return true;
+                                    }
+                                    return false;
+                                };
+                                const files = Array.from($event.dataTransfer.files || []).filter(isOk);
+                                if (files.length) {
+                                    $wire.uploadMultiple('uploadedFiles', files, () => {}, () => {}, () => {}, () => {}, true);
+                                }
+                            "
                         >
                             <div class="flex flex-col items-center justify-center gap-3 text-center">
                                 <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 shadow-sm dark:bg-gray-700/50">
@@ -106,7 +129,7 @@
                                         {{ __('mksine::media_picker.click_to_upload') }}
                                     </p>
                                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                        {{ __('mksine::media_picker.browse_files') }}
+                                        {{ __('mksine::media_picker.drag_to_upload') }}
                                     </p>
                                 </div>
                                 <input
@@ -115,11 +138,11 @@
                                     multiple
                                     accept="{{ implode(',', $acceptedFileTypes) }}"
                                     class="hidden"
-                                    id="media-upload-input-{{ $this->getId() }}"
+                                    id="{{ $mediaUploadInputId }}"
                                 >
                                 <button
                                     type="button"
-                                    onclick="document.getElementById('media-upload-input-{{ $this->getId() }}').click()"
+                                    onclick="document.getElementById('{{ $mediaUploadInputId }}').click()"
                                     class="rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-600"
                                 >
                                     {{ __('mksine::media_picker.browse_files') }}

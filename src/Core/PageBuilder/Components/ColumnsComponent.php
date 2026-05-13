@@ -5,8 +5,16 @@ namespace Miran\Mksine\Core\PageBuilder\Components;
 use Filament\Forms\Components\Select;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
 
+/**
+ * Simple equal or preset-ratio columns for editors who want stability and predictable drag targets.
+ * For arbitrary widths on a 12-column grid use {@see GridLayoutComponent}.
+ */
 class ColumnsComponent extends BaseBuilderComponent
 {
+    public const MIN_COLUMNS = 2;
+
+    public const MAX_COLUMNS = 12;
+
     public static function getType(): string
     {
         return 'columns';
@@ -37,11 +45,7 @@ class ColumnsComponent extends BaseBuilderComponent
         return [
             Select::make('columns')
                 ->label(__('mksine::page_builder.component_labels.number_of_columns'))
-                ->options([
-                    2 => __('mksine::page_builder.component_labels.two_columns'),
-                    3 => __('mksine::page_builder.component_labels.three_columns'),
-                    4 => __('mksine::page_builder.component_labels.four_columns'),
-                ])
+                ->options(static::columnCountSelectOptions())
                 ->default(2)
                 ->required()
                 ->native(false)
@@ -95,6 +99,15 @@ class ColumnsComponent extends BaseBuilderComponent
         ];
     }
 
+    public static function validate(array $data): array
+    {
+        $columns = max(self::MIN_COLUMNS, min(self::MAX_COLUMNS, (int) ($data['columns'] ?? self::MIN_COLUMNS)));
+        $data['columns'] = $columns;
+        unset($data['width_mode'], $data['column_spans']);
+
+        return $data;
+    }
+
     public static function supportsChildren(): bool
     {
         return true;
@@ -102,12 +115,9 @@ class ColumnsComponent extends BaseBuilderComponent
 
     public static function getMaxChildren(): ?int
     {
-        return 4; // Max 4 columns
+        return self::MAX_COLUMNS;
     }
 
-    /**
-     * Get layout options based on number of columns.
-     */
     protected static function getLayoutOptions(int $columns): array
     {
         $options = [
@@ -131,14 +141,24 @@ class ColumnsComponent extends BaseBuilderComponent
     }
 
     /**
-     * Create instance with empty columns based on column count.
+     * @return array<int, string>
      */
+    protected static function columnCountSelectOptions(): array
+    {
+        $options = [];
+        for ($i = self::MIN_COLUMNS; $i <= self::MAX_COLUMNS; $i++) {
+            $options[$i] = __('mksine::page_builder.component_labels.n_columns', ['count' => $i]);
+        }
+
+        return $options;
+    }
+
     public static function createInstance(?string $id = null): array
     {
         $instance = parent::createInstance($id);
-        $columnCount = $instance['data']['columns'] ?? 2;
-
-        // Initialize empty children for each column
+        $columnCount = (int) ($instance['data']['columns'] ?? self::MIN_COLUMNS);
+        $columnCount = max(self::MIN_COLUMNS, min(self::MAX_COLUMNS, $columnCount));
+        $instance['data']['columns'] = $columnCount;
         $instance['children'] = [];
         for ($i = 0; $i < $columnCount; $i++) {
             $instance['children'][] = [

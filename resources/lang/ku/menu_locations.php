@@ -11,4 +11,9 @@ return [
     'no_menu_assigned' => '— هیچ لیستێک تەرخان نەکراوە —',
     'assigned_menu_helper' => 'لیستێک هەڵبژێرە کە لەم شوێنەدا پیشان دەدرێت.',
     'not_assigned' => '— تەرخان نەکراوە —',
+
+    'theme_defaults' => [
+        'header_primary' => 'سەرپەڕە (سەرەکی)',
+        'footer_links' => 'بەستەرەکانی پێ',
+    ],
 ];

@@ -6,6 +6,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
 
 class MksineTestimonialsGridComponent extends BaseBuilderComponent
@@ -86,6 +87,14 @@ class MksineTestimonialsGridComponent extends BaseBuilderComponent
                         ->label(__('mksine::page_builder.mksine_fields.test_accent_gradient'))
                         ->placeholder(__('mksine::page_builder.mksine_fields.test_gradient_placeholder'))
                         ->required(),
+                    TextInput::make('link_url')
+                        ->label(__('mksine::page_builder.component_labels.link_url'))
+                        ->helperText(__('mksine::page_builder.component_labels.link_optional'))
+                        ->maxLength(2048),
+                    Toggle::make('link_new_tab')
+                        ->label(__('mksine::page_builder.component_labels.open_in_new_tab'))
+                        ->default(false)
+                        ->visible(fn ($get) => filled($get('link_url'))),
                 ])
                 ->defaultItems(6)
                 ->minItems(1)

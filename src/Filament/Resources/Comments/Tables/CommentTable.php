@@ -16,10 +16,12 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Miran\Mksine\Core\Hooks\TableHookManager;
 use Miran\Mksine\Models\Comment;
+use Miran\Mksine\Models\Post;
 
 class CommentTable
 {
@@ -27,12 +29,12 @@ class CommentTable
     {
         $table = $table
             ->columns([
-                TextColumn::make('post.title')
-                    ->label(__('mksine::comments.post'))
+                TextColumn::make('commentable.title')
+                    ->label(__('mksine::comments.commentable'))
                     ->searchable()
                     ->sortable()
                     ->limit(30)
-                    ->tooltip(fn (Comment $record): string => $record->post?->title ?? ''),
+                    ->tooltip(fn (Comment $record): string => (string) ($record->commentable?->title ?? '')),
                 TextColumn::make('author_display_name')
                     ->label(__('mksine::comments.author'))
                     ->searchable(query: function ($query, string $search) {
@@ -110,12 +112,18 @@ class CommentTable
                         5 => __('mksine::comments.rating_5_stars'),
                     ])
                     ->native(false),
-                SelectFilter::make('post_id')
+                SelectFilter::make('commentable_post_id')
                     ->label(__('mksine::comments.post'))
-                    ->relationship('post', 'title')
+                    ->options(fn (): array => Post::query()->orderBy('title')->pluck('title', 'id')->all())
                     ->searchable()
-                    ->preload()
-                    ->native(false),
+                    ->query(function (Builder $query, array $data): void {
+                        $v = $data['value'] ?? null;
+                        if (! filled($v)) {
+                            return;
+                        }
+                        $query->where('commentable_type', Post::class)
+                            ->where('commentable_id', $v);
+                    }),
             ])
             ->recordActions([
                 Action::make('approve')
@@ -140,9 +148,9 @@ class CommentTable
                     ->form(fn (Comment $record): array => [
                         Section::make(__('mksine::comments.comment_details'))
                             ->schema([
-                                Placeholder::make('post')
-                                    ->label(__('mksine::comments.post'))
-                                    ->content($record->post?->title ?? '-'),
+                                Placeholder::make('commentable_title')
+                                    ->label(__('mksine::comments.commentable'))
+                                    ->content($record->commentable?->title ?? '-'),
                                 Placeholder::make('author')
                                     ->label(__('mksine::comments.author'))
                                     ->content($record->author_display_name . ($record->author_display_email ? ' (' . $record->author_display_email . ')' : '')),
@@ -194,7 +202,8 @@ class CommentTable
                     ])
                     ->action(function (Comment $record, array $data): void {
                         Comment::create([
-                            'post_id' => $record->post_id,
+                            'commentable_type' => $record->commentable_type,
+                            'commentable_id' => $record->commentable_id,
                             'user_id' => Auth::id(),
                             'parent_id' => $record->id,
                             'content' => $data['content'],

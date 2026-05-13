@@ -16,7 +16,7 @@
 
     $styleClasses = match ($style) {
         'primary' => 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-900/20 hover:from-amber-600 hover:to-orange-700 hover:shadow-lg dark:from-amber-500 dark:to-orange-600 dark:shadow-black/30',
-        'secondary' => 'bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white',
+        'secondary' => 'bg-slate-900 text-white shadow-sm hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
         'outline' => 'border-2 border-amber-500/90 bg-transparent text-amber-700 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-950/40',
         'ghost' => 'bg-transparent text-amber-700 hover:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-400/10',
         default => 'bg-amber-500 text-white shadow-md hover:bg-amber-600',
@@ -35,7 +35,7 @@
     <a
         href="{{ $url }}"
         @if ($newTab) target="_blank" rel="noopener noreferrer" @endif
-        class="inline-flex items-center justify-center font-semibold {{ $sizeClasses }} {{ $styleClasses }} {{ $widthClass }} rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
+        class="inline-flex items-center justify-center font-semibold {{ $sizeClasses }} {{ $styleClasses }} {{ $widthClass }} rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
     >
         {{ $text }}
         @if ($newTab)

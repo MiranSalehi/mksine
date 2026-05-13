@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
+use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Database\Factories\CategoryFactory;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 class Category extends Model
 {
@@ -63,7 +67,7 @@ class Category extends Model
      */
     protected static function newFactory()
     {
-        return \Miran\Mksine\Database\Factories\CategoryFactory::new();
+        return CategoryFactory::new();
     }
 
     /**
@@ -77,9 +81,9 @@ class Category extends Model
     /**
      * Get breadcrumb path from root to this category (parent → child order, like WordPress).
      *
-     * @return \Illuminate\Support\Collection<int, Category>
+     * @return Collection<int, Category>
      */
-    public function getBreadcrumbPath(): \Illuminate\Support\Collection
+    public function getBreadcrumbPath(): Collection
     {
         $path = collect();
         $current = $this;
@@ -110,15 +114,25 @@ class Category extends Model
             return $this->slug;
         }
 
-        return $parent->getFullSlug() . '/' . $this->slug;
+        return $parent->getFullSlug().'/'.$this->slug;
     }
 
     /**
      * Get the frontend URL path for this category (hierarchical).
+     *
+     * Falls back to a manually-constructed URL when the named route is not registered
+     * (e.g. a plugin has overwritten the route with the same URI under a different name).
      */
     public function getUrl(): string
     {
-        return route('categories.show', ['path' => $this->getFullSlug()]);
+        try {
+            return route('categories.show', ['path' => $this->getFullSlug()]);
+        } catch (RouteNotFoundException) {
+            $uri = Permalink::getUri('single_category_url');
+            $path = str_replace('{path}', ltrim($this->getFullSlug(), '/'), $uri);
+
+            return url($path);
+        }
     }
 
     /**
@@ -140,7 +154,6 @@ class Category extends Model
      * Find a category by its full path slug (e.g. "health" or "health/nutrition").
      *
      * @param  string  $path  Slash-separated slug path from root to leaf
-     * @return Category|null
      */
     public static function findByFullPath(string $path): ?Category
     {

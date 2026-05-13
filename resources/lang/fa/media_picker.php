@@ -6,6 +6,7 @@ return array (
   'select_multiple' => 'یک یا چند رسانه انتخاب کنید',
   'search_placeholder' => 'جستجو با نام...',
   'click_to_upload' => 'برای آپلود فایل کلیک کنید',
+  'drag_to_upload' => 'یا فایل‌ها را اینجا بکشید و رها کنید',
   'browse_files' => 'مرور فایل‌ها',
   'files_ready_to_upload' => ':count فایل آماده آپلود',
   'upload' => 'آپلود',

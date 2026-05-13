@@ -39,22 +39,25 @@ If your block stores user-influenced URLs, IDs, or HTML, do not assume `getSchem
 
 Each block class implements `BuilderComponentInterface::validate()`. Override it to normalise the data array — clamp enums, strip unknown keys, default missing fields. Example from the package:
 
-```109:121:packages/mksine/src/Core/PageBuilder/Components/ContainerInsetComponent.php
+```215:229:packages/mksine/src/Core/PageBuilder/Components/ContainerInsetComponent.php
     public static function validate(array $data): array
     {
-        $allowedPadding = ['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl'];
-        $p = $data['padding_inline'] ?? 'md';
-        $data['padding_inline'] = in_array($p, $allowedPadding, true) ? $p : 'md';
+        unset($data['padding_inline']);
 
-        $allowedMax = ['full', 'prose', '3xl', '5xl', '6xl', '7xl'];
-        $m = $data['max_width'] ?? 'full';
-        $data['max_width'] = in_array($m, $allowedMax, true) ? $m : 'full';
+        $m = (string) ($data['max_width'] ?? 'full');
+        $data['max_width'] = static::normalizeMaxWidth($m);
+
+        $data['background_full_bleed'] = filter_var($data['background_full_bleed'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $data['background_color'] = static::normalizedBackgroundColor($data['background_color'] ?? null);
+
+        $data['background_gradient'] = static::normalizedBackgroundGradient($data['background_gradient'] ?? null);
 
         return $data;
     }
 ```
 
-Critical fact: **the package never invokes `validate()` automatically.** It’s a contract for plugin authors to call themselves. The registry exposes a wrapper:
+The registry exposes a wrapper:
 
 ```168:177:packages/mksine/src/Core/PageBuilder/ComponentRegistry.php
     public function validateComponent(string $type, array $data): array
@@ -69,15 +72,17 @@ Critical fact: **the package never invokes `validate()` automatically.** It’s 
     }
 ```
 
-But there is **no place in the framework that calls `validateComponent()`**. If you want it run, you must wire it up.
+The Livewire **`PageBuilder::saveBlock`** path invokes **`validateComponent()`** immediately before resizing **`columns` / `grid_layout`** children — so payloads edited in the block modal stay normalised inside the builder.
+
+Programmatic imports, seeders, and any path that skips the modal still need you to recurse `builder_payload` yourself (below).
 
 ## Where to actually validate
 
-For real safety, validate at the boundaries:
+Validate at boundaries that bypass the modal, or wherever you merge untrusted data:
 
 ### 1. Before saving the page
 
-Hook into the `Page` resource’s save flow (model events, observer, or Filament’s `mutateFormDataBeforeSave`):
+Hook into the `Page` resource’s save flow (model events, observer, or Filament’s `mutateFormDataBeforeSave`) if your app edits `builder_payload` outside the packaged builder modal:
 
 ```php
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;

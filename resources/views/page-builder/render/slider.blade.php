@@ -19,7 +19,7 @@
 
 @if (count($slides) > 0)
 <section
-    class="relative mb-10 overflow-hidden rounded-2xl ring-1 ring-zinc-900/10 dark:ring-white/10 {{ $height !== 'auto' ? $heightClass : '' }}"
+    class="relative mb-10 overflow-hidden rounded-2xl ring-1 ring-slate-900/10 dark:ring-white/10 {{ $height !== 'auto' ? $heightClass : '' }}"
     x-data="{
         currentSlide: 0,
         totalSlides: {{ count($slides) }},
@@ -95,7 +95,7 @@
                 @endif
 
                 @if ($title || $subtitle || $buttonText)
-                    <div class="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-zinc-950/85 via-zinc-950/35 to-transparent pb-10 sm:pb-14">
+                    <div class="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-slate-950/85 via-slate-950/35 to-transparent pb-10 sm:pb-14">
                         <div class="max-w-2xl px-4 text-center text-white">
                             @if ($title)
                                 <h3 class="mb-2 text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">{{ $title }}</h3>
@@ -104,7 +104,7 @@
                                 <p class="mb-5 text-base opacity-95 sm:text-lg">{{ $subtitle }}</p>
                             @endif
                             @if ($buttonText && $buttonUrl)
-                                <a href="{{ $buttonUrl }}" class="inline-flex items-center rounded-xl bg-amber-400 px-6 py-3 text-sm font-semibold text-zinc-900 shadow-lg shadow-black/20 transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900">
+                                <a href="{{ $buttonUrl }}" class="inline-flex items-center rounded-xl bg-amber-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                                     {{ $buttonText }}
                                 </a>
                             @endif
@@ -119,7 +119,7 @@
         <button
             type="button"
             @click="prev()"
-            class="absolute start-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm transition hover:bg-white dark:bg-zinc-900/90 dark:text-zinc-100 dark:hover:bg-zinc-800 sm:start-4 sm:h-12 sm:w-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            class="absolute start-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg backdrop-blur-sm transition hover:bg-white dark:bg-slate-900/90 dark:text-slate-100 dark:hover:bg-slate-800 sm:start-4 sm:h-12 sm:w-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
             aria-label="Previous slide"
         >
             <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -129,7 +129,7 @@
         <button
             type="button"
             @click="next()"
-            class="absolute end-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-800 shadow-lg backdrop-blur-sm transition hover:bg-white dark:bg-zinc-900/90 dark:text-zinc-100 dark:hover:bg-zinc-800 sm:end-4 sm:h-12 sm:w-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            class="absolute end-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg backdrop-blur-sm transition hover:bg-white dark:bg-slate-900/90 dark:text-slate-100 dark:hover:bg-slate-800 sm:end-4 sm:h-12 sm:w-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
             aria-label="Next slide"
         >
             <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -145,7 +145,7 @@
                     type="button"
                     @click="goTo({{ $index }})"
                     :class="currentSlide === {{ $index }} ? 'w-8 bg-white' : 'w-2.5 bg-white/45'"
-                    class="h-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900/50"
+                    class="h-2.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900/50"
                     aria-label="Go to slide {{ $index + 1 }}"
                 ></button>
             @endforeach

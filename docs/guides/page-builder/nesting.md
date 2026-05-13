@@ -16,7 +16,7 @@ Nesting is how the page builder composes layouts. A block is a "container" if `s
 {
   "id": "block_a",
   "type": "container_inset",
-  "data": { "padding_inline": "md", "max_width": "5xl" },
+  "data": { "max_width": "5xl", "background_full_bleed": false },
   "children": [
     { "id": "block_b", "type": "heading", "data": {…}, "children": null }
   ]
