@@ -20,4 +20,4 @@ Treat `public/plugins/{id}/` (after `mks-plugin:publish`) and `lang/vendor/{id}/
 ## References
 
 - `PluginPublishCommand`, `PluginPublishLangCommand`
-- [10-plugin-golden-path.md](../10-plugin-golden-path.md)
+- [Plugin golden path](../guides/plugins/golden-path.md)

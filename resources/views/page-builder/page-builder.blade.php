@@ -52,7 +52,30 @@
                 border: 1px solid rgb(228 228 231);
                 background: #fff;
                 box-shadow: 0 20px 60px -12px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(0 0 0 / 0.03);
-                overflow: clip; /* clip visually without blocking scroll */
+            }
+            /* Block editor: allow Filament select panels to extend outside the modal (avoid flip + clip). */
+            #block-editor-modal .fi-modal-window,
+            #block-editor-modal .fi-modal-content {
+                overflow: visible;
+            }
+            #template-picker-modal .fi-modal-window,
+            #component-picker-modal .fi-modal-window {
+                overflow: clip;
+            }
+            #block-editor-modal .fi-dropdown-panel {
+                z-index: 60;
+            }
+            @media (max-width: 640px) {
+                #block-editor-modal .fi-modal-heading {
+                    font-size: 0.9375rem;
+                    line-height: 1.35;
+                }
+                #block-editor-modal .fi-fo-field-wrp-label span {
+                    font-size: 0.8125rem;
+                }
+                #block-editor-modal .fi-select-input-btn {
+                    font-size: 0.8125rem;
+                }
             }
             .dark #block-editor-modal .fi-modal-window,
             .dark #template-picker-modal .fi-modal-window,

@@ -80,6 +80,16 @@ See [Deployment and hosting](deployment-hosting.md).
 - [ ] Plugin-supplied tabs appear with the correct `sortOrder`.
 - [ ] Saving a value and re-reading via `mks_setting('key')` returns the expected type (string vs JSON-decoded array).
 
+## Geo (if checkout/addresses use geo)
+
+- [ ] `php artisan migrate` created `geo_countries`, `geo_states`, `geo_cities`.
+- [ ] `php artisan mks:geo:import` (or `mks:geo:import --country=IR` for staging) completed without errors.
+- [ ] **System → Settings → Geo**: enabled countries and default country configured.
+- [ ] `geo_countries` has at least one row; states and cities exist for the active country.
+- [ ] If legacy Iran tables remain: `php artisan mks:geo:migrate-legacy-iran` ran once after import.
+- [ ] `GET /api/geo/countries` returns JSON with a `data` array.
+- [ ] (ecom) Checkout and admin address forms persist `geo_country_id` / `geo_state_id` / `geo_city_id` — see `plugins/ecom/docs/guides/addresses-and-geo.md`.
+
 ## Translations
 
 - [ ] `lang/{locale}/` exists for every locale you intend to support.
@@ -95,7 +105,8 @@ See [Deployment and hosting](deployment-hosting.md).
 
 ## Security
 
-- [ ] `php artisan shield:install` and `shield:generate --all` ran; permissions exist for every package and plugin resource.
+- [ ] `php artisan mksine:install --migrate` (or equivalent publish) created permission tables; `shield:generate --all` ran; permissions exist for every package and plugin resource.
+- [ ] At least one super admin exists (`mksine:create-super-admin` or `shield:super-admin`).
 - [ ] No unauthorized access to new resources (test as a non-admin user).
 - [ ] If a user subclass is in use: auth + `mksine.user_model` + Shield provider model are aligned. See [User subclass](../guides/auth/user-subclass.md) and [Shield and policies](../guides/auth/shield-and-policies.md).
 - [ ] `mksine.security.authorize_media` is set per your privacy needs (default: false → public bucket).

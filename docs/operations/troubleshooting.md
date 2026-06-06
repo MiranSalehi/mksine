@@ -101,11 +101,15 @@ The kernel does **not** currently honour `mksine.hooks.log_slow_hooks` or `slow_
 
 **Fix.** Run `php artisan shield:generate --all`, assign roles, and (if you replaced the user model) override `getMorphClass()` so Spatie role rows still resolve.
 
+### Super admin can log in but cannot access resources
+
+**Cause.** Permissions were never generated. `mksine:create-super-admin`, `mksine:fresh-super-admin`, and `shield:super-admin` all assign the super admin role, but the role only receives permission rows that already exist in `permissions` (via `syncPermissions`). Until `shield:generate --all` runs, that set is empty.
+
+**Fix.** Run `php artisan shield:generate --all` after `mksine:install --migrate`; re-run after enabling new plugins or adding new Filament resources. Then re-run `mksine:create-super-admin` only if you need a **new** user — existing super admins pick up new permissions on the role automatically after sync (or log out/in to clear Spatie’s cache).
+
 ### `mksine:fresh-super-admin` succeeds but the user can do nothing
 
-**Cause.** Permissions were never generated. The command creates a user and assigns the configured super admin role, but the role itself has no permissions until `php artisan shield:generate --all` populates `permissions`.
-
-**Fix.** Run `shield:generate --all` after the package is installed; re-run after enabling new plugins or adding new Filament resources.
+Same root cause as above on the **setup** database. Run `shield:generate --all` against that database (or import a dump that already includes generated permissions) before exporting.
 
 ## Themes
 
@@ -253,6 +257,16 @@ The kernel does **not** currently honour `mksine.hooks.log_slow_hooks` or `slow_
 - Plugin only: `php artisan mks-plugin:migrate {id}`. Runs only the migrations under `{plugin_root}/{id}/database/migrations/`.
 - Full app: `php artisan migrate`.
 - Rollback per-plugin is not supported. Roll back full migrations or write your own down-migration.
+
+## Geo
+
+| Symptom | Diagnose | Fix |
+|---------|----------|-----|
+| Checkout or admin address forms have no states/cities | `geo_states` / `geo_cities` empty for the enabled country | Run `php artisan mks:geo:import`. Cities need the MySQL `locations` database — see [Import and migration](../guides/geo/import-and-migration.md). |
+| `mks:geo:import` fails on countries or states | Server has no outbound HTTP to GitHub raw (dr5hn) | Open firewall/proxy; or import countries/states manually then run `--only=cities`. |
+| Cities phase skipped in import output | Log mentions locations DB unreachable | Provision MySQL `locations` with table `csv-cities`, or pass `--locations-database` / `--locations-table`. |
+| Legacy address FKs still null after upgrade | `mks_ecom_iran_*` tables still exist | Run `mks:geo:import` first, then `php artisan mks:geo:migrate-legacy-iran`. |
+| Country dropdown shows every country | `geo_enabled_countries` is empty in settings | Intentional (empty = all active countries). Restrict ISO2 codes under **System → Settings → Geo**. |
 
 ## See also
 

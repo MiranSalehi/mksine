@@ -47,7 +47,8 @@ class SpacerComponent extends BaseBuilderComponent
                 ])
                 ->default('md')
                 ->required()
-                ->native(false),
+                ->native(false)
+                ->position('bottom'),
         ];
     }
 

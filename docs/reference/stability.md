@@ -57,8 +57,10 @@ Implementations of these interfaces are how third-party code extends MKSine.
 | `Miran\Mksine\Core\Hooks\SettingsTabManager` | container singleton | Add tabs on the Settings page |
 | `Miran\Mksine\Core\PageBuilder\ComponentRegistry` | container singleton | Register page builder block types |
 | `Miran\Mksine\Core\Theme\ThemeManager` | container singleton | Theme discovery, activation, view namespacing, asset publish |
+| `Miran\Mksine\Services\Geo\StoreGeoSettings` | container singleton | Enabled countries, default country, address levels (`geo_*` / legacy `ecom_*`) |
+| `Miran\Mksine\Services\Geo\GeoResolver` | `GeoResolver::make()` | Query countries/states/cities, `displayName()`, select helpers |
 
-Full method tables: see [facades-and-managers.md](facades-and-managers.md).
+Full method tables: see [facades-and-managers.md](facades-and-managers.md). Geo overview: [Global geo system](../guides/geo/overview.md).
 
 ## Public Artisan commands
 
@@ -70,11 +72,14 @@ The signatures are stable across minor releases. Adding new options is non-break
 | Themes | `mks:make-theme`, `mks:theme-publish`, `mks:theme-publish-lang` | [commands.md#themes](commands.md#themes) |
 | Hooks | `mks:discover` | [commands.md#hooks](commands.md#hooks) |
 | Release | `mks:release-archive` | [commands.md#release](commands.md#release) |
-| Package install / info | `mksine:install`, `mksine:info`, `mksine:artisan`, `mksine:fresh-super-admin` | [commands.md#package](commands.md#package) |
+| Package install / info | `mksine:install`, `mksine:info`, `mksine:artisan`, `mksine:create-super-admin`, `mksine:fresh-super-admin` | [commands.md#package](commands.md#package) |
+| Geo | `mks:geo:import`, `mks:geo:migrate-legacy-iran` | [commands.md#geo-commands](commands.md#geo-commands) |
 
 ## Public configuration keys
 
 Every key in [`config/mksine.php`](../../config/mksine.php) is public; defaults may change in minor releases when documented in the [Upgrade guide](../meta/upgrade-guide.md). Full table: [configuration.md](configuration.md).
+
+Geo preferences (`geo_enabled_countries`, `geo_default_country`, `geo_address_levels`, and legacy `ecom_*` fallbacks) are stored in the **`settings`** table via `mks_setting()`, not in `config/mksine.php`. See [configuration.md#settings-table-keys-geo](configuration.md#settings-table-keys-geo).
 
 ## Explicitly **not** public
 
@@ -85,7 +90,7 @@ These are internal even though they live in `src/`:
 - `Miran\Mksine\Core\Plugins\Publishing\PluginVendorPublishRunner` — used by per-plugin publish-vendor commands; helper API but no semver guarantee yet (will be promoted once stable, see [Upgrade guide](../meta/upgrade-guide.md)).
 - `Miran\Mksine\Core\Hooks\HookDispatcher`, `HookCacheStore`, all listener discovery internals.
 - Everything under `Miran\Mksine\Filament\` (resources, pages, livewire components). Customize via hooks, not by extending these classes.
-- Everything under `Miran\Mksine\Models\` is **public** when used as Eloquent models from your code, but their **migrations and column shapes** are internal — use Eloquent attributes/relations rather than raw queries against MKSine tables.
+- Everything under `Miran\Mksine\Models\` is **public** when used as Eloquent models from your code, but their **migrations and column shapes** are internal — use Eloquent attributes/relations rather than raw queries against MKSine tables. Geo catalogue models (`GeoCountry`, `GeoState`, `GeoCity`) follow the same rule.
 
 ## Deprecation policy
 

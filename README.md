@@ -17,6 +17,7 @@ The full sidebar lives in [`docs/_nav.yml`](docs/_nav.yml). Quick links:
 | Plugin guides | [Plugin golden path](docs/guides/plugins/golden-path.md) |
 | Hook guides | [Two families overview](docs/guides/hooks/overview-two-families.md) |
 | Theme guides | [Creating a theme](docs/guides/themes/creating-a-theme.md) |
+| Geo | [Global geo system](docs/guides/geo/overview.md) |
 | Reference | [Commands](docs/reference/commands.md), [Configuration](docs/reference/configuration.md), [Contracts](docs/reference/contracts.md), [API stability](docs/reference/stability.md) |
 | Operations | [Deployment and hosting](docs/operations/deployment-hosting.md), [Troubleshooting](docs/operations/troubleshooting.md), [Validation checklist](docs/operations/validation-checklist.md) |
 | Project meta | [Versioning](docs/meta/versioning.md), [Upgrade guide](docs/meta/upgrade-guide.md), [SLO](docs/meta/slo.md) |
@@ -27,7 +28,7 @@ The full sidebar lives in [`docs/_nav.yml`](docs/_nav.yml). Quick links:
 
 ## Features (summary)
 
-- Plugin system (`mks-plugin:*`), hook system (`mks:discover`), themes, page builder, menus, media, settings, Filament Shield permissions.
+- Plugin system (`mks-plugin:*`), hook system (`mks:discover`), themes, page builder, menus, media, settings, global geo (countries/states/cities, `mks:geo:import`), Filament Shield permissions.
 
 ## Requirements
 
@@ -40,6 +41,8 @@ The full sidebar lives in [`docs/_nav.yml`](docs/_nav.yml). Quick links:
 ```bash
 composer require miran/mksine
 php artisan mksine:install --migrate
+php artisan shield:generate --all
+php artisan mksine:create-super-admin
 ```
 
 Then register the Filament plugin:

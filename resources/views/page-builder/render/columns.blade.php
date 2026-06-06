@@ -150,7 +150,7 @@
     }
 @endphp
 
-<div class="grid {{ $gridColsClass }} {{ $gapClass }} {{ $alignmentClass }} mb-6">
+<div class="grid {{ $gridColsClass }} {{ $gapClass }} {{ $alignmentClass }}">
     @foreach ($childBuckets as $colIndex => $column)
         <div class="{{ $cellSpanClasses[$colIndex] ?? 'min-w-0' }}">
             @if (! empty($column['items']))

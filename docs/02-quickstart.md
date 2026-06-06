@@ -108,4 +108,5 @@ Output lands at `public/plugins/notes/`. Commit that directory if production has
 
 - Real-world plugin: [Plugin golden path](guides/plugins/golden-path.md).
 - Add a hook listener: [Hook overview](guides/hooks/overview-two-families.md).
+- Store addresses / checkout geo (ecom and similar): [Global geo system](guides/geo/overview.md) → **`mks:geo:import`**.
 - Production deploy concerns: [Operations: Deployment](operations/deployment-hosting.md).

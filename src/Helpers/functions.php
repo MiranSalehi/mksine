@@ -261,6 +261,43 @@ if (! function_exists('theme_add_action')) {
     }
 }
 
+if (! function_exists('mks_date_calendar')) {
+    /**
+     * Active display calendar: {@see \Miran\Mksine\Support\MksDateFormatter::GREGORIAN} or {@see \Miran\Mksine\Support\MksDateFormatter::SHAMSI}.
+     */
+    function mks_date_calendar(): string
+    {
+        return \Miran\Mksine\Support\MksDateFormatter::calendar();
+    }
+}
+
+if (! function_exists('mks_is_shamsi_calendar')) {
+    function mks_is_shamsi_calendar(): bool
+    {
+        return \Miran\Mksine\Support\MksDateFormatter::isShamsi();
+    }
+}
+
+if (! function_exists('mks_format_date')) {
+    function mks_format_date(
+        \DateTimeInterface|string|null $date,
+        ?string $format = null,
+        ?string $timezone = null,
+    ): ?string {
+        return \Miran\Mksine\Support\MksDateFormatter::formatDate($date, $format, $timezone);
+    }
+}
+
+if (! function_exists('mks_format_datetime')) {
+    function mks_format_datetime(
+        \DateTimeInterface|string|null $date,
+        ?string $format = null,
+        ?string $timezone = null,
+    ): ?string {
+        return \Miran\Mksine\Support\MksDateFormatter::formatDateTime($date, $format, $timezone);
+    }
+}
+
 if (! function_exists('theme_do_action')) {
     /**
      * Fire a theme template hook: run all callbacks registered with theme_add_action($hook).

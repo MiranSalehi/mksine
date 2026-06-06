@@ -90,6 +90,8 @@ composer require miran/mksine
 
 ```bash
 php artisan mksine:install --migrate
+php artisan shield:generate --all
+php artisan mksine:create-super-admin
 ```
 
 Or manually:

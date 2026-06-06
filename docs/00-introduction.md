@@ -13,6 +13,7 @@ order: 0
 - A **theme system** with view namespacing, layouts, and asset publishing — see [Theme concepts](concepts/themes.md).
 - A **page builder** with typed component registration — see [Page builder concepts](concepts/page-builder.md).
 - Filament-integrated **menus**, **media library**, **settings**, **permissions** (via Filament Shield), and **localization**.
+- A **global geo catalogue** (countries, states, cities), store-wide geo settings, HTTP `/api/geo/*`, and import commands — see [Global geo system](guides/geo/overview.md).
 
 These docs are the **canonical**, **package-portable** reference. They ship inside the package directory so consumers who only have the Composer installation read the same source as monorepo developers.
 
@@ -39,6 +40,7 @@ Out of scope:
 | Understand the moving parts before writing code | [Concepts: Architecture](concepts/architecture.md) |
 | Build a plugin end to end | [Plugin golden path](guides/plugins/golden-path.md) |
 | Ship a hook listener | [Hook overview](guides/hooks/overview-two-families.md) |
+| Set up multi-country addresses / checkout geo | [Global geo system](guides/geo/overview.md) |
 | Look up an Artisan command or config key | [Commands](reference/commands.md), [Configuration](reference/configuration.md) |
 | Diagnose a 404 or panel issue in production | [Operations: Troubleshooting](operations/troubleshooting.md) |
 

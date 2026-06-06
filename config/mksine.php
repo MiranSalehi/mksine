@@ -97,6 +97,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | CKEditor (rich text) — language / direction
+    |--------------------------------------------------------------------------
+    |
+    | CKEditor uses language.ui and language.content for UI strings and for the
+    | editable region’s text direction (e.g. fa → RTL). When null, the active
+    | application locale is used. Override when the panel is English but authors
+    | write Persian: set content_language to fa.
+    |
+    */
+    'ckeditor' => [
+        'ui_language' => env('MKS_CMS_CKEDITOR_UI_LANGUAGE'),
+        'content_language' => env('MKS_CMS_CKEDITOR_CONTENT_LANGUAGE'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Plugins Directory
     |--------------------------------------------------------------------------
     |
@@ -567,5 +583,39 @@ return [
 
         // Rate limiting (requests per minute)
         'rate_limit' => env('MKS_CMS_API_RATE_LIMIT', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin console terminal (Filament)
+    |--------------------------------------------------------------------------
+    */
+    /*
+    |--------------------------------------------------------------------------
+    | Release archive (mks:release-archive)
+    |--------------------------------------------------------------------------
+    |
+    | Theme/plugin trees are excluded by default. List project theme source paths
+    | that must be in the zip (required when composer.json autoloads Themes\* from them).
+    |
+    */
+    'release_archive' => [
+        'include_theme_paths' => [],
+    ],
+
+    'console_terminal' => [
+        'php_binary' => env('MKS_CONSOLE_PHP_BINARY'),
+        'api_prefix' => env('MKS_CONSOLE_TERMINAL_API_PREFIX', 'admin/mksine/console'),
+        'timeout_seconds' => (int) env('MKS_CONSOLE_TERMINAL_TIMEOUT', 300),
+        'max_output_bytes' => (int) env('MKS_CONSOLE_TERMINAL_MAX_OUTPUT', 512_000),
+        'stream_max_seconds' => (int) env('MKS_CONSOLE_TERMINAL_STREAM_MAX_SECONDS', 86_400),
+        'default_output_height_px' => (int) env('MKS_CONSOLE_TERMINAL_HEIGHT', 500),
+        'max_output_height_px' => (int) env('MKS_CONSOLE_TERMINAL_MAX_HEIGHT', 900),
+        'status_poll_interval_ms' => (int) env('MKS_CONSOLE_TERMINAL_POLL_MS', 2000),
+        'daemon_presets' => [
+            ['label' => 'queue:work', 'command' => 'php artisan queue:work --tries=3'],
+            ['label' => 'schedule:work', 'command' => 'php artisan schedule:work'],
+            ['label' => 'queue:work (once)', 'command' => 'php artisan queue:work --once'],
+        ],
     ],
 ];

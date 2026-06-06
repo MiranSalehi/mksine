@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Listeners\Categories;
 
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
 
 /**
- * Example class that extends the Category table with additional columns.
- * This listener will be automatically discovered by mks:discover command.
+ * Example hook for `category.table` (core categories and Ecom product categories).
+ *
+ * Only mark columns searchable or sortable when they exist on the model table; otherwise
+ * Filament global search will fail with “unknown column” SQL errors.
  */
 class ExtendCategoryTableListener implements TableHookListenerInterface
 {
@@ -41,19 +42,10 @@ class ExtendCategoryTableListener implements TableHookListenerInterface
      */
     public static function extend(Table $table): Table
     {
-        // Get existing columns
         $existingColumns = method_exists($table, 'getColumns')
             ? $table->getColumns()
             : [];
 
-        // Add new column to existing columns
-        return $table->columns([
-            ...$existingColumns,
-            TextColumn::make('custom_field')
-                ->label('Custom Field')
-                ->searchable()
-                ->sortable()
-                ->toggleable(),
-        ]);
+        return $table->columns([...$existingColumns]);
     }
 }

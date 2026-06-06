@@ -12,7 +12,7 @@ Run every command from the **Laravel application root** (the directory containin
 
 ## 0. Preconditions
 
-- `miran/mksine` is installed (run [`mksine:install`](../../reference/commands.md#mksineinstall)) and `php artisan migrate` has created `mks_plugins`, `mks_hooks`, etc.
+- `miran/mksine` is installed (run [`mksine:install --migrate`](../../reference/commands.md#mksineinstall)), `shield:generate --all` has run, and a super admin exists (`mksine:create-super-admin` or equivalent). Tables `mks_plugins`, `mks_hooks`, `permissions`, etc. must exist.
 - The Filament admin panel boots and you have a Super Admin (Shield).
 - `mksine.features.plugin_system` is `true` (the default).
 

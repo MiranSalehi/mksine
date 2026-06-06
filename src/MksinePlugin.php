@@ -37,10 +37,13 @@ class MksinePlugin implements Plugin
         // Register core MKS CMS resources and pages
         $panel
             ->discoverResources(__DIR__ . '/Filament/Resources', 'Miran\\Mksine\\Filament\\Resources')
+            ->discoverClusters(__DIR__ . '/Filament/Clusters', 'Miran\\Mksine\\Filament\\Clusters')
             ->discoverPages(__DIR__ . '/Filament/Pages', 'Miran\\Mksine\\Filament\\Pages');
 
         // Discover and register active plugin Filament components
         $this->discoverPluginFilamentComponents($panel);
+
+        $this->discoverActiveThemeFilamentComponents($panel);
 
         // Optional: Filament panel plugins from active CMS plugins (e.g. Activitylog) — not app panel code.
         $this->registerPluginFilamentPlugins($panel);
@@ -178,6 +181,37 @@ class MksinePlugin implements Plugin
         } catch (\Throwable $e) {
             // Log error but don't crash - plugin discovery is not critical for core functionality
             Log::warning('Failed to discover plugin Filament components: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Discover Filament pages (and future resources/widgets) from the active theme's php/ tree.
+     */
+    protected function discoverActiveThemeFilamentComponents(Panel $panel): void
+    {
+        try {
+            if (! $this->isDatabaseReady()) {
+                return;
+            }
+
+            $theme = theme_manager()->getActive();
+            if ($theme === null) {
+                return;
+            }
+
+            $pagesPath = $theme->path.'/php/Filament/Pages';
+            $pagesNamespace = 'Themes\\'.str_replace(['-', ' '], '', ucwords(str_replace('-', ' ', $theme->identifier))).'\\Filament\\Pages';
+
+            if (is_dir($pagesPath)) {
+                $panel->discoverPages($pagesPath, $pagesNamespace);
+                Log::debug('Discovered Filament pages for active theme', [
+                    'theme' => $theme->identifier,
+                    'path' => $pagesPath,
+                    'namespace' => $pagesNamespace,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to discover theme Filament components: '.$e->getMessage());
         }
     }
 

@@ -25,7 +25,7 @@ If you develop the package as a path repository inside a monorepo, declare it in
 
 ## 2. Publish package files and run migrations
 
-The packaged installer publishes the config, migrations, fonts, and translations in one step:
+The packaged installer publishes MKSine assets, **Filament Shield / Spatie Permission** config and migrations (roles & permissions tables), and optionally runs `migrate` in one step:
 
 ```bash
 php artisan mksine:install --migrate
@@ -38,10 +38,26 @@ php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag
 php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-migrations"
 php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-lang"
 php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-fonts"
+php artisan vendor:publish --tag="filament-shield-config"
+php artisan vendor:publish --tag="permission-config"
+php artisan vendor:publish --tag="permission-migrations"
 php artisan migrate
 ```
 
 The installer also publishes a `User` model into `app/Models/User.php` if your app does not already have one configured for MKSine. See [Auth: User subclass](guides/auth/user-subclass.md) before you change the user class.
+
+## 2b. Shield permissions and super admin
+
+`mksine:install` does **not** generate Filament permissions or policies. After migrate, run:
+
+```bash
+php artisan shield:generate --all
+php artisan mksine:create-super-admin
+```
+
+`mksine:create-super-admin` creates a user on your app database, ensures the `super_admin` role exists, syncs all permission rows onto that role, and assigns it to the user. For an interactive Shield setup (panel plugin registration, optional tenancy), you can still use `php artisan shield:setup` instead of the two commands above.
+
+For a **portable empty database** (CI, greenfield export) use [`mksine:fresh-super-admin`](reference/commands.md#mksinefresh-super-admin) against the isolated `mksine_setup` connection — not the same as `mksine:create-super-admin`. See [Shield and policies](guides/auth/shield-and-policies.md).
 
 ## 3. Register the Filament plugin
 
@@ -96,6 +112,7 @@ If your application or its plugins ship listeners outside the package’s `Core/
 |------|------------------|
 | Config | [`packages/mksine/config/mksine.php`](../config/mksine.php) → published to `config/mksine.php` |
 | Migrations | `packages/mksine/database/migrations/` → published to `database/migrations/` |
+| Shield / permissions | `filament-shield-config`, `permission-config`, `permission-migrations` → `config/filament-shield.php`, `config/permission.php`, `database/migrations/*_create_permission_tables.php` |
 | Translations | `packages/mksine/resources/lang/` → published to `lang/vendor/mksine/` |
 | Fonts | `packages/mksine/resources/fonts/` → published to `public/vendor/mksine/fonts/` |
 | Filament plugin | `Miran\Mksine\MksinePlugin` (this is what you `make()` in your panel provider) |
@@ -117,6 +134,18 @@ Set `MKS_CMS_USER_MODEL` (or edit `config/mksine.php` → `user_model`) to a cla
 ```
 
 Equivalent env keys: `MKS_CMS_THEME_MANAGEMENT`, `MKS_CMS_PAGE_BUILDER`. Full table in [Configuration](reference/configuration.md).
+
+## Optional: global geo data
+
+Required when a plugin (for example **ecom**) uses multi-country addresses or checkout geo selects. Pure CMS installs can skip this.
+
+```bash
+php artisan mks:geo:import          # needs outbound HTTP; cities need a MySQL locations DB
+```
+
+Then open **System → Settings → Geo** and choose enabled countries and the default country.
+
+See [Global geo system](guides/geo/overview.md) and [Import and migration](guides/geo/import-and-migration.md).
 
 ## Next steps
 

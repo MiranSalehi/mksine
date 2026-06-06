@@ -75,6 +75,11 @@ sidebar:
       - { title: Locations, path: guides/menus/locations.md }
       - { title: Item sources, path: guides/menus/item-sources.md }
 
+  - section: Geo
+    items:
+      - { title: Global geo system, path: guides/geo/overview.md }
+      - { title: Import and legacy migration, path: guides/geo/import-and-migration.md }
+
   - section: Media, settings, localization, auth
     items:
       - { title: Media library, path: guides/media/library.md }

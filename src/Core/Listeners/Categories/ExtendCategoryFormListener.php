@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Listeners\Categories;
 
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 
 /**
- * Example class that extends the Category form with additional fields.
- * This listener will be automatically discovered by mks:discover command.
+ * Example hook for `category.form` (core categories and Ecom product categories).
  */
 class ExtendCategoryFormListener implements FormHookListenerInterface
 {
@@ -42,22 +39,10 @@ class ExtendCategoryFormListener implements FormHookListenerInterface
      */
     public static function extend(Schema $schema): Schema
     {
-        // Get existing components
         $existingComponents = method_exists($schema, 'getComponents')
             ? $schema->getComponents()
             : [];
 
-        // Add new section to existing components
-        return $schema->components([
-            ...$existingComponents,
-            Section::make('Custom Fields')
-                ->schema([
-                    TextInput::make('custom_field')
-                        ->label('Custom Field')
-                        ->maxLength(255),
-                ])
-                ->collapsible()
-                ->collapsed(),
-        ]);
+        return $schema->components([...$existingComponents]);
     }
 }

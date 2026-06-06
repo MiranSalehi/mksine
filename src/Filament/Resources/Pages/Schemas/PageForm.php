@@ -6,6 +6,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookManager;
@@ -89,6 +90,36 @@ class PageForm
                             ->label(__('mksine::page_builder.field_label'))
                             ->columnSpanFull(),
                     ])
+                    ->visible(static function ($get, ?Page $record): bool {
+                        if ($get('type') !== 'builder') {
+                            return false;
+                        }
+
+                        if (config('mksine.features.page_builder', false)) {
+                            return true;
+                        }
+
+                        return $record instanceof Page && $record->getAttribute('type') === 'builder';
+                    }),
+                Section::make(__('mksine::pages.builder_display'))
+                    ->columnSpanFull()
+                    ->schema([
+                        Toggle::make('show_page_header')
+                            ->label(__('mksine::pages.show_page_header'))
+                            ->helperText(__('mksine::pages.show_page_header_helper'))
+                            ->default(false)
+                            ->inline(false),
+                        Select::make('builder_content_width')
+                            ->label(__('mksine::pages.builder_content_width'))
+                            ->options([
+                                'contained' => __('mksine::pages.builder_content_width_contained'),
+                                'full' => __('mksine::pages.builder_content_width_full'),
+                            ])
+                            ->default('full')
+                            ->native(false)
+                            ->required(),
+                    ])
+                    ->columns(2)
                     ->visible(static function ($get, ?Page $record): bool {
                         if ($get('type') !== 'builder') {
                             return false;

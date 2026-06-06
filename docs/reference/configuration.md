@@ -232,6 +232,21 @@ Whenever you change config or code that the package caches, run the matching com
 | Hook listener classes / `hooks.discovery_paths` | `php artisan mks:discover` |
 | Theme files added/removed | `php artisan mks:theme-publish` (and clear theme cache via `ThemeManager::clearCache()` programmatically if needed) |
 
+## Settings table keys (geo)
+
+Geo store preferences are **not** in `config/mksine.php`. They are persisted in the `settings` table and read via `mks_setting()`. Admin UI: **System → Settings → Geo** (`SettingsGeoPage` — core-owned, not registered through `SettingsTabManager`).
+
+| Key | Type | Consumer | Notes |
+|-----|------|----------|-------|
+| `geo_enabled_countries` | JSON array of ISO2 | `StoreGeoSettings` | Empty = all active rows in `geo_countries` |
+| `geo_default_country` | ISO2 string | `StoreGeoSettings` | Falls back to first enabled country when unset |
+| `geo_address_levels` | JSON map `ISO2 → { show_state, show_city }` | `StoreGeoSettings` | Controls state/city selects per country |
+| `ecom_enabled_countries` | legacy | `StoreGeoSettings` (fallback read) | Used when `geo_enabled_countries` is absent |
+| `ecom_default_checkout_country` | legacy | `StoreGeoSettings` (fallback read) | Used when `geo_default_country` is absent |
+| `ecom_address_levels` | legacy | `StoreGeoSettings` (fallback read) | Used when `geo_address_levels` is absent |
+
+Constants on [`StoreGeoSettings`](../../src/Services/Geo/StoreGeoSettings.php) mirror the `geo_*` key names. Full behaviour: [Global geo system](../guides/geo/overview.md).
+
 ## See also
 
 - [Commands reference](commands.md) — what each command actually consumes from these keys.

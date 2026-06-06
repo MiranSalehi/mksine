@@ -34,6 +34,7 @@
 }
 
 @import 'tailwindcss' source(none);
+@plugin "@tailwindcss/typography";
 @source '../../src';
 @source '../views';
 @source '../../../../plugins';

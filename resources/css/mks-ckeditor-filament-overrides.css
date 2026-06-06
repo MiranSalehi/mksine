@@ -129,6 +129,16 @@
     border-radius: 0 0 var(--ck-border-radius) var(--ck-border-radius) !important;
     box-shadow: none !important;
     background: var(--ck-color-base-background) !important;
+    /* Arabic script + Latin: Tahoma is a reliable Persian fallback on Windows */
+    font-family:
+        ui-sans-serif,
+        system-ui,
+        'Segoe UI',
+        Tahoma,
+        'Arial Unicode MS',
+        sans-serif;
+    text-align: start;
+    word-break: break-word;
 }
 
 .ckeditor-field-wrapper .ck.ck-editor__editable.ck-focused {

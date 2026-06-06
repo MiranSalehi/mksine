@@ -26,6 +26,11 @@ class ThemeActionManager
         $this->actions[$hook][] = ['priority' => $priority, 'callable' => $callback];
     }
 
+    public function hasAction(string $hook): bool
+    {
+        return ($this->actions[$hook] ?? []) !== [];
+    }
+
     /**
      * Run all callbacks registered for the hook. Output is concatenated and returned (and optionally echoed).
      *

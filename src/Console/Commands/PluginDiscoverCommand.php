@@ -9,23 +9,17 @@ use Miran\Mksine\Core\Plugins\PluginManager;
 
 class PluginDiscoverCommand extends Command
 {
-    protected $signature = 'mks-plugin:discover {--clear : Clear cache before discovery}';
+    protected $signature = 'mks-plugin:discover';
 
-    protected $description = 'Discover and cache all MKS CMS plugins';
+    protected $description = 'Discover and cache all MKS CMS plugins (always clears discovery cache first)';
 
     public function handle(PluginManager $pluginManager): int
     {
         $this->info('🔍 Discovering plugins...');
         $this->newLine();
 
-        $clearCache = $this->option('clear');
-
-        if ($clearCache) {
-            $this->line('Clearing plugin cache...');
-            $pluginManager->clearCache();
-        }
-
-        $manifests = $pluginManager->discover($clearCache);
+        $this->line('Clearing plugin discovery cache…');
+        $manifests = $pluginManager->discover(clearCache: true);
 
         if (empty($manifests)) {
             $this->warn('No plugins discovered.');

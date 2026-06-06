@@ -6,6 +6,9 @@
     $isDisabled = $isDisabled();
     $uploadUrl = $getUploadUrl();
     $editorId = str_replace(['.', '[', ']'], ['-', '-', ''], $statePath);
+    $editorUiLanguage = $field->getEditorUiLanguage();
+    $editorContentLanguage = $field->getEditorContentLanguage();
+    $editorContentRtl = $field->isEditorContentRtl();
 @endphp
 
 <x-dynamic-component
@@ -39,7 +42,10 @@
                             placeholder: @js($placeholder),
                             height: @js($height),
                             isDisabled: @js($isDisabled),
-                            uploadUrl: @js($uploadUrl ?: '')
+                            uploadUrl: @js($uploadUrl ?: ''),
+                            uiLanguage: @js($editorUiLanguage),
+                            contentLanguage: @js($editorContentLanguage),
+                            contentRtl: @js($editorContentRtl),
                         };
 
                         const existingInstance = window.ckeditorInstances[key];
@@ -137,6 +143,8 @@
                 <textarea
                     id="ckeditor-{{ $editorId }}"
                     name="{{ $name }}"
+                    dir="{{ $editorContentRtl ? 'rtl' : 'ltr' }}"
+                    lang="{{ $editorContentLanguage }}"
                     x-model="state"
                 ></textarea>
             </div>

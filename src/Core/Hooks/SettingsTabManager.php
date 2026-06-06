@@ -55,6 +55,11 @@ class SettingsTabManager
         ];
     }
 
+    public function hasTabs(): bool
+    {
+        return $this->tabs !== [];
+    }
+
     /**
      * Build tab instances for the Settings page (core tabs are not included).
      *

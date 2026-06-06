@@ -86,6 +86,12 @@ php artisan event:cache
 
 Avoid `route:cache` if any plugin or theme registers routes inside a closure (Laravel cannot serialize closures). Most of MKSine’s admin routes are class-based and route-cache compatible; verify per release in the [Validation checklist](validation-checklist.md).
 
+## Geo data on production servers
+
+After `php artisan migrate`, run **`php artisan mks:geo:import`** on the server (or import geo data in CI before shipping a database dump). Countries and states are fetched over **outbound HTTPS** from the dr5hn dataset; **cities** additionally require a MySQL **`locations`** database (default table `csv-cities`). Without that database, only countries and states are populated — checkout may show empty city dropdowns.
+
+Re-import is **idempotent** (upsert by primary key). See [Geo import and legacy migration](../guides/geo/import-and-migration.md).
+
 ## Related docs
 
 - [Troubleshooting](troubleshooting.md) — short symptom → link here.

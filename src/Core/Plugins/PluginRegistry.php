@@ -275,15 +275,16 @@ final class PluginRegistry
     public function getSummary(): array
     {
         $summary = [];
+        $translator = app(PluginManifestTranslator::class);
 
         foreach ($this->manifests as $pluginId => $manifest) {
             $summary[] = [
                 'id' => $pluginId,
-                'name' => $manifest->name(),
+                'name' => $translator->name($manifest),
                 'version' => $manifest->version(),
                 'status' => $this->getStatus($pluginId),
                 'author' => $manifest->author(),
-                'description' => $manifest->description(),
+                'description' => $translator->description($manifest),
             ];
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Miran\Mksine\Commands;
 
 use Illuminate\Console\Command;
@@ -51,6 +53,8 @@ class MksineInstallCommand extends Command
             '--force' => $this->option('force'),
         ]);
 
+        $this->publishShieldAuthorization();
+
         // Run migrations if requested
         if ($this->option('migrate')) {
             $this->info('🔄 Running migrations...');
@@ -64,12 +68,61 @@ class MksineInstallCommand extends Command
         $this->info('✅ MKSine installed successfully!');
         $this->newLine();
         $this->line('Next steps:');
-        $this->line('  1. Run migrations: <comment>php artisan migrate</comment>');
-        $this->line('  2. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.');
+        if (! $this->option('migrate')) {
+            $this->line('  1. Run migrations: <comment>php artisan migrate</comment>');
+        }
+
+        $this->line('  '.($this->option('migrate') ? '1' : '2').'. Generate Shield permissions: <comment>php artisan shield:generate --all</comment>');
+        $this->line('  '.($this->option('migrate') ? '2' : '3').'. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>');
+        $this->line('  '.($this->option('migrate') ? '3' : '4').'. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.');
         $this->line('     Auth + Shield use <comment>mksine.user_model</comment> unless <comment>MKS_CMS_SYNC_AUTH_USER_MODEL=false</comment>.');
-        $this->line('  3. Check CMS info: <comment>php artisan mksine:info</comment>');
+        $this->line('  '.($this->option('migrate') ? '4' : '5').'. Check CMS info: <comment>php artisan mksine:info</comment>');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Publish Filament Shield and Spatie Permission config + migrations (roles/permissions tables).
+     *
+     * Filament Shield does not ship its own migrations; it relies on spatie/laravel-permission.
+     * Mirrors the non-interactive parts of `php artisan shield:setup`.
+     */
+    protected function publishShieldAuthorization(): void
+    {
+        if (! class_exists(\BezhanSalleh\FilamentShield\FilamentShieldServiceProvider::class)) {
+            $this->warn('🛡 Filament Shield is not installed; skipping Shield/permission publish.');
+
+            return;
+        }
+
+        $force = (bool) $this->option('force');
+
+        $this->info('🛡 Publishing Filament Shield & permission files...');
+
+        if (! File::exists(config_path('filament-shield.php')) || $force) {
+            $this->call('vendor:publish', [
+                '--tag' => 'filament-shield-config',
+                '--force' => $force,
+            ]);
+        } else {
+            $this->line('   ✓ config/filament-shield.php already exists, skipping.');
+        }
+
+        if (! File::exists(config_path('permission.php')) || $force) {
+            $this->call('vendor:publish', [
+                '--tag' => 'permission-config',
+                '--force' => $force,
+            ]);
+        } else {
+            $this->line('   ✓ config/permission.php already exists, skipping.');
+        }
+
+        $this->call('vendor:publish', [
+            '--tag' => 'permission-migrations',
+            '--force' => $force,
+        ]);
+
+        $this->info('   ✓ Shield authorization migrations published.');
     }
 
     /**

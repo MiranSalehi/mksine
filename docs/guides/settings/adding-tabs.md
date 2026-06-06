@@ -9,6 +9,8 @@ The package’s **Settings** page (Filament page at `Miran\Mksine\Filament\Pages
 1. **Core tabs** — `general`, `permalinks`. Hardcoded in the page class.
 2. **Extension tabs** — supplied by `SettingsTabManager`.
 
+The **Geo** tab is a separate core page at **System → Settings → Geo** (`SettingsGeoPage`). It is **not** registered through `SettingsTabManager`. Do not add plugin tabs that reuse `geo_*` keys (`geo_enabled_countries`, `geo_default_country`, `geo_address_levels`) — those are owned by core. See [Global geo system](../geo/overview.md).
+
 Plugins add their own tabs through `SettingsTabManager` without ever touching the page class.
 
 ## How storage works

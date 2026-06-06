@@ -17,6 +17,7 @@ A Laravel + Filament 4 package that turns a fresh Laravel app into a content/CMS
 - A **hook system** for extending forms, tables, page header actions, and reactive events without forking.
 - A **theme system** for the public-facing site, with view/asset/translation overrides per theme.
 - An **opinionated page builder** (opt-in) for block-based page composition.
+- A **global geo subsystem** (`geo_*` tables, `StoreGeoSettings`, `GeoResolver`, `/api/geo/*`) for multi-country addresses — see [Global geo system](../guides/geo/overview.md).
 - Support tooling: menus, settings, localization, deployment archive.
 
 What it deliberately is not:
@@ -46,7 +47,7 @@ What it deliberately is not:
 │  │  miran/mksine (this package)                                │    │
 │  │  ┌──────────────────────────────────────────────────────┐   │    │
 │  │  │ Filament resources & pages (admin UI)                │   │    │
-│  │  │ Page builder, settings, media, menus, languages      │   │    │
+│  │  │ Page builder, settings, geo catalogue, media, menus  │   │    │
 │  │  └──────────────────────────────────────────────────────┘   │    │
 │  │  ┌──────────────────────────────────────────────────────┐   │    │
 │  │  │ Core/                                                │   │    │

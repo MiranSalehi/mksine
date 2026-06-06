@@ -10,7 +10,7 @@ All commands below are registered by `Miran\Mksine\MksineServiceProvider`. Run t
 
 > **Convention.** `{plugin_root}` = `base_path(config('mksine.plugins_path'))`. The default is `plugins/`. See [Introduction](../00-introduction.md#convention-plugin_root).
 
-> **Exit codes.** All commands follow Laravel’s convention: `0` = `Command::SUCCESS`, `1` = `Command::FAILURE`. Anything that prompts (`mks-plugin:uninstall`, `mksine:fresh-super-admin`) returns success after a confirmed cancel.
+> **Exit codes.** All commands follow Laravel’s convention: `0` = `Command::SUCCESS`, `1` = `Command::FAILURE`. Anything that prompts (`mks-plugin:uninstall`, `mksine:fresh-super-admin`, `mksine:create-super-admin` without options) returns success after a confirmed cancel.
 
 ## Conventions used in this page
 
@@ -23,7 +23,7 @@ All commands below are registered by `Miran\Mksine\MksineServiceProvider`. Run t
 
 ## Package commands (host app)
 
-These come from `src/Commands/` and are registered via `Spatie\LaravelPackageTools\PackageServiceProvider::hasInstallCommand()` and `hasCommand()`.
+These come from `src/Commands/` and `src/Console/Commands/`, registered on `Miran\Mksine\MksineServiceProvider`.
 
 ### `mksine:install`
 
@@ -37,7 +37,13 @@ What it does:
 
 1. Copies `Miran\Mksine\Models\User` to `app/Models/User.php` (skips when present unless `--force`). The namespace is rewritten to `App\Models`.
 2. Publishes the package config (`config/mksine.php`), migrations, translations, and fonts under their respective `vendor:publish` tags (`mksine-config`, `mksine-migrations`, `mksine-lang`, `mksine-fonts`).
-3. With `--migrate`, runs `php artisan migrate` afterwards.
+3. Publishes **Filament Shield** and **Spatie Permission** assets when `bezhansalleh/filament-shield` is installed (same non-interactive steps as `shield:setup`):
+   - `filament-shield-config` → `config/filament-shield.php` (skipped if the file already exists, unless `--force`)
+   - `permission-config` → `config/permission.php` (same skip rule)
+   - `permission-migrations` → `database/migrations/*_create_permission_tables.php` (roles, permissions, pivot tables)
+4. With `--migrate`, runs `php artisan migrate` afterwards (MKSine tables **and** permission tables).
+
+Shield does **not** ship its own migrations; it relies on `spatie/laravel-permission`. The installer does **not** run `shield:generate` or create a super admin — do that after install (see below).
 
 Options:
 
@@ -50,6 +56,8 @@ Use it:
 
 ```bash
 php artisan mksine:install --migrate
+php artisan shield:generate --all
+php artisan mksine:create-super-admin
 ```
 
 ### `mksine:info`
@@ -87,6 +95,41 @@ Critical safety properties (verified in code):
 - Credentials are written to `mksine-fresh-super-admin.txt` at the project root. **Add it to `.gitignore`** in your host app.
 
 Use `--force` only in CI/scripts where you have already taken backups.
+
+### `mksine:create-super-admin`
+
+```
+mksine:create-super-admin
+  [--name=]
+  [--email=]
+  [--password=]
+  [--panel=admin]
+  [--tenant=]
+```
+
+Source: [`CreateSuperAdminCommand`](../../src/Console/Commands/CreateSuperAdminCommand.php).
+
+Creates a **new** user on the **application default database**, ensures the configured Shield super admin role exists (`config('filament-shield.super_admin.name')`, default `super_admin`), **syncs every permission** in the database onto that role, and assigns the role to the user.
+
+| Option | Default | Behaviour |
+|--------|---------|-----------|
+| `--name` | prompt | Display name. |
+| `--email` | prompt | Must be unique. |
+| `--password` | prompt | Minimum 8 characters. |
+| `--panel` | `admin` | Filament panel ID (Shield guard context). |
+| `--tenant` | — | Required when Shield teams/tenancy is enabled (`permission.teams`). |
+
+**Prerequisites:** Run `php artisan shield:generate --all` (or equivalent) first so `permissions` rows exist; otherwise the role is created but has nothing to sync.
+
+**Compared to other commands:**
+
+| Command | Database | User |
+|---------|----------|------|
+| `mksine:create-super-admin` | App default | Always creates a new user |
+| `mksine:fresh-super-admin` | Isolated `mksine_setup` only | Creates one user after wipe + migrate |
+| `shield:super-admin` | App default | Creates a user only when no users exist; otherwise promotes an existing user |
+
+Fails when Shield tenancy is enabled and `--tenant` is omitted. Skips when `super_admin.enabled` is false in `config/filament-shield.php`.
 
 ## Plugin commands
 
@@ -270,6 +313,38 @@ Scaffolds one of three widget shapes inside the plugin:
 | `--stats` | Extends `StatsOverviewWidget` with three sample stats. |
 
 `--chart` and `--stats` are mutually exclusive; if both are passed, `--chart` wins.
+
+## Geo commands
+
+### `mks:geo:import`
+
+```
+mks:geo:import
+  [--only=countries|states|cities]
+  [--country=IR]
+  [--locations-database=locations]
+  [--locations-table=csv-cities]
+```
+
+Source: [`GeoImportCommand`](../../src/Console/Commands/GeoImportCommand.php).
+
+Imports or upserts rows into **`geo_countries`**, **`geo_states`**, and **`geo_cities`**. Countries and states are fetched from the dr5hn dataset over HTTP; cities are read from a MySQL **`locations`** database table (defaults: database `locations`, table `csv-cities`).
+
+Requires geo migrations. Idempotent upsert by primary key.
+
+See [Geo import and legacy migration](../guides/geo/import-and-migration.md).
+
+### `mks:geo:migrate-legacy-iran`
+
+```
+mks:geo:migrate-legacy-iran
+```
+
+Source: [`GeoMigrateLegacyIranCommand`](../../src/Console/Commands/GeoMigrateLegacyIranCommand.php).
+
+Maps legacy ecom **`mks_ecom_iran_*`** province/city IDs to **`geo_*` FKs** on customer addresses, shipping method **`geo_scope`**, and shipping zone locations. No-op when legacy tables are already removed.
+
+Run after **`mks:geo:import`** and before dropping Iran legacy tables.
 
 ## Hook commands
 

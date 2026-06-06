@@ -253,7 +253,7 @@ final class PluginUpdater
         // Force fresh discovery so PluginManager sees the new files.
         try {
             app()->forgetInstance(PluginManager::class);
-            Artisan::call('mks-plugin:discover', ['--clear' => true]);
+            Artisan::call('mks-plugin:discover');
             $log->step('discover');
             $steps[] = 'discover';
         } catch (\Throwable $e) {

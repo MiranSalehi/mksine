@@ -20,7 +20,7 @@ class ReleaseArchiveCommand extends Command
     /**
      * @var string
      */
-    protected $description = 'Run npm run build for mksine, themes, plugins, and app root, then zip the project (excluding node_modules, .env files, and most of public/)';
+    protected $description = 'Run npm run build for the mksine package and app root, clear bootstrap cache, then zip the core project (themes/plugins are excluded — install them separately on the server)';
 
     public function handle(): int
     {
@@ -41,7 +41,9 @@ class ReleaseArchiveCommand extends Command
             $this->info('Archive output would be:');
             $this->line('  '.$outputPath);
             $this->newLine();
-            $this->comment('Excludes: node_modules, .git, .env* (keeps .env.example), and public/* except allowlisted paths (build, themes, vendor/mksine, css, js, fonts, plugins, index.php, .htaccess, robots.txt, favicon*).');
+            $this->comment('Before zipping: syncs packages/mksine/database/migrations/*.php → database/migrations/ (mks_console_logs, mks_console_processes, …).');
+            $this->newLine();
+            $this->comment('Excludes: plugins/, themes/, any uploads/ tree, storage/logs, storage/framework/*, storage/app/* (keeps storage .gitignore scaffolds), node_modules, .git, .env* (keeps .env.example), bootstrap/cache/*.php, and public/* except allowlisted paths.');
 
             return self::SUCCESS;
         }
@@ -69,6 +71,14 @@ class ReleaseArchiveCommand extends Command
                     return self::FAILURE;
                 }
             }
+        }
+
+        $this->info('Clearing bootstrap cache…');
+        ReleaseArchiveBuildRoots::clearBootstrapCache($basePath);
+
+        $synced = ReleaseArchiveBuildRoots::syncPackageMigrationsToApp($basePath);
+        if ($synced > 0) {
+            $this->info("Synced {$synced} package migration(s) to database/migrations/.");
         }
 
         $this->info('Creating archive…');

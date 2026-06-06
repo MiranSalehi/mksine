@@ -3,6 +3,9 @@
 namespace Miran\Mksine;
 
 use App\Policies\CategoryPolicy;
+use App\Policies\GeoCityPolicy;
+use App\Policies\GeoCountryPolicy;
+use App\Policies\GeoStatePolicy;
 use App\Policies\CommentPolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\MenuLocationPolicy;
@@ -30,6 +33,9 @@ use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
 use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
+use Miran\Mksine\Console\Commands\GeoImportCommand;
+use Miran\Mksine\Console\Commands\GeoMigrateLegacyIranCommand;
+use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\PluginActivateCommand;
 use Miran\Mksine\Console\Commands\PluginDeactivateCommand;
@@ -45,6 +51,7 @@ use Miran\Mksine\Console\Commands\PluginMigrateCommand;
 use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
+use Miran\Mksine\Console\Commands\ConsoleRunDetachedCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
 use Miran\Mksine\Console\Commands\RollbackCoreCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
@@ -106,6 +113,7 @@ use Miran\Mksine\Core\PageBuilder\Templates\MksineDefaultHomeTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Plugins\PluginManifestTranslator;
 use Miran\Mksine\Core\Theme\ThemeActionManager;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
@@ -128,13 +136,16 @@ use Miran\Mksine\Livewire\MediaPickerModal;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Comment;
 use Miran\Mksine\Models\Media;
+use Miran\Mksine\Models\GeoCity;
+use Miran\Mksine\Models\GeoCountry;
+use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
 use Miran\Mksine\Services\MenuService;
+use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
 use Miran\Mksine\Testing\TestsMksine;
-use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\Permission\Models\Role;
@@ -154,13 +165,6 @@ class MksineServiceProvider extends PackageServiceProvider
          */
         $package->name(static::$name)
             ->hasCommands($this->getCommands())
-            ->hasInstallCommand(function (InstallCommand $command) {
-                $command
-                    ->publishConfigFile()
-                    ->publishMigrations()
-                    ->askToRunMigrations()
-                    ->askToStarRepoOnGitHub('miransalehi/mksine');
-            })
             ->hasRoutes('web');
 
         $configFileName = $package->shortName();
@@ -183,6 +187,10 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(AdminConsoleProcessManager::class, function (): AdminConsoleProcessManager {
+            return new AdminConsoleProcessManager(base_path());
+        });
+
         require_once __DIR__.'/Helpers/functions.php';
 
         $this->app->extend('translation.loader', function (FileLoader $loader, $app) {
@@ -258,6 +266,10 @@ class MksineServiceProvider extends PackageServiceProvider
             return new PluginManager;
         });
 
+        $this->app->singleton(PluginManifestTranslator::class, function ($app) {
+            return new PluginManifestTranslator($app->make('translation.loader'));
+        });
+
         // Register MenuItemSourceManager as singleton
         // Register MenuItemSourceManager as singleton
         $this->app->singleton(MenuItemSourceManager::class, function () {
@@ -278,6 +290,9 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->app->singleton(MenuService::class, function () {
             return new MenuService;
         });
+
+        $this->app->singleton(\Miran\Mksine\Services\Geo\StoreGeoSettings::class);
+        $this->app->singleton(\Miran\Mksine\Services\Geo\GeoResolver::class);
 
         // Register ThemeManager as singleton
         $this->app->singleton(ThemeManager::class, function () {
@@ -376,6 +391,8 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        \Miran\Mksine\Filament\Support\MksFilamentDateMacros::register();
+
         $this->syncAuthUserModelWithMksineConfig();
 
         // mksine:: lines: Spatie bootPackageTranslations() registers the package path; MksineFileLoader
@@ -396,6 +413,16 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         $this->registerModelPolicies();
+
+        $consoleTerminalRoutes = __DIR__.'/../routes/console-terminal.php';
+        if (file_exists($consoleTerminalRoutes)) {
+            require $consoleTerminalRoutes;
+        }
+
+        $geoRoutes = __DIR__.'/../routes/geo.php';
+        if (file_exists($geoRoutes)) {
+            require $geoRoutes;
+        }
 
         // Asset Registration
         FilamentAsset::register(
@@ -516,6 +543,9 @@ class MksineServiceProvider extends PackageServiceProvider
             Page::class => PagePolicy::class,
             Post::class => PostPolicy::class,
             Role::class => RolePolicy::class,
+            GeoCountry::class => GeoCountryPolicy::class,
+            GeoState::class => GeoStatePolicy::class,
+            GeoCity::class => GeoCityPolicy::class,
         ];
 
         foreach ($bindings as $model => $policy) {
@@ -641,6 +671,11 @@ class MksineServiceProvider extends PackageServiceProvider
             $assets[] = Js::make('mksine-scripts', $jsPath);
         }
 
+        $consoleTerminalJs = __DIR__.'/../resources/js/admin-console-terminal.js';
+        if (file_exists($consoleTerminalJs)) {
+            $assets[] = Js::make('mksine-console-terminal', $consoleTerminalJs);
+        }
+
         return $assets;
     }
 
@@ -654,6 +689,8 @@ class MksineServiceProvider extends PackageServiceProvider
             ArtisanCommand::class,
             MksineInstallCommand::class,
             DiscoverHooksCommand::class,
+            GeoImportCommand::class,
+            GeoMigrateLegacyIranCommand::class,
             // Plugin commands
             PluginListCommand::class,
             PluginInstallCommand::class,
@@ -681,6 +718,8 @@ class MksineServiceProvider extends PackageServiceProvider
             RollbackThemeCommand::class,
             RollbackCoreCommand::class,
             ReleaseArchiveCommand::class,
+            ConsoleRunDetachedCommand::class,
+            CreateSuperAdminCommand::class,
             FreshSuperAdminCommand::class,
         ];
     }

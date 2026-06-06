@@ -277,6 +277,14 @@ Notes:
 
 See [Theme guides](../guides/themes/creating-a-theme.md).
 
+### `StoreGeoSettings` and `GeoResolver`
+
+[`StoreGeoSettings`](../../src/Services/Geo/StoreGeoSettings.php) (singleton) reads geo preferences from `mks_setting()` (`geo_enabled_countries`, `geo_default_country`, `geo_address_levels` with legacy `ecom_*` fallback).
+
+[`GeoResolver`](../../src/Services/Geo/GeoResolver.php) (container-resolved) queries enabled countries/states/cities and formats display names. Use `GeoResolver::make()` in application code.
+
+See [Global geo system](../guides/geo/overview.md).
+
 ## See also
 
 - [Contracts](contracts.md) — interfaces these managers consume.

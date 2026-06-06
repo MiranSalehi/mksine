@@ -1,5 +1,5 @@
 <form wire:submit="save">
-    <div class="px-1 py-1">
+    <div class="mksine-block-editor-form px-1 py-1 pb-2">
         {{ $this->form }}
     </div>
 

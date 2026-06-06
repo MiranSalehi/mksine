@@ -565,6 +565,54 @@ class ManagePlugins extends Page
         };
     }
 
+    /**
+     * @return array{total: int, active: int, inactive: int, attention: int}
+     */
+    public function getPluginStats(): array
+    {
+        $collection = collect($this->plugins);
+
+        return [
+            'total' => $collection->count(),
+            'active' => $collection->where('status', 'active')->count(),
+            'inactive' => $collection->whereIn('status', ['inactive', 'installed', 'not_installed'])->count(),
+            'attention' => $collection->where('status', 'boot_failed')->count(),
+        ];
+    }
+
+    public function getStatusBadgeClasses(string $status): string
+    {
+        return match ($status) {
+            'active' => 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30',
+            'inactive' => 'bg-amber-500/10 text-amber-800 ring-amber-500/25 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/30',
+            'installed' => 'bg-blue-500/10 text-blue-800 ring-blue-500/25 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-400/30',
+            'boot_failed' => 'bg-danger-500/10 text-danger-700 ring-danger-500/25 dark:bg-danger-500/15 dark:text-danger-300 dark:ring-danger-400/30',
+            default => 'bg-gray-500/10 text-gray-700 ring-gray-500/20 dark:bg-gray-500/15 dark:text-gray-300 dark:ring-gray-400/25',
+        };
+    }
+
+    public function getStatusDotClasses(string $status): string
+    {
+        return match ($status) {
+            'active' => 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.25)]',
+            'inactive' => 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.25)]',
+            'installed' => 'bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.25)]',
+            'boot_failed' => 'bg-danger-500 shadow-[0_0_0_3px_rgba(239,68,68,0.25)]',
+            default => 'bg-gray-400 shadow-[0_0_0_3px_rgba(156,163,175,0.25)]',
+        };
+    }
+
+    public function getPluginIconGradientClasses(string $status): string
+    {
+        return match ($status) {
+            'active' => 'from-emerald-500/25 via-teal-500/10 to-primary-500/5',
+            'inactive' => 'from-amber-500/25 via-orange-500/10 to-primary-500/5',
+            'installed' => 'from-blue-500/25 via-indigo-500/10 to-primary-500/5',
+            'boot_failed' => 'from-danger-500/25 via-red-500/10 to-primary-500/5',
+            default => 'from-gray-400/20 via-gray-500/10 to-primary-500/5',
+        };
+    }
+
     public function getPluginLogContent(string $pluginId): ?string
     {
         return app(PluginLogger::class)->getLogContent($pluginId);

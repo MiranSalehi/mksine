@@ -35,6 +35,10 @@
         }
 
         const editorConfig = {
+            language: {
+                ui: (config.uiLanguage && String(config.uiLanguage).trim()) || 'en',
+                content: (config.contentLanguage && String(config.contentLanguage).trim()) || ((config.uiLanguage && String(config.uiLanguage).trim()) || 'en'),
+            },
             plugins: [AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BlockQuote, Bold, Code, CodeBlock, Essentials, FindAndReplace, FontBackgroundColor, FontColor, FontFamily, FontSize, GeneralHtmlSupport, Heading, Highlight, HorizontalLine, HtmlComment, HtmlEmbed, ImageBlock, ImageCaption, ImageInline, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, Indent, IndentBlock, Italic, Link, LinkImage, List, ListProperties, MediaEmbed, PageBreak, Paragraph, PasteFromOffice, RemoveFormat, SelectAll, ShowBlocks, SourceEditing, SpecialCharacters, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersEssentials, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText, Strikethrough, Style, Subscript, Superscript, Table, TableCaption, TableCellProperties, TableColumnResize, TableProperties, TableToolbar, TextTransformation, TodoList, Underline, Undo, InsertMediaPlugin],
             toolbar: { items: ['insertMedia','|','undo','redo','|','sourceEditing','showBlocks','|','heading','style','|','fontSize','fontFamily','fontColor','fontBackgroundColor','|','bold','italic','underline','|','link','insertTable','highlight','blockQuote','codeBlock','|','alignment','|','bulletedList','numberedList','todoList','outdent','indent'], shouldNotGroupWhenFull: false },
             fontFamily: { supportAllValues: true },
@@ -58,7 +62,7 @@
             const wrapper = textarea.closest('[data-ckeditor-id]');
             const mainEl = wrapper?.querySelector('.ck-editor__main');
             const editableEl = wrapper?.querySelector('.ck-editor__editable');
-            if (mainEl) { mainEl.classList.add('prose', 'max-w-none', 'dark:prose-invert'); mainEl.style.minHeight = height; }
+            if (mainEl) { mainEl.classList.add('prose', 'prose-sm', 'max-w-none', 'dark:prose-invert'); mainEl.style.minHeight = height; }
             if (editableEl) editableEl.style.minHeight = height;
             const sync = () => { const i = window.ckeditorInstances['ckeditor-' + editorId]; if (!i?.alpineComponent) return; i.__fromEditor = true; i.alpineComponent.state = editor.getData(); i.__fromEditor = false; };
             const handleMediaSelected = (e) => {

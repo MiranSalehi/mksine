@@ -43,8 +43,7 @@ function mksine_doc_files(): array
         ->files()
         ->in($root)
         ->name('*.md')
-        ->notPath('archive')
-        ->notPath('internal');
+        ->exclude(['archive', 'internal']);
 
     $rels = [];
     foreach ($finder as $file) {
