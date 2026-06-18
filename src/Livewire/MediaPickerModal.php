@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -30,6 +31,8 @@ class MediaPickerModal extends Component
 
     public $uploadedFiles = [];
 
+    public ?int $detailMediaId = null;
+
     protected $listeners = [
         'openMediaPicker' => 'open',
     ];
@@ -43,17 +46,20 @@ class MediaPickerModal extends Component
         $this->search = '';
         $this->typeFilter = '';
         $this->uploadedFiles = [];
+        $this->detailMediaId = $currentSelection !== [] ? (int) $currentSelection[0] : null;
         $this->isOpen = true;
     }
 
     public function close(): void
     {
         $this->isOpen = false;
-        $this->reset(['uploadedFiles', 'search', 'typeFilter']);
+        $this->reset(['uploadedFiles', 'search', 'typeFilter', 'detailMediaId']);
     }
 
     public function toggleSelection(int $mediaId): void
     {
+        $this->detailMediaId = $mediaId;
+
         if ($this->multiple) {
             if (in_array($mediaId, $this->selectedIds)) {
                 $this->selectedIds = array_values(array_diff($this->selectedIds, [$mediaId]));
@@ -68,6 +74,15 @@ class MediaPickerModal extends Component
     public function isSelected(int $mediaId): bool
     {
         return in_array($mediaId, $this->selectedIds);
+    }
+
+    public function getDetailMediaProperty(): ?Media
+    {
+        if ($this->detailMediaId === null) {
+            return null;
+        }
+
+        return Media::query()->find($this->detailMediaId);
     }
 
     public function confirm(): void
@@ -117,6 +132,8 @@ class MediaPickerModal extends Component
             } else {
                 $this->selectedIds = [$media->id];
             }
+
+            $this->detailMediaId = $media->id;
         }
 
         $this->uploadedFiles = [];
@@ -177,8 +194,15 @@ class MediaPickerModal extends Component
     public function render(): View
     {
         return view('mksine::livewire.media-picker-modal', [
-            'mediaItems' => $this->getMediaProperty(),
+            'mediaItems' => $this->isOpen
+                ? $this->getMediaProperty()
+                : $this->emptyMediaPaginator(),
             'fileTypes' => $this->getFileTypes(),
         ]);
+    }
+
+    protected function emptyMediaPaginator(): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator([], 0, 24);
     }
 }

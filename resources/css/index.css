@@ -35,10 +35,43 @@
 
 @import 'tailwindcss' source(none);
 @plugin "@tailwindcss/typography";
-@source '../../src';
-@source '../views';
-@source '../../../../plugins';
 @import '../../../../vendor/filament/filament/resources/css/index.css';
+
+/* Match Filament panel dark mode (.dark on <html>) — never OS prefers-color-scheme alone. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Admin panel CSS only. Do NOT @source plugins/ or theme storefront views — a full
+ * Tailwind scan of those trees bloats mksine.css (~1MB) and bleeds storefront/dark
+ * utilities into Filament (broken media picker, theme manager cards, etc.).
+ */
+@source '../../src/Filament';
+@source '../views/filament';
+@source '../views/livewire';
+@source '../views/partials';
+@source '../views/page-builder/component-editor.blade.php';
+@source '../views/page-builder/page-builder.blade.php';
+@source '../views/page-builder/components';
+@source '../views/page-builder/partials';
+
+/*
+ * Filament Tailwind utilities (border-gray-*, ring-gray-*, etc.) resolve to var(--gray-*).
+ * Those shades are normally injected at runtime in filament::assets; custom MKSine Blade
+ * (media picker, theme manager) must not depend on injection order — map to zinc @theme tokens.
+ */
+:root {
+    --gray-50: var(--color-zinc-50);
+    --gray-100: var(--color-zinc-100);
+    --gray-200: var(--color-zinc-200);
+    --gray-300: var(--color-zinc-300);
+    --gray-400: var(--color-zinc-400);
+    --gray-500: var(--color-zinc-500);
+    --gray-600: var(--color-zinc-600);
+    --gray-700: var(--color-zinc-700);
+    --gray-800: var(--color-zinc-800);
+    --gray-900: var(--color-zinc-900);
+    --gray-950: var(--color-zinc-950);
+}
 
 /* Override Filament's default font with IranYekan */
 :root {
@@ -186,4 +219,94 @@
  */
 .fi-no {
     inset: 1rem 0.5rem;
+}
+
+/* Media library modal — stable surfaces on top of Filament (see media-picker-modal.blade.php). */
+.mksine-media-picker-root input,
+.mksine-media-picker-root select {
+    background-color: var(--color-white);
+    color: var(--color-gray-950);
+}
+
+.dark .mksine-media-picker-root input,
+.dark .mksine-media-picker-root select {
+    background-color: var(--color-gray-800);
+    color: var(--color-white);
+}
+
+.mksine-media-picker-root .mksine-media-picker-panel {
+    background-color: var(--color-white);
+    color: var(--color-gray-950);
+}
+
+.dark .mksine-media-picker-root .mksine-media-picker-panel {
+    background-color: var(--color-gray-900);
+    color: var(--color-white);
+}
+
+.mksine-media-picker-root input,
+.mksine-media-picker-root select {
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--gray-200);
+}
+
+.dark .mksine-media-picker-root input,
+.dark .mksine-media-picker-root select {
+    border-color: var(--gray-600);
+}
+
+.mksine-media-picker-root .mksine-media-picker-panel {
+    border-width: 1px;
+    border-style: solid;
+    border-color: color-mix(in oklab, var(--gray-200) 50%, transparent);
+}
+
+.dark .mksine-media-picker-root .mksine-media-picker-panel {
+    border-color: color-mix(in oklab, var(--gray-700) 50%, transparent);
+}
+
+.mksine-theme-manager-root [data-theme-card] {
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--gray-200);
+}
+
+.dark .mksine-theme-manager-root [data-theme-card] {
+    border-color: var(--gray-700);
+}
+
+/* Media picker thumbnails — light but visible frame (WordPress-style) */
+.mksine-media-picker-root .mksine-media-picker-thumb {
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--gray-900) 4%, transparent);
+}
+
+.mksine-media-picker-root .mksine-media-picker-thumb:hover {
+    border-color: var(--gray-300);
+}
+
+.dark .mksine-media-picker-root .mksine-media-picker-thumb {
+    border-color: var(--gray-600);
+    box-shadow: 0 1px 2px color-mix(in oklab, black 25%, transparent);
+}
+
+.dark .mksine-media-picker-root .mksine-media-picker-thumb:hover {
+    border-color: var(--gray-500);
+}
+
+.mksine-media-picker-root .mksine-media-picker-thumb.is-selected {
+    border-width: 2px;
+    border-color: var(--primary-500);
+    box-shadow: 0 4px 14px color-mix(in oklab, var(--primary-500) 18%, transparent);
+}
+
+.mksine-media-picker-root .mksine-media-picker-details {
+    background-color: var(--color-gray-50);
+    border-inline-start: 1px solid color-mix(in oklab, var(--gray-200) 80%, transparent);
+}
+
+.dark .mksine-media-picker-root .mksine-media-picker-details {
+    background-color: color-mix(in oklab, var(--gray-900) 92%, black);
+    border-inline-start-color: color-mix(in oklab, var(--gray-700) 70%, transparent);
 }

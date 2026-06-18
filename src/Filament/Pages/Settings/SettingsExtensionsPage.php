@@ -8,7 +8,7 @@ use Filament\Schemas\Components\Tabs;
 use Miran\Mksine\Core\Hooks\SettingsTabManager;
 
 /**
- * Legacy plugin settings still registered via {@see SettingsTabManager} (booking, voltech, …).
+ * Legacy plugin settings still registered via {@see SettingsTabManager}. Prefer {@see MksSettingsPage} subclasses (see ecom, mks-notification, mks-booking).
  */
 class SettingsExtensionsPage extends MksSettingsPage
 {

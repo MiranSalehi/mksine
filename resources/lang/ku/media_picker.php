@@ -24,4 +24,13 @@ return [
     'videos' => 'ڤیدیۆکان',
     'pdf' => 'PDF',
     'documents' => 'بڕگەنامەکان',
+    'attachment_details' => 'وردەکاریی پێوەكراو',
+    'select_for_details' => 'فایلێک هەڵبژێرە بۆ بینینی وردەکارییەکان',
+    'file_name' => 'ناوی فایل',
+    'file_type' => 'جۆری فایل',
+    'dimensions' => 'قەبارە',
+    'file_size' => 'قەبارەی فایل',
+    'uploaded_on' => 'بەرواری بارکردن',
+    'dimensions_value' => ':width × :height پیکسڵ',
+    'dimensions_unknown' => '—',
 ];

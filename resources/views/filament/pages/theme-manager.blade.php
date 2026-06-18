@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
+    <div class="mksine-theme-manager-root space-y-6">
         {{-- Themes Grid --}}
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             @forelse($this->getThemes() as $theme)
@@ -8,6 +8,7 @@
                     $isActive = $theme->identifier === $this->getActiveThemeIdentifier();
                 @endphp
                 <div
+                    data-theme-card
                     class="group relative overflow-hidden rounded-xl border bg-white shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:shadow-lg hover:ring-gray-300/50 dark:bg-gray-800/50 dark:ring-white/5 dark:hover:border-gray-600 dark:hover:ring-white/10
                         {{ $isActive
                             ? 'border-2 border-primary-500 ring-2 ring-primary-500/20 dark:border-primary-500'

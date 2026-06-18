@@ -21,6 +21,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -29,12 +30,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Translation\FileLoader;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
 use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
 use Miran\Mksine\Console\Commands\GeoImportCommand;
 use Miran\Mksine\Console\Commands\GeoMigrateLegacyIranCommand;
+use Miran\Mksine\Console\Commands\GeoSyncCityNativeNamesCommand;
 use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\PluginActivateCommand;
@@ -525,6 +528,8 @@ class MksineServiceProvider extends PackageServiceProvider
         // Fallback: If no form/table hooks in database, discover them from code
         // This ensures hooks work even if mks:discover hasn't been run yet
         $this->discoverFormAndTableHooksFallback();
+
+        $this->registerHttpErrorViews();
     }
 
     /**
@@ -691,6 +696,7 @@ class MksineServiceProvider extends PackageServiceProvider
             DiscoverHooksCommand::class,
             GeoImportCommand::class,
             GeoMigrateLegacyIranCommand::class,
+            GeoSyncCityNativeNamesCommand::class,
             // Plugin commands
             PluginListCommand::class,
             PluginInstallCommand::class,
@@ -822,6 +828,31 @@ class MksineServiceProvider extends PackageServiceProvider
     /**
      * Check if exception is due to database bootstrapping (expected during migrations).
      */
+    private function registerHttpErrorViews(): void
+    {
+        $this->callAfterResolving(ExceptionHandler::class, function (ExceptionHandler $handler): void {
+            if (! method_exists($handler, 'renderable')) {
+                return;
+            }
+
+            $handler->renderable(function (\Throwable $e, $request) {
+                if (! $e instanceof HttpExceptionInterface || $e->getStatusCode() !== 403) {
+                    return null;
+                }
+
+                if (is_file(resource_path('views/errors/403.blade.php'))) {
+                    return null;
+                }
+
+                return response()->view('mksine::errors.403', [
+                    'exception' => $e,
+                    'message' => $e->getMessage(),
+                    'currentUrl' => $request->fullUrl(),
+                ], 403, $e->getHeaders());
+            });
+        });
+    }
+
     private function isDatabaseBootstrapping(\Exception $e): bool
     {
         $bootstrappingMessages = [

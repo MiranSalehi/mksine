@@ -24,4 +24,13 @@ return array (
   'videos' => 'ویدیوها',
   'pdf' => 'PDF',
   'documents' => 'اسناد',
+  'attachment_details' => 'جزئیات پیوست',
+  'select_for_details' => 'برای مشاهده جزئیات، یک فایل انتخاب کنید',
+  'file_name' => 'نام فایل',
+  'file_type' => 'نوع فایل',
+  'dimensions' => 'ابعاد',
+  'file_size' => 'حجم فایل',
+  'uploaded_on' => 'تاریخ آپلود',
+  'dimensions_value' => ':width × :height پیکسل',
+  'dimensions_unknown' => '—',
 );

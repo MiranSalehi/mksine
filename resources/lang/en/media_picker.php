@@ -24,4 +24,13 @@ return [
     'videos' => 'Videos',
     'pdf' => 'PDF',
     'documents' => 'Documents',
+    'attachment_details' => 'Attachment Details',
+    'select_for_details' => 'Select a file to view its details',
+    'file_name' => 'File name',
+    'file_type' => 'File type',
+    'dimensions' => 'Dimensions',
+    'file_size' => 'File size',
+    'uploaded_on' => 'Uploaded on',
+    'dimensions_value' => ':width × :height px',
+    'dimensions_unknown' => '—',
 ];
