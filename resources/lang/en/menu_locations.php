@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'navigation_label' => 'Menu Locations',
+    'navigation_label' => 'Locations',
+    'navigation_label_cms' => 'Menu locations',
     'model_label' => 'Menu Location',
     'plural_model_label' => 'Menu Locations',
     'key' => 'Key',

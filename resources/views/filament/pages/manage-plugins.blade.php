@@ -3,7 +3,7 @@
         $stats = $this->getPluginStats();
     @endphp
 
-    <div class="space-y-6">
+    <div class="mksine-manage-plugins-root space-y-6">
         @if (empty($plugins))
             <x-filament::section>
                 <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -24,26 +24,26 @@
         @else
             {{-- Summary --}}
             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <div class="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/40 dark:ring-white/5">
+                <div class="mksine-plugin-stat-card rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/40 dark:ring-white/5">
                     <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                         {{ __('mksine::plugins.stats_total') }}
                     </p>
                     <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
                 </div>
-                <div class="rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white p-4 shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-gray-900/40 dark:ring-emerald-500/20">
+                <div class="mksine-plugin-stat-card rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white p-4 shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-gray-900/40 dark:ring-emerald-500/20">
                     <p class="text-xs font-medium uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/80">
                         {{ __('mksine::plugins.stats_active') }}
                     </p>
                     <p class="mt-1 text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{{ $stats['active'] }}</p>
                 </div>
-                <div class="rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white p-4 shadow-sm ring-1 ring-amber-500/10 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-gray-900/40 dark:ring-amber-500/20">
+                <div class="mksine-plugin-stat-card rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white p-4 shadow-sm ring-1 ring-amber-500/10 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-gray-900/40 dark:ring-amber-500/20">
                     <p class="text-xs font-medium uppercase tracking-wide text-amber-800/80 dark:text-amber-200/80">
                         {{ __('mksine::plugins.stats_inactive') }}
                     </p>
                     <p class="mt-1 text-2xl font-bold tabular-nums text-amber-900 dark:text-amber-100">{{ $stats['inactive'] }}</p>
                 </div>
                 <div @class([
-                    'rounded-xl border p-4 shadow-sm ring-1',
+                    'mksine-plugin-stat-card rounded-xl border p-4 shadow-sm ring-1',
                     'border-danger-200/60 bg-gradient-to-br from-danger-50/80 to-white ring-danger-500/10 dark:border-danger-500/20 dark:from-danger-500/10 dark:to-gray-900/40 dark:ring-danger-500/20' => $stats['attention'] > 0,
                     'border-gray-200/80 bg-white ring-black/5 dark:border-gray-700 dark:bg-gray-900/40 dark:ring-white/5' => $stats['attention'] === 0,
                 ])>
@@ -63,7 +63,7 @@
             </div>
 
             {{-- Table --}}
-            <div class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/30 dark:ring-white/5">
+            <div class="mksine-plugins-table overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/30 dark:ring-white/5">
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[56rem] border-collapse text-start">
                         <thead>

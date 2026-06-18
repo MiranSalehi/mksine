@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'navigation_label' => 'Themes',
+    'navigation_label' => 'Theme',
+    'navigation_label_cms' => 'Themes',
     'title' => 'Theme Manager',
     'upload_theme' => 'Upload Theme',
     'theme_zip_file' => 'Theme ZIP File',

@@ -15,6 +15,7 @@ use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
@@ -33,16 +34,20 @@ class ThemeManager extends Page
 
     protected static ?string $slug = 'themes';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 10;
 
     public static function getNavigationLabel(): string
     {
-        return __('mksine::themes.navigation_label');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? __('mksine::themes.navigation_label')
+            : __('mksine::themes.navigation_label_cms');
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.appearance');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_THEME_PLUGINS)
+            : AdminSidebarNavigation::appearanceGroup();
     }
 
     public function getTitle(): string

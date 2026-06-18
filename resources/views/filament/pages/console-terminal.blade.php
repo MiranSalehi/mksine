@@ -57,10 +57,115 @@
                         </div>
                     @endif
                     <div
-                        x-show="loading && daemonMode"
+                        x-show="loading && daemonMode && !interactive.active"
                         class="absolute inset-0 z-10 flex items-center justify-center bg-gray-950/85 text-sm font-medium text-amber-300"
                     >
                         <span class="animate-pulse">{{ __('mksine::console_terminal.running') }}</span>
+                    </div>
+
+                    <div
+                        x-show="interactive.active"
+                        x-cloak
+                        class="absolute inset-0 z-20 flex flex-col overflow-hidden bg-gray-950/95 px-4 py-4 text-left text-sm text-gray-100"
+                    >
+                        <div class="mb-3 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+                            <div>
+                                <p class="font-semibold text-violet-300" x-text="config.labels.interactiveTitle"></p>
+                                <p class="mt-0.5 font-mono text-xs text-gray-400" x-text="interactive.command"></p>
+                            </div>
+                            <button
+                                type="button"
+                                class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/5"
+                                x-on:click="cancelInteractive()"
+                                x-text="config.labels.interactiveCancel"
+                            ></button>
+                        </div>
+
+                        <div x-show="interactive.step === 'mode'" class="space-y-2">
+                            <template x-for="option in interactiveModeOptions" :key="option.id">
+                                <button
+                                    type="button"
+                                    class="block w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-left hover:border-violet-400/60 hover:bg-violet-500/10"
+                                    x-on:click="chooseInteractiveMode(option.id)"
+                                    x-text="option.label"
+                                ></button>
+                            </template>
+                        </div>
+
+                        <div x-show="interactive.step === 'select'" class="flex min-h-0 flex-1 flex-col gap-3">
+                            <input
+                                type="search"
+                                x-model="interactive.search"
+                                :placeholder="config.labels.interactiveSearchPlaceholder"
+                                class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 font-mono text-sm text-white placeholder:text-gray-500 focus:border-violet-400 focus:outline-none"
+                            />
+                            <div class="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-2">
+                                <template x-for="entry in filteredInteractiveMigrations()" :key="entry.name">
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 hover:bg-white/5">
+                                        <input
+                                            type="checkbox"
+                                            class="mt-1 rounded border-gray-500 text-violet-500 focus:ring-violet-500"
+                                            :value="entry.name"
+                                            x-model="interactive.selected"
+                                            x-show="interactive.mode !== 'single'"
+                                        />
+                                        <input
+                                            type="radio"
+                                            name="interactive-migration"
+                                            class="mt-1 border-gray-500 text-violet-500 focus:ring-violet-500"
+                                            :value="entry.name"
+                                            x-model="interactive.singleSelected"
+                                            x-show="interactive.mode === 'single'"
+                                        />
+                                        <span class="font-mono text-xs leading-relaxed text-emerald-200/90" x-text="entry.label"></span>
+                                    </label>
+                                </template>
+                                <p
+                                    x-show="filteredInteractiveMigrations().length === 0"
+                                    class="px-3 py-6 text-center text-xs text-gray-500"
+                                    x-text="config.labels.interactiveNoMigrations"
+                                ></p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    class="rounded-xl border border-white/10 px-4 py-2 text-xs hover:bg-white/5"
+                                    x-on:click="interactive.step = 'mode'"
+                                    x-text="config.labels.interactiveBack"
+                                ></button>
+                                <button
+                                    type="button"
+                                    class="rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-40"
+                                    x-on:click="previewInteractive()"
+                                    :disabled="selectedMigrationNames().length === 0"
+                                    x-text="config.labels.interactiveContinue"
+                                ></button>
+                            </div>
+                        </div>
+
+                        <div x-show="interactive.step === 'preview'" class="flex min-h-0 flex-1 flex-col gap-3">
+                            <div class="min-h-0 flex-1 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-xs leading-relaxed text-emerald-200/90 whitespace-pre-wrap" x-text="interactive.previewText"></div>
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    class="rounded-xl border border-white/10 px-4 py-2 text-xs hover:bg-white/5"
+                                    x-on:click="interactive.step = interactive.mode === 'all' ? 'mode' : 'select'"
+                                    x-text="config.labels.interactiveBack"
+                                ></button>
+                                <button
+                                    type="button"
+                                    class="rounded-xl border border-amber-400/40 px-4 py-2 text-xs text-amber-200 hover:bg-amber-500/10"
+                                    x-on:click="executeInteractive(true)"
+                                    x-text="config.labels.interactiveDryRun"
+                                ></button>
+                                <button
+                                    type="button"
+                                    class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+                                    x-on:click="executeInteractive(false)"
+                                    x-text="interactive.requiresProductionConfirm ? config.labels.interactiveConfirmProduction : config.labels.interactiveExecute"
+                                ></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -108,10 +213,9 @@
                             type="button"
                             color="primary"
                             icon="heroicon-m-bolt"
-                            wire:click="runCommand"
                             wire:loading.attr="disabled"
                             wire:target="runCommand"
-                            x-on:click="daemonMode = false"
+                            x-on:click="start({ saveLog: true })"
                         >
                             {{ __('mksine::console_terminal.run_once') }}
                         </x-filament::button>

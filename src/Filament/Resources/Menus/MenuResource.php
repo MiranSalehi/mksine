@@ -8,6 +8,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Menus\Pages\CreateMenu;
 use Miran\Mksine\Filament\Resources\Menus\Pages\EditMenu;
 use Miran\Mksine\Filament\Resources\Menus\Pages\ListMenus;
@@ -21,11 +22,13 @@ class MenuResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBars3;
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 10;
 
     public static function getNavigationLabel(): string
     {
-        return __('mksine::menus.navigation_label');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? __('mksine::menus.navigation_list')
+            : __('mksine::menus.navigation_label');
     }
 
     public static function getModelLabel(): string
@@ -40,7 +43,9 @@ class MenuResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.appearance');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_MENUS)
+            : AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function form(Schema $schema): Schema

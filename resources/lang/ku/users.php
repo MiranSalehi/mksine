@@ -2,6 +2,7 @@
 
 return [
     'navigation_label' => 'بەکارهێنەران',
+    'navigation_list' => 'لیستی بەکارهێنەران',
     'model_label' => 'بەکارهێنەر',
     'plural_model_label' => 'بەکارهێنەران',
     'avatar' => 'وێنە',

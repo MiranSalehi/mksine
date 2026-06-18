@@ -30,6 +30,8 @@ class SystemUpdate extends Page
 {
     use HasPageShield;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     protected string $view = 'mksine::filament.pages.system-update';

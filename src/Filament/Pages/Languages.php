@@ -17,6 +17,7 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Support\Icons\Heroicon;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
 use Miran\Mksine\Core\Translation\TranslationFileManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 
 class Languages extends Page implements HasSchemas
 {

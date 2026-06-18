@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'navigation_label' => 'شوێنەکانی لیست',
+    'navigation_label' => 'شوێنەکان',
+    'navigation_label_cms' => 'شوێنەکانی مێنوو',
     'model_label' => 'شوێنی لیست',
     'plural_model_label' => 'شوێنەکانی لیست',
     'key' => 'کلیڵ',

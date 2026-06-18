@@ -15,6 +15,7 @@ use Miran\Mksine\Filament\Resources\Pages\Pages\EditPage;
 use Miran\Mksine\Filament\Resources\Pages\Pages\ListPages;
 use Miran\Mksine\Filament\Resources\Pages\Schemas\PageForm;
 use Miran\Mksine\Filament\Resources\Pages\Tables\PageTable;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Page;
 
 class PageResource extends Resource

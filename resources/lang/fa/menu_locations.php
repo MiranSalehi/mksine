@@ -1,7 +1,8 @@
 <?php
 
 return array (
-  'navigation_label' => 'موقعیت‌های منو',
+  'navigation_label' => 'موقعیت‌ها',
+  'navigation_label_cms' => 'موقعیت‌های منو',
   'model_label' => 'موقعیت منو',
   'plural_model_label' => 'موقعیت‌های منو',
   'key' => 'کلید',

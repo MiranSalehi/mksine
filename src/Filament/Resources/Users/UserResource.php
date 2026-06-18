@@ -5,6 +5,7 @@ namespace Miran\Mksine\Filament\Resources\Users;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Users\Pages\CreateUser;
 use Miran\Mksine\Filament\Resources\Users\Pages\EditUser;
 use Miran\Mksine\Filament\Resources\Users\Pages\ListUsers;
@@ -25,7 +26,9 @@ class UserResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('mksine::users.navigation_label');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? __('mksine::users.navigation_list')
+            : __('mksine::users.navigation_label');
     }
 
     public static function getModelLabel(): string
@@ -40,7 +43,9 @@ class UserResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.access_control');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
+            : AdminSidebarNavigation::accessControlGroup();
     }
 
     public static function form(Schema $schema): Schema

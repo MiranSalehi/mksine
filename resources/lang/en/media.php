@@ -2,6 +2,8 @@
 
 return [
     'navigation_label' => 'Media',
+    'navigation_library' => 'Media library',
+    'navigation_create' => 'Upload image / file',
     'model_label' => 'Media',
     'plural_model_label' => 'Media',
     'disk' => 'Disk',
@@ -22,4 +24,8 @@ return [
     'created' => 'Created',
     'file_information' => 'File Information',
     'details' => 'Details',
+    'filter_images' => 'Images',
+    'filter_videos' => 'Videos',
+    'filter_audio' => 'Audio',
+    'filter_documents' => 'Documents',
 ];

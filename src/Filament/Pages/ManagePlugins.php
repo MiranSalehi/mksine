@@ -12,6 +12,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\File;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Updater\RollbackManager;
@@ -29,7 +30,7 @@ class ManagePlugins extends Page
 
     protected string $view = 'mksine::filament.pages.manage-plugins';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 20;
 
     public array $plugins = [];
 
@@ -70,7 +71,9 @@ class ManagePlugins extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.system');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_THEME_PLUGINS)
+            : AdminSidebarNavigation::systemGroup();
     }
 
     public function getTitle(): string

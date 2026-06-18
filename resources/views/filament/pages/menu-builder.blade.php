@@ -13,11 +13,11 @@
             </p>
         </div>
     @else
-        <div class="grid grid-cols-1 gap-5 lg:grid-cols-3" x-data="menuBuilder(@js($menuItems))">
+        <div class="mksine-menu-builder-root grid grid-cols-1 gap-5 lg:grid-cols-3" x-data="menuBuilder(@js($menuItems))">
 
             {{-- ── Left panel: item sources ── --}}
             <div class="space-y-3 lg:col-span-1">
-                <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
+                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
 
                     {{-- Panel header --}}
                     <div class="flex items-center gap-3 border-b border-zinc-100 px-4 py-3.5 dark:border-white/[0.06]">
@@ -199,7 +199,7 @@
 
             {{-- ── Right panel: menu structure ── --}}
             <div class="lg:col-span-2">
-                <div class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
+                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
 
                     {{-- Panel header --}}
                     <div class="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3.5 dark:border-white/[0.06]">

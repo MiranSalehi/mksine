@@ -1,7 +1,8 @@
 <?php
 
 return array (
-  'navigation_label' => 'قالب‌ها',
+  'navigation_label' => 'قالب',
+  'navigation_label_cms' => 'قالب‌ها',
   'title' => 'مدیریت قالب',
   'upload_theme' => 'بارگذاری قالب',
   'theme_zip_file' => 'فایل ZIP قالب',

@@ -2,6 +2,7 @@
 
 return [
     'navigation_label' => 'لیستەکان',
+    'navigation_list' => 'لیستی مێنووەکان',
     'model_label' => 'لیست',
     'plural_model_label' => 'لیستەکان',
     'name' => 'ناو',

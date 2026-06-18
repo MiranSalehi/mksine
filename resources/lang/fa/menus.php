@@ -2,6 +2,7 @@
 
 return array (
   'navigation_label' => 'منوها',
+  'navigation_list' => 'لیست منوها',
   'model_label' => 'منو',
   'plural_model_label' => 'منوها',
   'name' => 'نام',

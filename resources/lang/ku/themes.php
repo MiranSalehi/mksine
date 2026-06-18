@@ -1,7 +1,8 @@
 <?php
 
 return [
-    'navigation_label' => 'کەرەستەکان',
+    'navigation_label' => 'کەرەستە',
+    'navigation_label_cms' => 'کەرەستەکان',
     'title' => 'بەڕێوەبردنی کەرەستە',
     'upload_theme' => 'بارکردنی کەرەستە',
     'theme_zip_file' => 'فایلی ZIPی کەرەستە',

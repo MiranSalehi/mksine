@@ -214,6 +214,27 @@ class Hooks
     }
 
     /**
+     * Extend widgets on a Filament page.
+     *
+     * @param  string  $pageName  The page identifier (e.g. {@see \Miran\Mksine\Filament\Pages\MksineDashboard::HOOK_NAME})
+     * @param  callable  $callback  Callback that receives an array of widget classes and returns a modified array
+     */
+    public static function extendPageWidgets(string $pageName, callable $callback): void
+    {
+        static::pageManager()->extendWidgets($pageName, $callback);
+    }
+
+    /**
+     * Extend admin dashboard widgets ({@see \Miran\Mksine\Filament\Pages\MksineDashboard::HOOK_NAME}).
+     *
+     * @param  callable  $callback  Callback that receives an array of widget classes and returns a modified array
+     */
+    public static function extendDashboardWidgets(callable $callback): void
+    {
+        static::extendPageWidgets(\Miran\Mksine\Filament\Pages\MksineDashboard::HOOK_NAME, $callback);
+    }
+
+    /**
      * Register a filter callback. Lower {@code $priority} runs first (default 10).
      */
     public static function addFilter(string $name, callable $callback, int $priority = 10): void

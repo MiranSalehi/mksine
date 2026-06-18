@@ -8,6 +8,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Posts\Pages\CreatePost;
 use Miran\Mksine\Filament\Resources\Posts\Pages\EditPost;
 use Miran\Mksine\Filament\Resources\Posts\Pages\ListPosts;

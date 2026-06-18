@@ -2,6 +2,7 @@
 
 return [
     'navigation_label' => 'Users',
+    'navigation_list' => 'User list',
     'model_label' => 'User',
     'plural_model_label' => 'Users',
     'avatar' => 'Avatar',

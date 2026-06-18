@@ -6,13 +6,13 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
-use Filament\Support\Colors\Color as FilamentColor;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
 
@@ -27,12 +27,14 @@ class MksinePlugin implements Plugin
     {
         $panel->plugins([
             FilamentShieldPlugin::make()
-                ->navigationSort(11)
-                ->navigationGroup(fn() => __('mksine::common.access_control')),
-        ])
-            ->colors([
-                'primary' => FilamentColor::Violet,
-            ]);
+                ->navigationSort(30)
+                ->navigationGroup(fn (): string => AdminSidebarNavigation::usesShopSidebar()
+                    ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
+                    : AdminSidebarNavigation::accessControlGroup())
+                ->navigationLabel(fn (): string => AdminSidebarNavigation::usesShopSidebar()
+                    ? __('mksine::common.access_rights')
+                    : __('filament-shield::filament-shield.nav.role.label')),
+        ]);
 
         // Register core MKS CMS resources and pages
         $panel
@@ -47,14 +49,42 @@ class MksinePlugin implements Plugin
 
         // Optional: Filament panel plugins from active CMS plugins (e.g. Activitylog) — not app panel code.
         $this->registerPluginFilamentPlugins($panel);
+
+        $panel
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('18rem')
+            ->collapsedSidebarWidth('4.75rem');
     }
 
     public function boot(Panel $panel): void
     {
+        $panel->navigationGroups(AdminSidebarNavigation::panelGroups());
+
         // Register MediaPickerModal component to be rendered on every page
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
-            fn(): string => Blade::render('@livewire(\'mksine::media-picker-modal\')')
+            fn (): string => Blade::render('@livewire(\'mksine::media-picker-modal\')')
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::SIDEBAR_NAV_START,
+            fn (): string => view('mksine::filament.partials.sidebar-nav-search')->render(),
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::SIDEBAR_FOOTER,
+            fn (): string => view('mksine::filament.partials.sidebar-collapse-toggle')->render(),
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::SCRIPTS_AFTER,
+            fn (): string => view('mksine::filament.partials.sidebar-store-fix')->render()
+                .view('mksine::filament.partials.sidebar-nav-search-script')->render(),
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            fn (): string => view('mksine::filament.partials.panel-styles-after')->render(),
         );
     }
 

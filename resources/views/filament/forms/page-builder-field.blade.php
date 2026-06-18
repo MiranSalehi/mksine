@@ -1,6 +1,6 @@
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
-        class="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.05)] dark:border-white/[0.07] dark:bg-zinc-950"
+        class="mksine-page-builder-field overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.05)] dark:border-white/[0.07] dark:bg-zinc-950"
         x-data="{
             state: $wire.$entangle('{{ $getStatePath() }}').live,
             init() {

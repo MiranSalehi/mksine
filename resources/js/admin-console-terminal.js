@@ -9,12 +9,40 @@ document.addEventListener('alpine:init', () => {
         autoScroll: true,
         daemonMode: false,
         loading: false,
+        interactive: {
+            active: false,
+            command: '',
+            handler: null,
+            step: 'mode',
+            mode: null,
+            migrations: [],
+            search: '',
+            selected: [],
+            singleSelected: '',
+            previewText: '',
+            requiresProductionConfirm: false,
+            saveLog: false,
+        },
+
+        get interactiveModeOptions() {
+            const labels = config.labels ?? {};
+
+            return [
+                { id: 'all', label: labels.interactiveModeAll ?? 'Run all' },
+                { id: 'search', label: labels.interactiveModeSearch ?? 'Search and select' },
+                { id: 'single', label: labels.interactiveModeSingle ?? 'Pick one' },
+            ];
+        },
 
         init() {
             this.fetchActive();
         },
 
         get statusText() {
+            if (this.interactive.active) {
+                return config.labels?.interactiveTitle ?? 'Interactive';
+            }
+
             if (!this.process) {
                 return config.labels.idle;
             }
@@ -27,6 +55,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         get statusClass() {
+            if (this.interactive.active) {
+                return 'text-violet-400';
+            }
+
             if (!this.process) {
                 return 'text-gray-400';
             }
@@ -47,11 +79,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         get canStart() {
-            return !this.loading && (!this.process || !this.process.alive);
+            return !this.loading && !this.interactive.active && (!this.process || !this.process.alive);
         },
 
         get canStop() {
-            return this.process?.alive === true;
+            return this.process?.alive === true && !this.interactive.active;
         },
 
         async fetchActive() {
@@ -109,19 +141,58 @@ document.addEventListener('alpine:init', () => {
             return (this.$wire?.command ?? '').trim();
         },
 
-        async start() {
+        async detectInteractive(command) {
+            const response = await fetch(config.interactive.detectUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': config.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ command }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+
+                throw new Error(data.message ?? 'Failed to detect command mode.');
+            }
+
+            return response.json();
+        },
+
+        async start(options = {}) {
             const command = this.commandValue();
             if (!command) {
                 return;
             }
 
+            const saveLog = options.saveLog === true;
+
             this.loading = true;
-            this.daemonMode = true;
-            this.output = '';
-            this.streamOffset = 0;
-            this.stopOutputPolling();
 
             try {
+                const detection = await this.detectInteractive(command);
+
+                if (detection.interactive) {
+                    await this.beginInteractive(command, detection.handler, saveLog);
+
+                    return;
+                }
+
+                if (saveLog) {
+                    this.daemonMode = false;
+                    await this.$wire.runCommand();
+
+                    return;
+                }
+
+                this.daemonMode = true;
+                this.output = '';
+                this.streamOffset = 0;
+                this.stopOutputPolling();
+
                 const response = await fetch(config.startUrl, {
                     method: 'POST',
                     headers: {
@@ -136,15 +207,229 @@ document.addEventListener('alpine:init', () => {
                 const data = await response.json();
                 if (!response.ok) {
                     this.output = data.message ?? 'Failed to start process.';
+                    this.daemonMode = true;
+
                     return;
                 }
 
                 this.attachProcess(data);
             } catch (error) {
                 this.output = `Error: ${error.message}`;
+                this.daemonMode = true;
             } finally {
                 this.loading = false;
             }
+        },
+
+        async beginInteractive(command, handler, saveLog) {
+            this.daemonMode = true;
+            this.output = `[${new Date().toISOString().slice(0, 19).replace('T', ' ')}] ${command}\n${'─'.repeat(48)}\n`;
+            this.interactive = {
+                active: true,
+                command,
+                handler,
+                step: 'mode',
+                mode: null,
+                migrations: [],
+                search: '',
+                selected: [],
+                singleSelected: '',
+                previewText: '',
+                requiresProductionConfirm: false,
+                saveLog,
+            };
+
+            if (handler !== 'migrate:smart') {
+                this.output += '\nUnsupported interactive handler.\n';
+                this.cancelInteractive();
+
+                return;
+            }
+
+            const response = await fetch(config.interactive.migrateSmartCatalogUrl, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load migrations catalog.');
+            }
+
+            const data = await response.json();
+            this.interactive.migrations = data.migrations ?? [];
+
+            if ((data.migrations ?? []).length === 0) {
+                this.output += `\n${config.labels.interactiveNoMigrations}\n`;
+                this.cancelInteractive();
+            }
+        },
+
+        chooseInteractiveMode(mode) {
+            this.interactive.mode = mode;
+            this.interactive.selected = [];
+            this.interactive.singleSelected = '';
+
+            if (mode === 'all') {
+                this.interactive.selected = this.interactive.migrations.map((entry) => entry.name);
+                this.previewInteractive();
+
+                return;
+            }
+
+            this.interactive.step = 'select';
+        },
+
+        selectedMigrationNames() {
+            if (this.interactive.mode === 'single') {
+                return this.interactive.singleSelected ? [this.interactive.singleSelected] : [];
+            }
+
+            return [...this.interactive.selected];
+        },
+
+        filteredInteractiveMigrations() {
+            const needle = (this.interactive.search ?? '').trim().toLowerCase();
+
+            return (this.interactive.migrations ?? []).filter((entry) => {
+                if (!needle) {
+                    return true;
+                }
+
+                return `${entry.label} ${entry.name} ${entry.source_label}`.toLowerCase().includes(needle);
+            });
+        },
+
+        async previewInteractive() {
+            const migrations = this.selectedMigrationNames();
+
+            if (migrations.length === 0) {
+                return;
+            }
+
+            this.loading = true;
+
+            try {
+                const response = await fetch(config.interactive.migrateSmartAnalyzeUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': config.csrf,
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ migrations }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message ?? 'Analysis failed.');
+                }
+
+                const lines = [];
+                (data.notices ?? []).forEach((line) => lines.push(line));
+                (data.warnings ?? []).forEach((line) => lines.push(line));
+
+                if ((data.actions ?? []).length === 0) {
+                    lines.push(config.labels.interactiveNothingToSync ?? 'Nothing to synchronize.');
+                } else {
+                    lines.push('The following changes will be applied:');
+                    (data.actions ?? []).forEach((action) => lines.push(`+ ${action.label}`));
+                }
+
+                this.interactive.previewText = lines.join('\n');
+                this.interactive.step = 'preview';
+            } catch (error) {
+                this.output += `\nError: ${error.message}\n`;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async executeInteractive(dryRun) {
+            const migrations = this.selectedMigrationNames();
+
+            if (migrations.length === 0) {
+                return;
+            }
+
+            this.loading = true;
+            const started = performance.now();
+
+            try {
+                const force = this.interactive.requiresProductionConfirm;
+                const response = await fetch(config.interactive.migrateSmartExecuteUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': config.csrf,
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        migrations,
+                        dry_run: dryRun,
+                        force,
+                    }),
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message ?? 'Execution failed.');
+                }
+
+                if (data.requires_confirmation) {
+                    this.interactive.requiresProductionConfirm = true;
+                    this.interactive.previewText = (data.lines ?? []).join('\n');
+                    this.interactive.step = 'preview';
+
+                    return;
+                }
+
+                const lines = data.lines ?? [];
+                const text = lines.join('\n');
+                this.output += `\n${text}\n`;
+                const exitCode = data.exit_code ?? 0;
+                const durationMs = Math.round(performance.now() - started);
+
+                if (this.interactive.saveLog) {
+                    await this.storeInteractiveLog(this.interactive.command, text, exitCode, durationMs);
+                }
+
+                this.cancelInteractive();
+                this.scrollToBottom();
+            } catch (error) {
+                this.output += `\nError: ${error.message}\n`;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async storeInteractiveLog(command, outputText, exitCode, durationMs) {
+            await fetch(config.interactive.logUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': config.csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    command,
+                    output: outputText,
+                    exit_code: exitCode,
+                    duration_ms: durationMs,
+                }),
+            });
+
+            if (this.$wire?.$refresh) {
+                await this.$wire.$refresh();
+            }
+        },
+
+        cancelInteractive() {
+            this.interactive.active = false;
+            this.interactive.step = 'mode';
+            this.interactive.requiresProductionConfirm = false;
         },
 
         attachProcess(process) {
@@ -296,6 +581,7 @@ document.addEventListener('alpine:init', () => {
             this.streamOffset = 0;
             this.process = null;
             this.daemonMode = false;
+            this.cancelInteractive();
             this.stopOutputPolling();
             this.stopStatusPolling();
         },

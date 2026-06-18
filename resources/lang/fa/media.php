@@ -2,6 +2,8 @@
 
 return array (
   'navigation_label' => 'رسانه',
+  'navigation_library' => 'کتابخانه رسانه',
+  'navigation_create' => 'افزودن عکس / فایل',
   'model_label' => 'رسانه',
   'plural_model_label' => 'رسانه‌ها',
   'disk' => 'دیسک',

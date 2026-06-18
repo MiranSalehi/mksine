@@ -13,6 +13,7 @@ use Miran\Mksine\Filament\Resources\Categories\Pages\EditCategory;
 use Miran\Mksine\Filament\Resources\Categories\Pages\ListCategories;
 use Miran\Mksine\Filament\Resources\Categories\Schemas\CategoryForm;
 use Miran\Mksine\Filament\Resources\Categories\Tables\CategoryTable;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Category;
 
 class CategoryResource extends Resource

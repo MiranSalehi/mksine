@@ -97,7 +97,7 @@
             @include('mksine::page-builder.components.toolbar')
 
             {{-- Canvas --}}
-            <div class="relative z-0 w-full bg-zinc-50 px-4 py-5 dark:bg-zinc-950">
+            <div class="mksine-pb-canvas relative z-0 w-full bg-zinc-50 px-4 py-5 dark:bg-zinc-950">
                 @include('mksine::page-builder.components.block-list')
             </div>
         </div>

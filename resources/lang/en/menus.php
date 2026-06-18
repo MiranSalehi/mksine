@@ -2,6 +2,7 @@
 
 return [
     'navigation_label' => 'Menus',
+    'navigation_list' => 'Menu list',
     'model_label' => 'Menu',
     'plural_model_label' => 'Menus',
     'name' => 'Name',

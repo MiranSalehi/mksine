@@ -14,6 +14,7 @@ use Miran\Mksine\Filament\Resources\Comments\Pages\EditComment;
 use Miran\Mksine\Filament\Resources\Comments\Pages\ListComments;
 use Miran\Mksine\Filament\Resources\Comments\Schemas\CommentForm;
 use Miran\Mksine\Filament\Resources\Comments\Tables\CommentTable;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Comment;
 
 class CommentResource extends Resource

@@ -13,8 +13,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\ConsoleLog;
 use Miran\Mksine\Support\Console\AdminConsoleCommandRunner;
+use Miran\Mksine\Support\Console\Interactive\AdminInteractiveCommandResolver;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Assets\Js;
 
@@ -26,7 +28,7 @@ class ConsoleTerminal extends Page
 
     protected static ?string $slug = 'console-terminal';
 
-    protected static ?int $navigationSort = 9998;
+    protected static ?int $navigationSort = 8;
 
     protected string $view = 'mksine::filament.pages.console-terminal';
 
@@ -61,9 +63,29 @@ class ConsoleTerminal extends Page
             'activeUrl' => route('mksine.console-process.active'),
             'csrf' => csrf_token(),
             'pollIntervalMs' => (int) config('mksine.console_terminal.status_poll_interval_ms', 2000),
+            'interactive' => [
+                'detectUrl' => route('mksine.console-process.interactive.detect'),
+                'logUrl' => route('mksine.console-process.interactive.log'),
+                'migrateSmartCatalogUrl' => route('mksine.console-process.interactive.migrate-smart.catalog'),
+                'migrateSmartAnalyzeUrl' => route('mksine.console-process.interactive.migrate-smart.analyze'),
+                'migrateSmartExecuteUrl' => route('mksine.console-process.interactive.migrate-smart.execute'),
+            ],
             'labels' => [
                 'idle' => __('mksine::console_terminal.status_idle'),
                 'running' => __('mksine::console_terminal.status_running_short'),
+                'interactiveTitle' => __('mksine::console_terminal.interactive_title'),
+                'interactiveModeAll' => __('mksine::console_terminal.interactive_mode_all'),
+                'interactiveModeSearch' => __('mksine::console_terminal.interactive_mode_search'),
+                'interactiveModeSingle' => __('mksine::console_terminal.interactive_mode_single'),
+                'interactiveSearchPlaceholder' => __('mksine::console_terminal.interactive_search_placeholder'),
+                'interactiveContinue' => __('mksine::console_terminal.interactive_continue'),
+                'interactiveBack' => __('mksine::console_terminal.interactive_back'),
+                'interactiveDryRun' => __('mksine::console_terminal.interactive_dry_run'),
+                'interactiveExecute' => __('mksine::console_terminal.interactive_execute'),
+                'interactiveConfirmProduction' => __('mksine::console_terminal.interactive_confirm_production'),
+                'interactiveCancel' => __('mksine::console_terminal.interactive_cancel'),
+                'interactiveNoMigrations' => __('mksine::console_terminal.interactive_no_migrations'),
+                'interactiveNothingToSync' => __('mksine::console_terminal.interactive_nothing_to_sync'),
             ],
         ];
     }
@@ -75,7 +97,17 @@ class ConsoleTerminal extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.system');
+        return AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_SYSTEM);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return SuperAdminGate::check();
+    }
+
+    public static function canAccess(): bool
+    {
+        return SuperAdminGate::check();
     }
 
     public function getTitle(): string
@@ -109,6 +141,16 @@ class ConsoleTerminal extends Page
             Notification::make()
                 ->title(__('mksine::console_terminal.empty_command'))
                 ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (AdminInteractiveCommandResolver::isInteractiveInput($command, base_path())) {
+            Notification::make()
+                ->title(__('mksine::console_terminal.interactive_use_start'))
+                ->body(__('mksine::console_terminal.interactive_use_start_body'))
+                ->info()
                 ->send();
 
             return;

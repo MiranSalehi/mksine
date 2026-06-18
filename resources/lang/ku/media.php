@@ -2,6 +2,8 @@
 
 return [
     'navigation_label' => 'میدیا',
+    'navigation_library' => 'کتێبخانەی میدیا',
+    'navigation_create' => 'زیادکردنی وێنە / فایل',
     'model_label' => 'میدیا',
     'plural_model_label' => 'میدیا',
     'disk' => 'دیسک',

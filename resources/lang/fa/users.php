@@ -2,6 +2,7 @@
 
 return array (
   'navigation_label' => 'کاربران',
+  'navigation_list' => 'لیست کاربران',
   'model_label' => 'کاربر',
   'plural_model_label' => 'کاربران',
   'avatar' => 'آواتار',

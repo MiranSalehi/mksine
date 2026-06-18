@@ -40,6 +40,7 @@ use Miran\Mksine\Console\Commands\GeoMigrateLegacyIranCommand;
 use Miran\Mksine\Console\Commands\GeoSyncCityNativeNamesCommand;
 use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
+use Miran\Mksine\Console\Commands\MigrateSmartCommand;
 use Miran\Mksine\Console\Commands\PluginActivateCommand;
 use Miran\Mksine\Console\Commands\PluginDeactivateCommand;
 use Miran\Mksine\Console\Commands\PluginDiscoverCommand;
@@ -669,7 +670,9 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         if (file_exists($cssPath)) {
-            $assets[] = Css::make('mksine-styles', $cssPath);
+            // Loaded via PanelsRenderHook::STYLES_AFTER so panel theme.css cannot
+            // override our Tailwind dark: utilities (bg-white wins when theme loads last).
+            $assets[] = Css::make('mksine-styles', $cssPath)->loadedOnRequest();
         }
 
         if (file_exists($jsPath)) {
@@ -727,6 +730,7 @@ class MksineServiceProvider extends PackageServiceProvider
             ConsoleRunDetachedCommand::class,
             CreateSuperAdminCommand::class,
             FreshSuperAdminCommand::class,
+            MigrateSmartCommand::class,
         ];
     }
 
@@ -1179,13 +1183,44 @@ class MksineServiceProvider extends PackageServiceProvider
                 $publishedPath = lang_path('vendor/'.$pluginId);
                 if (is_dir($publishedPath)) {
                     $this->loadTranslationsFrom($publishedPath, $pluginId);
+                    $this->clearPoisonedNamespaceTranslationCache($pluginId);
                 } elseif ($manifest->translationsPath()) {
                     $this->loadTranslationsFrom($manifest->translationsPath(), $pluginId);
+                    $this->clearPoisonedNamespaceTranslationCache($pluginId);
                 }
             }
         } catch (\Throwable $e) {
             // Ignore if DB not ready (e.g. during migrate)
         }
+    }
+
+    /**
+     * Early boot can resolve {@see __()} for a plugin namespace before {@see loadTranslationsFrom()}
+     * registers hints; Laravel's translator caches an empty group forever. Drop poisoned cache entries
+     * after namespaces are registered so the next lookup reloads from disk.
+     */
+    private function clearPoisonedNamespaceTranslationCache(string $namespace): void
+    {
+        $translator = $this->app->make('translator');
+
+        if (! method_exists($translator, 'setLoaded')) {
+            return;
+        }
+
+        $reflection = new \ReflectionClass($translator);
+        $property = $reflection->getProperty('loaded');
+        $property->setAccessible(true);
+
+        /** @var array<string, mixed> $loaded */
+        $loaded = $property->getValue($translator);
+
+        if (! array_key_exists($namespace, $loaded)) {
+            return;
+        }
+
+        unset($loaded[$namespace]);
+
+        $translator->setLoaded($loaded);
     }
 
     /**

@@ -14,6 +14,7 @@ use Miran\Mksine\Filament\Resources\MenuLocations\Schemas\MenuLocationForm;
 use Miran\Mksine\Filament\Resources\MenuLocations\Tables\MenuLocationTable;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\MenuLocation;
 
 class MenuLocationResource extends Resource
@@ -22,11 +23,13 @@ class MenuLocationResource extends Resource
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 20;
 
     public static function getNavigationLabel(): string
     {
-        return __('mksine::menu_locations.navigation_label');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? __('mksine::menu_locations.navigation_label')
+            : __('mksine::menu_locations.navigation_label_cms');
     }
 
     public static function getModelLabel(): string
@@ -41,7 +44,9 @@ class MenuLocationResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.appearance');
+        return AdminSidebarNavigation::usesShopSidebar()
+            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_MENUS)
+            : AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function form(Schema $schema): Schema
