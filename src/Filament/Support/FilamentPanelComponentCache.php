@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Filament\Support;
 
 use Filament\Panel;
+use Filament\Pages\Dashboard as FilamentDashboard;
 use Miran\Mksine\Filament\Pages\MksineDashboard;
 
 /**
@@ -26,7 +27,7 @@ final class FilamentPanelComponentCache
             return;
         }
 
-        if (in_array(MksineDashboard::class, $panel->getPages(), true)) {
+        if (! self::cacheNeedsRefresh(['pages' => $panel->getPages()])) {
             return;
         }
 
@@ -36,8 +37,22 @@ final class FilamentPanelComponentCache
     /**
      * @param  array{pages?: list<class-string>}  $cache
      */
+    public static function cacheNeedsRefresh(array $cache): bool
+    {
+        $pages = $cache['pages'] ?? [];
+
+        if (! in_array(MksineDashboard::class, $pages, true)) {
+            return true;
+        }
+
+        return in_array(FilamentDashboard::class, $pages, true);
+    }
+
+    /**
+     * @param  array{pages?: list<class-string>}  $cache
+     */
     public static function cacheIsMissingDashboard(array $cache): bool
     {
-        return ! in_array(MksineDashboard::class, $cache['pages'] ?? [], true);
+        return self::cacheNeedsRefresh($cache);
     }
 }

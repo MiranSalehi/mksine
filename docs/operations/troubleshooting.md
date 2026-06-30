@@ -14,18 +14,22 @@ This page collects the failures we see most often. For each one: the symptom, ho
 
 ### `Route [filament.admin.pages.mksine-dashboard] not defined`
 
-**Symptom.** Visiting `/admin` (especially when logged out) returns HTTP 500 with a missing route for `filament.admin.pages.mksine-dashboard`.
+**Symptom.** Visiting `/admin` returns HTTP 500 with a missing route for `filament.admin.pages.mksine-dashboard` (often in `sidebar.blade.php`).
 
-**Cause.** Stale Filament panel component cache (`bootstrap/cache/filament/panels/admin.php`) built before MKSine was registered. HTTP requests use the cached page list and skip `discoverPages()`, so `MksineDashboard` is never registered.
+**Common causes.**
+
+1. **Duplicate dashboard pages.** `php artisan filament:install --panels` registers `Filament\Pages\Dashboard` on `/`. MKSine also registers `MksineDashboard` on the same path. Only one route name survives; navigation still links to `mksine-dashboard` → 500. MKSine removes the host `Dashboard` page automatically when `MksinePlugin` is on the panel (package ≥ current). After upgrading, run `php artisan filament:optimize-clear`.
+2. **Stale Filament component cache** (`bootstrap/cache/filament/panels/admin.php`) built before MKSine was added or with the duplicate dashboard layout.
 
 **Fix.**
 
 ```bash
 php artisan filament:optimize-clear
 php artisan optimize:clear
+composer update miran/mksine
 ```
 
-Then confirm `MksinePlugin::make()` is on the admin panel and re-run `php artisan mksine:install --migrate` if needed. MKSine also clears stale cache at runtime when the dashboard page is missing from the cache.
+Confirm `MksinePlugin::make()` is on the admin panel. Re-run `php artisan mksine:install --migrate` on fresh installs if needed.
 
 ### MKSine resources missing from Shield / super admin has no CMS permissions
 

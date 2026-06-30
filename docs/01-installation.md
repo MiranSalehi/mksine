@@ -75,7 +75,10 @@ public function panel(Panel $panel): Panel
 
 - Registers CMS resources (posts, categories, media, menus, settings, languages, plugins manager, …).
 - Registers **Filament Shield** on the panel (you do **not** need a separate `FilamentShieldPlugin::make()` in the host app).
+- Replaces the default `Filament\Pages\Dashboard` page from `filament:install --panels` with `MksineDashboard` (same `/admin` URL, hookable dashboard).
 - Discovers Filament components from **active** CMS plugins and themes.
+
+You may leave `Dashboard::class` in `->pages([...])` from the Filament installer; MKSine removes it automatically. Prefer not adding it on new projects.
 
 ## 4. Run the MKSine installer
 

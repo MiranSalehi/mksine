@@ -14,6 +14,7 @@ use App\Policies\PagePolicy;
 use App\Policies\PostPolicy;
 use App\Policies\RolePolicy;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
+use Filament\PanelRegistry;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
@@ -33,6 +34,7 @@ use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
+use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
 use Miran\Mksine\Console\Commands\GeoImportCommand;
@@ -220,6 +222,12 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(Mksine::class, function () {
             return new Mksine;
+        });
+
+        $this->app->afterResolving(PanelRegistry::class, function (PanelRegistry $registry): void {
+            foreach ($registry->all() as $panel) {
+                FilamentPanelDashboard::replaceHostDefaultDashboard($panel);
+            }
         });
 
         $this->app->singleton(HookFilterRegistry::class, function () {
