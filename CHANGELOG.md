@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.0.10 - 2026-06-30
+
+### Fixed
+
+- **Plugin `sync:mksine-tailwind` on Composer vendor installs** — skip rebuilding admin CSS under `vendor/miran/mksine` (Filament import paths differ from the monorepo); use shipped `resources/dist/mksine.css` instead. Full rebuild remains for `packages/mksine` development only.
+
 ## 1.0.9 - 2026-06-30
 
 ### Fixed
