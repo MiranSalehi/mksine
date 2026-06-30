@@ -112,6 +112,7 @@ class MksineInstallCommand extends Command
     protected function finalizeInstallation(bool $migrated): void
     {
         $this->publishFilamentAssets();
+        $this->publishPackageThemeAssets();
 
         if (! $this->databaseIsReady()) {
             return;
@@ -130,6 +131,17 @@ class MksineInstallCommand extends Command
             $this->call('filament:assets');
         } catch (\Throwable $exception) {
             $this->warn('   ! filament:assets failed: '.$exception->getMessage());
+        }
+    }
+
+    protected function publishPackageThemeAssets(): void
+    {
+        $this->info('🖼 Publishing default theme assets...');
+
+        try {
+            $this->call('mks:theme-publish');
+        } catch (\Throwable $exception) {
+            $this->warn('   ! mks:theme-publish failed: '.$exception->getMessage());
         }
     }
 
