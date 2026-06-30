@@ -62,8 +62,8 @@ The default `package.json` includes:
     "dev":   "vite",
     "build": "vite build && npm run publish && npm run sync:mksine-tailwind && npm run sync:filament-assets",
     "publish": "cd ../.. && php artisan mks-plugin:publish {plugin-id}",
-    "sync:mksine-tailwind": "cd ../../packages/mksine && npm run build:styles",
-    "sync:filament-assets": "node ../../packages/mksine/bin/filament-assets.js"
+    "sync:mksine-tailwind": "node ../../vendor/miran/mksine/bin/build-styles.js",
+    "sync:filament-assets": "node ../../vendor/miran/mksine/bin/filament-assets.js"
   }
 }
 ```
@@ -72,8 +72,10 @@ What each chained step does:
 
 - `vite build` → produces `resources/dist/{app.css,app.js}`.
 - `mks-plugin:publish {id}` → copies `resources/dist/` to `public/plugins/{id}/`.
-- `sync:mksine-tailwind` → rebuilds the **package** Tailwind (`packages/mksine`), so Filament classes the plugin uses get included in the panel CSS bundle.
+- `sync:mksine-tailwind` → rebuilds the **package** Tailwind (`vendor/miran/mksine`), so Filament classes the plugin uses get included in the panel CSS bundle.
 - `sync:filament-assets` → keeps Filament’s vendor assets in `public/vendor/filament` aligned with the version pinned in `composer.json`.
+
+On a Composer install there is no `packages/mksine` tree — scripts resolve the package via `vendor/miran/mksine` (monorepos symlink there too).
 
 Skip any step you don’t need (`npm run build && cd ../.. && php artisan mks-plugin:publish my-plugin` is the minimum). The chain only matters in a monorepo development setup.
 

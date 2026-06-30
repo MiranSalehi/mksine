@@ -32,6 +32,7 @@ try {
     execSync('php artisan filament:assets', {
         stdio: 'inherit',
         cwd: dir,
+        shell: true,
     });
 } catch (e) {
     process.exitCode = e.status ?? 1;

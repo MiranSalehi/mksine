@@ -455,8 +455,8 @@ PHP;
         "dev": "vite",
         "build": "vite build && npm run publish && npm run sync:mksine-tailwind && npm run sync:filament-assets",
         "publish": "cd ../.. && php artisan mks-plugin:publish {$name}",
-        "sync:mksine-tailwind": "cd ../../packages/mksine && npm run build:styles",
-        "sync:filament-assets": "node ../../packages/mksine/bin/filament-assets.js"
+        "sync:mksine-tailwind": "node ../../vendor/miran/mksine/bin/build-styles.js",
+        "sync:filament-assets": "node ../../vendor/miran/mksine/bin/filament-assets.js"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

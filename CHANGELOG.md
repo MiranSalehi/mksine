@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.0.8 - 2026-06-30
+
+### Fixed
+
+- **Plugin `npm run build` on Composer installs** — `sync:mksine-tailwind` and `sync:filament-assets` now resolve `vendor/miran/mksine` instead of the monorepo-only `packages/mksine` path. Added `bin/build-styles.js` for cross-platform Windows support.
+
 ## 1.0.7 - 2026-06-30
 
 ### Fixed
