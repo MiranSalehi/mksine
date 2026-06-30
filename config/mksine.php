@@ -51,6 +51,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Logging
+    |--------------------------------------------------------------------------
+    |
+    | Verbose debug logs (plugin boot traces, Filament discovery, etc.) are written
+    | only when APP_ENV is local or dev. Override with MKSINE_VERBOSE_LOGS=true|false.
+    | On production/pro servers keep APP_ENV=production and LOG_LEVEL=error.
+    |
+    */
+    'logging' => [
+        'verbose' => env('MKSINE_VERBOSE_LOGS'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache Settings
     |--------------------------------------------------------------------------
     |

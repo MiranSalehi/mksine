@@ -85,6 +85,9 @@ class ConsoleTerminal extends Page
                 'interactiveConfirmProduction' => __('mksine::console_terminal.interactive_confirm_production'),
                 'interactiveCancel' => __('mksine::console_terminal.interactive_cancel'),
                 'interactiveNoMigrations' => __('mksine::console_terminal.interactive_no_migrations'),
+                'interactiveMigrationSummary' => __('mksine::console_terminal.interactive_migration_summary'),
+                'interactiveStatusRan' => __('mksine::console_terminal.interactive_status_ran'),
+                'interactiveStatusPending' => __('mksine::console_terminal.interactive_status_pending'),
                 'interactiveNothingToSync' => __('mksine::console_terminal.interactive_nothing_to_sync'),
             ],
         ];

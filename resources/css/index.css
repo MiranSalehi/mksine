@@ -418,7 +418,17 @@
 }
 
 .fi-sidebar-nav-groups {
-    gap: 0.625rem;
+    gap: 0;
+}
+
+.fi-sidebar-nav-groups > .fi-sidebar-group + .fi-sidebar-group {
+    margin-block-start: 0.5rem;
+    padding-block-start: 0.5rem;
+    border-block-start: 1px solid color-mix(in oklab, var(--gray-200) 42%, transparent);
+}
+
+.dark .fi-sidebar-nav-groups > .fi-sidebar-group + .fi-sidebar-group {
+    border-block-start-color: color-mix(in oklab, var(--gray-700) 38%, transparent);
 }
 
 .mksine-sidebar-nav-search-ctn {
@@ -446,13 +456,13 @@
 }
 
 .mksine-sidebar-nav-search-field:focus-within {
-    border-color: color-mix(in oklab, #ffab18 55%, var(--gray-300));
+    border-color: color-mix(in oklab, var(--primary-500) 55%, var(--gray-300));
     background-color: var(--color-white);
-    box-shadow: 0 0 0 3px color-mix(in oklab, #ffab18 18%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary-500) 18%, transparent);
 }
 
 .dark .mksine-sidebar-nav-search-field:focus-within {
-    border-color: color-mix(in oklab, #ffab18 45%, var(--gray-600));
+    border-color: color-mix(in oklab, var(--primary-500) 45%, var(--gray-600));
     background-color: color-mix(in oklab, white 6%, transparent);
 }
 
@@ -547,7 +557,7 @@
 }
 
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
-    background-color: #fff7ea;
+    background-color: var(--primary-50);
 }
 
 .dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
@@ -562,8 +572,13 @@
     width: 2px;
     height: 1.125rem;
     border-radius: 9999px;
-    background: linear-gradient(180deg, #ffc04d 0%, #ffab18 48%, #f59a0c 100%);
-    box-shadow: 0 0 6px color-mix(in oklab, #ffab18 35%, transparent);
+    background: linear-gradient(
+        180deg,
+        var(--primary-400) 0%,
+        var(--primary-500) 48%,
+        var(--primary-600) 100%
+    );
+    box-shadow: 0 0 6px color-mix(in oklab, var(--primary-500) 35%, transparent);
     transform: translateY(-50%);
     pointer-events: none;
 }

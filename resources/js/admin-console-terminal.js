@@ -257,8 +257,11 @@ document.addEventListener('alpine:init', () => {
 
             const data = await response.json();
             this.interactive.migrations = data.migrations ?? [];
+            this.interactive.executedCount = data.executed_count ?? 0;
+            this.interactive.pendingCount = data.pending_count ?? 0;
+            this.interactive.totalCount = data.count ?? this.interactive.migrations.length;
 
-            if ((data.migrations ?? []).length === 0) {
+            if ((data.count ?? 0) === 0) {
                 this.output += `\n${config.labels.interactiveNoMigrations}\n`;
                 this.cancelInteractive();
             }
@@ -270,7 +273,9 @@ document.addEventListener('alpine:init', () => {
             this.interactive.singleSelected = '';
 
             if (mode === 'all') {
-                this.interactive.selected = this.interactive.migrations.map((entry) => entry.name);
+                this.interactive.selected = this.interactive.migrations
+                    .filter((entry) => entry.executed)
+                    .map((entry) => entry.name);
                 this.previewInteractive();
 
                 return;
@@ -285,6 +290,16 @@ document.addEventListener('alpine:init', () => {
             }
 
             return [...this.interactive.selected];
+        },
+
+        migrationStatusLabel(entry) {
+            const labels = this.config.labels ?? {};
+
+            if (entry?.executed) {
+                return labels.interactiveStatusRan ?? 'ran';
+            }
+
+            return labels.interactiveStatusPending ?? 'pending';
         },
 
         filteredInteractiveMigrations() {
@@ -329,10 +344,11 @@ document.addEventListener('alpine:init', () => {
                 (data.notices ?? []).forEach((line) => lines.push(line));
                 (data.warnings ?? []).forEach((line) => lines.push(line));
 
-                if ((data.actions ?? []).length === 0) {
+                if ((data.actions ?? []).length === 0 && (data.pending_runs ?? []).length === 0) {
                     lines.push(config.labels.interactiveNothingToSync ?? 'Nothing to synchronize.');
                 } else {
                     lines.push('The following changes will be applied:');
+                    (data.pending_runs ?? []).forEach((run) => lines.push(`+ ${run.label}`));
                     (data.actions ?? []).forEach((action) => lines.push(`+ ${action.label}`));
                 }
 

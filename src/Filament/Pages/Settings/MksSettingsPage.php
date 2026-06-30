@@ -16,7 +16,6 @@ use Illuminate\Contracts\Support\Htmlable;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Filament\Clusters\SettingsCluster;
 use Miran\Mksine\Filament\Pages\Settings\Concerns\InteractsWithStoredSettings;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 
 abstract class MksSettingsPage extends Page implements HasActions, HasSchemas
 {
@@ -28,18 +27,6 @@ abstract class MksSettingsPage extends Page implements HasActions, HasSchemas
     protected static ?string $cluster = SettingsCluster::class;
 
     protected string $view = 'mksine::filament.pages.mks-settings-page';
-
-    public static function getCluster(): ?string
-    {
-        if (
-            AdminSidebarNavigation::usesShopSidebar()
-            && str_starts_with(static::class, 'Mksine\\Ecom\\')
-        ) {
-            return null;
-        }
-
-        return static::$cluster;
-    }
 
     /**
      * @return list<\Filament\Schemas\Components\Component>

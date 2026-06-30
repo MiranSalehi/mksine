@@ -93,6 +93,13 @@
                         </div>
 
                         <div x-show="interactive.step === 'select'" class="flex min-h-0 flex-1 flex-col gap-3">
+                            <p
+                                class="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-gray-400"
+                                x-text="(config.labels.interactiveMigrationSummary ?? ':executed executed · :pending pending · :total total')
+                                    .replace(':executed', String(interactive.executedCount ?? 0))
+                                    .replace(':pending', String(interactive.pendingCount ?? 0))
+                                    .replace(':total', String(interactive.totalCount ?? 0))"
+                            ></p>
                             <input
                                 type="search"
                                 x-model="interactive.search"
@@ -101,7 +108,9 @@
                             />
                             <div class="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-black/20 p-2">
                                 <template x-for="entry in filteredInteractiveMigrations()" :key="entry.name">
-                                    <label class="flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 hover:bg-white/5">
+                                    <label
+                                        class="flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 hover:bg-white/5"
+                                    >
                                         <input
                                             type="checkbox"
                                             class="mt-1 rounded border-gray-500 text-violet-500 focus:ring-violet-500"
@@ -117,7 +126,17 @@
                                             x-model="interactive.singleSelected"
                                             x-show="interactive.mode === 'single'"
                                         />
-                                        <span class="font-mono text-xs leading-relaxed text-emerald-200/90" x-text="entry.label"></span>
+                                        <span class="flex min-w-0 flex-1 items-start gap-2">
+                                            <span
+                                                class="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                :class="entry.executed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/15 text-amber-300/90'"
+                                                x-text="migrationStatusLabel(entry)"
+                                            ></span>
+                                            <span class="min-w-0 font-mono text-xs leading-relaxed text-emerald-200/90">
+                                                <span class="text-gray-400" x-text="`[${entry.source_label}]`"></span>
+                                                <span x-text="` ${entry.name}`"></span>
+                                            </span>
+                                        </span>
                                     </label>
                                 </template>
                                 <p

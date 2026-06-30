@@ -81,8 +81,8 @@ final class AdminSidebarNavigation
         return [
             self::GROUP_MEDIA,
             self::GROUP_MENUS,
-            self::GROUP_PRODUCTS,
             self::GROUP_ORDERS,
+            self::GROUP_PRODUCTS,
             self::GROUP_CONTENT,
             self::GROUP_STORE_SETTINGS,
             self::GROUP_USERS,

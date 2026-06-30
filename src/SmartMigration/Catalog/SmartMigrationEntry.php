@@ -16,8 +16,13 @@ final readonly class SmartMigrationEntry
 
     public function displayLabel(): string
     {
-        $status = $this->executed ? 'executed' : 'pending';
+        $status = $this->executed ? 'ran' : 'pending';
 
-        return sprintf('[%s] %s (%s)', $this->sourceLabel, $this->name, $status);
+        return sprintf('[%s] %s — %s', $this->sourceLabel, $this->name, $status);
+    }
+
+    public function statusKey(): string
+    {
+        return $this->executed ? 'ran' : 'pending';
     }
 }

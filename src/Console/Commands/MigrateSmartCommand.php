@@ -20,9 +20,9 @@ class MigrateSmartCommand extends Command
                             {--dry-run : Preview changes without modifying the database}
                             {--force : Force the operation to run when in production}
                             {--all : Sync all executed migrations without prompting}
-                            {--migration=* : Specific migration name(s) to sync}';
+                            {--migration=* : Specific migration name(s) to sync or run}';
 
-    protected $description = 'Synchronize missing schema elements from already-executed migrations (additive only)';
+    protected $description = 'Run pending migrations and synchronize missing schema from executed migrations (additive only)';
 
     public function handle(
         SmartMigrationOrchestrator $orchestrator,
@@ -39,26 +39,32 @@ class MigrateSmartCommand extends Command
             return self::SUCCESS;
         }
 
-        $plan = $orchestrator->analyze($database, null, $migrationNames);
-
-        foreach ($plan['notices'] as $notice) {
-            $this->components->warn($notice);
-        }
-
-        foreach ($plan['warnings'] as $warning) {
-            $this->components->warn($warning);
-        }
-
-        if ($plan['actions'] === []) {
-            $this->components->info('Nothing to synchronize.');
+        if ($migrationNames === []) {
+            $this->components->info('Nothing to do.');
 
             return self::SUCCESS;
         }
 
-        $this->displaySummary($plan['actions']);
+        $selection = $orchestrator->analyzeSelection($database, $migrationNames);
+
+        foreach ($selection['notices'] as $notice) {
+            $this->components->warn($notice);
+        }
+
+        foreach ($selection['warnings'] as $warning) {
+            $this->components->warn($warning);
+        }
+
+        if ($selection['actions'] === [] && $selection['pending_runs'] === []) {
+            $this->components->info('Nothing to synchronize or run.');
+
+            return self::SUCCESS;
+        }
+
+        $this->displaySummary($selection['pending_runs'], $selection['actions']);
 
         if ($dryRun) {
-            $lines = $orchestrator->execute(true, $database, null, $migrationNames);
+            $lines = $orchestrator->executeSelection(true, $database, $migrationNames, $this->output);
 
             foreach ($lines as $line) {
                 $this->line($line);
@@ -77,7 +83,7 @@ class MigrateSmartCommand extends Command
             return self::SUCCESS;
         }
 
-        $lines = $orchestrator->execute(false, $database, null, $migrationNames);
+        $lines = $orchestrator->executeSelection(false, $database, $migrationNames, $this->output);
 
         foreach ($lines as $line) {
             if (str_starts_with($line, '[OK]')) {
@@ -90,7 +96,7 @@ class MigrateSmartCommand extends Command
         }
 
         $this->newLine();
-        $this->components->info('Smart migration synchronization finished.');
+        $this->components->info('Smart migration finished.');
 
         return self::SUCCESS;
     }
@@ -114,42 +120,44 @@ class MigrateSmartCommand extends Command
             );
         }
 
-        $executed = $catalog->executedEntries();
+        $counts = $catalog->counts();
 
-        if ($executed === []) {
-            $this->components->info('No executed migrations were found.');
+        if ($counts['total'] === 0) {
+            $this->components->info('No migration files were found.');
 
             return [];
         }
 
         $this->components->info(sprintf(
-            'Loaded %d executed migration(s) from app, plugins, and themes.',
-            count($executed),
+            'Loaded %d migration file(s): %d executed (in migrations table), %d pending.',
+            $counts['total'],
+            $counts['executed'],
+            $counts['pending'],
         ));
 
         $mode = select(
-            label: 'How would you like to synchronize?',
+            label: 'How would you like to proceed?',
             options: [
-                'all' => 'Run all executed migrations',
+                'all' => 'Smart-sync all executed migrations',
                 'search' => 'Search and select migration(s)',
                 'single' => 'Pick one migration',
                 'cancel' => 'Cancel',
             ],
-            hint: 'Only migrations already recorded in the migrations table are listed.',
+            hint: 'Pending migrations will be run normally. Executed migrations will be smart-synced.',
         );
 
         return match ($mode) {
-            'all' => array_map(fn ($entry) => $entry->name, $executed),
+            'all' => array_map(fn ($entry) => $entry->name, $catalog->executedEntries()),
             'search' => multisearch(
-                label: 'Select migrations to synchronize',
-                options: fn (string $value): array => $catalog->searchOptions($value),
+                label: 'Select migrations to run or synchronize',
+                options: fn (string $value): array => $catalog->searchOptions($value, executedOnly: false),
                 placeholder: 'Search by name or source…',
-                hint: 'Space to toggle, enter to confirm.',
+                hint: 'Pending = run migration. Ran = smart-sync schema. Space to toggle, enter to confirm.',
             ),
             'single' => [
                 search(
-                    label: 'Select a migration to synchronize',
-                    options: fn (string $value): array => $catalog->searchOptions($value),
+                    label: 'Select a migration to run or synchronize',
+                    options: fn (string $value): array => $catalog->searchOptions($value, executedOnly: false),
                     placeholder: 'Search by name or source…',
                 ),
             ],
@@ -165,11 +173,16 @@ class MigrateSmartCommand extends Command
     }
 
     /**
+     * @param  list<string>  $pendingRuns
      * @param  list<\Miran\Mksine\SmartMigration\Diff\PlannedAction>  $actions
      */
-    private function displaySummary(array $actions): void
+    private function displaySummary(array $pendingRuns, array $actions): void
     {
         $this->components->info('The following changes will be applied:');
+
+        foreach ($pendingRuns as $pendingRun) {
+            $this->line('+ '.$pendingRun);
+        }
 
         foreach ($actions as $action) {
             $this->line('+ '.$action->label());

@@ -20,16 +20,29 @@ final class MigrateSmartInteractiveHandler
     /**
      * @return array{
      *     count: int,
-     *     migrations: list<array{name: string, source_label: string, source_key: string, label: string}>
+     *     executed_count: int,
+     *     pending_count: int,
+     *     migrations: list<array{
+     *         name: string,
+     *         source_label: string,
+     *         source_key: string,
+     *         label: string,
+     *         executed: bool,
+     *         status: string
+     *     }>
      * }
      */
     public function catalog(): array
     {
+        $counts = $this->catalog->counts();
+
         return [
-            'count' => count($this->catalog->executedEntries()),
+            'count' => $counts['total'],
+            'executed_count' => $counts['executed'],
+            'pending_count' => $counts['pending'],
             'migrations' => array_map(
                 fn (SmartMigrationEntry $entry): array => $this->serializeEntry($entry),
-                $this->catalog->executedEntries(),
+                $this->catalog->entries(),
             ),
         ];
     }
@@ -38,13 +51,14 @@ final class MigrateSmartInteractiveHandler
      * @param  list<string>  $migrationNames
      * @return array{
      *     actions: list<array{id: string, label: string}>,
+     *     pending_runs: list<array{label: string}>,
      *     notices: list<string>,
      *     warnings: list<string>
      * }
      */
     public function analyze(array $migrationNames, ?string $database = null): array
     {
-        $plan = $this->orchestrator->analyze($database, null, $migrationNames);
+        $selection = $this->orchestrator->analyzeSelection($database, $migrationNames);
 
         return [
             'actions' => array_map(
@@ -52,10 +66,14 @@ final class MigrateSmartInteractiveHandler
                     'id' => $action->id,
                     'label' => $action->label(),
                 ],
-                $plan['actions'],
+                $selection['actions'],
             ),
-            'notices' => $plan['notices'],
-            'warnings' => $plan['warnings'],
+            'pending_runs' => array_map(
+                fn (string $label): array => ['label' => $label],
+                $selection['pending_runs'],
+            ),
+            'notices' => $selection['notices'],
+            'warnings' => $selection['warnings'],
         ];
     }
 
@@ -74,7 +92,7 @@ final class MigrateSmartInteractiveHandler
             ];
         }
 
-        $lines = $this->orchestrator->execute($dryRun, $database, null, $migrationNames);
+        $lines = $this->orchestrator->executeSelection($dryRun, $database, $migrationNames);
 
         return [
             'lines' => $lines,
@@ -85,7 +103,14 @@ final class MigrateSmartInteractiveHandler
     }
 
     /**
-     * @return array{name: string, source_label: string, source_key: string, label: string}
+     * @return array{
+     *     name: string,
+     *     source_label: string,
+     *     source_key: string,
+     *     label: string,
+     *     executed: bool,
+     *     status: string
+     * }
      */
     private function serializeEntry(SmartMigrationEntry $entry): array
     {
@@ -94,6 +119,8 @@ final class MigrateSmartInteractiveHandler
             'source_label' => $entry->sourceLabel,
             'source_key' => $entry->sourceKey,
             'label' => $entry->displayLabel(),
+            'executed' => $entry->executed,
+            'status' => $entry->statusKey(),
         ];
     }
 }

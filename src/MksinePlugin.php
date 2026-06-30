@@ -7,14 +7,16 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
+use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Support\Logging\MksineLog;
 
 class MksinePlugin implements Plugin
 {
@@ -25,16 +27,21 @@ class MksinePlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->plugins([
-            FilamentShieldPlugin::make()
-                ->navigationSort(30)
-                ->navigationGroup(fn (): string => AdminSidebarNavigation::usesShopSidebar()
-                    ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
-                    : AdminSidebarNavigation::accessControlGroup())
-                ->navigationLabel(fn (): string => AdminSidebarNavigation::usesShopSidebar()
-                    ? __('mksine::common.access_rights')
-                    : __('filament-shield::filament-shield.nav.role.label')),
-        ]);
+        $panel
+            ->colors([
+                'primary' => Color::Blue
+            ])
+            ->spa()
+            ->plugins([
+                FilamentShieldPlugin::make()
+                    ->navigationSort(30)
+                    ->navigationGroup(fn(): string => AdminSidebarNavigation::usesShopSidebar()
+                        ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
+                        : AdminSidebarNavigation::accessControlGroup())
+                    ->navigationLabel(fn(): string => AdminSidebarNavigation::usesShopSidebar()
+                        ? __('mksine::common.access_rights')
+                        : __('filament-shield::filament-shield.nav.role.label')),
+            ]);
 
         // Register core MKS CMS resources and pages
         $panel
@@ -63,28 +70,28 @@ class MksinePlugin implements Plugin
         // Register MediaPickerModal component to be rendered on every page
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
-            fn (): string => Blade::render('@livewire(\'mksine::media-picker-modal\')')
+            fn(): string => Blade::render('@livewire(\'mksine::media-picker-modal\')')
         );
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::SIDEBAR_NAV_START,
-            fn (): string => view('mksine::filament.partials.sidebar-nav-search')->render(),
+            fn(): string => view('mksine::filament.partials.sidebar-nav-search')->render(),
         );
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::SIDEBAR_FOOTER,
-            fn (): string => view('mksine::filament.partials.sidebar-collapse-toggle')->render(),
+            fn(): string => view('mksine::filament.partials.sidebar-collapse-toggle')->render(),
         );
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::SCRIPTS_AFTER,
-            fn (): string => view('mksine::filament.partials.sidebar-store-fix')->render()
-                .view('mksine::filament.partials.sidebar-nav-search-script')->render(),
+            fn(): string => view('mksine::filament.partials.sidebar-store-fix')->render()
+                . view('mksine::filament.partials.sidebar-nav-search-script')->render(),
         );
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::STYLES_AFTER,
-            fn (): string => view('mksine::filament.partials.panel-styles-after')->render(),
+            fn(): string => view('mksine::filament.partials.panel-styles-after')->render(),
         );
     }
 
@@ -137,7 +144,7 @@ class MksinePlugin implements Plugin
 
                 if (! empty($assets)) {
                     FilamentAsset::register($assets);
-                    Log::debug("Registered assets for plugin: {$pluginId}");
+                    MksineLog::debug("Registered assets for plugin: {$pluginId}");
                 }
             }
         } catch (\Throwable $e) {
@@ -178,7 +185,7 @@ class MksinePlugin implements Plugin
 
                 if ($resourcesPath && $resourcesNamespace) {
                     $panel->discoverResources($resourcesPath, $resourcesNamespace);
-                    Log::debug("Discovered Filament resources for plugin: {$pluginId}", [
+                    MksineLog::debug("Discovered Filament resources for plugin: {$pluginId}", [
                         'path' => $resourcesPath,
                         'namespace' => $resourcesNamespace,
                     ]);
@@ -190,7 +197,7 @@ class MksinePlugin implements Plugin
 
                 if ($pagesPath && $pagesNamespace) {
                     $panel->discoverPages($pagesPath, $pagesNamespace);
-                    Log::debug("Discovered Filament pages for plugin: {$pluginId}", [
+                    MksineLog::debug("Discovered Filament pages for plugin: {$pluginId}", [
                         'path' => $pagesPath,
                         'namespace' => $pagesNamespace,
                     ]);
@@ -202,7 +209,7 @@ class MksinePlugin implements Plugin
 
                 if ($widgetsPath && $widgetsNamespace) {
                     $panel->discoverWidgets($widgetsPath, $widgetsNamespace);
-                    Log::debug("Discovered Filament widgets for plugin: {$pluginId}", [
+                    MksineLog::debug("Discovered Filament widgets for plugin: {$pluginId}", [
                         'path' => $widgetsPath,
                         'namespace' => $widgetsNamespace,
                     ]);
@@ -229,19 +236,19 @@ class MksinePlugin implements Plugin
                 return;
             }
 
-            $pagesPath = $theme->path.'/php/Filament/Pages';
-            $pagesNamespace = 'Themes\\'.str_replace(['-', ' '], '', ucwords(str_replace('-', ' ', $theme->identifier))).'\\Filament\\Pages';
+            $pagesPath = $theme->path . '/php/Filament/Pages';
+            $pagesNamespace = 'Themes\\' . str_replace(['-', ' '], '', ucwords(str_replace('-', ' ', $theme->identifier))) . '\\Filament\\Pages';
 
             if (is_dir($pagesPath)) {
                 $panel->discoverPages($pagesPath, $pagesNamespace);
-                Log::debug('Discovered Filament pages for active theme', [
+                MksineLog::debug('Discovered Filament pages for active theme', [
                     'theme' => $theme->identifier,
                     'path' => $pagesPath,
                     'namespace' => $pagesNamespace,
                 ]);
             }
         } catch (\Throwable $e) {
-            Log::warning('Failed to discover theme Filament components: '.$e->getMessage());
+            Log::warning('Failed to discover theme Filament components: ' . $e->getMessage());
         }
     }
 
@@ -292,7 +299,7 @@ class MksinePlugin implements Plugin
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('Failed to register plugin Filament packages: '.$e->getMessage());
+            Log::warning('Failed to register plugin Filament packages: ' . $e->getMessage());
         }
     }
 

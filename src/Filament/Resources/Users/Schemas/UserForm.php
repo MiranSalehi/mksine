@@ -79,10 +79,10 @@ class UserForm
                             ->label(__('mksine::users.password'))
                             ->password()
                             ->revealable()
-                            ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->required(fn (string $context): bool => $context === 'create')
+                            ->dehydrated(fn(?string $state): bool => filled($state))
+                            ->required(fn(string $context): bool => $context === 'create')
                             ->maxLength(255)
-                            ->helperText(fn (string $context): ?string => $context === 'edit'
+                            ->helperText(fn(string $context): ?string => $context === 'edit'
                                 ? __('mksine::users.password_leave_blank')
                                 : null),
                         CheckboxList::make('roles')
@@ -92,7 +92,7 @@ class UserForm
                     ->columnSpanFull()
                     ->inlineLabel()
                     ->collapsible()
-                    ->collapsed(fn (string $context): bool => $context === 'edit'),
+                    ->collapsed(fn(string $context): bool => $context === 'edit'),
             ]);
 
         // Apply form hooks

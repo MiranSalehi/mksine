@@ -57,7 +57,7 @@ return array (
   'deactivate' => 'غیرفعال‌سازی',
   'uninstall' => 'حذف نصب',
   'uninstall_confirm' => 'آیا از حذف نصب این افزونه اطمینان دارید؟',
-  'view_log' => 'مشاهدهٔ لاگ',
+  'view_log' => 'لاگ',
   'boot_failed_message' => 'این افزونه در زمان راه‌اندازی خطا داد و به‌طور خودکار غیرفعال شد.',
   'plugin_log' => 'لاگ افزونه',
   'clear_log' => 'پاک کردن لاگ',

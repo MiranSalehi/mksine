@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\MediaAttachment;
+use Miran\Mksine\Support\Logging\MksineLog;
 
 class MediaPicker extends Field
 {
@@ -395,7 +396,7 @@ class MediaPicker extends Field
 
             foreach ($media as $item) {
                 if (! $this->isMimeTypeAccepted($item->mime_type, $acceptedTypes)) {
-                    Log::debug('MediaPicker: Invalid mime type detected', [
+                    MksineLog::debug('MediaPicker: Invalid mime type detected', [
                         'media_id' => $item->id,
                         'mime_type' => $item->mime_type,
                         'accepted_types' => $acceptedTypes,

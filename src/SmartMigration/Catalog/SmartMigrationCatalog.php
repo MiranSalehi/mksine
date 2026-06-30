@@ -51,6 +51,64 @@ final class SmartMigrationCatalog
     }
 
     /**
+     * @return array{total: int, executed: int, pending: int}
+     */
+    public function counts(): array
+    {
+        $entries = $this->entries();
+        $executed = count(array_filter($entries, fn (SmartMigrationEntry $entry): bool => $entry->executed));
+
+        return [
+            'total' => count($entries),
+            'executed' => $executed,
+            'pending' => count($entries) - $executed,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @return array{
+     *     executed: list<string>,
+     *     pending: list<string>,
+     *     unknown: list<string>
+     * }
+     */
+    public function partitionNames(array $names): array
+    {
+        $byName = [];
+
+        foreach ($this->entries() as $entry) {
+            $byName[$entry->name] = $entry;
+        }
+
+        $executed = [];
+        $pending = [];
+        $unknown = [];
+
+        foreach (array_values(array_unique($names)) as $name) {
+            $entry = $byName[$name] ?? null;
+
+            if ($entry === null) {
+                $unknown[] = $name;
+
+                continue;
+            }
+
+            if ($entry->executed) {
+                $executed[] = $name;
+            } else {
+                $pending[] = $name;
+            }
+        }
+
+        return [
+            'executed' => $executed,
+            'pending' => $pending,
+            'unknown' => $unknown,
+        ];
+    }
+
+    /**
      * @return array<string, string>
      */
     public function searchOptions(string $search, bool $executedOnly = true): array

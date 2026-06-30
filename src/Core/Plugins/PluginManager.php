@@ -8,6 +8,7 @@ use Composer\Autoload\ClassLoader;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Plugins\Contracts\PluginInterface;
+use Miran\Mksine\Support\Logging\MksineLog;
 
 /**
  * Central coordinator for the MKS CMS plugin system.
@@ -187,7 +188,7 @@ final class PluginManager
             // Clear boot guard flag
             $this->bootGuard->endBoot($pluginId);
 
-            Log::debug("Plugin booted successfully: {$pluginId}");
+            MksineLog::debug("Plugin booted successfully: {$pluginId}");
 
         } catch (\Throwable $e) {
             // Boot failed - log to plugin log (with trace) and disable

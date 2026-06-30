@@ -9,6 +9,7 @@ use Illuminate\Database\Migrations\Migrator;
 use Miran\Mksine\SmartMigration\Catalog\SmartMigrationCatalog;
 use Miran\Mksine\SmartMigration\Capture\MigrationCaptureRunner;
 use Miran\Mksine\SmartMigration\Diff\SchemaDiffPlanner;
+use Miran\Mksine\SmartMigration\Execution\PendingMigrationRunner;
 use Miran\Mksine\SmartMigration\Execution\SchemaSyncExecutor;
 use Miran\Mksine\SmartMigration\Inspection\DatabaseSchemaInspector;
 use Miran\Mksine\SmartMigration\Progress\SmartMigrationProgressStore;
@@ -21,7 +22,68 @@ final class SmartMigrationOrchestrator
         private readonly MigrationCaptureRunner $captureRunner,
         private readonly SmartMigrationProgressStore $progressStore,
         private readonly SmartMigrationCatalog $catalog,
+        private readonly PendingMigrationRunner $pendingRunner,
     ) {}
+
+    /**
+     * @param  list<string>  $migrationNames
+     * @return array{
+     *     executed_names: list<string>,
+     *     pending_names: list<string>,
+     *     unknown_names: list<string>,
+     *     actions: list<\Miran\Mksine\SmartMigration\Diff\PlannedAction>,
+     *     pending_runs: list<string>,
+     *     notices: list<string>,
+     *     warnings: list<string>
+     * }
+     */
+    public function analyzeSelection(?string $database, array $migrationNames): array
+    {
+        $partition = $this->catalog->partitionNames($migrationNames);
+        $plan = $this->analyze($database, null, $partition['executed']);
+        $warnings = $plan['warnings'];
+
+        if ($partition['unknown'] !== []) {
+            $warnings[] = '[WARNING] Unknown migration(s): '.implode(', ', $partition['unknown']);
+        }
+
+        return [
+            'executed_names' => $partition['executed'],
+            'pending_names' => $partition['pending'],
+            'unknown_names' => $partition['unknown'],
+            'actions' => $plan['actions'],
+            'pending_runs' => $this->pendingRunner->describe($partition['pending']),
+            'notices' => $plan['notices'],
+            'warnings' => $warnings,
+        ];
+    }
+
+    /**
+     * @param  list<string>  $migrationNames
+     * @return list<string>
+     */
+    public function executeSelection(
+        bool $dryRun,
+        ?string $database,
+        array $migrationNames,
+        ?\Symfony\Component\Console\Output\OutputInterface $output = null,
+    ): array {
+        $partition = $this->catalog->partitionNames($migrationNames);
+        $log = [];
+
+        if ($partition['unknown'] !== []) {
+            $log[] = '[WARNING] Unknown migration(s): '.implode(', ', $partition['unknown']);
+        }
+
+        $pendingLines = $this->pendingRunner->run($dryRun, $database, $partition['pending'], $output);
+        $log = array_merge($log, $pendingLines);
+
+        if ($partition['executed'] !== []) {
+            $log = array_merge($log, $this->execute($dryRun, $database, null, $partition['executed']));
+        }
+
+        return $log;
+    }
 
     /**
      * @return array{

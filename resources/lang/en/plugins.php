@@ -57,7 +57,7 @@ return [
     'deactivate' => 'Deactivate',
     'uninstall' => 'Uninstall',
     'uninstall_confirm' => 'Are you sure you want to uninstall this plugin?',
-    'view_log' => 'View log',
+    'view_log' => 'Log',
     'boot_failed_message' => 'This plugin failed during boot and was auto-disabled.',
     'plugin_log' => 'Plugin log',
     'clear_log' => 'Clear log',

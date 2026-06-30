@@ -1,12 +1,12 @@
 <?php
 
-return array (
+return array(
   'navigation_label' => 'تنظیمات',
   'title' => 'تنظیمات',
   'save' => 'ذخیره',
   'save_success' => 'تنظیمات با موفقیت ذخیره شد',
-  'tabs' => 
-  array (
+  'tabs' =>
+  array(
     'general' => 'عمومی',
     'permalinks' => 'نشانی‌های ثابت',
     'extensions' => 'افزونه‌ها',
