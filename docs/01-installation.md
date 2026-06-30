@@ -22,7 +22,7 @@ MKSine is a **Filament 4** CMS package. You need a working Laravel application, 
 | 1 | Require the package | `composer require miran/mksine` |
 | 2 | Create the Filament admin panel | `php artisan filament:install --panels` |
 | 3 | Register `MksinePlugin`; **remove** `Dashboard::class` from provider | Edit `AdminPanelProvider` (see below) |
-| 4 | Publish assets, migrate, generate permissions | `php artisan mksine:install --migrate` |
+| 4 | Publish configs, migrate, generate permissions | `php artisan mksine:install --migrate` (publishes `config/mksine.php`, `config/livewire.php`, `config/filament.php`) |
 | 5 | Create a super admin | `php artisan mksine:create-super-admin` |
 | 6 | Smoke test | Visit `/admin` |
 

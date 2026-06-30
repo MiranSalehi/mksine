@@ -24,6 +24,7 @@ use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\UploadLimits;
 use ZipArchive;
 
 class ManagePlugins extends Page
@@ -105,7 +106,7 @@ class ManagePlugins extends Page
                         ->label(__('mksine::plugins.plugin_zip_file'))
                         ->helperText(__('mksine::plugins.plugin_zip_helper'))
                         ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
-                        ->maxSize(51200) // 50MB max
+                        ->maxSize(UploadLimits::maxSizeKb())
                         ->required()
                         ->storeFiles(false), // Don't store, we handle it manually
                 ])
@@ -166,7 +167,7 @@ class ManagePlugins extends Page
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.plugin_zip_helper'))
                         ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
-                        ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
+                        ->maxSize(UploadLimits::updaterMaxZipKb())
                         ->required()
                         ->storeFiles(false),
 

@@ -7,7 +7,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use Miran\Mksine\Support\UploadLimits;
 
 class MediaForm
 {
@@ -37,7 +39,7 @@ class MediaForm
                             ->label(__('mksine::media.file'))
                             ->required()
                             ->acceptedFileTypes(['image/*', 'video/*', 'audio/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-                            ->maxSize(10240) // 10MB
+                            ->maxSize(UploadLimits::mediaMaxKb())
                             ->disk(fn ($get) => $get('disk') ?? 'public')
                             ->directory('media')
                             ->visibility('public')
@@ -65,7 +67,7 @@ class MediaForm
                                         // Ensure path includes 'media/' prefix
                                         $fullPath = str_starts_with($fileRelativePath, 'media/')
                                             ? $fileRelativePath
-                                            : 'media/' . $fileRelativePath;
+                                            : 'media/'.$fileRelativePath;
                                         $set('path', $fullPath);
                                     }
                                 }
@@ -99,7 +101,7 @@ class MediaForm
                                 // Update path and URL when disk changes
                                 if ($get('file_name')) {
                                     $fileName = $get('file_name');
-                                    $set('path', 'media/' . $fileName);
+                                    $set('path', 'media/'.$fileName);
 
                                     // Generate URL based on disk configuration
                                     $diskConfig = config("filesystems.disks.{$state}", []);
@@ -107,22 +109,22 @@ class MediaForm
 
                                     if ($diskUrl) {
                                         // Use URL from filesystem config
-                                        $url = rtrim($diskUrl, '/') . '/media/' . $fileName;
+                                        $url = rtrim($diskUrl, '/').'/media/'.$fileName;
                                         $set('url', $url);
                                     } else {
                                         // Try to get URL from Storage facade
                                         try {
-                                            /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+                                            /** @var FilesystemAdapter $storage */
                                             $storage = Storage::disk($state);
                                             if (method_exists($storage, 'url')) {
-                                                $url = $storage->url('media/' . $fileName);
+                                                $url = $storage->url('media/'.$fileName);
                                                 $set('url', $url);
                                             } else {
-                                                $set('url', 'media/' . $fileName);
+                                                $set('url', 'media/'.$fileName);
                                             }
                                         } catch (\Exception $e) {
                                             // If disk doesn't support URL, use path
-                                            $set('url', 'media/' . $fileName);
+                                            $set('url', 'media/'.$fileName);
                                         }
                                     }
                                 }

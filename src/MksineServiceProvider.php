@@ -420,6 +420,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $this->registerPublishableLang();
         $this->registerPublishableFonts();
+        $this->registerPublishableInstallerConfigs();
         $this->ensureDefaultLangInProject();
 
         // Configure Language Switch: locales from TranslationFileManager, render in panel header (topbar).
@@ -1290,6 +1291,26 @@ class MksineServiceProvider extends PackageServiceProvider
 
         if ($publishArray !== []) {
             $this->publishes($publishArray, 'mksine-fonts');
+        }
+    }
+
+    /**
+     * Register publishable installer configs (livewire + filament stubs).
+     */
+    private function registerPublishableInstallerConfigs(): void
+    {
+        $livewireConfig = __DIR__.'/../config/livewire.php';
+        if (file_exists($livewireConfig)) {
+            $this->publishes([
+                $livewireConfig => config_path('livewire.php'),
+            ], 'mksine-livewire-config');
+        }
+
+        $filamentConfig = __DIR__.'/../config/filament.php';
+        if (file_exists($filamentConfig)) {
+            $this->publishes([
+                $filamentConfig => config_path('filament.php'),
+            ], 'mksine-filament-config');
         }
     }
 

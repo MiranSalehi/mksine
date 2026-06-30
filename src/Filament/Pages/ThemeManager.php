@@ -26,6 +26,7 @@ use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\UploadLimits;
 use ZipArchive;
 
 class ThemeManager extends Page
@@ -103,7 +104,7 @@ class ThemeManager extends Page
                         ->label(__('mksine::themes.theme_zip_file'))
                         ->helperText(__('mksine::themes.theme_zip_helper'))
                         ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
-                        ->maxSize(51200) // 50MB max
+                        ->maxSize(UploadLimits::maxSizeKb())
                         ->required()
                         ->storeFiles(false),
                 ])
@@ -164,7 +165,7 @@ class ThemeManager extends Page
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.theme_zip_helper'))
                         ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
-                        ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
+                        ->maxSize(UploadLimits::updaterMaxZipKb())
                         ->required()
                         ->storeFiles(false),
 

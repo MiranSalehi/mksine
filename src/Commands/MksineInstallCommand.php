@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Commands;
 
+use BezhanSalleh\FilamentShield\FilamentShieldServiceProvider;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -32,12 +33,7 @@ class MksineInstallCommand extends Command
         $this->validateUserModelForMksine();
 
         // Publish config file
-        $this->info('📄 Publishing configuration file...');
-        $this->call('vendor:publish', [
-            '--provider' => 'Miran\Mksine\MksineServiceProvider',
-            '--tag' => 'mksine-config',
-            '--force' => $this->option('force'),
-        ]);
+        $this->publishConfigurationFiles();
 
         // Publish migrations
         $this->info('📦 Publishing migrations...');
@@ -87,6 +83,19 @@ class MksineInstallCommand extends Command
         return self::SUCCESS;
     }
 
+    protected function publishConfigurationFiles(): void
+    {
+        $this->info('📄 Publishing configuration files (mksine, livewire, filament)...');
+
+        foreach (['mksine-config', 'mksine-livewire-config', 'mksine-filament-config'] as $tag) {
+            $this->call('vendor:publish', [
+                '--provider' => 'Miran\Mksine\MksineServiceProvider',
+                '--tag' => $tag,
+                '--force' => $this->option('force'),
+            ]);
+        }
+    }
+
     protected function clearInstallationCaches(): void
     {
         $this->info('🧹 Clearing application caches...');
@@ -126,7 +135,7 @@ class MksineInstallCommand extends Command
 
     protected function generateShieldPermissions(): void
     {
-        if (! class_exists(\BezhanSalleh\FilamentShield\FilamentShieldServiceProvider::class)) {
+        if (! class_exists(FilamentShieldServiceProvider::class)) {
             return;
         }
 
@@ -320,7 +329,7 @@ class MksineInstallCommand extends Command
      */
     protected function publishShieldAuthorization(): void
     {
-        if (! class_exists(\BezhanSalleh\FilamentShield\FilamentShieldServiceProvider::class)) {
+        if (! class_exists(FilamentShieldServiceProvider::class)) {
             $this->warn('🛡 Filament Shield is not installed; skipping Shield/permission publish.');
 
             return;

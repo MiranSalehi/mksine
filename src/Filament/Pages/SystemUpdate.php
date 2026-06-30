@@ -19,6 +19,7 @@ use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\CoreUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Super-Admin-only Filament page for updating the core miran/mksine package.
@@ -89,7 +90,7 @@ class SystemUpdate extends Page
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.core_zip_helper'))
                         ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
-                        ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
+                        ->maxSize(UploadLimits::updaterMaxZipKb())
                         ->required()
                         ->storeFiles(false),
 

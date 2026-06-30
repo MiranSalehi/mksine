@@ -44,7 +44,7 @@ Without step 2, the installer skips `shield:generate` and prints instructions to
 What it does:
 
 1. Copies `Miran\Mksine\Models\User` to `app/Models/User.php` (skips when present unless `--force`). The namespace is rewritten to `App\Models`.
-2. Publishes the package config (`config/mksine.php`), migrations, translations, and fonts under their respective `vendor:publish` tags (`mksine-config`, `mksine-migrations`, `mksine-lang`, `mksine-fonts`).
+2. Publishes configuration files: `config/mksine.php` (`mksine-config`), `config/livewire.php` (`mksine-livewire-config`, 100 MB upload default via `MKS_CMS_MAX_UPLOAD_MB`), and `config/filament.php` (`mksine-filament-config`), plus migrations, translations, and fonts (`mksine-migrations`, `mksine-lang`, `mksine-fonts`).
 3. Publishes **Filament Shield** and **Spatie Permission** assets when `bezhansalleh/filament-shield` is installed (same non-interactive steps as `shield:setup`):
    - `filament-shield-config` → `config/filament-shield.php` (skipped if the file already exists, unless `--force`)
    - `permission-config` → `config/permission.php` (same skip rule)

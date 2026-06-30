@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Miran\Mksine\Models\Post;
 
 /**
  * MKSine Configuration
@@ -111,6 +112,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Upload limits (admin)
+    |--------------------------------------------------------------------------
+    |
+    | Maximum upload size in megabytes for Filament file fields: media library,
+    | plugin/theme ZIP install, and the ZIP updater UI. Drives the published
+    | config/livewire.php stub (MKS_CMS_MAX_UPLOAD_MB). PHP upload_max_filesize
+    | and post_max_size on the server must be >= this value.
+    |
+    */
+    'uploads' => [
+        'max_size_mb' => (int) env('MKS_CMS_MAX_UPLOAD_MB', 100),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | CKEditor (rich text) — language / direction
     |--------------------------------------------------------------------------
     |
@@ -170,8 +186,8 @@ return [
         // How many historical backups to retain per target (oldest pruned).
         'keep_backups' => (int) env('MKS_CMS_UPDATER_KEEP_BACKUPS', 3),
 
-        // Upload size cap for ZIPs (in megabytes).
-        'max_zip_size_mb' => (int) env('MKS_CMS_UPDATER_MAX_ZIP_MB', 256),
+        // Upload size cap for ZIPs (in megabytes). Defaults to uploads.max_size_mb.
+        'max_zip_size_mb' => (int) env('MKS_CMS_UPDATER_MAX_ZIP_MB', env('MKS_CMS_MAX_UPLOAD_MB', 100)),
 
         // Lock file staleness threshold (informational; flock itself is blocking).
         'lock_timeout_sec' => (int) env('MKS_CMS_UPDATER_LOCK_TTL', 300),
@@ -196,8 +212,8 @@ return [
         // Media upload path (relative to disk)
         'path' => env('MKS_CMS_MEDIA_PATH', 'media'),
 
-        // Maximum file size in KB (default: 10MB)
-        'max_size' => env('MKS_CMS_MEDIA_MAX_SIZE', 10240),
+        // Maximum file size in KB (default: 100 MB — see uploads.max_size_mb).
+        'max_size' => (int) env('MKS_CMS_MEDIA_MAX_SIZE', (int) env('MKS_CMS_MAX_UPLOAD_MB', 100) * 1024),
 
         // Allowed mime types
         'allowed_types' => [
@@ -574,7 +590,7 @@ return [
     |
     */
     'commentable_types' => [
-        \Miran\Mksine\Models\Post::class,
+        Post::class,
     ],
 
     /*

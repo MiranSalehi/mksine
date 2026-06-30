@@ -22,11 +22,7 @@ final class LivewireUploadConfiguration
      */
     public static function requiredMaxUploadKb(): int
     {
-        $pluginInstallMaxKb = 51200; // ManagePlugins / ThemeManager upload actions (50 MB).
-
-        $updaterMaxKb = max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024);
-
-        return max($pluginInstallMaxKb, $updaterMaxKb);
+        return max(UploadLimits::maxSizeKb(), UploadLimits::updaterMaxZipKb());
     }
 
     /**

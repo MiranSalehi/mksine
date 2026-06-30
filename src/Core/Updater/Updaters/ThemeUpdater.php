@@ -14,6 +14,7 @@ use Miran\Mksine\Core\Updater\UpdateLog;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Core\Updater\UpdateTarget;
+use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Updates an installed project theme from a ZIP upload.
@@ -76,7 +77,7 @@ final class ThemeUpdater
 
         $themesDir = realpath(resource_path('views/themes'));
         $currentReal = realpath($current->path);
-        if ($themesDir === false || $currentReal === false || ! str_starts_with($currentReal, $themesDir . DIRECTORY_SEPARATOR)) {
+        if ($themesDir === false || $currentReal === false || ! str_starts_with($currentReal, $themesDir.DIRECTORY_SEPARATOR)) {
             throw UpdateException::validation("Theme '{$themeIdentifier}' path is not inside the project themes directory.");
         }
 
@@ -86,14 +87,14 @@ final class ThemeUpdater
         $log->step('validate-zip', "zip={$zipPath}");
         $steps[] = 'validate-zip';
 
-        $stagingDir = $themesDir . DIRECTORY_SEPARATOR . '.mks-staging-' . bin2hex(random_bytes(4)) . '-' . $themeIdentifier;
+        $stagingDir = $themesDir.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-'.$themeIdentifier;
 
         $extractedRoot = ArchiveExtractor::extract($zipPath, $stagingDir);
         $log->step('extract', "root={$extractedRoot}");
         $steps[] = 'extract';
 
         try {
-            $themeJsonPath = $extractedRoot . DIRECTORY_SEPARATOR . 'theme.json';
+            $themeJsonPath = $extractedRoot.DIRECTORY_SEPARATOR.'theme.json';
             if (! is_file($themeJsonPath)) {
                 throw UpdateException::validation('theme.json not found at root of extracted content.');
             }
@@ -127,7 +128,7 @@ final class ThemeUpdater
             }
 
             // dist/ is REQUIRED — production servers have no npm to build it.
-            $distPath = $extractedRoot . DIRECTORY_SEPARATOR . 'dist';
+            $distPath = $extractedRoot.DIRECTORY_SEPARATOR.'dist';
             if (! is_dir($distPath)) {
                 throw UpdateException::validation(
                     'Theme ZIP is missing dist/. Production servers cannot build assets — include pre-built dist/ in the archive.'
@@ -160,8 +161,8 @@ final class ThemeUpdater
                 $log->step('publish-assets');
                 $steps[] = 'publish-assets';
             } catch (\Throwable $e) {
-                $log->warning('publishAssets failed: ' . $e->getMessage());
-                $warnings[] = 'Theme asset publish failed: ' . $e->getMessage();
+                $log->warning('publishAssets failed: '.$e->getMessage());
+                $warnings[] = 'Theme asset publish failed: '.$e->getMessage();
             }
 
             try {
@@ -169,8 +170,8 @@ final class ThemeUpdater
                 $log->step('publish-lang');
                 $steps[] = 'publish-lang';
             } catch (\Throwable $e) {
-                $log->warning('theme-publish-lang failed: ' . $e->getMessage());
-                $warnings[] = 'Theme translation publish failed: ' . $e->getMessage();
+                $log->warning('theme-publish-lang failed: '.$e->getMessage());
+                $warnings[] = 'Theme translation publish failed: '.$e->getMessage();
             }
 
             try {
@@ -178,13 +179,13 @@ final class ThemeUpdater
                 $log->step('optimize-clear');
                 $steps[] = 'optimize-clear';
             } catch (\Throwable $e) {
-                $log->warning('optimize:clear failed: ' . $e->getMessage());
+                $log->warning('optimize:clear failed: '.$e->getMessage());
             }
 
             $keep = (int) config('mksine.updater.keep_backups', 3);
             $pruned = $backupManager->prune($current->path, $keep);
             if ($pruned !== []) {
-                $log->info('Pruned ' . count($pruned) . ' old backup(s).');
+                $log->info('Pruned '.count($pruned).' old backup(s).');
             }
 
             return [
@@ -205,7 +206,7 @@ final class ThemeUpdater
 
     private function assertMaxZipSize(string $zipPath): void
     {
-        $maxMb = (int) config('mksine.updater.max_zip_size_mb', 256);
+        $maxMb = UploadLimits::updaterMaxZipMb();
         $size = @filesize($zipPath) ?: 0;
         if ($size <= 0) {
             throw UpdateException::validation('Uploaded ZIP is empty or unreadable.');

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Updater\Updaters;
 
+use Illuminate\Console\Application;
+use Illuminate\Database\Console\Migrations\MigrateCommand;
+use Illuminate\Foundation\Console\OptimizeClearCommand;
+use Illuminate\Foundation\Console\VendorPublishCommand;
 use Illuminate\Support\Facades\Artisan;
 use Miran\Mksine\Core\Updater\ArchiveExtractor;
 use Miran\Mksine\Core\Updater\AtomicReplacer;
@@ -14,6 +18,7 @@ use Miran\Mksine\Core\Updater\UpdateLog;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Core\Updater\UpdateTarget;
+use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Updates the core miran/mksine package in-place from a ZIP upload.
@@ -95,14 +100,14 @@ final class CoreUpdater
             throw UpdateException::validation('base_path("packages") does not resolve.');
         }
 
-        $stagingDir = $packagesDir . DIRECTORY_SEPARATOR . '.mks-staging-' . bin2hex(random_bytes(4)) . '-core';
+        $stagingDir = $packagesDir.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-core';
 
         $extractedRoot = ArchiveExtractor::extract($zipPath, $stagingDir);
         $log->step('extract', "root={$extractedRoot}");
         $steps[] = 'extract';
 
         try {
-            $newComposerJson = $extractedRoot . DIRECTORY_SEPARATOR . 'composer.json';
+            $newComposerJson = $extractedRoot.DIRECTORY_SEPARATOR.'composer.json';
             if (! is_file($newComposerJson)) {
                 throw UpdateException::validation('composer.json not found in ZIP.');
             }
@@ -114,7 +119,7 @@ final class CoreUpdater
 
             if (($composerData['name'] ?? null) !== self::CORE_COMPOSER_NAME) {
                 throw UpdateException::validation(
-                    'ZIP composer.json.name is "' . (string) ($composerData['name'] ?? '') . '", expected "' . self::CORE_COMPOSER_NAME . '".'
+                    'ZIP composer.json.name is "'.(string) ($composerData['name'] ?? '').'", expected "'.self::CORE_COMPOSER_NAME.'".'
                 );
             }
 
@@ -136,7 +141,7 @@ final class CoreUpdater
 
             // Dependency diff guard — production has no composer access.
             ComposerDependencyDiff::assertNoDependencyChanges(
-                $packagePath . DIRECTORY_SEPARATOR . 'composer.json',
+                $packagePath.DIRECTORY_SEPARATOR.'composer.json',
                 $newComposerJson
             );
             $log->step('dependency-diff', 'no changes');
@@ -170,9 +175,9 @@ final class CoreUpdater
                 try {
                     Artisan::call('vendor:publish', ['--tag' => $tag, '--force' => true]);
                     $log->step('publish', $tag);
-                    $steps[] = 'publish:' . $tag;
+                    $steps[] = 'publish:'.$tag;
                 } catch (\Throwable $e) {
-                    $log->warning("publish {$tag} failed: " . $e->getMessage());
+                    $log->warning("publish {$tag} failed: ".$e->getMessage());
                     $warnings[] = "vendor:publish --tag={$tag} failed after swap.";
                 }
             }
@@ -183,7 +188,7 @@ final class CoreUpdater
                 $log->step('optimize-clear');
                 $steps[] = 'optimize-clear';
             } catch (\Throwable $e) {
-                $log->warning('optimize:clear failed: ' . $e->getMessage());
+                $log->warning('optimize:clear failed: '.$e->getMessage());
                 $warnings[] = 'optimize:clear failed after swap.';
             }
 
@@ -192,14 +197,14 @@ final class CoreUpdater
                 Artisan::call('migrate', ['--force' => true]);
                 $output = trim(Artisan::output());
                 if ($output !== '') {
-                    $log->info('migrate output: ' . str_replace(["\r", "\n"], [' ', ' '], $output));
+                    $log->info('migrate output: '.str_replace(["\r", "\n"], [' ', ' '], $output));
                 }
                 $log->step('migrate');
                 $steps[] = 'migrate';
             } catch (\Throwable $e) {
-                $log->error('migrate failed: ' . $e->getMessage());
+                $log->error('migrate failed: '.$e->getMessage());
                 throw UpdateException::post(
-                    "Core swapped to {$toVersion} but migrations failed. Manual recovery required. See log: " . $log->path(),
+                    "Core swapped to {$toVersion} but migrations failed. Manual recovery required. See log: ".$log->path(),
                     $e
                 );
             }
@@ -207,7 +212,7 @@ final class CoreUpdater
             $keep = (int) config('mksine.updater.keep_backups', 3);
             $pruned = $backupManager->prune($packagePath, $keep);
             if ($pruned !== []) {
-                $log->info('Pruned ' . count($pruned) . ' old backup(s).');
+                $log->info('Pruned '.count($pruned).' old backup(s).');
             }
 
             return [
@@ -237,10 +242,10 @@ final class CoreUpdater
     private function preloadPostSwapClasses(): void
     {
         $classes = [
-            \Illuminate\Console\Application::class,
-            \Illuminate\Foundation\Console\OptimizeClearCommand::class,
-            \Illuminate\Database\Console\Migrations\MigrateCommand::class,
-            \Illuminate\Foundation\Console\VendorPublishCommand::class,
+            Application::class,
+            OptimizeClearCommand::class,
+            MigrateCommand::class,
+            VendorPublishCommand::class,
         ];
         foreach ($classes as $class) {
             class_exists($class);
@@ -249,7 +254,7 @@ final class CoreUpdater
 
     private function readConfigVersion(string $extractedRoot): ?string
     {
-        $configFile = $extractedRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'mksine.php';
+        $configFile = $extractedRoot.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'mksine.php';
         if (! is_file($configFile)) {
             return null;
         }
@@ -264,7 +269,7 @@ final class CoreUpdater
 
     private function assertMaxZipSize(string $zipPath): void
     {
-        $maxMb = (int) config('mksine.updater.max_zip_size_mb', 256);
+        $maxMb = UploadLimits::updaterMaxZipMb();
         $size = @filesize($zipPath) ?: 0;
         if ($size <= 0) {
             throw UpdateException::validation('Uploaded ZIP is empty or unreadable.');

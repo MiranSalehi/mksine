@@ -12,10 +12,10 @@ use Miran\Mksine\Core\Updater\AtomicReplacer;
 use Miran\Mksine\Core\Updater\BackupManager;
 use Miran\Mksine\Core\Updater\UpdateException;
 use Miran\Mksine\Core\Updater\UpdateLog;
-use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Core\Updater\UpdateTarget;
 use Miran\Mksine\Models\Plugin as PluginModel;
+use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Updates an installed project plugin from a ZIP upload.
@@ -77,7 +77,7 @@ final class PluginUpdater
         $pluginsDir = realpath(base_path($this->pluginsPathConfig()));
         $currentPathReal = realpath($currentPath);
 
-        if ($pluginsDir === false || $currentPathReal === false || ! str_starts_with($currentPathReal, $pluginsDir . DIRECTORY_SEPARATOR)) {
+        if ($pluginsDir === false || $currentPathReal === false || ! str_starts_with($currentPathReal, $pluginsDir.DIRECTORY_SEPARATOR)) {
             throw UpdateException::validation(
                 "Plugin '{$pluginId}' is not a project plugin. Composer-installed plugins must be updated via composer on the dev machine."
             );
@@ -89,7 +89,7 @@ final class PluginUpdater
 
         // 2) Extract to staging (same filesystem as plugins/ so rename is atomic).
         $stagingParent = $pluginsDir;
-        $stagingDir = $stagingParent . DIRECTORY_SEPARATOR . '.mks-staging-' . bin2hex(random_bytes(4)) . '-' . $pluginId;
+        $stagingDir = $stagingParent.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-'.$pluginId;
         $this->assertMaxZipSize($zipPath);
 
         $extractedRoot = ArchiveExtractor::extract($zipPath, $stagingDir);
@@ -157,7 +157,7 @@ final class PluginUpdater
                 $log->warning('Plugin marked as boot_failed/inactive. Manual migration recovery required.');
 
                 throw UpdateException::post(
-                    "Plugin '{$pluginId}' updated to {$toVersion} but migrations failed. Plugin is now INACTIVE. See log: " . $log->path()
+                    "Plugin '{$pluginId}' updated to {$toVersion} but migrations failed. Plugin is now INACTIVE. See log: ".$log->path()
                 );
             }
 
@@ -170,7 +170,7 @@ final class PluginUpdater
             $keep = (int) config('mksine.updater.keep_backups', 3);
             $pruned = $backupManager->prune($currentPath, $keep);
             if ($pruned !== []) {
-                $log->info('Pruned ' . count($pruned) . ' old backup(s).');
+                $log->info('Pruned '.count($pruned).' old backup(s).');
             }
 
             if ($wasActive) {
@@ -203,7 +203,7 @@ final class PluginUpdater
 
     private function assertMaxZipSize(string $zipPath): void
     {
-        $maxMb = (int) config('mksine.updater.max_zip_size_mb', 256);
+        $maxMb = UploadLimits::updaterMaxZipMb();
         $size = @filesize($zipPath) ?: 0;
         if ($size <= 0) {
             throw UpdateException::validation('Uploaded ZIP is empty or unreadable.');
@@ -218,7 +218,7 @@ final class PluginUpdater
         try {
             return PluginManifest::fromPath($extractedRoot);
         } catch (\InvalidArgumentException $e) {
-            throw UpdateException::validation('Invalid plugin.php in ZIP: ' . $e->getMessage(), $e);
+            throw UpdateException::validation('Invalid plugin.php in ZIP: '.$e->getMessage(), $e);
         }
     }
 
@@ -235,7 +235,7 @@ final class PluginUpdater
             $this->pluginManager->deactivate($pluginId);
             $log->step('deactivate-old');
         } catch (\Throwable $e) {
-            $log->warning('deactivate() of old plugin threw: ' . $e->getMessage());
+            $log->warning('deactivate() of old plugin threw: '.$e->getMessage());
             $warnings[] = 'Old plugin deactivate() threw; continuing with replace. Inspect plugin log for details.';
             // We still mark the DB row as inactive so state is consistent.
             $model?->update(['status' => PluginModel::STATUS_INACTIVE, 'deactivated_at' => now()]);
@@ -257,8 +257,8 @@ final class PluginUpdater
             $log->step('discover');
             $steps[] = 'discover';
         } catch (\Throwable $e) {
-            $log->warning('discover failed: ' . $e->getMessage());
-            $warnings[] = 'mks-plugin:discover failed after swap: ' . $e->getMessage();
+            $log->warning('discover failed: '.$e->getMessage());
+            $warnings[] = 'mks-plugin:discover failed after swap: '.$e->getMessage();
         }
 
         try {
@@ -266,7 +266,7 @@ final class PluginUpdater
             $log->step('publish-lang');
             $steps[] = 'publish-lang';
         } catch (\Throwable $e) {
-            $log->warning('publish-lang failed: ' . $e->getMessage());
+            $log->warning('publish-lang failed: '.$e->getMessage());
             $warnings[] = 'mks-plugin:publish-lang failed after swap.';
         }
 
@@ -275,7 +275,7 @@ final class PluginUpdater
             $log->step('publish-assets');
             $steps[] = 'publish-assets';
         } catch (\Throwable $e) {
-            $log->warning('publish assets failed: ' . $e->getMessage());
+            $log->warning('publish assets failed: '.$e->getMessage());
             $warnings[] = 'mks-plugin:publish failed after swap.';
         }
 
@@ -284,7 +284,7 @@ final class PluginUpdater
             $log->step('optimize-clear');
             $steps[] = 'optimize-clear';
         } catch (\Throwable $e) {
-            $log->warning('optimize:clear failed: ' . $e->getMessage());
+            $log->warning('optimize:clear failed: '.$e->getMessage());
             $warnings[] = 'optimize:clear failed after swap.';
         }
     }
@@ -295,14 +295,14 @@ final class PluginUpdater
             Artisan::call('mks-plugin:migrate', ['plugin' => $pluginId]);
             $output = trim(Artisan::output());
             if ($output !== '') {
-                $log->info('migrate output: ' . str_replace(["\r", "\n"], [' ', ' '], $output));
+                $log->info('migrate output: '.str_replace(["\r", "\n"], [' ', ' '], $output));
             }
             $log->step('migrate');
 
             return true;
         } catch (\Throwable $e) {
-            $log->error('migrate failed: ' . $e->getMessage());
-            $warnings[] = 'Migrations failed after swap: ' . $e->getMessage();
+            $log->error('migrate failed: '.$e->getMessage());
+            $warnings[] = 'Migrations failed after swap: '.$e->getMessage();
 
             return false;
         }
