@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Support\MksineUserModelRequirements;
+use Miran\Mksine\Support\UserModelPatcher;
 
 class MksineInstallCommand extends Command
 {
@@ -198,6 +199,13 @@ class MksineInstallCommand extends Command
             return;
         }
 
+        if (! MksineUserModelRequirements::isSatisfied()) {
+            $this->warn('   ! User model was just updated in this run and cannot be reloaded mid-process.');
+            $this->line('     Create the super admin in a fresh terminal: <comment>php artisan mksine:create-super-admin --email='.$email.' --password=******</comment>');
+
+            return;
+        }
+
         $this->info('👤 Creating super admin user...');
 
         $arguments = [
@@ -349,29 +357,52 @@ class MksineInstallCommand extends Command
     }
 
     /**
-     * Copy the package User model to app/Models/User.php.
-     * Only copies when the file does not exist; use --force to overwrite.
+     * Ensure app/Models/User.php satisfies MKSine/Shield requirements.
+     *
+     * Every Laravel app ships an App\Models\User, so we patch it in place (adding the
+     * FilamentUser contract + InteractsWithMksine trait) instead of overwriting it. Only
+     * when no User model exists do we publish the package's own.
      */
     protected function publishUserModel(): void
     {
+        $targetPath = app_path('Models/User.php');
+
+        if (File::exists($targetPath)) {
+            $this->configureExistingUserModel($targetPath);
+
+            return;
+        }
+
+        $this->publishPackageUserModel($targetPath);
+    }
+
+    protected function configureExistingUserModel(string $targetPath): void
+    {
+        $this->info('👤 Configuring app/Models/User.php for MKSine...');
+
+        // Patch via file inspection only — do NOT call class reflection here, otherwise we
+        // would autoload the stale User class before the patch lands in the same process.
+        $result = (new UserModelPatcher($targetPath))->patch();
+
+        match ($result) {
+            UserModelPatcher::RESULT_PATCHED => $this->info('   ✓ Added FilamentUser + InteractsWithMksine to your User model (backup created).'),
+            UserModelPatcher::RESULT_ALREADY => $this->line('   ✓ User model already configured.'),
+            default => $this->warnManualUserModelSteps(),
+        };
+    }
+
+    protected function publishPackageUserModel(string $targetPath): void
+    {
         $this->info('👤 Publishing User model to app/Models/User.php...');
 
-        $sourcePath = dirname(__DIR__) . '/Models/User.php';
+        $sourcePath = dirname(__DIR__).'/Models/User.php';
         if (! File::exists($sourcePath)) {
             $this->warn('   Package User model not found, skipping.');
 
             return;
         }
 
-        $targetDir = app_path('Models');
-        $targetPath = $targetDir . '/User.php';
-
-        if (File::exists($targetPath) && ! $this->option('force')) {
-            $this->line('   ✓ User model already exists, skipping. Use <comment>--force</comment> to overwrite with the MKSine User (HasRoles + Shield).');
-
-            return;
-        }
-
+        $targetDir = dirname($targetPath);
         if (! File::isDirectory($targetDir)) {
             File::makeDirectory($targetDir, 0755, true);
         }
@@ -383,6 +414,17 @@ class MksineInstallCommand extends Command
         $this->info('   ✓ User model published.');
     }
 
+    protected function warnManualUserModelSteps(): void
+    {
+        $this->newLine();
+        $this->warn('⚠ Could not automatically patch app/Models/User.php.');
+        $this->line('Add these manually so the admin menu (Shield) works:');
+        $this->line('   <comment>use Filament\Models\Contracts\FilamentUser;</comment>');
+        $this->line('   <comment>use Miran\Mksine\Concerns\InteractsWithMksine;</comment>');
+        $this->line('   <comment>class User extends Authenticatable implements FilamentUser { use InteractsWithMksine; }</comment>');
+        $this->line('See <comment>docs/guides/auth/user-subclass.md</comment> in the package.');
+    }
+
     protected function validateUserModelForMksine(): void
     {
         $missing = MksineUserModelRequirements::missingRequirements();
@@ -392,13 +434,12 @@ class MksineInstallCommand extends Command
         }
 
         $this->newLine();
-        $this->warn('⚠ Your user model is missing requirements for Filament Shield navigation:');
+        $this->warn('⚠ Your user model is still missing requirements for Filament Shield navigation:');
         foreach ($missing as $requirement) {
             $this->line("   - {$requirement}");
         }
         $this->newLine();
-        $this->line('Without <comment>HasRoles</comment> and <comment>HasPanelShield</comment>, only the dashboard appears in the admin menu.');
-        $this->line('Fix: <comment>php artisan mksine:install --force</comment> to publish the MKSine User model, or merge traits manually.');
-        $this->line('See <comment>docs/guides/auth/user-subclass.md</comment> in the package.');
+        $this->line('Without these, only the dashboard appears in the admin menu.');
+        $this->warnManualUserModelSteps();
     }
 }

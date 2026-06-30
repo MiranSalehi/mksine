@@ -55,37 +55,39 @@ Re-assign roles if needed. Existing super admins pick up new permissions on the 
 
 **Symptom.** After login, the sidebar shows only **Dashboard** (and maybe Filament widgets). No Posts, Media, Menus, Plugins, etc.
 
-**Cause.** The application `User` model is still the default Laravel scaffold — it does not use Spatie `HasRoles`, Filament Shield `HasPanelShield`, or `FilamentUser`. Shield hides every resource the user cannot authorize; without roles/permissions, nothing passes the check.
+**Cause.** The application `User` model is still the default Laravel scaffold — it does not use Spatie `HasRoles` or implement `FilamentUser`, and/or the super-admin role was never assigned (assigning a role needs `HasRoles`). Shield hides every resource the user cannot authorize, so only Dashboard remains.
 
 **Diagnose.**
 
 ```bash
 php artisan tinker --execute 'echo in_array(Spatie\Permission\Traits\HasRoles::class, class_uses_recursive(config("auth.providers.users.model")), true) ? "ok" : "missing HasRoles";'
+php artisan tinker --execute 'echo DB::table("model_has_roles")->count()." role assignment(s)";'
 ```
 
-**Fix.**
+**Fix.** Re-run install (it auto-patches `app/Models/User.php` with `FilamentUser` + `InteractsWithMksine`, backing it up first), then create the super admin in a **fresh terminal** so the patched class loads:
 
 ```bash
-php artisan mksine:install --force --migrate
+php artisan mksine:install --migrate
 php artisan mksine:create-super-admin
 ```
 
-`--force` publishes the MKSine `User` model (with Shield traits). If you customized `app/Models/User.php`, merge the traits manually — see [User subclass](../guides/auth/user-subclass.md).
+If the auto-patch can't run (heavily customized model), add the contract + trait manually — see [User subclass](../guides/auth/user-subclass.md).
 
 ### Admin styles missing / MKSine CSS
 
 **Symptom.** Panel loads but looks like a bare Filament install: no MKSine sidebar groups, wrong fonts/spacing, or missing dark-mode utilities.
 
-**Cause.** MKSine admin CSS (`mksine-styles`) was not published to `public/` or the panel did not load it. `mksine:install --migrate` runs `filament:assets`; skipping install or an outdated package can leave styles unloaded.
+**Cause.** Either MKSine admin CSS (`mksine-styles`) was not published to `public/`, or you are on an early package version whose style render-hook only loaded the CSS in a monorepo (`base_path('packages/mksine/...')`). On a Composer install that path never exists, so the `<link>` was skipped even though the CSS was published. Current versions load it via `FilamentAsset::getStyleHref()` regardless of install layout.
 
 **Fix.**
 
 ```bash
+composer update miran/mksine
 php artisan filament:assets
 php artisan view:clear
 ```
 
-Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm `vendor/miran/mksine/resources/dist/mksine.css` exists in your install (shipped with the package). After upgrading `miran/mksine`, run `filament:assets` again.
+Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm the published file exists at `public/css/miran/mksine/mksine-styles.css`, and that `vendor/miran/mksine/resources/dist/mksine.css` ships with the package. After every `miran/mksine` upgrade, run `filament:assets` again.
 
 ## Plugins
 

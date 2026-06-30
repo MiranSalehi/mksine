@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Support;
 
-use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Models\Contracts\FilamentUser;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -24,11 +23,7 @@ final class MksineUserModelRequirements
         $missing = [];
 
         if (! in_array(HasRoles::class, class_uses_recursive($userClass), true)) {
-            $missing[] = 'Spatie HasRoles trait';
-        }
-
-        if (! in_array(HasPanelShield::class, class_uses_recursive($userClass), true)) {
-            $missing[] = 'Filament Shield HasPanelShield trait';
+            $missing[] = 'Spatie HasRoles trait (or Miran\\Mksine\\Concerns\\InteractsWithMksine)';
         }
 
         if (! is_subclass_of($userClass, FilamentUser::class)) {

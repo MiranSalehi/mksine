@@ -6,6 +6,34 @@ order: 0
 
 # User subclass (plugins)
 
+## Host `App\Models\User` requirements (start here)
+
+For the admin panel to show more than just **Dashboard**, the application's user model must:
+
+- implement `Filament\Models\Contracts\FilamentUser`, and
+- have Spatie roles/permissions (the `HasRoles` trait).
+
+MKSine ships a single trait that provides both (roles + a Shield-aware `canAccessPanel`):
+
+```php
+use Filament\Models\Contracts\FilamentUser;
+use Miran\Mksine\Concerns\InteractsWithMksine;
+
+class User extends Authenticatable implements FilamentUser
+{
+    use InteractsWithMksine;
+    // ...your existing traits/properties
+}
+```
+
+`php artisan mksine:install` applies this patch **automatically** to an existing `app/Models/User.php` (writing a `*.mksine-backup-*` first). Because PHP cannot reload a class mid-process, if the model was patched during the same install run, create the super admin afterwards in a fresh terminal:
+
+```bash
+php artisan mksine:create-super-admin
+```
+
+> The trait intentionally has **no Fortify or media dependency**, so it is safe on any Composer install. If your app uses Fortify, keep adding `Laravel\Fortify\TwoFactorAuthenticatable` separately as before.
+
 ## Principle: do not patch the host `App\Models\User` blindly
 
 Plugins that need extra columns, casts, or auth behavior should **avoid** modifying the host `User` model directly. Patching the host class creates tight coupling and upgrade pain across host apps that already shipped their own user logic.
