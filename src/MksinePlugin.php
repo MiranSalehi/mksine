@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
+use Miran\Mksine\Filament\Pages\MksineDashboard;
 use Miran\Mksine\Support\Logging\MksineLog;
 
 class MksinePlugin implements Plugin
@@ -27,6 +29,8 @@ class MksinePlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        FilamentPanelComponentCache::ensureDashboardPageRegistered($panel);
+
         $panel
             ->colors([
                 'primary' => Color::Blue
@@ -48,6 +52,12 @@ class MksinePlugin implements Plugin
             ->discoverResources(__DIR__ . '/Filament/Resources', 'Miran\\Mksine\\Filament\\Resources')
             ->discoverClusters(__DIR__ . '/Filament/Clusters', 'Miran\\Mksine\\Filament\\Clusters')
             ->discoverPages(__DIR__ . '/Filament/Pages', 'Miran\\Mksine\\Filament\\Pages');
+
+        if (! in_array(MksineDashboard::class, $panel->getPages(), true)) {
+            $panel->pages([
+                MksineDashboard::class,
+            ]);
+        }
 
         // Discover and register active plugin Filament components
         $this->discoverPluginFilamentComponents($panel);

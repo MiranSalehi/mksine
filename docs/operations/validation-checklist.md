@@ -105,7 +105,8 @@ See [Deployment and hosting](deployment-hosting.md).
 
 ## Security
 
-- [ ] `php artisan mksine:install --migrate` (or equivalent publish) created permission tables; `shield:generate --all` ran; permissions exist for every package and plugin resource.
+- [ ] Filament admin panel exists (`filament:install --panels` or equivalent); `MksinePlugin::make()` is registered on the `admin` panel.
+- [ ] `php artisan mksine:install --migrate` completed; permission tables exist and `shield:generate --all` ran (installer or manual).
 - [ ] At least one super admin exists (`mksine:create-super-admin` or `shield:super-admin`).
 - [ ] No unauthorized access to new resources (test as a non-admin user).
 - [ ] If a user subclass is in use: auth + `mksine.user_model` + Shield provider model are aligned. See [User subclass](../guides/auth/user-subclass.md) and [Shield and policies](../guides/auth/shield-and-policies.md).

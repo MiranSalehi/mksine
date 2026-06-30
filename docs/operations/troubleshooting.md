@@ -10,6 +10,43 @@ order: 2
 
 This page collects the failures we see most often. For each one: the symptom, how to confirm the cause, and the fix.
 
+## Installation and panel
+
+### `Route [filament.admin.pages.mksine-dashboard] not defined`
+
+**Symptom.** Visiting `/admin` (especially when logged out) returns HTTP 500 with a missing route for `filament.admin.pages.mksine-dashboard`.
+
+**Cause.** Stale Filament panel component cache (`bootstrap/cache/filament/panels/admin.php`) built before MKSine was registered. HTTP requests use the cached page list and skip `discoverPages()`, so `MksineDashboard` is never registered.
+
+**Fix.**
+
+```bash
+php artisan filament:optimize-clear
+php artisan optimize:clear
+```
+
+Then confirm `MksinePlugin::make()` is on the admin panel and re-run `php artisan mksine:install --migrate` if needed. MKSine also clears stale cache at runtime when the dashboard page is missing from the cache.
+
+### MKSine resources missing from Shield / super admin has no CMS permissions
+
+**Symptom.** Super admin can log in but CMS menu items are hidden or return 403; `permissions` table has few or no `*_post`, `*_media`, etc. rows.
+
+**Cause.** `shield:generate` ran **before** `MksinePlugin` was registered on the Filament panel (wrong install order), or was never run after enabling a new plugin.
+
+**Fix.**
+
+```bash
+php artisan shield:generate --all --panel=admin
+```
+
+Re-assign roles if needed. Existing super admins pick up new permissions on the role after `syncPermissions` (log out/in to clear Spatie’s cache). See [Installation](../01-installation.md) for the correct order.
+
+### `mksine:install` skipped Shield generation
+
+**Symptom.** Installer prints “Skipping Shield generation — the admin panel is not ready.”
+
+**Fix.** Follow the printed steps: run `filament:install --panels`, register `MksinePlugin::make()` in `AdminPanelProvider`, then either re-run `mksine:install --migrate` or run `shield:generate --all --panel=admin` manually.
+
 ## Plugins
 
 ### Plugin not found by `mks-plugin:discover`

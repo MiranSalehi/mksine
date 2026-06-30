@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Commands;
 
+use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 
 class MksineInstallCommand extends Command
 {
-    public $signature = 'mksine:install {--migrate : Run migrations after publishing} {--force : Overwrite existing files}';
+    public $signature = 'mksine:install
+                            {--migrate : Run migrations after publishing}
+                            {--force : Overwrite existing files}
+                            {--admin-email= : Create a super admin with this email (requires --admin-password and --migrate)}
+                            {--admin-password= : Super admin password (min 8 characters)}
+                            {--admin-name= : Super admin display name}';
 
     public $description = 'Install MKSine package (publish config, migrations, etc.)';
 
@@ -54,31 +61,240 @@ class MksineInstallCommand extends Command
         ]);
 
         $this->publishShieldAuthorization();
+        $this->clearInstallationCaches();
 
-        // Run migrations if requested
+        $migrated = false;
+
         if ($this->option('migrate')) {
             $this->info('🔄 Running migrations...');
             $this->call('migrate');
             $this->info('   ✓ Migrations completed.');
+            $migrated = true;
         } else {
-            $this->info('💡 Tip: Run `php artisan migrate` to create the database tables.');
+            $this->info('💡 Tip: Run <comment>php artisan mksine:install --migrate</comment> to migrate and finish setup automatically.');
         }
+
+        $this->finalizeInstallation($migrated);
 
         $this->newLine();
         $this->info('✅ MKSine installed successfully!');
         $this->newLine();
-        $this->line('Next steps:');
-        if (! $this->option('migrate')) {
-            $this->line('  1. Run migrations: <comment>php artisan migrate</comment>');
-        }
-
-        $this->line('  '.($this->option('migrate') ? '1' : '2').'. Generate Shield permissions: <comment>php artisan shield:generate --all</comment>');
-        $this->line('  '.($this->option('migrate') ? '2' : '3').'. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>');
-        $this->line('  '.($this->option('migrate') ? '3' : '4').'. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.');
-        $this->line('     Auth + Shield use <comment>mksine.user_model</comment> unless <comment>MKS_CMS_SYNC_AUTH_USER_MODEL=false</comment>.');
-        $this->line('  '.($this->option('migrate') ? '4' : '5').'. Check CMS info: <comment>php artisan mksine:info</comment>');
+        $this->displayNextSteps($migrated);
 
         return self::SUCCESS;
+    }
+
+    protected function clearInstallationCaches(): void
+    {
+        $this->info('🧹 Clearing application caches...');
+
+        foreach (['optimize:clear', 'filament:optimize-clear'] as $command) {
+            try {
+                $this->call($command);
+            } catch (\Throwable $exception) {
+                $this->warn("   ! {$command} failed: {$exception->getMessage()}");
+            }
+        }
+    }
+
+    protected function finalizeInstallation(bool $migrated): void
+    {
+        $this->publishFilamentAssets();
+
+        if (! $this->databaseIsReady()) {
+            return;
+        }
+
+        $this->generateShieldPermissions();
+        $this->discoverHooks();
+        $this->createSuperAdminIfRequested($migrated);
+    }
+
+    protected function publishFilamentAssets(): void
+    {
+        $this->info('🎨 Publishing Filament panel assets...');
+
+        try {
+            $this->call('filament:assets');
+        } catch (\Throwable $exception) {
+            $this->warn('   ! filament:assets failed: '.$exception->getMessage());
+        }
+    }
+
+    protected function generateShieldPermissions(): void
+    {
+        if (! class_exists(\BezhanSalleh\FilamentShield\FilamentShieldServiceProvider::class)) {
+            return;
+        }
+
+        if (! $this->hasDatabaseTable('permissions')) {
+            return;
+        }
+
+        if (! $this->adminPanelIsReadyForShield()) {
+            $this->warn('   ! Skipping Shield generation — the admin panel is not ready.');
+            $this->displayShieldPrerequisites();
+
+            return;
+        }
+
+        $this->info('🛡 Generating Shield permissions and policies...');
+
+        try {
+            $exitCode = $this->call('shield:generate', [
+                '--all' => true,
+                '--panel' => 'admin',
+                '--no-interaction' => true,
+            ]);
+
+            if ($exitCode !== self::SUCCESS) {
+                $this->warn('   ! shield:generate exited with a non-zero status.');
+            }
+        } catch (\Throwable $exception) {
+            $this->warn('   ! shield:generate failed: '.$exception->getMessage());
+        }
+    }
+
+    protected function discoverHooks(): void
+    {
+        if (! $this->hasDatabaseTable('mks_hooks')) {
+            return;
+        }
+
+        $this->info('🔗 Discovering hook listeners...');
+
+        try {
+            $exitCode = $this->call('mks:discover');
+
+            if ($exitCode !== self::SUCCESS) {
+                $this->warn('   ! mks:discover exited with a non-zero status.');
+            }
+        } catch (\Throwable $exception) {
+            $this->warn('   ! mks:discover failed: '.$exception->getMessage());
+        }
+    }
+
+    protected function createSuperAdminIfRequested(bool $migrated): void
+    {
+        $email = $this->option('admin-email');
+        $password = $this->option('admin-password');
+        $name = $this->option('admin-name');
+
+        if (! is_string($email) || $email === '') {
+            return;
+        }
+
+        if (! is_string($password) || $password === '') {
+            $this->warn('   ! --admin-email was provided without --admin-password; skipping super admin creation.');
+
+            return;
+        }
+
+        if (! $migrated) {
+            $this->warn('   ! Super admin creation requires --migrate; run <comment>mksine:create-super-admin</comment> manually.');
+
+            return;
+        }
+
+        $this->info('👤 Creating super admin user...');
+
+        $arguments = [
+            '--email' => $email,
+            '--password' => $password,
+            '--no-interaction' => true,
+        ];
+
+        if (is_string($name) && $name !== '') {
+            $arguments['--name'] = $name;
+        }
+
+        try {
+            $exitCode = $this->call('mksine:create-super-admin', $arguments);
+
+            if ($exitCode !== self::SUCCESS) {
+                $this->warn('   ! mksine:create-super-admin exited with a non-zero status.');
+            }
+        } catch (\Throwable $exception) {
+            $this->warn('   ! mksine:create-super-admin failed: '.$exception->getMessage());
+        }
+    }
+
+    protected function databaseIsReady(): bool
+    {
+        return $this->hasDatabaseTable('permissions')
+            || $this->hasDatabaseTable('mks_hooks');
+    }
+
+    protected function adminPanelIsReadyForShield(): bool
+    {
+        try {
+            return Filament::getPanel('admin')->hasPlugin('mksine');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    protected function displayShieldPrerequisites(): void
+    {
+        $this->line('     Register MKSine on the Filament panel first, then run:');
+        $this->line('       <comment>php artisan shield:generate --all --panel=admin</comment>');
+        $this->newLine();
+        $this->line('     Prerequisites:');
+        $this->line('       1. <comment>php artisan filament:install --panels</comment> (or <comment>make:filament-panel admin</comment>)');
+        $this->line('       2. Add <comment>MksinePlugin::make()</comment> to <comment>app/Providers/Filament/AdminPanelProvider.php</comment>');
+        $this->line('       3. Re-run <comment>php artisan mksine:install --migrate</comment> or run <comment>shield:generate --all</comment> manually');
+    }
+
+    protected function hasDatabaseTable(string $table): bool
+    {
+        try {
+            return Schema::hasTable($table);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    protected function displayNextSteps(bool $migrated): void
+    {
+        $this->line('Next steps:');
+
+        if (! $migrated) {
+            $this->line('  1. Finish setup: <comment>php artisan mksine:install --migrate</comment>');
+            $this->line('  2. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>');
+            $this->line('  3. (Optional) Review <comment>config/mksine.php</comment>.');
+            $this->line('  4. Check CMS info: <comment>php artisan mksine:info</comment>');
+
+            return;
+        }
+
+        $adminEmail = $this->option('admin-email');
+        $adminPassword = $this->option('admin-password');
+        $adminCreated = is_string($adminEmail) && $adminEmail !== ''
+            && is_string($adminPassword) && $adminPassword !== '';
+
+        if (! $adminCreated) {
+            $step = 1;
+
+            if ($migrated && ! $this->adminPanelIsReadyForShield()) {
+                $this->line("  {$step}. Register <comment>MksinePlugin::make()</comment> on the admin panel (see installation docs).");
+                $step++;
+                $this->line("  {$step}. Generate permissions: <comment>php artisan shield:generate --all --panel=admin</comment>");
+                $step++;
+            }
+
+            $this->line("  {$step}. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>");
+            $this->line('     Or pass <comment>--admin-email</comment> and <comment>--admin-password</comment> on install.');
+            $step++;
+            $this->line("  {$step}. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.");
+            $step++;
+            $this->line("  {$step}. Check CMS info: <comment>php artisan mksine:info</comment>");
+
+            return;
+        }
+
+        $this->line('  1. Log in at <comment>/admin</comment> with the super admin you created.');
+        $this->line('  2. (Optional) Review <comment>config/mksine.php</comment>.');
+        $this->line('  3. Check CMS info: <comment>php artisan mksine:info</comment>');
     }
 
     /**

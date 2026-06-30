@@ -39,13 +39,23 @@ Two facts worth absorbing:
 
 ## Bootstrapping Shield
 
-[`mksine:install`](../../reference/commands.md#mksineinstall) with `--migrate` already publishes `config/filament-shield.php`, `config/permission.php`, and the Spatie **permission tables** migration. It does **not** generate policies, permission rows, or a super admin.
+### Prerequisites
 
-After install, the minimal path on your **app database** is:
+1. Filament admin panel exists (`php artisan filament:install --panels` or `make:filament-panel admin`).
+2. `MksinePlugin::make()` is registered on that panel **before** permissions are generated.
+3. [`mksine:install --migrate`](../../reference/commands.md#mksineinstall) has run (publishes Shield config, permission tables, migrates, and — when the panel is ready — runs `shield:generate --all` and `mks:discover`).
+
+### Minimal path on your app database
 
 ```bash
-php artisan shield:generate --all
+php artisan mksine:install --migrate
 php artisan mksine:create-super-admin
+```
+
+If you ran `mksine:install --migrate` **before** registering `MksinePlugin`, Shield will not have scanned MKSine resources. Fix:
+
+```bash
+php artisan shield:generate --all --panel=admin
 ```
 
 `mksine:create-super-admin` creates a user, ensures the configured `super_admin` role exists, syncs **all** `permissions` IDs onto that role, and assigns the role.
@@ -167,7 +177,7 @@ The `class_exists` guard is intentional — you do not want your plugin’s `boo
 
 ## Honest limitations and gotchas
 
-- **Un-policed models are wide open.** If you skip `shield:generate --all` after install, the package’s `Gate::policy()` calls become no-ops and Filament resources fall back to "anyone authenticated can do anything". Run `shield:generate --all` immediately after `mksine:install --migrate`.
+- **Un-policed models are wide open.** If `shield:generate --all` never ran (or ran before `MksinePlugin` was registered), the package’s `Gate::policy()` calls become no-ops and Filament resources fall back to "anyone authenticated can do anything". Register `MksinePlugin` first, then run `mksine:install --migrate` or `shield:generate --all --panel=admin`.
 - **Plugin permissions are not auto-seeded.** Activating a plugin does not generate its permissions. You must re-run `shield:generate --resource=…` after enabling.
 - **Custom abilities are not granted by `super_admin` automatically** unless `super_admin` is registered through Shield’s super admin handler (the default). Verify with `Bouncer`/`Spatie` — Shield uses Spatie under the hood — that the super admin role grants `*` via the package’s gate-before hook.
 - **No per-tenant isolation by default.** If you add multi-tenancy later, Shield permissions are global; you’ll need to combine them with team scoping (Spatie supports this) and re-think `MKSine`’s assumption of a single user/role table.

@@ -29,9 +29,17 @@ These come from `src/Commands/` and `src/Console/Commands/`, registered on `Mira
 
 ```
 mksine:install [--migrate] [--force]
+               [--admin-email=] [--admin-password=] [--admin-name=]
 ```
 
 Source: [`MksineInstallCommand`](../../src/Commands/MksineInstallCommand.php).
+
+**Prerequisites (before `--migrate`):**
+
+1. A Filament panel with id `admin` — typically `php artisan filament:install --panels`.
+2. `MksinePlugin::make()` registered on that panel in `app/Providers/Filament/AdminPanelProvider.php`.
+
+Without step 2, the installer skips `shield:generate` and prints instructions to register the plugin and re-run generation.
 
 What it does:
 
@@ -41,24 +49,39 @@ What it does:
    - `filament-shield-config` → `config/filament-shield.php` (skipped if the file already exists, unless `--force`)
    - `permission-config` → `config/permission.php` (same skip rule)
    - `permission-migrations` → `database/migrations/*_create_permission_tables.php` (roles, permissions, pivot tables)
-4. With `--migrate`, runs `php artisan migrate` afterwards (MKSine tables **and** permission tables).
+4. Clears Laravel and Filament caches (`optimize:clear`, `filament:optimize-clear`).
+5. With `--migrate`, runs `php artisan migrate` (MKSine tables **and** permission tables).
+6. Publishes Filament panel assets (`filament:assets`).
+7. When the `admin` panel has `MksinePlugin` registered and `permissions` exists: runs `shield:generate --all --panel=admin`.
+8. When `mks_hooks` exists: runs `mks:discover`.
+9. When `--admin-email` and `--admin-password` are passed with `--migrate`: runs `mksine:create-super-admin`.
 
-Shield does **not** ship its own migrations; it relies on `spatie/laravel-permission`. The installer does **not** run `shield:generate` or create a super admin — do that after install (see below).
+Shield does **not** ship its own migrations; it relies on `spatie/laravel-permission`.
 
 Options:
 
 | Option | Default | Behaviour |
 |--------|---------|-----------|
-| `--migrate` | off | Run migrations after publishing. |
+| `--migrate` | off | Run migrations and post-migrate bootstrap (Shield, hooks, optional super admin). |
 | `--force` | off | Pass `--force` to each `vendor:publish` and overwrite the `User` model if present. |
+| `--admin-email` | — | Non-interactive super admin email (requires `--admin-password` and `--migrate`). |
+| `--admin-password` | — | Super admin password (min 8 characters). |
+| `--admin-name` | — | Super admin display name. |
 
 Use it:
 
 ```bash
+# Recommended full install (after Filament panel + MksinePlugin are registered)
 php artisan mksine:install --migrate
-php artisan shield:generate --all
 php artisan mksine:create-super-admin
+
+# One-shot with super admin
+php artisan mksine:install --migrate \
+  --admin-email=admin@example.com \
+  --admin-password='secret-password'
 ```
+
+See [Installation](../01-installation.md) for the full ordered checklist.
 
 ### `mksine:info`
 

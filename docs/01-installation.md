@@ -6,14 +6,27 @@ order: 1
 
 # Installation
 
-These steps assume an existing Laravel application with **Filament 4** already wired (admin panel provider registered). If you do not have a Laravel app yet, follow the upstream Laravel and Filament install guides first; MKSine does not bootstrap a Laravel app for you.
+MKSine is a **Filament 4** CMS package. You need a working Laravel application, an **admin Filament panel**, and **`MksinePlugin` registered on that panel** before permissions can be generated correctly.
 
 ## Requirements
 
 - PHP **8.2** or newer (`packages/mksine/composer.json` enforces `^8.2`).
-- Laravel **11+** with Filament **4.x** installed and a panel provider registered.
-- A relational database supported by Laravel (MySQL 5.7+, PostgreSQL 10+, or SQLite 3.8+).
+- Laravel **11+** with a relational database (MySQL 5.7+, PostgreSQL 10+, or SQLite 3.8+).
+- **Filament 4** — installed via `miran/mksine` (pulled in as a dependency) and bootstrapped with a panel provider.
 - Node 18+ if you intend to build plugin or theme assets locally (production deploys can ship pre-built assets — see [Operations: Release archive](operations/release-archive.md)).
+
+## Install flow (order matters)
+
+| Step | What | Command / action |
+|------|------|------------------|
+| 1 | Require the package | `composer require miran/mksine` |
+| 2 | Create the Filament admin panel | `php artisan filament:install --panels` |
+| 3 | Register `MksinePlugin` on the panel | Edit `AdminPanelProvider` (see below) |
+| 4 | Publish assets, migrate, generate permissions | `php artisan mksine:install --migrate` |
+| 5 | Create a super admin | `php artisan mksine:create-super-admin` |
+| 6 | Smoke test | Visit `/admin` |
+
+> **Why step 3 comes before step 4.** `mksine:install --migrate` runs `shield:generate --all`, which scans the **registered** Filament panel for resources, pages, and widgets. If `MksinePlugin` is not on the panel yet, MKSine permissions and policies are **not** created. You would need to run `php artisan shield:generate --all --panel=admin` again after registering the plugin.
 
 ## 1. Install the Composer package
 
@@ -23,15 +36,75 @@ composer require miran/mksine
 
 If you develop the package as a path repository inside a monorepo, declare it in your application’s `composer.json` as a `path` repo and require `miran/mksine: @dev` (this monorepo already does that).
 
-## 2. Publish package files and run migrations
+## 2. Create the Filament admin panel
 
-The packaged installer publishes MKSine assets, **Filament Shield / Spatie Permission** config and migrations (roles & permissions tables), and optionally runs `migrate` in one step:
+On a **new** Laravel app that does not yet have Filament panels:
+
+```bash
+php artisan filament:install --panels
+```
+
+This creates `app/Providers/Filament/AdminPanelProvider.php` with panel id **`admin`** and path **`/admin`**, and registers the provider in `bootstrap/providers.php`.
+
+If you already have a panel with a different id, use that id consistently in `shield:generate --panel=…` and in your panel provider. MKSine’s installer defaults to `--panel=admin`.
+
+Alternative when you only need an extra panel:
+
+```bash
+php artisan make:filament-panel admin
+```
+
+## 3. Register the Filament plugin
+
+In `app/Providers/Filament/AdminPanelProvider.php`, add `MksinePlugin::make()` to the panel’s `plugins` array:
+
+```php
+use Miran\Mksine\MksinePlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        // ... existing configuration (id, path, middleware, etc.)
+        ->plugins([
+            MksinePlugin::make(),
+        ]);
+}
+```
+
+`MksinePlugin`:
+
+- Registers CMS resources (posts, categories, media, menus, settings, languages, plugins manager, …).
+- Registers **Filament Shield** on the panel (you do **not** need a separate `FilamentShieldPlugin::make()` in the host app).
+- Discovers Filament components from **active** CMS plugins and themes.
+
+## 4. Run the MKSine installer
 
 ```bash
 php artisan mksine:install --migrate
 ```
 
-If you prefer to publish each tag manually:
+With admin credentials in one step (non-interactive):
+
+```bash
+php artisan mksine:install --migrate \
+  --admin-email=admin@example.com \
+  --admin-password='your-secure-password' \
+  --admin-name="Admin"
+```
+
+### What `mksine:install --migrate` does automatically
+
+1. Publishes `app/Models/User.php` (if missing, unless you use `--force`).
+2. Publishes MKSine config, migrations, translations, and fonts.
+3. Publishes **Filament Shield** and **Spatie Permission** config and migrations when Shield is installed.
+4. Clears Laravel and Filament caches (`optimize:clear`, `filament:optimize-clear`).
+5. Runs `php artisan migrate`.
+6. Publishes Filament panel assets (`filament:assets`).
+7. Runs `shield:generate --all --panel=admin` — **only when** the `admin` panel exists and `MksinePlugin` is registered.
+8. Runs `mks:discover` (syncs hook listeners to `mks_hooks`).
+9. Optionally creates a super admin when `--admin-email` and `--admin-password` are passed.
+
+### Manual publish (equivalent to steps 1–3 and 5 above)
 
 ```bash
 php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag="mksine-config"
@@ -41,70 +114,36 @@ php artisan vendor:publish --provider="Miran\Mksine\MksineServiceProvider" --tag
 php artisan vendor:publish --tag="filament-shield-config"
 php artisan vendor:publish --tag="permission-config"
 php artisan vendor:publish --tag="permission-migrations"
+php artisan optimize:clear
+php artisan filament:optimize-clear
 php artisan migrate
+php artisan filament:assets
+php artisan shield:generate --all --panel=admin
+php artisan mks:discover
 ```
 
 The installer also publishes a `User` model into `app/Models/User.php` if your app does not already have one configured for MKSine. See [Auth: User subclass](guides/auth/user-subclass.md) before you change the user class.
 
-## 2b. Shield permissions and super admin
+## 5. Create a super admin
 
-`mksine:install` does **not** generate Filament permissions or policies. After migrate, run:
+If you did not pass `--admin-email` / `--admin-password` on install:
 
 ```bash
-php artisan shield:generate --all
 php artisan mksine:create-super-admin
 ```
 
-`mksine:create-super-admin` creates a user on your app database, ensures the `super_admin` role exists, syncs all permission rows onto that role, and assigns it to the user. For an interactive Shield setup (panel plugin registration, optional tenancy), you can still use `php artisan shield:setup` instead of the two commands above.
+`mksine:create-super-admin` creates a user on your app database, ensures the `super_admin` role exists, syncs all permission rows onto that role, and assigns it to the user.
 
 For a **portable empty database** (CI, greenfield export) use [`mksine:fresh-super-admin`](reference/commands.md#mksinefresh-super-admin) against the isolated `mksine_setup` connection — not the same as `mksine:create-super-admin`. See [Shield and policies](guides/auth/shield-and-policies.md).
 
-## 3. Register the Filament plugin
+For a full interactive Shield setup (panel plugin registration, optional tenancy), you can still use `php artisan shield:setup` instead of the commands above.
 
-In your panel provider (typically `app/Providers/Filament/AdminPanelProvider.php`):
-
-```php
-use Miran\Mksine\MksinePlugin;
-
-public function panel(Panel $panel): Panel
-{
-    return $panel
-        // ... existing configuration
-        ->plugins([
-            MksinePlugin::make(),
-        ]);
-}
-```
-
-`MksinePlugin` registers the CMS resources (posts, categories, media, menus, settings, languages, plugins manager) and wires Filament Shield. If your panel does not already include Shield, MKSine will register the Shield plugin internally; if Shield is already registered explicitly, MKSine detects and skips its own registration.
-
-## 4. Discover hook listeners
-
-Class-based hook listeners are synced to the `mks_hooks` table by:
-
-```bash
-php artisan mks:discover
-```
-
-You only need this for the **discovery** family of hooks. Runtime hook registration via the `Hooks::` static helper does not require this command. See [Hook overview](guides/hooks/overview-two-families.md).
-
-If your application or its plugins ship listeners outside the package’s `Core/Listeners` directory, add their roots to `config/mksine.php`:
-
-```php
-'hooks' => [
-    'discovery_paths' => [
-        base_path('app/Hooks/Listeners'),
-        base_path(config('mksine.plugins_path').'/my-plugin/src/Listeners'),
-    ],
-    // ...
-],
-```
-
-## 5. Smoke test the panel
+## 6. Smoke test the panel
 
 1. Visit the Filament panel URL (commonly `/admin`).
-2. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
-3. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
+2. Log in with the super admin you created.
+3. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
+4. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
 
 ## What just got installed
 
@@ -115,7 +154,19 @@ If your application or its plugins ship listeners outside the package’s `Core/
 | Shield / permissions | `filament-shield-config`, `permission-config`, `permission-migrations` → `config/filament-shield.php`, `config/permission.php`, `database/migrations/*_create_permission_tables.php` |
 | Translations | `packages/mksine/resources/lang/` → published to `lang/vendor/mksine/` |
 | Fonts | `packages/mksine/resources/fonts/` → published to `public/vendor/mksine/fonts/` |
-| Filament plugin | `Miran\Mksine\MksinePlugin` (this is what you `make()` in your panel provider) |
+| Filament plugin | `Miran\Mksine\MksinePlugin` (registered in your panel provider) |
+| Policies | `app/Policies/*` — generated by `shield:generate` |
+
+## After enabling a new plugin
+
+Activating a CMS plugin does **not** regenerate Shield permissions. After `mks-plugin:activate {id}`:
+
+```bash
+php artisan shield:generate --all --panel=admin
+php artisan mks:discover
+```
+
+See [Shield and policies](guides/auth/shield-and-policies.md).
 
 ## Optional: change the user model
 

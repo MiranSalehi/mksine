@@ -40,12 +40,10 @@ The full sidebar lives in [`docs/_nav.yml`](docs/_nav.yml). Quick links:
 
 ```bash
 composer require miran/mksine
-php artisan mksine:install --migrate
-php artisan shield:generate --all
-php artisan mksine:create-super-admin
+php artisan filament:install --panels
 ```
 
-Then register the Filament plugin:
+Register the plugin in `app/Providers/Filament/AdminPanelProvider.php`:
 
 ```php
 use Miran\Mksine\MksinePlugin;
@@ -57,6 +55,15 @@ public function panel(Panel $panel): Panel
     ]);
 }
 ```
+
+Then finish setup:
+
+```bash
+php artisan mksine:install --migrate
+php artisan mksine:create-super-admin
+```
+
+`mksine:install --migrate` publishes assets, migrates, clears caches, runs `shield:generate`, `mks:discover`, and `filament:assets` when the admin panel has `MksinePlugin` registered.
 
 Full install steps and verification: [`docs/01-installation.md`](docs/01-installation.md).
 
