@@ -8,6 +8,7 @@ use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Miran\Mksine\Support\MksineUserModelRequirements;
 
 class MksineInstallCommand extends Command
 {
@@ -27,6 +28,7 @@ class MksineInstallCommand extends Command
 
         // Copy User model to app/Models (only if missing, or when --force)
         $this->publishUserModel();
+        $this->validateUserModelForMksine();
 
         // Publish config file
         $this->info('📄 Publishing configuration file...');
@@ -272,9 +274,14 @@ class MksineInstallCommand extends Command
         $adminCreated = is_string($adminEmail) && $adminEmail !== ''
             && is_string($adminPassword) && $adminPassword !== '';
 
-        if (! $adminCreated) {
-            $step = 1;
+        $step = 1;
 
+        if (! MksineUserModelRequirements::isSatisfied()) {
+            $this->line("  {$step}. Fix user model: <comment>php artisan mksine:install --force</comment> (or add HasRoles + HasPanelShield manually)");
+            $step++;
+        }
+
+        if (! $adminCreated) {
             if ($migrated && ! $this->adminPanelIsReadyForShield()) {
                 $this->line("  {$step}. Register <comment>MksinePlugin::make()</comment> on the admin panel (see installation docs).");
                 $step++;
@@ -360,7 +367,7 @@ class MksineInstallCommand extends Command
         $targetPath = $targetDir . '/User.php';
 
         if (File::exists($targetPath) && ! $this->option('force')) {
-            $this->line('   ✓ User model already exists, skipping. Use <comment>--force</comment> to overwrite.');
+            $this->line('   ✓ User model already exists, skipping. Use <comment>--force</comment> to overwrite with the MKSine User (HasRoles + Shield).');
 
             return;
         }
@@ -374,5 +381,24 @@ class MksineInstallCommand extends Command
 
         File::put($targetPath, $content);
         $this->info('   ✓ User model published.');
+    }
+
+    protected function validateUserModelForMksine(): void
+    {
+        $missing = MksineUserModelRequirements::missingRequirements();
+
+        if ($missing === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->warn('⚠ Your user model is missing requirements for Filament Shield navigation:');
+        foreach ($missing as $requirement) {
+            $this->line("   - {$requirement}");
+        }
+        $this->newLine();
+        $this->line('Without <comment>HasRoles</comment> and <comment>HasPanelShield</comment>, only the dashboard appears in the admin menu.');
+        $this->line('Fix: <comment>php artisan mksine:install --force</comment> to publish the MKSine User model, or merge traits manually.');
+        $this->line('See <comment>docs/guides/auth/user-subclass.md</comment> in the package.');
     }
 }

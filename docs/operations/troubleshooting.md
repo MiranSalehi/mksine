@@ -51,6 +51,27 @@ Re-assign roles if needed. Existing super admins pick up new permissions on the 
 
 **Fix.** Follow the printed steps: run `filament:install --panels`, register `MksinePlugin::make()` in `AdminPanelProvider`, then either re-run `mksine:install --migrate` or run `shield:generate --all --panel=admin` manually.
 
+### Only Dashboard appears in the admin sidebar
+
+**Symptom.** After login, the sidebar shows only **Dashboard** (and maybe Filament widgets). No Posts, Media, Menus, Plugins, etc.
+
+**Cause.** The application `User` model is still the default Laravel scaffold — it does not use Spatie `HasRoles`, Filament Shield `HasPanelShield`, or `FilamentUser`. Shield hides every resource the user cannot authorize; without roles/permissions, nothing passes the check.
+
+**Diagnose.**
+
+```bash
+php artisan tinker --execute 'echo in_array(Spatie\Permission\Traits\HasRoles::class, class_uses_recursive(config("auth.providers.users.model")), true) ? "ok" : "missing HasRoles";'
+```
+
+**Fix.**
+
+```bash
+php artisan mksine:install --force --migrate
+php artisan mksine:create-super-admin
+```
+
+`--force` publishes the MKSine `User` model (with Shield traits). If you customized `app/Models/User.php`, merge the traits manually — see [User subclass](../guides/auth/user-subclass.md).
+
 ### Admin styles missing / MKSine CSS
 
 **Symptom.** Panel loads but looks like a bare Filament install: no MKSine sidebar groups, wrong fonts/spacing, or missing dark-mode utilities.

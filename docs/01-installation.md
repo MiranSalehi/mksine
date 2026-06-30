@@ -92,6 +92,8 @@ public function panel(Panel $panel): Panel
 - Registers `MksineDashboard` as the panel home at `/admin` (hookable dashboard with sidebar groups and MKSine styling).
 - Discovers Filament components from **active** CMS plugins and themes.
 
+> **User model.** If `app/Models/User.php` already existed before install, the installer **skips** overwriting it. The default Laravel `User` does not include Shield — you will only see Dashboard in the menu. Run `php artisan mksine:install --force` to publish the MKSine user, or add `HasRoles`, `HasPanelShield`, and `FilamentUser` yourself. See [User subclass](guides/auth/user-subclass.md).
+
 ## 4. Run the MKSine installer
 
 ```bash

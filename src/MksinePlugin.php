@@ -17,6 +17,7 @@ use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
+use Miran\Mksine\Filament\Support\MksinePanelStyles;
 use Miran\Mksine\Filament\Pages\MksineDashboard;
 use Miran\Mksine\Support\Logging\MksineLog;
 
@@ -101,7 +102,7 @@ class MksinePlugin implements Plugin
 
         FilamentView::registerRenderHook(
             PanelsRenderHook::STYLES_AFTER,
-            fn(): string => view('mksine::filament.partials.panel-styles-after')->render(),
+            fn (): string => MksinePanelStyles::renderAfterTheme(),
         );
     }
 
