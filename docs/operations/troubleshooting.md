@@ -91,6 +91,27 @@ Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm the published file exists
 
 ## Plugins
 
+### `plugin_file` / ZIP upload failed in admin (`mountedActions.* failed to upload`)
+
+**Symptom.** Uploading a plugin, theme, or core ZIP in Filament shows a generic Livewire error such as `mountedActions.0.data.plugin_file.{uuid} failed to upload` before the form submits.
+
+**Common causes.**
+
+1. **Livewire temporary upload limit (12 MB default).** Filament allows up to 50 MB (plugin install) or `mksine.updater.max_zip_size_mb` (updater UI), but Livewire validates first. MKSine v1.0.4+ raises `livewire.temporary_file_upload.rules` automatically; on older versions publish `config/livewire.php` or set `'rules' => ['file', 'max:262144']` (256 MB).
+2. **PHP / web-server body limits.** `upload_max_filesize`, `post_max_size`, and nginx `client_max_body_size` / Apache `LimitRequestBody` must be at least as large as the ZIP.
+3. **`storage/app/livewire-tmp` not writable** (common on fresh Windows/Linux deploys). Ensure the web user can write to `storage/` and `bootstrap/cache/`.
+4. **Windows MIME detection.** Some browsers report ZIP as `application/octet-stream`. MKSine v1.0.4+ accepts that type on ZIP fields.
+
+**Diagnose.**
+
+```bash
+php artisan tinker --execute 'echo json_encode(config("livewire.temporary_file_upload.rules"));'
+php -i | findstr /i "upload_max_filesize post_max_size"   # Windows
+php -i | grep -E "upload_max_filesize|post_max_size"      # Linux/macOS
+```
+
+**Fix.** Upgrade to `miran/mksine` ≥ v1.0.4, clear config cache (`php artisan optimize:clear`), confirm `storage/app/livewire-tmp` exists and is writable, then retry with a smaller ZIP to isolate size limits.
+
 ### Plugin not found by `mks-plugin:discover`
 
 **Symptom.** A plugin folder exists at `{plugin_root}/{id}/` but `mks-plugin:list` doesn’t show it.

@@ -3,6 +3,7 @@
 namespace Miran\Mksine\Filament\Pages;
 
 use BackedEnum;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CodeEditor;
 use Filament\Forms\Components\FileUpload;
@@ -13,21 +14,24 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
-use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
 use Miran\Mksine\Core\Updater\UpdateResult;
+use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Support\LivewireUploadConfiguration;
 use ZipArchive;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class ThemeManager extends Page
 {
     use HasPageShield;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
 
     protected string $view = 'mksine::filament.pages.theme-manager';
@@ -98,7 +102,7 @@ class ThemeManager extends Page
                     FileUpload::make('theme_file')
                         ->label(__('mksine::themes.theme_zip_file'))
                         ->helperText(__('mksine::themes.theme_zip_helper'))
-                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
                         ->maxSize(51200) // 50MB max
                         ->required()
                         ->storeFiles(false),
@@ -106,12 +110,12 @@ class ThemeManager extends Page
                 ->action(function (array $data) {
                     $uploadedFile = $data['theme_file'];
 
-                    if ($uploadedFile instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                    if ($uploadedFile instanceof TemporaryUploadedFile) {
                         $tempPath = $uploadedFile->getRealPath();
-                    } elseif ($uploadedFile instanceof \Illuminate\Http\UploadedFile) {
+                    } elseif ($uploadedFile instanceof UploadedFile) {
                         $tempPath = $uploadedFile->getRealPath();
                     } elseif (is_string($uploadedFile)) {
-                        $tempPath = storage_path('app/' . $uploadedFile);
+                        $tempPath = storage_path('app/'.$uploadedFile);
                     } else {
                         Notification::make()
                             ->title(__('mksine::themes.upload_failed'))
@@ -159,7 +163,7 @@ class ThemeManager extends Page
                     FileUpload::make('theme_file')
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.theme_zip_helper'))
-                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
                         ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
                         ->required()
                         ->storeFiles(false),
@@ -239,8 +243,8 @@ class ThemeManager extends Page
             $result->fromVersion ?? '?',
             $result->toVersion ?? '?',
             implode(', ', $result->steps),
-            $result->success ? '' : ("Error: " . $result->errorMessage . "\n"),
-            'Log: ' . $result->logPath
+            $result->success ? '' : ('Error: '.$result->errorMessage."\n"),
+            'Log: '.$result->logPath
         );
 
         $notification = Notification::make()->title($title)->body($body);
@@ -251,14 +255,14 @@ class ThemeManager extends Page
 
     private function resolveUploadedZipPath(mixed $uploaded): ?string
     {
-        if ($uploaded instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+        if ($uploaded instanceof TemporaryUploadedFile) {
             return $uploaded->getRealPath();
         }
-        if ($uploaded instanceof \Illuminate\Http\UploadedFile) {
+        if ($uploaded instanceof UploadedFile) {
             return $uploaded->getRealPath();
         }
         if (is_string($uploaded) && $uploaded !== '') {
-            $full = storage_path('app/' . $uploaded);
+            $full = storage_path('app/'.$uploaded);
 
             return is_file($full) ? $full : null;
         }
@@ -326,7 +330,7 @@ class ThemeManager extends Page
             // Get theme.json content
             $themeJsonContent = $rootFolder === ''
                 ? $zip->getFromName('theme.json')
-                : $zip->getFromName($rootFolder . '/theme.json');
+                : $zip->getFromName($rootFolder.'/theme.json');
 
             $themeJson = json_decode($themeJsonContent, true);
 
@@ -338,7 +342,7 @@ class ThemeManager extends Page
 
             // Determine theme identifier
             $themeIdentifier = $rootFolder ?: strtolower(str_replace(' ', '-', $themeJson['name']));
-            $targetPath = $themesPath . '/' . $themeIdentifier;
+            $targetPath = $themesPath.'/'.$themeIdentifier;
 
             // Check if theme already exists
             if (File::isDirectory($targetPath)) {
@@ -353,12 +357,12 @@ class ThemeManager extends Page
                 $zip->extractTo($targetPath);
                 $zip->close();
             } else {
-                $tempExtractPath = $tempDir . '/extract-' . uniqid();
+                $tempExtractPath = $tempDir.'/extract-'.uniqid();
                 File::makeDirectory($tempExtractPath, 0755, true);
                 $zip->extractTo($tempExtractPath);
                 $zip->close();
 
-                File::moveDirectory($tempExtractPath . '/' . $rootFolder, $targetPath);
+                File::moveDirectory($tempExtractPath.'/'.$rootFolder, $targetPath);
                 File::deleteDirectory($tempExtractPath);
             }
 
@@ -522,7 +526,7 @@ class ThemeManager extends Page
         return Action::make('customCssJs')
             ->label(__('mksine::themes.custom_css_js'))
             ->icon('heroicon-o-code-bracket-square')
-            ->modalHeading(fn (array $arguments) => __('mksine::themes.custom_css_js') . ' – ' . (app(ThemeManagerService::class)->get($arguments['themeIdentifier'] ?? '')?->name ?? ($arguments['themeIdentifier'] ?? '')))
+            ->modalHeading(fn (array $arguments) => __('mksine::themes.custom_css_js').' – '.(app(ThemeManagerService::class)->get($arguments['themeIdentifier'] ?? '')?->name ?? ($arguments['themeIdentifier'] ?? '')))
             ->modalDescription(__('mksine::themes.custom_css_js_modal_description'))
             ->modalWidth('4xl')
             ->fillForm(function (array $arguments): array {

@@ -12,10 +12,13 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Http\UploadedFile;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
-use Miran\Mksine\Core\Updater\Updaters\CoreUpdater;
 use Miran\Mksine\Core\Updater\UpdateResult;
+use Miran\Mksine\Core\Updater\Updaters\CoreUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
+use Miran\Mksine\Support\LivewireUploadConfiguration;
 
 /**
  * Super-Admin-only Filament page for updating the core miran/mksine package.
@@ -32,7 +35,7 @@ class SystemUpdate extends Page
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowPath;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     protected string $view = 'mksine::filament.pages.system-update';
 
@@ -85,7 +88,7 @@ class SystemUpdate extends Page
                     FileUpload::make('core_file')
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.core_zip_helper'))
-                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
                         ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
                         ->required()
                         ->storeFiles(false),
@@ -139,14 +142,14 @@ class SystemUpdate extends Page
 
     private function resolveUploadedPath(mixed $uploaded): ?string
     {
-        if ($uploaded instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+        if ($uploaded instanceof TemporaryUploadedFile) {
             return $uploaded->getRealPath();
         }
-        if ($uploaded instanceof \Illuminate\Http\UploadedFile) {
+        if ($uploaded instanceof UploadedFile) {
             return $uploaded->getRealPath();
         }
         if (is_string($uploaded) && $uploaded !== '') {
-            $full = storage_path('app/' . $uploaded);
+            $full = storage_path('app/'.$uploaded);
 
             return is_file($full) ? $full : null;
         }

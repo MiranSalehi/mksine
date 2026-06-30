@@ -154,6 +154,7 @@ use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
 use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
 use Miran\Mksine\Support\FilesystemPath;
+use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -407,6 +408,8 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        LivewireUploadConfiguration::apply();
+
         MksFilamentDateMacros::register();
 
         $this->syncAuthUserModelWithMksineConfig();

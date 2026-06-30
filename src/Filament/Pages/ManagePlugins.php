@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Filament\Pages;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -11,22 +12,25 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
+use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Support\LivewireUploadConfiguration;
 use ZipArchive;
 
 class ManagePlugins extends Page
 {
     use HasPageShield;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-puzzle-piece';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-puzzle-piece';
 
     protected string $view = 'mksine::filament.pages.manage-plugins';
 
@@ -100,7 +104,7 @@ class ManagePlugins extends Page
                     FileUpload::make('plugin_file')
                         ->label(__('mksine::plugins.plugin_zip_file'))
                         ->helperText(__('mksine::plugins.plugin_zip_helper'))
-                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
                         ->maxSize(51200) // 50MB max
                         ->required()
                         ->storeFiles(false), // Don't store, we handle it manually
@@ -109,13 +113,13 @@ class ManagePlugins extends Page
                     $uploadedFile = $data['plugin_file'];
 
                     // Handle Livewire uploaded file
-                    if ($uploadedFile instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                    if ($uploadedFile instanceof TemporaryUploadedFile) {
                         $tempPath = $uploadedFile->getRealPath();
-                    } elseif ($uploadedFile instanceof \Illuminate\Http\UploadedFile) {
+                    } elseif ($uploadedFile instanceof UploadedFile) {
                         $tempPath = $uploadedFile->getRealPath();
                     } elseif (is_string($uploadedFile)) {
                         // It's a stored path
-                        $tempPath = storage_path('app/' . $uploadedFile);
+                        $tempPath = storage_path('app/'.$uploadedFile);
                     } else {
                         Notification::make()
                             ->title(__('mksine::plugins.upload_failed'))
@@ -161,7 +165,7 @@ class ManagePlugins extends Page
                     FileUpload::make('plugin_file')
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.plugin_zip_helper'))
-                        ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
                         ->maxSize(max(1024, (int) config('mksine.updater.max_zip_size_mb', 256) * 1024))
                         ->required()
                         ->storeFiles(false),
@@ -198,7 +202,7 @@ class ManagePlugins extends Page
                 continue;
             }
             $pathReal = realpath($manifest->basePath());
-            if ($pluginsDir === false || $pathReal === false || ! str_starts_with($pathReal, $pluginsDir . DIRECTORY_SEPARATOR)) {
+            if ($pluginsDir === false || $pathReal === false || ! str_starts_with($pathReal, $pluginsDir.DIRECTORY_SEPARATOR)) {
                 continue;
             }
             $options[$manifest->id()] = sprintf('%s (v%s)', $manifest->name(), $manifest->version());
@@ -243,16 +247,16 @@ class ManagePlugins extends Page
         $this->refreshPage();
     }
 
-    private function sendUpdateResultNotification(\Miran\Mksine\Core\Updater\UpdateResult $result, string $title): void
+    private function sendUpdateResultNotification(UpdateResult $result, string $title): void
     {
         $body = sprintf(
             "%s → %s\nSteps: %s\n%s%s%s",
             $result->fromVersion ?? '?',
             $result->toVersion ?? '?',
             implode(', ', $result->steps),
-            $result->success ? '' : ("Error: " . $result->errorMessage . "\n"),
+            $result->success ? '' : ('Error: '.$result->errorMessage."\n"),
             $result->dbPossiblyDirty ? "(DB may be partially migrated — inspect manually)\n" : '',
-            'Log: ' . $result->logPath
+            'Log: '.$result->logPath
         );
 
         $notification = Notification::make()->title($title)->body($body);
@@ -263,14 +267,14 @@ class ManagePlugins extends Page
 
     private function resolveUploadedZipPath(mixed $uploaded): ?string
     {
-        if ($uploaded instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+        if ($uploaded instanceof TemporaryUploadedFile) {
             return $uploaded->getRealPath();
         }
-        if ($uploaded instanceof \Illuminate\Http\UploadedFile) {
+        if ($uploaded instanceof UploadedFile) {
             return $uploaded->getRealPath();
         }
         if (is_string($uploaded) && $uploaded !== '') {
-            $full = storage_path('app/' . $uploaded);
+            $full = storage_path('app/'.$uploaded);
 
             return is_file($full) ? $full : null;
         }
@@ -336,10 +340,10 @@ class ManagePlugins extends Page
             // Determine plugin ID from manifest
             $manifestContent = $rootFolder === ''
                 ? $zip->getFromName('plugin.php')
-                : $zip->getFromName($rootFolder . '/plugin.php');
+                : $zip->getFromName($rootFolder.'/plugin.php');
 
             // Parse plugin.php to get ID
-            $tempManifestPath = $tempDir . '/temp-manifest-' . uniqid() . '.php';
+            $tempManifestPath = $tempDir.'/temp-manifest-'.uniqid().'.php';
             File::put($tempManifestPath, $manifestContent);
             $manifest = require $tempManifestPath;
             File::delete($tempManifestPath);
@@ -351,7 +355,7 @@ class ManagePlugins extends Page
             }
 
             $pluginId = $manifest['id'];
-            $targetPath = $pluginsPath . '/' . $pluginId;
+            $targetPath = $pluginsPath.'/'.$pluginId;
 
             // Check if plugin already exists
             if (File::isDirectory($targetPath)) {
@@ -368,13 +372,13 @@ class ManagePlugins extends Page
                 $zip->close();
             } else {
                 // Plugin files are in a subfolder
-                $tempExtractPath = $tempDir . '/extract-' . uniqid();
+                $tempExtractPath = $tempDir.'/extract-'.uniqid();
                 File::makeDirectory($tempExtractPath, 0755, true);
                 $zip->extractTo($tempExtractPath);
                 $zip->close();
 
                 // Move the plugin folder to plugins directory
-                File::moveDirectory($tempExtractPath . '/' . $rootFolder, $targetPath);
+                File::moveDirectory($tempExtractPath.'/'.$rootFolder, $targetPath);
                 File::deleteDirectory($tempExtractPath);
             }
 
