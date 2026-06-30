@@ -37,23 +37,28 @@ final class PluginDiscovery
     }
 
     /**
+     * Resolved project plugins directory (honours `mksine.plugins_path`).
+     */
+    public static function defaultPluginsPath(): string
+    {
+        return base_path((string) config('mksine.plugins_path', 'plugins'));
+    }
+
+    /**
      * Get default plugin scan paths.
      */
     private function getDefaultPaths(): array
     {
         $paths = [];
 
-        // 1. Local plugins directory (project root)
-        $localPlugins = base_path('plugins');
+        $localPlugins = self::defaultPluginsPath();
         if (is_dir($localPlugins)) {
-            $paths[] = $localPlugins;
+            $paths[] = realpath($localPlugins) ?: $localPlugins;
         }
 
-        // 2. Vendor packages with type: mks-plugin
-        // These are discovered via composer.json "extra.mks-plugin"
         $vendorPath = base_path('vendor');
         if (is_dir($vendorPath)) {
-            $paths[] = $vendorPath;
+            $paths[] = realpath($vendorPath) ?: $vendorPath;
         }
 
         return $paths;
@@ -120,16 +125,11 @@ final class PluginDiscovery
             return $manifests;
         }
 
-        // For local plugins directory: direct subdirectories
-        if (basename($basePath) === 'plugins') {
-            $manifests = $this->scanLocalPlugins($basePath);
-        }
-        // For vendor directory: scan for packages with plugin.php
-        elseif (basename($basePath) === 'vendor') {
-            $manifests = $this->scanVendorPlugins($basePath);
+        if (basename($basePath) === 'vendor') {
+            return $this->scanVendorPlugins($basePath);
         }
 
-        return $manifests;
+        return $this->scanLocalPlugins($basePath);
     }
 
     /**

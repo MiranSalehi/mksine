@@ -15,6 +15,7 @@ use Filament\Pages\Page;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Miran\Mksine\Core\Plugins\PluginDiscovery;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Updater\RollbackManager;
@@ -47,17 +48,21 @@ class ManagePlugins extends Page
 
     public function mount(): void
     {
-        $this->loadPlugins(true);
+        $this->loadPlugins();
     }
 
     public function loadPlugins(bool $rediscover = false): void
     {
         if ($rediscover) {
-            // Forget the singleton instance to force fresh discovery
             app()->forgetInstance(PluginManager::class);
         }
 
         $pluginManager = app(PluginManager::class);
+
+        if ($rediscover) {
+            $pluginManager->discover(clearCache: true);
+        }
+
         $this->plugins = $pluginManager->getAllPlugins();
     }
 
@@ -104,11 +109,13 @@ class ManagePlugins extends Page
                 ->form([
                     FileUpload::make('plugin_file')
                         ->label(__('mksine::plugins.plugin_zip_file'))
-                        ->helperText(__('mksine::plugins.plugin_zip_helper'))
-                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
+                        ->helperText(__('mksine::plugins.plugin_zip_helper', ['size' => UploadLimits::maxSizeMb()]))
+                        ->disk('local')
+                        ->directory(config('livewire.temporary_file_upload.directory') ?: 'livewire-tmp')
                         ->maxSize(UploadLimits::maxSizeKb())
+                        ->rules(LivewireUploadConfiguration::zipFilamentRules(UploadLimits::maxSizeKb()))
                         ->required()
-                        ->storeFiles(false), // Don't store, we handle it manually
+                        ->storeFiles(false),
                 ])
                 ->action(function (array $data) {
                     $uploadedFile = $data['plugin_file'];
@@ -139,12 +146,13 @@ class ManagePlugins extends Page
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('info')
                 ->action(function () {
+                    $this->loadPlugins(rediscover: true);
+
                     Notification::make()
                         ->title(__('mksine::plugins.plugins_discovered'))
+                        ->body(__('mksine::plugins.plugins_discovered_body', ['count' => count($this->plugins)]))
                         ->success()
                         ->send();
-
-                    $this->refreshPage();
                 }),
 
             Action::make('update_plugin')
@@ -166,8 +174,10 @@ class ManagePlugins extends Page
                     FileUpload::make('plugin_file')
                         ->label(__('mksine::updater.zip_file'))
                         ->helperText(__('mksine::updater.plugin_zip_helper'))
-                        ->acceptedFileTypes(LivewireUploadConfiguration::zipAcceptedMimeTypes())
+                        ->disk('local')
+                        ->directory(config('livewire.temporary_file_upload.directory') ?: 'livewire-tmp')
                         ->maxSize(UploadLimits::updaterMaxZipKb())
+                        ->rules(LivewireUploadConfiguration::zipFilamentRules(UploadLimits::updaterMaxZipKb()))
                         ->required()
                         ->storeFiles(false),
 
@@ -285,7 +295,7 @@ class ManagePlugins extends Page
 
     protected function processPluginUpload(string $tempPath): void
     {
-        $pluginsPath = base_path('plugins');
+        $pluginsPath = PluginDiscovery::defaultPluginsPath();
         $tempDir = storage_path('app/plugin-temp');
 
         // Ensure directories exist
@@ -392,6 +402,7 @@ class ManagePlugins extends Page
                 ->success()
                 ->send();
 
+            $this->loadPlugins(rediscover: true);
             $this->refreshPage();
 
         } catch (\Throwable $e) {
@@ -521,7 +532,7 @@ class ManagePlugins extends Page
             }
 
             // Safety check: ensure path is within plugins directory
-            $pluginsDir = base_path('plugins');
+            $pluginsDir = PluginDiscovery::defaultPluginsPath();
             $realPluginPath = realpath($pluginPath);
             $realPluginsDir = realpath($pluginsDir);
 

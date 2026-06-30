@@ -198,6 +198,8 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        LivewireUploadConfiguration::apply();
+
         $this->app->singleton(AdminConsoleProcessManager::class, function (): AdminConsoleProcessManager {
             return new AdminConsoleProcessManager(base_path());
         });
@@ -408,8 +410,6 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        LivewireUploadConfiguration::apply();
-
         MksFilamentDateMacros::register();
 
         $this->syncAuthUserModelWithMksineConfig();

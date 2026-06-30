@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Console\Commands;
 
 use Illuminate\Console\Command;
+use Miran\Mksine\Core\Plugins\PluginDiscovery;
 use Miran\Mksine\Core\Plugins\PluginManager;
 
 class PluginDiscoverCommand extends Command
@@ -23,7 +24,7 @@ class PluginDiscoverCommand extends Command
 
         if (empty($manifests)) {
             $this->warn('No plugins discovered.');
-            $this->line('Place plugins in: ' . base_path('plugins/'));
+            $this->line('Place plugins in: '.PluginDiscovery::defaultPluginsPath().'/');
 
             return self::SUCCESS;
         }

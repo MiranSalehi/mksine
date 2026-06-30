@@ -37,12 +37,32 @@ final class LivewireUploadConfiguration
         ];
     }
 
+    /**
+     * Filament FileUpload rules for ZIP fields (extension-based; Windows-friendly).
+     *
+     * @return list<string>
+     */
+    public static function zipFilamentRules(int $maxKb): array
+    {
+        return ['file', 'mimes:zip', 'max:'.$maxKb];
+    }
+
     public static function apply(): void
     {
+        self::applyTemporaryDisk();
         self::applyMaxUploadRules();
         self::applyPreviewMimes();
         self::applyMaxUploadTime();
         self::ensureTemporaryDirectoryExists();
+    }
+
+    private static function applyTemporaryDisk(): void
+    {
+        if (config('livewire.temporary_file_upload.disk') !== null) {
+            return;
+        }
+
+        config(['livewire.temporary_file_upload.disk' => 'local']);
     }
 
     private static function applyMaxUploadRules(): void

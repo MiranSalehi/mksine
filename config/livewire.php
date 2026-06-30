@@ -54,7 +54,7 @@ return [
     */
 
     'temporary_file_upload' => [
-        'disk' => null,
+        'disk' => env('LIVEWIRE_TEMPORARY_UPLOAD_DISK', 'local'),
         'rules' => [
             'file',
             'max:'.max(1024, (int) env('MKS_CMS_MAX_UPLOAD_MB', 100) * 1024),
