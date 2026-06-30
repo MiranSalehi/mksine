@@ -18,7 +18,7 @@ This page collects the failures we see most often. For each one: the symptom, ho
 
 **Common causes.**
 
-1. **Duplicate dashboard pages.** `php artisan filament:install --panels` registers `Filament\Pages\Dashboard` on `/`. MKSine also registers `MksineDashboard` on the same path. Only one route name survives; navigation still links to `mksine-dashboard` → 500. MKSine removes the host `Dashboard` page automatically when `MksinePlugin` is on the panel (package ≥ current). After upgrading, run `php artisan filament:optimize-clear`.
+1. **Duplicate dashboard pages (most common).** `filament:install --panels` adds `->pages([Dashboard::class])`. MKSine registers `MksineDashboard` on the same `/admin` URL. Only one route survives; navigation links to `mksine-dashboard` → 500. **Remove `Dashboard::class` from `AdminPanelProvider`** (see [Installation §3](../01-installation.md#3-register-the-filament-plugin)).
 2. **Stale Filament component cache** (`bootstrap/cache/filament/panels/admin.php`) built before MKSine was added or with the duplicate dashboard layout.
 
 **Fix.**
@@ -50,6 +50,21 @@ Re-assign roles if needed. Existing super admins pick up new permissions on the 
 **Symptom.** Installer prints “Skipping Shield generation — the admin panel is not ready.”
 
 **Fix.** Follow the printed steps: run `filament:install --panels`, register `MksinePlugin::make()` in `AdminPanelProvider`, then either re-run `mksine:install --migrate` or run `shield:generate --all --panel=admin` manually.
+
+### Admin styles missing / MKSine CSS
+
+**Symptom.** Panel loads but looks like a bare Filament install: no MKSine sidebar groups, wrong fonts/spacing, or missing dark-mode utilities.
+
+**Cause.** MKSine admin CSS (`mksine-styles`) was not published to `public/` or the panel did not load it. `mksine:install --migrate` runs `filament:assets`; skipping install or an outdated package can leave styles unloaded.
+
+**Fix.**
+
+```bash
+php artisan filament:assets
+php artisan view:clear
+```
+
+Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm `vendor/miran/mksine/resources/dist/mksine.css` exists in your install (shipped with the package). After upgrading `miran/mksine`, run `filament:assets` again.
 
 ## Plugins
 

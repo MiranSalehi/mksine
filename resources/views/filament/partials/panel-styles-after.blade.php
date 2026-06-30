@@ -1,10 +1,18 @@
 @php
-    $mksineStylesPath = base_path('packages/mksine/resources/dist/mksine.css');
+    use Filament\Support\Facades\FilamentAsset;
+
+    $mksineStylesHref = null;
+
+    try {
+        $mksineStylesHref = FilamentAsset::getStyleHref('mksine-styles', 'miran/mksine');
+    } catch (\LogicException) {
+        // Stylesheet not registered (missing dist build or filament:assets not run).
+    }
 @endphp
 
-@if (file_exists($mksineStylesPath))
+@if (filled($mksineStylesHref))
     <link
-        href="{{ \Filament\Support\Facades\FilamentAsset::getStyleHref('mksine-styles', 'miran/mksine') }}"
+        href="{{ $mksineStylesHref }}"
         rel="stylesheet"
         data-navigate-track
     />

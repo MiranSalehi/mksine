@@ -21,7 +21,7 @@ MKSine is a **Filament 4** CMS package. You need a working Laravel application, 
 |------|------|------------------|
 | 1 | Require the package | `composer require miran/mksine` |
 | 2 | Create the Filament admin panel | `php artisan filament:install --panels` |
-| 3 | Register `MksinePlugin` on the panel | Edit `AdminPanelProvider` (see below) |
+| 3 | Register `MksinePlugin`; **remove** `Dashboard::class` from provider | Edit `AdminPanelProvider` (see below) |
 | 4 | Publish assets, migrate, generate permissions | `php artisan mksine:install --migrate` |
 | 5 | Create a super admin | `php artisan mksine:create-super-admin` |
 | 6 | Smoke test | Visit `/admin` |
@@ -56,29 +56,41 @@ php artisan make:filament-panel admin
 
 ## 3. Register the Filament plugin
 
-In `app/Providers/Filament/AdminPanelProvider.php`, add `MksinePlugin::make()` to the panel’s `plugins` array:
+`filament:install --panels` scaffolds `AdminPanelProvider` with Filament’s default dashboard page. **Remove it** — MKSine ships its own hookable dashboard (`MksineDashboard`). Keeping both breaks the `mksine-dashboard` route and causes HTTP 500 on `/admin`.
+
+In `app/Providers/Filament/AdminPanelProvider.php`:
 
 ```php
 use Miran\Mksine\MksinePlugin;
+// Do not import Filament\Pages\Dashboard — MKSine replaces it.
 
 public function panel(Panel $panel): Panel
 {
     return $panel
-        // ... existing configuration (id, path, middleware, etc.)
+        ->id('admin')
+        ->path('admin')
+        ->login()
         ->plugins([
             MksinePlugin::make(),
-        ]);
+        ])
+        // Remove the block filament:install added:
+        // ->pages([
+        //     Dashboard::class,
+        // ])
+        ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+        ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+        ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets');
 }
 ```
+
+> **Required.** Delete `->pages([Dashboard::class])` (and the `use Filament\Pages\Dashboard` import if unused). Do not register both `Dashboard::class` and `MksinePlugin` on the same panel.
 
 `MksinePlugin`:
 
 - Registers CMS resources (posts, categories, media, menus, settings, languages, plugins manager, …).
 - Registers **Filament Shield** on the panel (you do **not** need a separate `FilamentShieldPlugin::make()` in the host app).
-- Replaces the default `Filament\Pages\Dashboard` page from `filament:install --panels` with `MksineDashboard` (same `/admin` URL, hookable dashboard).
+- Registers `MksineDashboard` as the panel home at `/admin` (hookable dashboard with sidebar groups and MKSine styling).
 - Discovers Filament components from **active** CMS plugins and themes.
-
-You may leave `Dashboard::class` in `->pages([...])` from the Filament installer; MKSine removes it automatically. Prefer not adding it on new projects.
 
 ## 4. Run the MKSine installer
 
@@ -146,7 +158,8 @@ For a full interactive Shield setup (panel plugin registration, optional tenancy
 1. Visit the Filament panel URL (commonly `/admin`).
 2. Log in with the super admin you created.
 3. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
-4. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
+4. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan filament:assets` and hard-refresh the browser. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
+5. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
 
 ## What just got installed
 

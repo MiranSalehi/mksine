@@ -43,16 +43,18 @@ composer require miran/mksine
 php artisan filament:install --panels
 ```
 
-Register the plugin in `app/Providers/Filament/AdminPanelProvider.php`:
+Register the plugin in `app/Providers/Filament/AdminPanelProvider.php` and **remove** the default `Dashboard::class` page from `filament:install`:
 
 ```php
 use Miran\Mksine\MksinePlugin;
 
 public function panel(Panel $panel): Panel
 {
-    return $panel->plugins([
-        MksinePlugin::make(),
-    ]);
+    return $panel
+        ->plugins([
+            MksinePlugin::make(),
+        ]);
+    // Do not keep ->pages([Dashboard::class]) — MKSine provides MksineDashboard.
 }
 ```
 
