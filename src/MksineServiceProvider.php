@@ -3,10 +3,10 @@
 namespace Miran\Mksine;
 
 use App\Policies\CategoryPolicy;
+use App\Policies\CommentPolicy;
 use App\Policies\GeoCityPolicy;
 use App\Policies\GeoCountryPolicy;
 use App\Policies\GeoStatePolicy;
-use App\Policies\CommentPolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\MenuLocationPolicy;
 use App\Policies\MenuPolicy;
@@ -31,17 +31,16 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Translation\FileLoader;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
-use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Commands\MksineInstallCommand;
+use Miran\Mksine\Console\Commands\ConsoleRunDetachedCommand;
+use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
+use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\GeoImportCommand;
 use Miran\Mksine\Console\Commands\GeoMigrateLegacyIranCommand;
 use Miran\Mksine\Console\Commands\GeoSyncCityNativeNamesCommand;
-use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
-use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\MigrateSmartCommand;
 use Miran\Mksine\Console\Commands\PluginActivateCommand;
 use Miran\Mksine\Console\Commands\PluginDeactivateCommand;
@@ -57,17 +56,16 @@ use Miran\Mksine\Console\Commands\PluginMigrateCommand;
 use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
-use Miran\Mksine\Console\Commands\ConsoleRunDetachedCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
 use Miran\Mksine\Console\Commands\RollbackCoreCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
 use Miran\Mksine\Console\Commands\RollbackThemeCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
+use Miran\Mksine\Console\Commands\ThemePublishCommand;
+use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
 use Miran\Mksine\Console\Commands\UpdateCoreCommand;
 use Miran\Mksine\Console\Commands\UpdatePluginCommand;
 use Miran\Mksine\Console\Commands\UpdateThemeCommand;
-use Miran\Mksine\Console\Commands\ThemePublishCommand;
-use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
@@ -90,10 +88,10 @@ use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
-use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent;
 use Miran\Mksine\Core\PageBuilder\Components\DividerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\FeatureListComponent;
+use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeadingComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeroComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ImageComponent;
@@ -121,8 +119,8 @@ use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Plugins\PluginManifestTranslator;
 use Miran\Mksine\Core\Theme\ThemeActionManager;
-use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
+use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Core\Theme\ThemeEnqueue;
 use Miran\Mksine\Core\Theme\ThemeLivewireMissingComponentResolver;
 use Miran\Mksine\Core\Theme\ThemeManager;
@@ -130,6 +128,8 @@ use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
 use Miran\Mksine\Core\Translation\MksineFileLoader;
 use Miran\Mksine\Core\Translation\TranslationFileManager;
+use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
+use Miran\Mksine\Filament\Support\MksFilamentDateMacros;
 use Miran\Mksine\Livewire\Frontend\CategoryList;
 use Miran\Mksine\Livewire\Frontend\CategoryShow;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
@@ -141,20 +141,24 @@ use Miran\Mksine\Livewire\Frontend\PostShow;
 use Miran\Mksine\Livewire\MediaPickerModal;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Comment;
-use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\GeoCity;
 use Miran\Mksine\Models\GeoCountry;
 use Miran\Mksine\Models\GeoState;
+use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Services\Geo\GeoResolver;
+use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
 use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
+use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class MksineServiceProvider extends PackageServiceProvider
 {
@@ -303,8 +307,8 @@ class MksineServiceProvider extends PackageServiceProvider
             return new MenuService;
         });
 
-        $this->app->singleton(\Miran\Mksine\Services\Geo\StoreGeoSettings::class);
-        $this->app->singleton(\Miran\Mksine\Services\Geo\GeoResolver::class);
+        $this->app->singleton(StoreGeoSettings::class);
+        $this->app->singleton(GeoResolver::class);
 
         // Register ThemeManager as singleton
         $this->app->singleton(ThemeManager::class, function () {
@@ -403,7 +407,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        \Miran\Mksine\Filament\Support\MksFilamentDateMacros::register();
+        MksFilamentDateMacros::register();
 
         $this->syncAuthUserModelWithMksineConfig();
 
@@ -1276,7 +1280,7 @@ class MksineServiceProvider extends PackageServiceProvider
         $publishArray = [];
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($fontsPath, \RecursiveDirectoryIterator::SKIP_DOTS)) as $file) {
             if ($file->isFile()) {
-                $relative = str_replace($fontsPath.DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $relative = FilesystemPath::relativeTo($fontsPath, $file->getPathname());
                 $publishArray[$file->getPathname()] = public_path('fonts/iranyekan/'.$relative);
             }
         }
@@ -1308,7 +1312,7 @@ class MksineServiceProvider extends PackageServiceProvider
                 glob($packageLang.'/*.json') ?: []
             ) as $absPath
         ) {
-            $relative = str_replace($packageLang.DIRECTORY_SEPARATOR, '', $absPath);
+            $relative = FilesystemPath::relativeTo($packageLang, $absPath);
             $publishArray[$absPath] = lang_path($relative);
         }
 
@@ -1338,7 +1342,7 @@ class MksineServiceProvider extends PackageServiceProvider
             glob($packageLang.'/*.json') ?: []
         );
         foreach ($candidates as $absPath) {
-            $relative = str_replace($packageLang.DIRECTORY_SEPARATOR, '', $absPath);
+            $relative = FilesystemPath::relativeTo($packageLang, $absPath);
             $target = lang_path($relative);
             if (! $filesystem->exists($target)) {
                 $filesystem->ensureDirectoryExists(dirname($target));
