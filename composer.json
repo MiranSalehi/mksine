@@ -1,6 +1,6 @@
 {
     "name": "miran/mksine",
-    "description": "A headless CMS core package built with Filament for the MKS project",
+    "description": "Laravel + Filament CMS foundation with plugins, themes, hooks, and media.",
     "keywords": [
         "miran",
         "laravel",
