@@ -75,7 +75,7 @@ What each chained step does:
 - `sync:mksine-tailwind` → rebuilds the **package** Tailwind (`vendor/miran/mksine`), so Filament classes the plugin uses get included in the panel CSS bundle.
 - `sync:filament-assets` → keeps Filament’s vendor assets in `public/vendor/filament` aligned with the version pinned in `composer.json`.
 
-On a Composer install there is no `packages/mksine` tree — scripts resolve the package via `vendor/miran/mksine` (monorepos symlink there too).
+On a Composer install there is no `packages/mksine` tree — scripts resolve the package via `vendor/miran/mksine` (monorepos symlink there too). The Composer archive ships pre-built `resources/dist/mksine.css`; `sync:mksine-tailwind` skips rebuilding when `package.json` is absent unless you run `npm install` inside `vendor/miran/mksine` for a full Tailwind rebuild.
 
 Skip any step you don’t need (`npm run build && cd ../.. && php artisan mks-plugin:publish my-plugin` is the minimum). The chain only matters in a monorepo development setup.
 

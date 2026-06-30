@@ -15,7 +15,6 @@
 /docs                   export-ignore
 /images                 export-ignore
 /tests                  export-ignore
-/package.json           export-ignore
 /phpstan-baseline.neon  export-ignore
 /phpstan.neon.dist      export-ignore
 /postcss.config.js      export-ignore
