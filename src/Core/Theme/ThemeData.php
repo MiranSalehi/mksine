@@ -27,6 +27,26 @@ final readonly class ThemeData
     ) {}
 
     /**
+     * Rehydrate from a cached array payload.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            identifier: (string) ($data['identifier'] ?? ''),
+            name: (string) ($data['name'] ?? $data['identifier'] ?? ''),
+            version: (string) ($data['version'] ?? '1.0.0'),
+            path: (string) ($data['path'] ?? ''),
+            source: (string) ($data['source'] ?? 'project'),
+            author: isset($data['author']) ? (string) $data['author'] : null,
+            description: isset($data['description']) ? (string) $data['description'] : null,
+            screenshot: isset($data['screenshot']) ? (string) $data['screenshot'] : null,
+            assets: is_array($data['assets'] ?? null) ? $data['assets'] : [],
+        );
+    }
+
+    /**
      * Create ThemeData from theme.json content.
      */
     public static function fromJson(array $json, string $identifier, string $path, string $source): self

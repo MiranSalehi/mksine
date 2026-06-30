@@ -10,9 +10,9 @@ use Miran\Mksine\Models\Theme;
 class ThemeManager
 {
     /**
-     * Cache key for discovered themes.
+     * Cache key for discovered themes (v2 stores plain arrays, not ThemeData objects).
      */
-    protected const CACHE_KEY = 'mksine.themes.discovered';
+    protected const CACHE_KEY = 'mksine.themes.discovered.v2';
 
     /**
      * Cache TTL in seconds.
@@ -29,7 +29,7 @@ class ThemeManager
      */
     public function getPackageThemesPath(): string
     {
-        return dirname(__DIR__, 3) . '/resources/views/themes';
+        return dirname(__DIR__, 3).'/resources/views/themes';
     }
 
     /**
@@ -51,25 +51,75 @@ class ThemeManager
             Cache::forget(self::CACHE_KEY);
         }
 
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            $themes = collect();
+        $cached = Cache::get(self::CACHE_KEY);
 
-            // Discover package themes
-            $packageThemes = $this->discoverFromPath(
-                $this->getPackageThemesPath(),
-                'package'
-            );
-            $themes = $themes->merge($packageThemes);
+        if (is_array($cached)) {
+            return $this->collectionFromCachedArrays($cached);
+        }
 
-            // Discover project themes
-            $projectThemes = $this->discoverFromPath(
-                $this->getProjectThemesPath(),
-                'project'
-            );
-            $themes = $themes->merge($projectThemes);
+        if ($cached !== null) {
+            // Legacy or corrupted cache (e.g. serialized ThemeData after a package update).
+            Cache::forget(self::CACHE_KEY);
+        }
 
-            return $themes;
-        });
+        $themes = $this->discoverThemes();
+
+        Cache::put(self::CACHE_KEY, $this->collectionToCachedArrays($themes), self::CACHE_TTL);
+
+        return $themes;
+    }
+
+    /**
+     * Scan package and project theme directories.
+     *
+     * @return Collection<string, ThemeData>
+     */
+    protected function discoverThemes(): Collection
+    {
+        $themes = collect();
+
+        $themes = $themes->merge($this->discoverFromPath(
+            $this->getPackageThemesPath(),
+            'package'
+        ));
+
+        return $themes->merge($this->discoverFromPath(
+            $this->getProjectThemesPath(),
+            'project'
+        ));
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $cached
+     * @return Collection<string, ThemeData>
+     */
+    protected function collectionFromCachedArrays(array $cached): Collection
+    {
+        $themes = collect();
+
+        foreach ($cached as $identifier => $data) {
+            if (! is_string($identifier) || ! is_array($data)) {
+                continue;
+            }
+
+            try {
+                $themes->put($identifier, ThemeData::fromArray($data));
+            } catch (\Throwable $exception) {
+                logger()->warning("Skipping invalid cached theme [{$identifier}]: {$exception->getMessage()}");
+            }
+        }
+
+        return $themes;
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    protected function collectionToCachedArrays(Collection $themes): array
+    {
+        return $themes
+            ->map(fn (ThemeData $theme): array => $theme->toArray())
+            ->all();
     }
 
     /**
@@ -89,7 +139,7 @@ class ThemeManager
 
         foreach ($directories as $directory) {
             $identifier = basename($directory);
-            $themeJsonPath = $directory . '/theme.json';
+            $themeJsonPath = $directory.'/theme.json';
 
             // Skip if no theme.json exists
             if (! File::exists($themeJsonPath)) {
@@ -102,7 +152,7 @@ class ThemeManager
                 $themes->put($identifier, $themeData);
             } catch (\JsonException $e) {
                 // Log invalid theme.json and skip
-                logger()->warning("Invalid theme.json in {$directory}: " . $e->getMessage());
+                logger()->warning("Invalid theme.json in {$directory}: ".$e->getMessage());
             }
         }
 
@@ -195,11 +245,11 @@ class ThemeManager
      */
     public function getThemeTranslationsPath(ThemeData $theme): ?string
     {
-        $path = $theme->path . '/resources/lang';
+        $path = $theme->path.'/resources/lang';
         if (File::isDirectory($path)) {
             return $path;
         }
-        $path = $theme->path . '/lang';
+        $path = $theme->path.'/lang';
 
         return File::isDirectory($path) ? $path : null;
     }
@@ -226,7 +276,7 @@ class ThemeManager
             return false;
         }
 
-        $dest = lang_path('vendor/theme-' . $identifier);
+        $dest = lang_path('vendor/theme-'.$identifier);
 
         if (! File::isDirectory($dest)) {
             File::ensureDirectoryExists($dest);
@@ -261,7 +311,7 @@ class ThemeManager
      */
     public function view(string $view): string
     {
-        return $this->getViewNamespace() . '.' . $view;
+        return $this->getViewNamespace().'.'.$view;
     }
 
     /**
@@ -314,18 +364,18 @@ class ThemeManager
         $published = false;
 
         // Copy dist/ folder
-        $distPath = $theme->path . '/dist';
+        $distPath = $theme->path.'/dist';
         if (File::isDirectory($distPath)) {
-            $distDest = $destinationBase . '/dist';
+            $distDest = $destinationBase.'/dist';
             File::ensureDirectoryExists($distDest);
             File::copyDirectory($distPath, $distDest);
             $published = true;
         }
 
         // Copy images/ folder if exists
-        $imagesPath = $theme->path . '/images';
+        $imagesPath = $theme->path.'/images';
         if (File::isDirectory($imagesPath)) {
-            $imagesDest = $destinationBase . '/images';
+            $imagesDest = $destinationBase.'/images';
             File::ensureDirectoryExists($imagesDest);
             File::copyDirectory($imagesPath, $imagesDest);
             $published = true;
@@ -333,9 +383,9 @@ class ThemeManager
 
         // Copy screenshot
         if ($theme->screenshot) {
-            $screenshotPath = $theme->path . '/' . $theme->screenshot;
+            $screenshotPath = $theme->path.'/'.$theme->screenshot;
             if (File::exists($screenshotPath) && is_file($screenshotPath)) {
-                $screenshotDest = $destinationBase . '/' . $theme->screenshot;
+                $screenshotDest = $destinationBase.'/'.$theme->screenshot;
                 File::copy($screenshotPath, $screenshotDest);
                 $published = true;
             }
@@ -349,6 +399,7 @@ class ThemeManager
      */
     public function clearCache(): void
     {
+        Cache::forget('mksine.themes.discovered'); // legacy v1 key
         Cache::forget(self::CACHE_KEY);
         $this->activeThemeData = null;
     }
@@ -362,7 +413,7 @@ class ThemeManager
             return null;
         }
 
-        $screenshotPath = $theme->path . '/' . $theme->screenshot;
+        $screenshotPath = $theme->path.'/'.$theme->screenshot;
 
         if (! File::exists($screenshotPath) || ! is_file($screenshotPath)) {
             return null;
@@ -390,7 +441,7 @@ class ThemeManager
             throw new \InvalidArgumentException('Type must be "css" or "js".');
         }
 
-        return $this->getCustomStorageDir() . '/' . $identifier . '.' . $type;
+        return $this->getCustomStorageDir().'/'.$identifier.'.'.$type;
     }
 
     /**
@@ -420,7 +471,7 @@ class ThemeManager
             return '';
         }
 
-        $distPath = $theme->path . '/dist/custom.' . $type;
+        $distPath = $theme->path.'/dist/custom.'.$type;
 
         return File::isFile($distPath) ? File::get($distPath) : '';
     }
@@ -445,7 +496,7 @@ class ThemeManager
      */
     public function getExtraAssetsStoragePath(string $identifier): string
     {
-        return $this->getCustomStorageDir() . '/' . $identifier . '-extra-assets.json';
+        return $this->getCustomStorageDir().'/'.$identifier.'-extra-assets.json';
     }
 
     /**

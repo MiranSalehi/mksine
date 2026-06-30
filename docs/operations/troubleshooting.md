@@ -213,6 +213,19 @@ Same root cause as above on the **setup** database. Run `shield:generate --all` 
 
 ## Themes
 
+### `ThemeManager::discover()` returns `__PHP_Incomplete_Class`
+
+**Symptom.** `TypeError: Return value must be of type Illuminate\Support\Collection, __PHP_Incomplete_Class returned` at `ThemeManager.php` when opening Theme Manager or after upgrading `miran/mksine`.
+
+**Cause.** Older versions cached serialized `ThemeData` objects in `mksine.themes.discovered`. After a package update the cached class definition no longer unserializes cleanly.
+
+**Fix.** Upgrade to `miran/mksine` ≥ v1.0.5 (array-based cache key `mksine.themes.discovered.v2`), then:
+
+```bash
+php artisan cache:clear
+# or from Theme Manager → Discover themes
+```
+
 ### Theme not appearing in the picker
 
 **Diagnose.** `php artisan mks:theme-publish {theme}` and confirm `themes/{theme}/theme.json` is well-formed.
