@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Miran\Mksine\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 use Miran\Mksine\Models\Media;
 
 class MediaPickerModal extends Component
 {
     use WithFileUploads;
+    use WithPagination;
 
     public bool $isOpen = false;
 
@@ -47,6 +50,7 @@ class MediaPickerModal extends Component
         $this->typeFilter = '';
         $this->uploadedFiles = [];
         $this->detailMediaId = $currentSelection !== [] ? (int) $currentSelection[0] : null;
+        $this->resetPage();
         $this->isOpen = true;
     }
 
@@ -161,7 +165,17 @@ class MediaPickerModal extends Component
         return null;
     }
 
-    public function getMediaProperty()
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingTypeFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    protected function mediaQuery(): Builder
     {
         $query = Media::query()
             ->orderBy('created_at', 'desc');
@@ -177,7 +191,7 @@ class MediaPickerModal extends Component
             $query->where('mime_type', 'like', "{$this->typeFilter}%");
         }
 
-        return $query->paginate(24);
+        return $query;
     }
 
     public function getFileTypes(): array
@@ -193,10 +207,12 @@ class MediaPickerModal extends Component
 
     public function render(): View
     {
+        $mediaItems = $this->isOpen
+            ? $this->mediaQuery()->paginate(24)
+            : $this->emptyMediaPaginator();
+
         return view('mksine::livewire.media-picker-modal', [
-            'mediaItems' => $this->isOpen
-                ? $this->getMediaProperty()
-                : $this->emptyMediaPaginator(),
+            'mediaItems' => $mediaItems,
             'fileTypes' => $this->getFileTypes(),
         ]);
     }
