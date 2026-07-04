@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use Miran\Mksine\Support\MediaStoragePath;
 use Miran\Mksine\Support\UploadLimits;
 
 class MediaForm
@@ -41,7 +42,7 @@ class MediaForm
                             ->acceptedFileTypes(['image/*', 'video/*', 'audio/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                             ->maxSize(UploadLimits::mediaMaxKb())
                             ->disk(fn ($get) => $get('disk') ?? 'public')
-                            ->directory('media')
+                            ->directory(fn (): string => MediaStoragePath::datedDirectory())
                             ->visibility('public')
                             ->storeFileNamesIn('file_name')
                             ->deletable()

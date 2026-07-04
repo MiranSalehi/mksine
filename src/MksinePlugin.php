@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
 use Miran\Mksine\Filament\Support\MksinePanelStyles;
@@ -241,6 +242,8 @@ class MksinePlugin implements Plugin
             if (! $this->isDatabaseReady()) {
                 return;
             }
+
+            ThemeBootstrap::ensureActiveThemeAutoloadRegistered();
 
             $theme = theme_manager()->getActive();
             if ($theme === null) {

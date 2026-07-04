@@ -12,6 +12,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Miran\Mksine\Models\Media;
+use Miran\Mksine\Support\MediaStoragePath;
 
 class MediaPickerModal extends Component
 {
@@ -114,7 +115,7 @@ class MediaPickerModal extends Component
 
         foreach ($this->uploadedFiles as $file) {
             // Store file in media directory (same as MediaResource)
-            $path = $file->store('media', $disk);
+            $path = $file->store(MediaStoragePath::datedDirectory(), $disk);
 
             // Generate URL
             $url = Storage::disk($disk)->url($path);
