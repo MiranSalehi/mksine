@@ -648,4 +648,21 @@ return [
             ['label' => 'queue:work (once)', 'command' => 'php artisan queue:work --once'],
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Geo import (mks:geo:import)
+    |--------------------------------------------------------------------------
+    |
+    | Full imports dispatch queue jobs; city rows are processed per country.
+    | Progress is written to storage/logs/mksine-geo-import/geo-import-{runId}.log
+    | and to the application log with context run_id.
+    |
+    */
+    'geo_import' => [
+        'queue_connection' => env('MKS_GEO_IMPORT_QUEUE_CONNECTION'),
+        'queue_name' => env('MKS_GEO_IMPORT_QUEUE_NAME'),
+        'job_timeout' => (int) env('MKS_GEO_IMPORT_JOB_TIMEOUT', 3600),
+        'memory_limit' => env('MKS_GEO_IMPORT_MEMORY_LIMIT', '512M'),
+    ],
 ];

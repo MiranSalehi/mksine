@@ -18,6 +18,7 @@ final class GeoImportService
     public function __construct(
         private readonly string $locationsDatabase = 'locations',
         private readonly string $locationsTable = 'csv-cities',
+        private readonly ?GeoImportLogger $logger = null,
     ) {}
 
     public function importCountries(?callable $progress = null): int
@@ -60,7 +61,7 @@ final class GeoImportService
 
         return $this->upsertChunked('geo_countries', $rows, ['id'], [
             'iso2', 'iso3', 'name', 'native', 'translations', 'is_active', 'updated_at',
-        ], $progress);
+        ], 'countries', $progress);
     }
 
     public function importStates(?string $countryIso2 = null, ?callable $progress = null): int
@@ -107,7 +108,7 @@ final class GeoImportService
 
         return $this->upsertChunked('geo_states', $rows, ['id'], [
             'geo_country_id', 'code', 'name', 'native', 'translations', 'source', 'is_visible', 'sort_order', 'updated_at',
-        ], $progress);
+        ], 'states', $progress);
     }
 
     public function importCities(?string $countryIso2 = null, ?callable $progress = null): int
@@ -116,7 +117,22 @@ final class GeoImportService
             return 0;
         }
 
-        $translationIndex = $this->buildCityTranslationIndex($countryIso2);
+        $imported = 0;
+
+        foreach ($this->locationCountryCodes($countryIso2) as $code) {
+            $imported += $this->importCitiesForCountry($code, $countryIso2 !== null, $progress, $imported);
+        }
+
+        return $imported;
+    }
+
+    private function importCitiesForCountry(
+        string $countryIso2,
+        bool $explicitCountryFilter,
+        ?callable $progress,
+        int $importedSoFar,
+    ): int {
+        $translationIndex = $this->loadCityTranslationIndexForCountry($countryIso2, $explicitCountryFilter);
 
         $imported = 0;
         $buffer = [];
@@ -153,34 +169,54 @@ final class GeoImportService
             if (count($buffer) >= 500) {
                 $imported += $this->flushCityBuffer($buffer);
                 $buffer = [];
-                $progress && $progress($imported);
+                $total = $importedSoFar + $imported;
+                $this->logger?->progress('cities', $total, $countryIso2);
+                $progress && $progress($total);
             }
         }
 
         if ($buffer !== []) {
             $imported += $this->flushCityBuffer($buffer);
-            $progress && $progress($imported);
+            $total = $importedSoFar + $imported;
+            $this->logger?->progress('cities', $total, $countryIso2);
+            $progress && $progress($total);
         }
+
+        unset($translationIndex);
 
         return $imported;
     }
 
     /**
+     * @return list<string>
+     */
+    private function locationCountryCodes(?string $countryIso2): array
+    {
+        if ($countryIso2 !== null) {
+            return [strtoupper($countryIso2)];
+        }
+
+        $rows = DB::select(
+            'SELECT DISTINCT country_code FROM '.$this->qualifiedLocationsTable().' ORDER BY country_code',
+        );
+
+        return array_values(array_map(
+            static fn (object $row): string => strtoupper((string) ($row->country_code ?? '')),
+            $rows,
+        ));
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
-    private function buildCityTranslationIndex(?string $countryIso2): array
+    private function loadCityTranslationIndexForCountry(string $countryIso2, bool $explicitCountryFilter): array
     {
+        if (! $explicitCountryFilter && GeoCountryLocaleMap::localeForCountry($countryIso2) === null) {
+            return [];
+        }
+
         $index = [];
-
-        if ($countryIso2 !== null) {
-            $this->mergeCityTranslationsForCountry($index, strtoupper($countryIso2));
-
-            return $index;
-        }
-
-        foreach (GeoCountryLocaleMap::mappedCountryCodes() as $code) {
-            $this->mergeCityTranslationsForCountry($index, $code);
-        }
+        $this->mergeCityTranslationsForCountry($index, $countryIso2);
 
         return $index;
     }
@@ -225,6 +261,8 @@ final class GeoImportService
                 $index[(int) $city['id']] = $translations;
             }
         }
+
+        unset($payload);
     }
 
     /**
@@ -245,19 +283,48 @@ final class GeoImportService
      * @param  list<string>  $uniqueBy
      * @param  list<string>  $update
      */
-    private function upsertChunked(string $table, array $rows, array $uniqueBy, array $update, ?callable $progress = null): int
-    {
+    private function upsertChunked(
+        string $table,
+        array $rows,
+        array $uniqueBy,
+        array $update,
+        string $phase,
+        ?callable $progress = null,
+    ): int {
         $imported = 0;
         foreach (array_chunk($rows, 500) as $chunk) {
             DB::table($table)->upsert($chunk, $uniqueBy, $update);
             $imported += count($chunk);
+            $this->logger?->progress($phase, $imported);
             $progress && $progress($imported);
         }
 
         return $imported;
     }
 
-    private function locationsDatabaseAvailable(): bool
+    public function importCitiesForCountryCode(
+        string $countryIso2,
+        bool $explicitCountryFilter,
+        int $importedSoFar = 0,
+        ?callable $progress = null,
+    ): int {
+        return $this->importCitiesForCountry(
+            strtoupper($countryIso2),
+            $explicitCountryFilter,
+            $progress,
+            $importedSoFar,
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function countryCodesForImport(?string $countryIso2): array
+    {
+        return $this->locationCountryCodes($countryIso2);
+    }
+
+    public function locationsDatabaseAvailable(): bool
     {
         try {
             DB::select('SELECT 1 FROM '.$this->qualifiedLocationsTable().' LIMIT 1');
@@ -283,7 +350,11 @@ final class GeoImportService
             return null;
         }
 
-        $decoded = json_decode($response->body(), true);
+        $body = $response->body();
+        unset($response);
+
+        $decoded = json_decode($body, true);
+        unset($body);
 
         return is_array($decoded) ? $decoded : null;
     }
