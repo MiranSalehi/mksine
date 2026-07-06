@@ -29,6 +29,17 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.0.14 (2026-07-06)
+
+### Behavior changes (non-breaking, but visible)
+
+- **`mks:geo:import` runs on the queue by default.** The command prints a run ID and log path, then returns. Run `php artisan queue:work` on `config('mksine.geo_import.queue_connection')` / `queue_name` (defaults: app queue). For CI or one-shot local imports use **`--sync`**.
+- **City import logs** — step-by-step progress in `storage/logs/mksine-geo-import/geo-import-{runId}.log`.
+
+### New
+
+- Config keys under **`mksine.geo_import`**: `queue_connection`, `queue_name`, `job_timeout`, `memory_limit`. See [configuration](../reference/configuration.md).
+
 ## Unreleased
 
 ### Breaking

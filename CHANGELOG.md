@@ -8,6 +8,22 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.0.14 - 2026-07-06
+
+### Added
+
+- **Geo import queue jobs** — `RunGeoImportJob` orchestrates countries/states and batches `ImportGeoCitiesCountryJob` per country; progress logged to `storage/logs/mksine-geo-import/geo-import-{runId}.log` and Laravel log.
+- **`mks:geo:import --sync`** — run import synchronously (previous default behaviour).
+- **`mksine.geo_import.*` config** — `queue_connection`, `queue_name`, `job_timeout`, `memory_limit`.
+
+### Changed
+
+- **`mks:geo:import`** dispatches to the queue by default; cities are imported one country per job to limit memory use.
+
+### Fixed
+
+- **Cities import memory exhaustion** — translations and city rows are processed per country instead of loading all mapped countries at once.
+
 ## 1.0.11 - 2026-06-30
 
 ### Fixed
