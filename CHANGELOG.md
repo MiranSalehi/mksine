@@ -8,6 +8,22 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.1.0 - 2026-07-08
+
+### Added
+
+- **Frontend admin bar** — WordPress-style storefront toolbar for users who can access Filament. Menu items via filter `frontend_admin_bar.items` and `FrontendAdminBarItem` (links and dropdowns). Feature flag: `mksine.features.frontend_admin_bar` (env `MKS_CMS_FRONTEND_ADMIN_BAR`). Themes must call `@themeDoAction('layout.body_start')` in layouts.
+- **Shortcodes** — WordPress-style `[tag]` processing in rich text via `mks_render_content()`. Built-in tags: `[year]`, `[site_name]`. Plugins register with `Hooks::addShortcode()` (optional `ShortcodeCatalogEntry` for the admin picker) or `Hooks::addLivewireShortcode()` for interactive Livewire widgets. Helpers: `mks_strip_shortcodes()`, `mks_shortcode_context()`. Filters: `mksine.content.before_shortcodes`, `mksine.content.after_shortcodes`, `mksine.shortcode.{tag}`, `mksine.shortcodes.admin_catalog`.
+- **CKEditor Insert shortcode** — Toolbar button opens a catalog modal populated from `ShortcodeRegistry::adminCatalog()`.
+- **Shortcode render cache** — Config keys `mksine.shortcodes.cache.enabled`, `ttl`, `store` (env `MKS_CMS_SHORTCODES_CACHE`, `_TTL`, `_STORE`). Skipped for Livewire shortcodes and during unit tests.
+- **Admin View site** — Filament topbar and user menu link to the active storefront URL (`StorefrontUrl`; `ecom.shop` when registered, otherwise `home`).
+- Documentation: [Shortcodes](docs/guides/content/shortcodes.md), [Frontend admin bar](docs/guides/storefront/frontend-admin-bar.md).
+
+### Changed
+
+- Default MKSine theme templates (`single`, `page`) and page-builder render views (text, tabs, accordion) call `mks_render_content()` instead of raw HTML output.
+- `ThemeMakeCommand` scaffolds include `@themeDoAction('layout.body_start')` for admin bar compatibility.
+
 ## 1.0.14 - 2026-07-06
 
 ### Added

@@ -29,6 +29,22 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.1.0 (2026-07-08)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Frontend admin bar (storefront).** WordPress-style toolbar for panel users. Menu items come from the runtime filter `frontend_admin_bar.items` (`FrontendAdminBar::HOOK_ITEMS`); plugins can add links and dropdowns via `FrontendAdminBarItem`. The panel brand label is not shown. Themes must include `@themeDoAction('layout.body_start')` in layouts. See [Frontend admin bar](../guides/storefront/frontend-admin-bar.md).
+- **Shortcodes.** WordPress-style `[tag]` processing in rich text via `mks_render_content()`. Admin CKEditor fields include an **Insert shortcode** picker. Plugins register with `Hooks::addShortcode()` (optional `ShortcodeCatalogEntry` for the picker) or `Hooks::addLivewireShortcode()` for interactive widgets. Built-in: `[year]`, `[site_name]`. Render cache: `mksine.shortcodes.cache.*`. Feature flag: `mksine.features.shortcodes`. See [Shortcodes](../guides/content/shortcodes.md).
+- **Admin "View site".** Filament topbar and user menu link to the active storefront (`ecom.shop` or `home`). Theme-independent.
+- **Theme templates** — Default MKSine theme and page-builder blocks use `mks_render_content()`. Custom themes that still output raw `{!! $post->content !!}` will not process shortcodes until updated.
+
+### New
+
+- **`mksine.features.frontend_admin_bar`** (env `MKS_CMS_FRONTEND_ADMIN_BAR`, default `true`). Disables the storefront toolbar only.
+- **`mksine.features.shortcodes`** (env `MKS_CMS_SHORTCODES`, default `true`), **`mksine.shortcodes.max_depth` / `max_passes`**, and **`mksine.shortcodes.cache.*`** (env `MKS_CMS_SHORTCODES_CACHE`, `_TTL`, `_STORE`). See [Shortcodes](../guides/content/shortcodes.md).
+- Guide: [Frontend admin bar](../guides/storefront/frontend-admin-bar.md).
+- Guide: [Shortcodes](../guides/content/shortcodes.md).
+
 ## 1.0.14 (2026-07-06)
 
 ### Behavior changes (non-breaking, but visible)
@@ -53,9 +69,6 @@ When adding an entry, copy this skeleton:
 
 ### Behavior changes (non-breaking, but visible)
 
-- **Frontend admin bar (storefront).** WordPress-style toolbar for panel users. Menu items come from the runtime filter `frontend_admin_bar.items` (`FrontendAdminBar::HOOK_ITEMS`); plugins can add links and dropdowns via `FrontendAdminBarItem`. The panel brand label is not shown. Themes must include `@themeDoAction('layout.body_start')` in layouts. See [Frontend admin bar](../guides/storefront/frontend-admin-bar.md).
-- **Shortcodes.** WordPress-style `[tag]` processing in rich text via `mks_render_content()`. Admin CKEditor fields include an **Insert shortcode** picker. Plugins register with `Hooks::addShortcode()` (optional `ShortcodeCatalogEntry` for the picker) or `Hooks::addLivewireShortcode()` for interactive widgets. Built-in: `[year]`, `[site_name]`. Render cache: `mksine.shortcodes.cache.*`. Feature flag: `mksine.features.shortcodes`. See [Shortcodes](../guides/content/shortcodes.md).
-- **Admin "View site".** Filament topbar and user menu link to the active storefront (`ecom.shop` or `home`). Theme-independent.
 - Documentation tree restructured under `packages/mksine/docs/`. Old paths (`10-plugin-golden-path.md`, `40-security-auth.md`, etc.) have moved into topic directories; see `_nav.yml`. Internal links inside the package now use the new tree.
 - Plugin source path is referenced as `{plugin_root}` (= `base_path(config('mksine.plugins_path'))`) throughout the docs. The default value is unchanged (`plugins`).
 - `mksine.hooks.log_slow_hooks` and `mksine.hooks.slow_hook_threshold` are documented as **configured but not yet honoured** by `HookDispatcher`. No removal planned; implementation pending. See [Slow-hook logging](../guides/hooks/slow-hook-logging.md).
@@ -68,10 +81,6 @@ When adding an entry, copy this skeleton:
 
 ### New
 
-- **`mksine.features.frontend_admin_bar`** (env `MKS_CMS_FRONTEND_ADMIN_BAR`, default `true`). Disables the storefront toolbar only.
-- **`mksine.features.shortcodes`** (env `MKS_CMS_SHORTCODES`, default `true`), **`mksine.shortcodes.max_depth` / `max_passes`**, and **`mksine.shortcodes.cache.*`** (env `MKS_CMS_SHORTCODES_CACHE`, `_TTL`, `_STORE`). See [Shortcodes](../guides/content/shortcodes.md).
-- Guide: [Frontend admin bar](../guides/storefront/frontend-admin-bar.md).
-- Guide: [Shortcodes](../guides/content/shortcodes.md).
 - **Global geo system.** Core tables `geo_countries`, `geo_states`, `geo_cities`; **Settings → Geo**; Filament `GeoStateResource` + cities relation; HTTP **`/api/geo/*`**; commands **`mks:geo:import`** and **`mks:geo:migrate-legacy-iran`**. Ecom (and other plugins) consume via `StoreGeoSettings` / `GeoResolver`. See [Global geo system](../guides/geo/overview.md) and [Import and legacy migration](../guides/geo/import-and-migration.md). Setting keys moved from ecom to `geo_*` with legacy `ecom_*` fallback.
 - **`mksine:create-super-admin`.** Creates a super admin user on the application database (role + `syncPermissions` for all existing permission rows). Documented in [commands](../reference/commands.md#mksinecreate-super-admin).
 - **`mksine:install` publishes Shield / Spatie Permission assets** and, with `--migrate`, runs cache clears, `filament:assets`, `shield:generate --all` (when `MksinePlugin` is on the panel), and `mks:discover`. Register `MksinePlugin` on the Filament panel **before** `mksine:install --migrate` so permissions include CMS resources. See [Installation](../01-installation.md).
