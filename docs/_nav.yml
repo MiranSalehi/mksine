@@ -49,6 +49,14 @@ sidebar:
       - { title: Translations, path: guides/themes/translations.md }
       - { title: Custom asset storage, path: guides/themes/custom-asset-storage.md }
 
+  - section: Storefront
+    items:
+      - { title: Frontend admin bar, path: guides/storefront/frontend-admin-bar.md }
+
+  - section: Content
+    items:
+      - { title: Shortcodes, path: guides/content/shortcodes.md }
+
   - section: Hook guides
     items:
       - { title: Two families overview, path: guides/hooks/overview-two-families.md }

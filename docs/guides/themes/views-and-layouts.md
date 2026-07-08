@@ -58,10 +58,13 @@ These names are **conventional**, not validated. If you omit `single.blade.php` 
     @themeAssets
 </head>
 <body>
+    @themeDoAction('layout.body_start')
     {{ $slot }}
 </body>
 </html>
 ```
+
+`@themeDoAction('layout.body_start')` is **required** for the [frontend admin bar](../storefront/frontend-admin-bar.md). The package registers the bar renderer on this hook; if your layout omits it, panel users will not see the storefront toolbar.
 
 Page templates render into `$slot`. The `@themeAssets` directive emits the CSS/JS tags from `theme.json`, plus admin-edited `dist/custom.*`, plus extra-asset URLs and runtime-enqueued tags ([Custom asset storage](custom-asset-storage.md)).
 
@@ -96,6 +99,8 @@ Themes can expose injection points without forking. Inside a template:
 @themeDoAction('home.before_hero')
 ```
 
+**Built-in layout hook:** `layout.body_start` — fired at the top of `<body>`. Required for the [frontend admin bar](../storefront/frontend-admin-bar.md). Included in the default theme layout and in `mks:make-theme` scaffolds.
+
 A plugin (or theme) registers a callback once during boot:
 
 ```php
@@ -119,4 +124,5 @@ The scaffold uses `mksine::components.pagination` for paginators. If you want a 
 - [Creating a theme](creating-a-theme.md)
 - [Assets and publish](assets-and-publish.md)
 - [Custom asset storage](custom-asset-storage.md)
+- [Frontend admin bar](../storefront/frontend-admin-bar.md)
 - Reference: [`ThemeManager`](../../reference/facades-and-managers.md#thememanager), [`ThemeBladeDirectives`](../../reference/facades-and-managers.md#themebladedirectives)

@@ -40,6 +40,7 @@ Out of scope:
 | Understand the moving parts before writing code | [Concepts: Architecture](concepts/architecture.md) |
 | Build a plugin end to end | [Plugin golden path](guides/plugins/golden-path.md) |
 | Ship a hook listener | [Hook overview](guides/hooks/overview-two-families.md) |
+| Add storefront admin bar items from a plugin | [Frontend admin bar](guides/storefront/frontend-admin-bar.md) |
 | Set up multi-country addresses / checkout geo | [Global geo system](guides/geo/overview.md) |
 | Look up an Artisan command or config key | [Commands](reference/commands.md), [Configuration](reference/configuration.md) |
 | Diagnose a 404 or panel issue in production | [Operations: Troubleshooting](operations/troubleshooting.md) |

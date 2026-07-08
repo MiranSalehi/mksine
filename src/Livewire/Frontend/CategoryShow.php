@@ -27,6 +27,7 @@ class CategoryShow extends Component
     {
         View::share('title', mksine_document_title($this->category->meta_title, $this->category->name));
         View::share('metaDescription', mksine_meta_description($this->category->meta_description, $this->category->description));
+        View::share('mksShortcodeContext', mks_shortcode_context(category: $this->category));
 
         $posts = $this->category->posts()
             ->where('posts.status', 'published')

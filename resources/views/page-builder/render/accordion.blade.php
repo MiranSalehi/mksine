@@ -76,7 +76,7 @@
                         x-cloak
                     >
                         <div class="border-t border-slate-100 px-4 pb-5 ps-4 pe-4 pt-4 text-sm leading-relaxed text-slate-600 dark:border-slate-800 dark:text-slate-300 sm:px-6 sm:pb-6 sm:ps-6 sm:pe-6 prose prose-sm dark:prose-invert max-w-none">
-                            {!! $answer !!}
+                            {!! mks_render_content($answer) !!}
                         </div>
                     </div>
                 </div>

@@ -26,7 +26,7 @@ Only one theme is **active** at a time. The active theme is stored in `settings`
 - `ThemeManager` — discovers themes, picks the active one, publishes assets/translations.
 - `ThemeBootstrap` — loads the active theme's `theme.php`, registers PSR-4 autoload for `themes/{id}/php/`, and applies route overrides registered through `ThemeRegistry`.
 - `ThemeBladeDirectives` — `@themeAssets`, `@themeView`, `@themeDoAction`.
-- `ThemeActionManager` — WordPress-style action hooks (`theme_add_action`, `theme_do_action`).
+- `ThemeActionManager` — WordPress-style action hooks (`theme_add_action`, `theme_do_action`). Includes `layout.body_start` for the [frontend admin bar](../guides/storefront/frontend-admin-bar.md).
 - `ThemeEnqueue` — request-scoped CSS/JS queue (`theme_enqueue_style`, `theme_enqueue_script`), rendered by `@themeAssets`.
 - `ThemeRegistry` — per-page Livewire component overrides and route closures from `theme.php`.
 - A storage-backed override layer for `dist/custom.css` and `dist/custom.js`, edited from the admin (data lives at `storage/app/theme-custom/{id}/`).
@@ -62,3 +62,4 @@ Switching is non-destructive. The previous theme's data (custom CSS/JS in storag
 - [Assets and publish](../guides/themes/assets-and-publish.md)
 - [Translations](../guides/themes/translations.md)
 - [Custom asset storage](../guides/themes/custom-asset-storage.md)
+- [Frontend admin bar](../guides/storefront/frontend-admin-bar.md)

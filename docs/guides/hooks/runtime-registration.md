@@ -25,8 +25,33 @@ If you want an admin toggle, a DB row, or a priority override surface, use a [di
 | `Hooks::extendResourceRelations($name, fn ($relations))`        | `ResourceHookManager`  | Closure that returns a modified relations array |
 | `Hooks::extendResourceWidgets($name, fn ($widgets))`            | `ResourceHookManager`  | Closure that returns a modified widgets array |
 | `Hooks::extendPageHeaderActions($name, fn ($actions))`          | `PageHookManager`      | Closure that returns a modified actions array |
+| `Hooks::addFilter($name, fn ($value, ...$args) => $value)`      | `HookFilterRegistry`   | Priority-ordered mutable filter chain         |
+| `Hooks::filter($name, $value, ...$args)`                         | `HookFilterRegistry`   | Apply all filters registered for `$name`      |
+| `Hooks::addShortcode($tag, $handler, $priority, $catalog)`      | `ShortcodeRegistry`    | Register a storefront content shortcode       |
+| `Hooks::addLivewireShortcode($tag, $componentClass, ...)`        | `ShortcodeRegistry`    | Register a Livewire-backed interactive shortcode |
 
 `Hooks::register()` writes to the `HookRegistry` (the in-memory list of event-name → listener-class bindings). It does **not** populate `mks_hooks`. To get a DB row, the listener class must also be picked up by `mks:discover`.
+
+### Runtime filters
+
+`Hooks::addFilter()` / `Hooks::filter()` implement a WordPress-style filter chain in memory (lower filter priority runs first). Use this when callbacks must **return a modified value** — for example [`frontend_admin_bar.items`](../storefront/frontend-admin-bar.md) (menu item list) or ecom checkout payment-method lists.
+
+```php
+Hooks::addFilter('frontend_admin_bar.items', function (array $items, $context, $panel): array {
+    $items[] = new FrontendAdminBarItem(label: 'My link', url: '/admin/foo');
+    return $items;
+}, priority: 20);
+
+$items = Hooks::filter('frontend_admin_bar.items', [], $context, $panel);
+```
+
+Filters are runtime-only (no `mks_hooks` row, no admin toggle). See [Frontend admin bar](../storefront/frontend-admin-bar.md) for the full item/dropdown contract.
+
+### Shortcodes
+
+`Hooks::addShortcode()` registers WordPress-style tags processed by `mks_render_content()`. Pass an optional `ShortcodeCatalogEntry` so the tag appears in the CKEditor **Insert shortcode** picker.
+
+`Hooks::addLivewireShortcode()` mounts a Livewire component at render time (not cacheable). See [Shortcodes](../content/shortcodes.md).
 
 ## The right place to call them
 
@@ -144,3 +169,5 @@ The takeaway: **runtime hooks are code, discovery hooks are configuration**. Cho
 - [Table hooks](table-hooks.md)
 - [Resource hooks](resource-hooks.md)
 - [Page header hooks](page-header-hooks.md)
+- [Frontend admin bar](../storefront/frontend-admin-bar.md) — `Hooks::addFilter('frontend_admin_bar.items', …)`
+- [Shortcodes](../content/shortcodes.md) — `Hooks::addShortcode()`

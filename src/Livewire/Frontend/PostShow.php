@@ -63,6 +63,7 @@ class PostShow extends Component
             ? $this->post->excerpt
             : (string) ($this->post->content ?? '');
         View::share('metaDescription', mksine_meta_description($this->post->meta_description, $fallbackDesc));
+        View::share('mksShortcodeContext', mks_shortcode_context(post: $this->post));
 
         $view = view(theme_view('single'), [
             'post' => $this->post,

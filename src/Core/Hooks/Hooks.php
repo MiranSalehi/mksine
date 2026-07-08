@@ -28,6 +28,9 @@ namespace Miran\Mksine\Core\Hooks;
  *     return $keys;
  * });
  * $keys = Hooks::filter('ecom.checkout.available_payment_methods', $keys, $cart);
+ *
+ * // Register a storefront shortcode
+ * Hooks::addShortcode('gallery', GalleryShortcode::class, 10);
  */
 class Hooks
 {
@@ -253,5 +256,49 @@ class Hooks
     public static function filter(string $name, mixed $value, mixed ...$args): mixed
     {
         return app(HookFilterRegistry::class)->apply($name, $value, ...$args);
+    }
+
+    /**
+     * Register a storefront shortcode handler. Lower {@code $priority} runs first when multiple handlers share a tag.
+     */
+    public static function addShortcode(
+        string $tag,
+        callable|string $handler,
+        int $priority = 10,
+        ?\Miran\Mksine\Core\Shortcodes\ShortcodeCatalogEntry $catalog = null,
+    ): void {
+        app(\Miran\Mksine\Core\Shortcodes\ShortcodeRegistry::class)->add(
+            $tag,
+            $handler,
+            $priority,
+            livewire: false,
+            catalog: $catalog,
+        );
+    }
+
+    /**
+     * Register a shortcode that mounts a Livewire component (not cacheable at render time).
+     *
+     * @param  class-string  $componentClass
+     * @param  array<string, mixed>  $defaultParams
+     */
+    public static function addLivewireShortcode(
+        string $tag,
+        string $componentClass,
+        array $defaultParams = [],
+        int $priority = 10,
+        ?\Miran\Mksine\Core\Shortcodes\ShortcodeCatalogEntry $catalog = null,
+    ): void {
+        app(\Miran\Mksine\Core\Shortcodes\ShortcodeRegistry::class)->add(
+            $tag,
+            function (array $attrs, ?string $content, \Miran\Mksine\Core\Shortcodes\ShortcodeContext $context) use ($componentClass, $defaultParams): string {
+                $params = array_merge($defaultParams, $attrs);
+
+                return \Miran\Mksine\Support\Shortcodes\ShortcodeLivewire::mount($componentClass, $params);
+            },
+            $priority,
+            livewire: true,
+            catalog: $catalog,
+        );
     }
 }

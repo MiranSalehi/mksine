@@ -39,6 +39,7 @@ class PageShow extends Component
     {
         View::share('title', mksine_document_title($this->pageModel->meta_title, $this->pageModel->title));
         View::share('metaDescription', mksine_meta_description($this->pageModel->meta_description, $this->pageModel->content));
+        View::share('mksShortcodeContext', mks_shortcode_context(page: $this->pageModel));
 
         $view = view(theme_view('page'), ['page' => $this->pageModel]);
 

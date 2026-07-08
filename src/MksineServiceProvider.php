@@ -152,7 +152,13 @@ use Miran\Mksine\Models\Post;
 use Miran\Mksine\Services\Geo\GeoResolver;
 use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
-use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
+use Miran\Mksine\Support\Frontend\FrontendAdminBar;
+use Miran\Mksine\Support\Frontend\FrontendAdminBarContextResolver;
+use Miran\Mksine\Support\Frontend\RegisterFrontendAdminBarCoreItems;
+use Miran\Mksine\Core\Shortcodes\ContentRenderer;
+use Miran\Mksine\Core\Shortcodes\RegisterCoreShortcodes;
+use Miran\Mksine\Core\Shortcodes\ShortcodeProcessor;
+use Miran\Mksine\Core\Shortcodes\ShortcodeRegistry;
 use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Testing\TestsMksine;
@@ -239,6 +245,24 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(HookFilterRegistry::class, function () {
             return new HookFilterRegistry;
+        });
+
+        $this->app->singleton(ShortcodeRegistry::class, function () {
+            return new ShortcodeRegistry;
+        });
+
+        $this->app->singleton(ShortcodeProcessor::class, function ($app) {
+            return new ShortcodeProcessor(
+                $app->make(ShortcodeRegistry::class),
+                $app,
+            );
+        });
+
+        $this->app->singleton(ContentRenderer::class, function ($app) {
+            return new ContentRenderer(
+                $app->make(ShortcodeProcessor::class),
+                $app->make(ShortcodeRegistry::class),
+            );
         });
 
         // Register async dispatcher only when queue is enabled (HookManager depends on interface, not Laravel)
@@ -332,6 +356,9 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->app->singleton(ThemeActionManager::class, function () {
             return new ThemeActionManager;
         });
+
+        $this->app->singleton(FrontendAdminBarContextResolver::class);
+        $this->app->singleton(FrontendAdminBar::class);
 
         // Register TranslationFileManager for Languages admin page (edit lang files)
         $this->app->singleton(TranslationFileManager::class, function () {
@@ -520,6 +547,10 @@ class MksineServiceProvider extends PackageServiceProvider
 
         // Register Theme Blade Directives
         ThemeBladeDirectives::register();
+
+        $this->registerFrontendAdminBar();
+
+        $this->registerShortcodes();
 
         // Register project theme views
         app(ThemeManager::class)->registerProjectThemeViews();
@@ -1373,5 +1404,19 @@ class MksineServiceProvider extends PackageServiceProvider
                 $filesystem->copy($absPath, $target);
             }
         }
+    }
+
+    protected function registerFrontendAdminBar(): void
+    {
+        app(RegisterFrontendAdminBarCoreItems::class)->register();
+
+        theme_add_action('layout.body_start', function (): string {
+            return app(FrontendAdminBar::class)->render();
+        }, priority: 1);
+    }
+
+    protected function registerShortcodes(): void
+    {
+        app(RegisterCoreShortcodes::class)->register();
     }
 }

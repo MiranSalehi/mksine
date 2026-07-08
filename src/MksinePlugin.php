@@ -10,7 +10,9 @@ use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
+use Filament\Actions\Action;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
@@ -20,6 +22,7 @@ use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
 use Miran\Mksine\Filament\Support\MksinePanelStyles;
 use Miran\Mksine\Filament\Pages\MksineDashboard;
+use Miran\Mksine\Support\Frontend\StorefrontUrl;
 use Miran\Mksine\Support\Logging\MksineLog;
 
 class MksinePlugin implements Plugin
@@ -72,7 +75,14 @@ class MksinePlugin implements Plugin
         $panel
             ->sidebarCollapsibleOnDesktop()
             ->sidebarWidth('18rem')
-            ->collapsedSidebarWidth('4.75rem');
+            ->collapsedSidebarWidth('4.75rem')
+            ->userMenuItems([
+                'view-site' => Action::make('view-site')
+                    ->label(fn (): string => __('mksine::frontend_admin_bar.view_site'))
+                    ->icon(Heroicon::ArrowTopRightOnSquare)
+                    ->url(fn (): string => StorefrontUrl::resolve(), shouldOpenInNewTab: true)
+                    ->sort(20),
+            ]);
     }
 
     public function boot(Panel $panel): void
@@ -104,6 +114,14 @@ class MksinePlugin implements Plugin
         FilamentView::registerRenderHook(
             PanelsRenderHook::STYLES_AFTER,
             fn (): string => MksinePanelStyles::renderAfterTheme(),
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::TOPBAR_START,
+            fn (): string => view('mksine::filament.partials.view-site-topbar-link', [
+                'url' => StorefrontUrl::resolve(),
+                'label' => StorefrontUrl::siteLabel(),
+            ])->render(),
         );
     }
 

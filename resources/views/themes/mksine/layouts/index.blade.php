@@ -45,6 +45,7 @@
     @endif
 </head>
 <body>
+    @themeDoAction('layout.body_start')
     <!-- Main header: logo + mega nav (desktop) / CMS menu (mobile drawer) + locale + theme -->
     <header class="site-header-bar relative sticky top-0 z-50 border-b border-gray-200 bg-white shadow-[0_1px_0_rgba(0,0,0,0.08)] dark:border-gray-800 dark:shadow-[0_1px_0_rgba(255,255,255,0.06)]">
         <div class="mx-auto flex min-h-16 max-w-[1400px] items-center justify-between gap-4 px-6 py-3 lg:min-h-[4.75rem] lg:gap-8 lg:px-10 xl:px-14">

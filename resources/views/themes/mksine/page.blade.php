@@ -45,7 +45,7 @@
             @else
                 {{-- Regular pages: prose formatting --}}
                 <div class="prose prose-lg max-w-none dark:prose-invert prose-headings:text-gray-800 dark:prose-headings:text-gray-100 prose-p:text-gray-600 dark:prose-p:text-gray-300">
-                    {!! $page->content !!}
+                    {!! mks_render_content($page->content) !!}
                 </div>
             @endif
         </article>

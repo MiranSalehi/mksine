@@ -66,6 +66,7 @@ See [Runtime registration](runtime-registration.md) for patterns and pitfalls.
 | Field/column added to a form/table from a class that ships with a plugin             | Discovery (form/table) |
 | Field/column added with logic that depends on the request                            | Runtime            |
 | Resource relations / widgets / page header actions                                   | Runtime (`Hooks::extendResource…`, `Hooks::extendPageHeaderActions`) — there is **no** discoverable equivalent |
+| Storefront admin bar menu items                                                      | Runtime filter `frontend_admin_bar.items` — see [Frontend admin bar](../storefront/frontend-admin-bar.md) |
 | Async behaviour after a record is created/updated                                    | Discovery + queueable event (see [Async and queues](async-and-queues.md)) |
 
 ## Honest limits

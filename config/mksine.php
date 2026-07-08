@@ -48,6 +48,30 @@ return [
 
         // Visual page builder (Page type "builder" and PageBuilderField)
         'page_builder' => env('MKS_CMS_PAGE_BUILDER', false),
+
+        // WordPress-style admin bar on the storefront for users who can access Filament
+        'frontend_admin_bar' => env('MKS_CMS_FRONTEND_ADMIN_BAR', true),
+
+        // WordPress-style shortcodes in rich text content (posts, pages, page builder)
+        'shortcodes' => env('MKS_CMS_SHORTCODES', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shortcodes
+    |--------------------------------------------------------------------------
+    |
+    | Parser limits for storefront shortcode processing.
+    |
+    */
+    'shortcodes' => [
+        'max_depth' => 5,
+        'max_passes' => 2,
+        'cache' => [
+            'enabled' => env('MKS_CMS_SHORTCODES_CACHE', true),
+            'ttl' => env('MKS_CMS_SHORTCODES_CACHE_TTL', 3600),
+            'store' => env('MKS_CMS_SHORTCODES_CACHE_STORE', null),
+        ],
     ],
 
     /*

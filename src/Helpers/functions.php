@@ -147,6 +147,44 @@ if (! function_exists('mksine_document_title')) {
     }
 }
 
+if (! function_exists('mks_render_content')) {
+    /**
+     * Render rich HTML content with registered shortcodes.
+     */
+    function mks_render_content(?string $html, ?\Miran\Mksine\Core\Shortcodes\ShortcodeContext $context = null): string
+    {
+        if ($context === null && \Illuminate\Support\Facades\View::shared('mksShortcodeContext') instanceof \Miran\Mksine\Core\Shortcodes\ShortcodeContext) {
+            $context = \Illuminate\Support\Facades\View::shared('mksShortcodeContext');
+        }
+
+        return app(\Miran\Mksine\Core\Shortcodes\ContentRenderer::class)->render($html, $context);
+    }
+}
+
+if (! function_exists('mks_strip_shortcodes')) {
+    /**
+     * Remove shortcode tags from content (for excerpts and meta snippets).
+     */
+    function mks_strip_shortcodes(?string $html): string
+    {
+        return \Miran\Mksine\Core\Shortcodes\ShortcodeProcessor::stripShortcodes($html);
+    }
+}
+
+if (! function_exists('mks_shortcode_context')) {
+    function mks_shortcode_context(
+        ?\Miran\Mksine\Models\Page $page = null,
+        ?\Miran\Mksine\Models\Post $post = null,
+        ?\Miran\Mksine\Models\Category $category = null,
+    ): \Miran\Mksine\Core\Shortcodes\ShortcodeContext {
+        return \Miran\Mksine\Core\Shortcodes\ShortcodeContext::make(
+            page: $page,
+            post: $post,
+            category: $category,
+        );
+    }
+}
+
 if (! function_exists('mksine_meta_description')) {
     /**
      * Meta description: meta_description when set, otherwise plain text from HTML body (truncated).

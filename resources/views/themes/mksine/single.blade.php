@@ -130,7 +130,7 @@
                 @endif
 
                 <div class="single-post-body text-lg">
-                    {!! $post->content !!}
+                    {!! mks_render_content($post->content) !!}
                 </div>
 
                 {{-- Share --}}

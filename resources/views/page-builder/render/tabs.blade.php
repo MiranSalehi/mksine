@@ -79,7 +79,7 @@
                         role="tabpanel"
                     >
                         <div class="prose dark:prose-invert max-w-none">
-                            {!! $tab['content'] ?? '' !!}
+                            {!! mks_render_content($tab['content'] ?? '') !!}
                         </div>
                     </div>
                 @endforeach

@@ -49,8 +49,23 @@ Boolean toggles consumed by [`Mksine::isFeatureEnabled()`](facades-and-managers.
 | `plugin_system` | `MKS_CMS_PLUGIN_SYSTEM` | `true` | Plugin discovery, lifecycle, and Plugins resource are disabled. |
 | `theme_management` | `MKS_CMS_THEME_MANAGEMENT` | `false` | Theme picker / Theme resource not exposed. |
 | `page_builder` | `MKS_CMS_PAGE_BUILDER` | `false` | Page type `builder` and `PageBuilderField` are unavailable. |
+| `frontend_admin_bar` | `MKS_CMS_FRONTEND_ADMIN_BAR` | `true` | WordPress-style toolbar on the storefront for users who can access Filament. Does not affect the admin **View site** link. See [Frontend admin bar](../guides/storefront/frontend-admin-bar.md). |
+| `shortcodes` | `MKS_CMS_SHORTCODES` | `true` | Parse `[shortcode]` tags in rich text via `mks_render_content()`. See [Shortcodes](../guides/content/shortcodes.md). |
 
 Disabling a feature does **not** remove the underlying tables or data — it only skips Filament registration and route mounting. Re-enable to restore.
+
+## `shortcodes` (parser limits & render cache)
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `max_depth` | `5` | Maximum nested shortcode recursion depth. |
+| `max_passes` | `2` | Number of full-document parse passes (for shortcodes that emit other shortcodes). |
+| `cache.enabled` | `true` | Cache parsed shortcode output. Env: `MKS_CMS_SHORTCODES_CACHE`. |
+| `cache.ttl` | `3600` | Render cache TTL (seconds). Env: `MKS_CMS_SHORTCODES_CACHE_TTL`. |
+| `cache.store` | `null` | Laravel cache store; `null` uses the default driver. Env: `MKS_CMS_SHORTCODES_CACHE_STORE`. |
+
+Livewire shortcodes and unit tests bypass render cache. See [Shortcodes](../guides/content/shortcodes.md#render-cache).
+
 
 ## `cache`
 

@@ -54,8 +54,15 @@ Trade-offs:
 | Table extension                  | Yes        | Yes            | No                       |
 | Resource relation / widget       | No         | Yes only       | No                       |
 | Page header action               | No         | Yes only       | No                       |
+| Runtime filter (`Hooks::filter`) | No         | Yes only       | No                       |
 
 The asymmetry around exception catching is intentional but you should design for it. See [Form hooks](../guides/hooks/form-hooks.md) and [Table hooks](../guides/hooks/table-hooks.md).
+
+Notable runtime filters:
+
+- `frontend_admin_bar.items` — storefront admin bar menu (links and dropdowns). See [Frontend admin bar](../guides/storefront/frontend-admin-bar.md).
+- `mksine.content.before_shortcodes` / `mksine.content.after_shortcodes` — wrap shortcode parsing. See [Shortcodes](../guides/content/shortcodes.md).
+- Plugin-specific filters (e.g. `ecom.checkout.available_payment_methods`) — documented in each plugin's developer API.
 
 ## How a hook fires (event hooks)
 
@@ -71,7 +78,7 @@ There is no return value. Listeners that need to "answer" the event should mutat
 ## What you cannot do (yet)
 
 - Wildcards. `Hooks::on('post.*', ...)` is not supported.
-- Filter chains à la WordPress. The data bag is the closest thing.
+- Discovery-backed filter chains. Runtime filters (`Hooks::addFilter`) exist but are not synced to `mks_hooks`.
 - Async **per** form/table extension. Form/table extensions are always sync.
 - Cancel a running listener mid-flight. `cancel()` is documented but not enforced.
 
@@ -89,4 +96,6 @@ For anything heavier than serializing the event and queuing work, implement `Que
 - [Runtime registration](../guides/hooks/runtime-registration.md)
 - [Async and queues](../guides/hooks/async-and-queues.md)
 - [Discovery paths](../guides/hooks/discovery-paths.md)
+- [Frontend admin bar](../guides/storefront/frontend-admin-bar.md)
+- [Shortcodes](../guides/content/shortcodes.md)
 - ADR: [Two hook families](../adr/001-two-hook-families.md)

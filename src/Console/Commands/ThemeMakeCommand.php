@@ -224,6 +224,7 @@ class ThemeMakeCommand extends Command
     @themeAssets
 </head>
 <body>
+    @themeDoAction('layout.body_start')
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div class="container mx-auto max-w-6xl px-4 py-4">
@@ -368,7 +369,7 @@ BLADE;
             @endif
 
             <div class="prose prose-lg max-w-none dark:prose-invert mb-8">
-                {!! $post->content !!}
+                {!! mks_render_content($post->content) !!}
             </div>
 
             @if(($post->categories ?? collect())->isNotEmpty())
@@ -534,7 +535,7 @@ BLADE;
                 </div>
             @else
                 <div class="prose prose-lg max-w-none dark:prose-invert prose-headings:text-gray-800 dark:prose-headings:text-gray-100 prose-p:text-gray-600 dark:prose-p:text-gray-300">
-                    {!! $page->content !!}
+                    {!! mks_render_content($page->content) !!}
                 </div>
             @endif
         </article>

@@ -52,6 +52,7 @@ Implementations of these interfaces are how third-party code extends MKSine.
 | `Miran\Mksine\Core\Hooks\TableHookManager` | container singleton | Filament table hook dispatch |
 | `Miran\Mksine\Core\Hooks\ResourceHookManager` | container singleton | Relations and widgets per Filament resource |
 | `Miran\Mksine\Core\Hooks\PageHookManager` | container singleton | Page header actions |
+| `Miran\Mksine\Core\Hooks\HookFilterRegistry` | container singleton | Runtime filter chains (`Hooks::addFilter`, `Hooks::filter`) |
 | `Miran\Mksine\Core\Hooks\MenuLocationManager` | container singleton | Register named menu locations |
 | `Miran\Mksine\Core\Hooks\MenuItemSourceManager` | container singleton | Register `MenuItemSourceInterface` implementations |
 | `Miran\Mksine\Core\Hooks\SettingsTabManager` | container singleton | Add tabs on the Settings page |
@@ -80,6 +81,44 @@ The signatures are stable across minor releases. Adding new options is non-break
 Every key in [`config/mksine.php`](../../config/mksine.php) is public; defaults may change in minor releases when documented in the [Upgrade guide](../meta/upgrade-guide.md). Full table: [configuration.md](configuration.md).
 
 Geo preferences (`geo_enabled_countries`, `geo_default_country`, `geo_address_levels`, and legacy `ecom_*` fallbacks) are stored in the **`settings`** table via `mks_setting()`, not in `config/mksine.php`. See [configuration.md#settings-table-keys-geo](configuration.md#settings-table-keys-geo).
+
+## Public runtime filter names (core)
+
+These filter names are part of the public contract when documented here or in a linked guide:
+
+| Filter name | Value type | Reference |
+|-------------|------------|-----------|
+| `frontend_admin_bar.items` | `list<FrontendAdminBarItem>` | [Frontend admin bar](../guides/storefront/frontend-admin-bar.md) |
+| `mksine.content.before_shortcodes` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
+| `mksine.content.after_shortcodes` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
+| `mksine.shortcode.{tag}` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
+| `mksine.shortcodes.admin_catalog` | `list<ShortcodeCatalogEntry>` | [Shortcodes](../guides/content/shortcodes.md) |
+
+Plugin-specific filter names are documented in each plugin's developer API (e.g. `ecom.*` in the ecom plugin docs).
+
+## Public storefront admin bar types
+
+| Class | Source | Purpose |
+|-------|--------|---------|
+| `Miran\Mksine\Support\Frontend\FrontendAdminBar` | [FrontendAdminBar.php](../../src/Support/Frontend/FrontendAdminBar.php) | Renders the bar; constant `HOOK_ITEMS` |
+| `Miran\Mksine\Support\Frontend\FrontendAdminBarItem` | [FrontendAdminBarItem.php](../../src/Support/Frontend/FrontendAdminBarItem.php) | Menu link or dropdown parent |
+| `Miran\Mksine\Support\Frontend\FrontendAdminBarContext` | [FrontendAdminBarContext.php](../../src/Support/Frontend/FrontendAdminBarContext.php) | Current route + resolved CMS models passed to filters |
+
+## Public shortcode types
+
+| Class | Source | Purpose |
+|-------|--------|---------|
+| `Miran\Mksine\Core\Shortcodes\ContentRenderer` | [ContentRenderer.php](../../src/Core/Shortcodes/ContentRenderer.php) | `mks_render_content()` backend; filter constants |
+| `Miran\Mksine\Core\Shortcodes\ShortcodeContext` | [ShortcodeContext.php](../../src/Core/Shortcodes/ShortcodeContext.php) | Context passed to handlers |
+| `Miran\Mksine\Core\Shortcodes\ShortcodeHandlerInterface` | [ShortcodeHandlerInterface.php](../../src/Core/Shortcodes/ShortcodeHandlerInterface.php) | Class-based shortcode handlers |
+| `Miran\Mksine\Core\Shortcodes\ShortcodeRegistry` | [ShortcodeRegistry.php](../../src/Core/Shortcodes/ShortcodeRegistry.php) | In-memory tag registry; `ADMIN_CATALOG_FILTER` |
+| `Miran\Mksine\Core\Shortcodes\ShortcodeCatalogEntry` | [ShortcodeCatalogEntry.php](../../src/Core/Shortcodes/ShortcodeCatalogEntry.php) | CKEditor picker metadata |
+| `Hooks::addShortcode()` | [Hooks.php](../../src/Core/Hooks/Hooks.php) | Register tags from plugins |
+| `Hooks::addLivewireShortcode()` | [Hooks.php](../../src/Core/Hooks/Hooks.php) | Register Livewire-backed tags |
+
+Helper functions: `mks_render_content()`, `mks_strip_shortcodes()`, `mks_shortcode_context()` in [functions.php](../../src/Helpers/functions.php).
+
+Built-in tags: `year`, `site_name`. See [Shortcodes](../guides/content/shortcodes.md).
 
 ## Explicitly **not** public
 

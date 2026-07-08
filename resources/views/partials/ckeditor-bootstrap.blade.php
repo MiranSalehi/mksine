@@ -1,6 +1,292 @@
+@php
+    $mksShortcodeCatalog = app(\Miran\Mksine\Core\Shortcodes\ShortcodeRegistry::class)->adminCatalog();
+    $mksShortcodeUi = [
+        'insertButton' => __('mksine::shortcodes.insert_button'),
+        'modalTitle' => __('mksine::shortcodes.modal_title'),
+        'modalClose' => __('mksine::shortcodes.modal_close'),
+        'modalEmpty' => __('mksine::shortcodes.modal_empty'),
+        'modalInsert' => __('mksine::shortcodes.modal_insert'),
+    ];
+@endphp
+<style>
+    .mksine-shortcode-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgb(0 0 0 / 0.45);
+    }
+
+    .mksine-shortcode-modal__panel {
+        width: min(100%, 28rem);
+        max-height: min(80vh, 32rem);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border-radius: 0.75rem;
+        border: 1px solid var(--gray-200, #e5e7eb);
+        background: var(--gray-50, #fff);
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    }
+
+    .dark .mksine-shortcode-modal__panel {
+        border-color: var(--gray-700, #374151);
+        background: var(--gray-900, #111827);
+    }
+
+    .mksine-shortcode-modal__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--gray-200, #e5e7eb);
+    }
+
+    .dark .mksine-shortcode-modal__header {
+        border-bottom-color: var(--gray-700, #374151);
+    }
+
+    .mksine-shortcode-modal__title {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--gray-950, #030712);
+    }
+
+    .dark .mksine-shortcode-modal__title {
+        color: var(--gray-50, #f9fafb);
+    }
+
+    .mksine-shortcode-modal__close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border: none;
+        border-radius: 0.375rem;
+        background: transparent;
+        color: var(--gray-500, #6b7280);
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .mksine-shortcode-modal__close:hover {
+        background: var(--gray-100, #f3f4f6);
+        color: var(--gray-700, #374151);
+    }
+
+    .dark .mksine-shortcode-modal__close:hover {
+        background: var(--gray-800, #1f2937);
+        color: var(--gray-200, #e5e7eb);
+    }
+
+    .mksine-shortcode-modal__body {
+        overflow-y: auto;
+        padding: 0.75rem;
+    }
+
+    .mksine-shortcode-modal__empty {
+        margin: 0;
+        padding: 1rem;
+        text-align: center;
+        color: var(--gray-500, #6b7280);
+        font-size: 0.875rem;
+    }
+
+    .mksine-shortcode-modal__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mksine-shortcode-modal__item + .mksine-shortcode-modal__item {
+        margin-top: 0.5rem;
+    }
+
+    .mksine-shortcode-modal__pick {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--gray-200, #e5e7eb);
+        border-radius: 0.5rem;
+        background: #fff;
+        text-align: start;
+        cursor: pointer;
+        transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .dark .mksine-shortcode-modal__pick {
+        border-color: var(--gray-700, #374151);
+        background: var(--gray-800, #1f2937);
+    }
+
+    .mksine-shortcode-modal__pick:hover {
+        border-color: var(--primary-500, #6366f1);
+        background: var(--primary-50, #eef2ff);
+    }
+
+    .dark .mksine-shortcode-modal__pick:hover {
+        border-color: var(--primary-400, #818cf8);
+        background: rgb(99 102 241 / 0.12);
+    }
+
+    .mksine-shortcode-modal__label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-950, #030712);
+    }
+
+    .dark .mksine-shortcode-modal__label {
+        color: var(--gray-50, #f9fafb);
+    }
+
+    .mksine-shortcode-modal__desc {
+        font-size: 0.8125rem;
+        color: var(--gray-500, #6b7280);
+        line-height: 1.4;
+    }
+
+    .mksine-shortcode-modal__example {
+        margin-top: 0.125rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        background: var(--gray-100, #f3f4f6);
+        font-size: 0.75rem;
+        color: var(--gray-700, #374151);
+    }
+
+    .dark .mksine-shortcode-modal__example {
+        background: var(--gray-900, #111827);
+        color: var(--gray-300, #d1d5db);
+    }
+</style>
 <script>
     window.ckeditorInstances = window.ckeditorInstances || {};
     window.CKEditorFieldConfigs = window.CKEditorFieldConfigs || {};
+    window.MksineShortcodeCatalog = @json($mksShortcodeCatalog);
+    window.MksineShortcodeUi = @json($mksShortcodeUi);
+
+    window.mksInsertShortcodeIntoEditor = function(editor, snippet) {
+        if (!editor || !snippet) return;
+        editor.model.change(writer => {
+            const insertPosition = editor.model.document.selection.focus;
+            editor.model.insertContent(writer.createText(snippet), insertPosition);
+        });
+        editor.editing.view.focus();
+    };
+
+    window.mksOpenShortcodeModal = function(editor) {
+        const ui = window.MksineShortcodeUi || {};
+        const catalog = window.MksineShortcodeCatalog || [];
+        const existing = document.getElementById('mksine-shortcode-modal');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'mksine-shortcode-modal';
+        overlay.className = 'mksine-shortcode-modal';
+        overlay.setAttribute('role', 'presentation');
+
+        const panel = document.createElement('div');
+        panel.className = 'mksine-shortcode-modal__panel';
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+
+        const header = document.createElement('div');
+        header.className = 'mksine-shortcode-modal__header';
+
+        const title = document.createElement('h2');
+        title.id = 'mksine-shortcode-modal-title';
+        title.className = 'mksine-shortcode-modal__title';
+        title.textContent = ui.modalTitle || 'Insert shortcode';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'mksine-shortcode-modal__close';
+        closeBtn.setAttribute('data-mksine-shortcode-close', '');
+        closeBtn.setAttribute('aria-label', ui.modalClose || 'Close');
+        closeBtn.textContent = '×';
+
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        const body = document.createElement('div');
+        body.className = 'mksine-shortcode-modal__body';
+
+        if (!catalog.length) {
+            const empty = document.createElement('p');
+            empty.className = 'mksine-shortcode-modal__empty';
+            empty.textContent = ui.modalEmpty || 'No shortcodes registered.';
+            body.appendChild(empty);
+        } else {
+            const list = document.createElement('ul');
+            list.className = 'mksine-shortcode-modal__list';
+            catalog.forEach(entry => {
+                const snippet = entry.example || ('[' + entry.tag + ']');
+                const item = document.createElement('li');
+                item.className = 'mksine-shortcode-modal__item';
+
+                const pick = document.createElement('button');
+                pick.type = 'button';
+                pick.className = 'mksine-shortcode-modal__pick';
+                pick.dataset.snippet = snippet;
+
+                const label = document.createElement('span');
+                label.className = 'mksine-shortcode-modal__label';
+                label.textContent = entry.label || entry.tag;
+                pick.appendChild(label);
+
+                if (entry.description) {
+                    const desc = document.createElement('span');
+                    desc.className = 'mksine-shortcode-modal__desc';
+                    desc.textContent = entry.description;
+                    pick.appendChild(desc);
+                }
+
+                const example = document.createElement('code');
+                example.className = 'mksine-shortcode-modal__example';
+                example.textContent = snippet;
+                pick.appendChild(example);
+
+                item.appendChild(pick);
+                list.appendChild(item);
+            });
+            body.appendChild(list);
+        }
+
+        panel.appendChild(header);
+        panel.appendChild(body);
+        overlay.appendChild(panel);
+
+        const close = () => {
+            document.removeEventListener('keydown', onKeydown);
+            overlay.remove();
+        };
+        const onKeydown = (e) => {
+            if (e.key === 'Escape') close();
+        };
+
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+        closeBtn.addEventListener('click', close);
+        overlay.querySelectorAll('[data-snippet]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.mksInsertShortcodeIntoEditor(editor, btn.dataset.snippet);
+                close();
+            });
+        });
+
+        document.addEventListener('keydown', onKeydown);
+        document.body.appendChild(overlay);
+        closeBtn.focus();
+    };
 
     window.createCKEditor = function(editorId, statePath, alpineComponent) {
         const config = window.CKEditorFieldConfigs[editorId] || {};
@@ -34,13 +320,36 @@
             }
         }
 
+        class InsertShortcodePlugin extends PluginBase {
+            static get pluginName() { return 'InsertShortcode'; }
+            init() {
+                const editor = this.editor;
+                const ui = window.MksineShortcodeUi || {};
+                const ButtonViewClass = editor.ui.componentFactory.create('bold').constructor;
+                editor.ui.componentFactory.add('insertShortcode', locale => {
+                    const view = new ButtonViewClass(locale);
+                    view.set({
+                        label: ui.insertButton || 'Insert shortcode',
+                        icon: '<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h3v8H3V6zm11 0h3v8h-3V6zM8 7h4v6H8V7z" fill="currentColor"/></svg>',
+                        tooltip: true,
+                    });
+                    view.on('execute', () => {
+                        if (typeof window.mksOpenShortcodeModal === 'function') {
+                            window.mksOpenShortcodeModal(editor);
+                        }
+                    });
+                    return view;
+                });
+            }
+        }
+
         const editorConfig = {
             language: {
                 ui: (config.uiLanguage && String(config.uiLanguage).trim()) || 'en',
                 content: (config.contentLanguage && String(config.contentLanguage).trim()) || ((config.uiLanguage && String(config.uiLanguage).trim()) || 'en'),
             },
-            plugins: [AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BlockQuote, Bold, Code, CodeBlock, Essentials, FindAndReplace, FontBackgroundColor, FontColor, FontFamily, FontSize, GeneralHtmlSupport, Heading, Highlight, HorizontalLine, HtmlComment, HtmlEmbed, ImageBlock, ImageCaption, ImageInline, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, Indent, IndentBlock, Italic, Link, LinkImage, List, ListProperties, MediaEmbed, PageBreak, Paragraph, PasteFromOffice, RemoveFormat, SelectAll, ShowBlocks, SourceEditing, SpecialCharacters, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersEssentials, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText, Strikethrough, Style, Subscript, Superscript, Table, TableCaption, TableCellProperties, TableColumnResize, TableProperties, TableToolbar, TextTransformation, TodoList, Underline, Undo, InsertMediaPlugin],
-            toolbar: { items: ['insertMedia','|','undo','redo','|','sourceEditing','showBlocks','|','heading','style','|','fontSize','fontFamily','fontColor','fontBackgroundColor','|','bold','italic','underline','|','link','insertTable','highlight','blockQuote','codeBlock','|','alignment','|','bulletedList','numberedList','todoList','outdent','indent'], shouldNotGroupWhenFull: false },
+            plugins: [AccessibilityHelp, Alignment, Autoformat, AutoImage, AutoLink, Autosave, BlockQuote, Bold, Code, CodeBlock, Essentials, FindAndReplace, FontBackgroundColor, FontColor, FontFamily, FontSize, GeneralHtmlSupport, Heading, Highlight, HorizontalLine, HtmlComment, HtmlEmbed, ImageBlock, ImageCaption, ImageInline, ImageResize, ImageStyle, ImageTextAlternative, ImageToolbar, Indent, IndentBlock, Italic, Link, LinkImage, List, ListProperties, MediaEmbed, PageBreak, Paragraph, PasteFromOffice, RemoveFormat, SelectAll, ShowBlocks, SourceEditing, SpecialCharacters, SpecialCharactersArrows, SpecialCharactersCurrency, SpecialCharactersEssentials, SpecialCharactersLatin, SpecialCharactersMathematical, SpecialCharactersText, Strikethrough, Style, Subscript, Superscript, Table, TableCaption, TableCellProperties, TableColumnResize, TableProperties, TableToolbar, TextTransformation, TodoList, Underline, Undo, InsertMediaPlugin, InsertShortcodePlugin],
+            toolbar: { items: ['insertMedia','insertShortcode','|','undo','redo','|','sourceEditing','showBlocks','|','heading','style','|','fontSize','fontFamily','fontColor','fontBackgroundColor','|','bold','italic','underline','|','link','insertTable','highlight','blockQuote','codeBlock','|','alignment','|','bulletedList','numberedList','todoList','outdent','indent'], shouldNotGroupWhenFull: false },
             fontFamily: { supportAllValues: true },
             fontSize: { options: [10, 12, 14, 'default', 18, 20, 22], supportAllValues: true },
             heading: { options: [{ model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },{ model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },{ model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },{ model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },{ model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' },{ model: 'heading5', view: 'h5', title: 'Heading 5', class: 'ck-heading_heading5' },{ model: 'heading6', view: 'h6', title: 'Heading 6', class: 'ck-heading_heading6' }] },
