@@ -8,6 +8,17 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.1.1 - 2026-07-09
+
+### Fixed
+
+- **MediaPicker pagination** — Compact Livewire pagination with `onEachSide(1)` (e.g. `‹ 1 2 … 56 ›` instead of listing every page). Modal-themed styling, dark mode, and RTL chevrons. Replaces the default Livewire Tailwind view that duplicated Previous/Next controls.
+
+### Changed
+
+- **README** — Expanded install steps, feature highlights, and Filament marketplace doc link.
+- **Filament listing assets** — Demo GIFs/PNGs under `docs/assets/filament/` for marketplace documentation.
+
 ## 1.1.0 - 2026-07-08
 
 ### Added
