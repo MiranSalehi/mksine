@@ -33,4 +33,6 @@ return array (
   'uploaded_on' => 'تاریخ آپلود',
   'dimensions_value' => ':width × :height پیکسل',
   'dimensions_unknown' => '—',
+  'pagination_label' => 'صفحه‌بندی رسانه',
+  'pagination_summary' => 'نمایش :from تا :to از :total مورد',
 );

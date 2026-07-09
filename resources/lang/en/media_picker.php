@@ -33,4 +33,6 @@ return [
     'uploaded_on' => 'Uploaded on',
     'dimensions_value' => ':width × :height px',
     'dimensions_unknown' => '—',
+    'pagination_label' => 'Media pagination',
+    'pagination_summary' => 'Showing :from to :to of :total',
 ];

@@ -33,4 +33,6 @@ return [
     'uploaded_on' => 'بەرواری بارکردن',
     'dimensions_value' => ':width × :height پیکسڵ',
     'dimensions_unknown' => '—',
+    'pagination_label' => 'لاپەڕەسازی میدیا',
+    'pagination_summary' => 'نیشاندانی :from تا :to لە :total',
 ];

@@ -253,8 +253,8 @@
                     </div>
 
                     @if($mediaItems->hasPages())
-                        <div class="mt-4">
-                            {{ $mediaItems->links() }}
+                        <div class="mt-4 border-t border-gray-200/80 pt-4 dark:border-gray-700/50">
+                            {{ $mediaItems->onEachSide(1)->links('mksine::components.media-picker-pagination') }}
                         </div>
                     @endif
 
