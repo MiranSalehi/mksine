@@ -7,6 +7,7 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 
@@ -25,10 +26,6 @@ class ComponentEditor extends Component implements HasActions, HasForms
 
     public ?int $columnIndex = null;
 
-    protected $listeners = [
-        'editBlock' => 'loadBlock',
-    ];
-
     public function mount(?string $blockId = null, ?string $blockType = null, ?array $blockData = [], ?string $parentId = null, ?int $columnIndex = null): void
     {
         if ($blockId && $blockType !== null) {
@@ -36,6 +33,7 @@ class ComponentEditor extends Component implements HasActions, HasForms
         }
     }
 
+    #[On('editBlock')]
     public function loadBlock(string $blockId, string $blockType, array $blockData, ?string $parentId = null, ?int $columnIndex = null): void
     {
         $this->blockId = $blockId;

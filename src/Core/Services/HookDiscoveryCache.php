@@ -42,7 +42,7 @@ class HookDiscoveryCache
     /**
      * Get cached discovery results.
      *
-     * @return array{listeners: array, form_hooks: array, table_hooks: array}|null
+     * @return array{listeners: array, form_hooks: array, form_slot_hooks?: array, table_hooks: array}|null
      */
     public function get(): ?array
     {
@@ -63,7 +63,7 @@ class HookDiscoveryCache
     /**
      * Cache discovery results.
      *
-     * @param  array{listeners: array, form_hooks: array, table_hooks: array}  $results
+     * @param  array{listeners: array, form_hooks: array, form_slot_hooks?: array, table_hooks: array}  $results
      */
     public function put(array $results): bool
     {

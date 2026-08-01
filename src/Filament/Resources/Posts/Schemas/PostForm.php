@@ -20,6 +20,7 @@ class PostForm
         $schema = $schema
             ->components([
                 Section::make(__('mksine::common.content'))
+                    ->key('content')
                     ->schema([
                         TextInput::make('title')
                             ->label(__('mksine::posts.title'))
@@ -41,6 +42,7 @@ class PostForm
                     ])
                     ->columns(2),
                 Section::make(__('mksine::categories.settings'))
+                    ->key('settings')
                     ->schema([
                         Select::make('status')
                             ->label(__('mksine::posts.status'))
@@ -93,6 +95,7 @@ class PostForm
                     ->columnSpanFull(),
 
                 Section::make(__('mksine::common.seo'))
+                    ->key('seo')
                     ->schema([
                         TextInput::make('meta_title')
                             ->label(__('mksine::posts.meta_title'))

@@ -81,7 +81,7 @@ Skip any step you don’t need (`npm run build && cd ../.. && php artisan mks-pl
 
 ## Tailwind: scope-or-die
 
-Plugin CSS is loaded into the admin panel and (depending on your panel setup) the storefront. Filament 4 ships its own Tailwind preflight; if you ship a second one with conflicting resets, **the panel UI will break in subtle ways** — wrong button heights, lost borders, cut-off labels.
+Plugin CSS is loaded into the admin panel and (depending on your panel setup) the storefront. Filament ships its own Tailwind preflight; if you ship a second one with conflicting resets, **the panel UI will break in subtle ways** — wrong button heights, lost borders, cut-off labels.
 
 Rules to follow:
 

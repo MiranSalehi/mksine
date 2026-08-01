@@ -19,6 +19,7 @@ class CategoryForm
         $schema = $schema
             ->components([
                 Section::make(__('mksine::categories.category_information'))
+                    ->key('category_information')
                     ->schema([
                         TextInput::make('name')
                             ->label(__('mksine::categories.name'))
@@ -41,6 +42,7 @@ class CategoryForm
                     ])
                     ->columns(2),
                 Section::make(__('mksine::categories.settings'))
+                    ->key('settings')
                     ->schema([
                         Select::make('parent_id')
                             ->label(__('mksine::categories.parent_category'))
@@ -66,6 +68,7 @@ class CategoryForm
                     ->required()
                     ->columnSpanFull(),
                 Section::make(__('mksine::common.seo'))
+                    ->key('seo')
                     ->schema([
                         TextInput::make('meta_title')
                             ->label(__('mksine::categories.meta_title'))

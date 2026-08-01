@@ -5,6 +5,10 @@
  *
  * php artisan vendor:publish --tag=mksine-livewire-config
  *
+ * Shaped for Livewire 4 (Filament 5). Filament 4 / Livewire 3 hosts that already
+ * published this file can keep their existing config; only temporary_file_upload
+ * keys are required for MKSine ZIP/media uploaders.
+ *
  * Upload limits align with config/mksine.php (`MKS_CMS_MAX_UPLOAD_MB`, default 100 MB).
  * Ensure PHP `upload_max_filesize` and `post_max_size` are at least as large on the server.
  */
@@ -21,6 +25,14 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Class Path
+    |---------------------------------------------------------------------------
+    */
+
+    'class_path' => app_path('Livewire'),
+
+    /*
+    |---------------------------------------------------------------------------
     | View Path
     |---------------------------------------------------------------------------
     */
@@ -29,19 +41,22 @@ return [
 
     /*
     |---------------------------------------------------------------------------
-    | Layout
+    | Page Layout (Livewire 4)
     |---------------------------------------------------------------------------
+    |
+    | Livewire 3 used `layout`; Livewire 4 uses `component_layout`.
+    |
     */
 
-    'layout' => 'components.layouts.app',
+    'component_layout' => 'components.layouts.app',
 
     /*
     |---------------------------------------------------------------------------
-    | Lazy Loading Placeholder
+    | Lazy Loading Placeholder (Livewire 4)
     |---------------------------------------------------------------------------
     */
 
-    'lazy_placeholder' => null,
+    'component_placeholder' => null,
 
     /*
     |---------------------------------------------------------------------------
@@ -120,7 +135,7 @@ return [
     |---------------------------------------------------------------------------
     */
 
-    'smart_wire_keys' => false,
+    'smart_wire_keys' => true,
 
     /*
     |---------------------------------------------------------------------------

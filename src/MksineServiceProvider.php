@@ -523,22 +523,8 @@ class MksineServiceProvider extends PackageServiceProvider
             }
         }
 
-        // Register Livewire Components
-        Livewire::component('mksine::media-picker-modal', MediaPickerModal::class);
-
-        // Register Frontend Livewire Components
-        Livewire::component('mksine::frontend.home', Home::class);
-        Livewire::component('mksine::frontend.category-list', CategoryList::class);
-        Livewire::component('mksine::frontend.category-show', CategoryShow::class);
-        Livewire::component('mksine::frontend.post-list', PostList::class);
-        Livewire::component('mksine::frontend.post-show', PostShow::class);
-        Livewire::component('mksine::frontend.post-comments', PostComments::class);
-        Livewire::component('mksine::frontend.page-show', PageShow::class);
-        Livewire::component('mksine::frontend.frontend-resolver', FrontendResolver::class);
-
-        // Register PageBuilder Livewire Components
-        Livewire::component('mksine::page-builder', PageBuilder::class);
-        Livewire::component('mksine::component-editor', ComponentEditor::class);
+        // Register Livewire Components (Livewire 3 aliases + Livewire 4 namespaces)
+        $this->registerMksineLivewireComponents();
 
         $this->registerThemeLivewireMissingComponentResolver();
 
@@ -605,6 +591,54 @@ class MksineServiceProvider extends PackageServiceProvider
             if (class_exists($policy)) {
                 Gate::policy($model, $policy);
             }
+        }
+    }
+
+    /**
+     * Register MKSine Livewire components for Livewire 3 and 4.
+     *
+     * Livewire 4 resolves `package::name` only via {@see Livewire::addNamespace()};
+     * explicit {@see Livewire::component()} aliases with `::` are ignored by the finder.
+     * Livewire 3 has no addNamespace API and relies on Livewire::component().
+     */
+    protected function registerMksineLivewireComponents(): void
+    {
+        $pageBuilderComponents = [
+            'mksine::page-builder' => PageBuilder::class,
+            'mksine::component-editor' => ComponentEditor::class,
+        ];
+
+        $legacyAliases = [
+            'mksine::media-picker-modal' => MediaPickerModal::class,
+            'mksine::frontend.home' => Home::class,
+            'mksine::frontend.category-list' => CategoryList::class,
+            'mksine::frontend.category-show' => CategoryShow::class,
+            'mksine::frontend.post-list' => PostList::class,
+            'mksine::frontend.post-show' => PostShow::class,
+            'mksine::frontend.post-comments' => PostComments::class,
+            'mksine::frontend.page-show' => PageShow::class,
+            'mksine::frontend.frontend-resolver' => FrontendResolver::class,
+            ...$pageBuilderComponents,
+        ];
+
+        if (method_exists(Livewire::getFacadeRoot(), 'addNamespace')) {
+            Livewire::addNamespace(
+                namespace: 'mksine',
+                classNamespace: 'Miran\\Mksine\\Livewire',
+                classPath: __DIR__.'/Livewire',
+                classViewPath: __DIR__.'/../resources/views/livewire',
+            );
+
+            // Page builder lives under Core\PageBuilder\Livewire, not Livewire\.
+            Livewire::resolveMissingComponent(
+                fn (string $name): ?string => $pageBuilderComponents[$name] ?? null
+            );
+
+            return;
+        }
+
+        foreach ($legacyAliases as $name => $class) {
+            Livewire::component($name, $class);
         }
     }
 
@@ -858,6 +892,10 @@ class MksineServiceProvider extends PackageServiceProvider
                         $this->loadFormHook($hook, $formHookManager);
 
                         break;
+                    case 'form_slot':
+                        $this->loadFormSlotHook($hook, $formHookManager);
+
+                        break;
                     case 'table':
                         $this->loadTableHook($hook, $tableHookManager);
 
@@ -991,6 +1029,33 @@ class MksineServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * Load form slot hook from database.
+     *
+     * @param  object  $hook
+     */
+    private function loadFormSlotHook($hook, FormHookManager $formHookManager): void
+    {
+        $listenerClass = $hook->listener_class;
+
+        if (! class_exists($listenerClass) || ! is_subclass_of($listenerClass, \Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+            return;
+        }
+
+        $formName = $listenerClass::getFormName();
+        $position = $listenerClass::getPosition();
+        $anchor = $listenerClass::getAnchor();
+        $priority = (int) ($hook->priority ?? $listenerClass::getPriority());
+
+        $formHookManager->extendSlot(
+            $formName,
+            $position,
+            $anchor,
+            [$listenerClass, 'handle'],
+            $priority,
+        );
+    }
+
+    /**
      * Register default listeners for the package.
      * These listeners are registered even if database is not ready.
      */
@@ -1023,13 +1088,17 @@ class MksineServiceProvider extends PackageServiceProvider
                 ->where('hook_type', 'form')
                 ->where('is_enabled', true)
                 ->count();
+            $formSlotHooksInDb = DB::table('mks_hooks')
+                ->where('hook_type', 'form_slot')
+                ->where('is_enabled', true)
+                ->count();
             $tableHooksInDb = DB::table('mks_hooks')
                 ->where('hook_type', 'table')
                 ->where('is_enabled', true)
                 ->count();
 
             // If no hooks in database, discover from code as fallback
-            if ($formHooksInDb === 0 && $tableHooksInDb === 0) {
+            if ($formHooksInDb === 0 && $formSlotHooksInDb === 0 && $tableHooksInDb === 0) {
                 $this->discoverFormAndTableHooks();
             }
         } catch (\Exception $e) {
@@ -1065,6 +1134,22 @@ class MksineServiceProvider extends PackageServiceProvider
         $formHooks = $this->discoverFormHooks($listenersPath);
         foreach ($formHooks as $formName => $listenerClass) {
             $formHookManager->extend($formName, [$listenerClass, 'extend']);
+        }
+
+        // Discover form slot hooks
+        $formSlotHooks = $this->discoverFormSlotHooks($listenersPath);
+        foreach ($formSlotHooks as $listenerClass) {
+            if (! is_subclass_of($listenerClass, \Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+                continue;
+            }
+
+            $formHookManager->extendSlot(
+                $listenerClass::getFormName(),
+                $listenerClass::getPosition(),
+                $listenerClass::getAnchor(),
+                [$listenerClass, 'handle'],
+                $listenerClass::getPriority(),
+            );
         }
 
         // Discover table hooks
@@ -1109,6 +1194,40 @@ class MksineServiceProvider extends PackageServiceProvider
                 } catch (\Exception $e) {
                     // Skip if getFormName() fails
                 }
+            }
+        }
+
+        return $hooks;
+    }
+
+    /**
+     * Discover form slot hook listeners in the given directory.
+     *
+     * @return list<class-string<\Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface>>
+     */
+    private function discoverFormSlotHooks(string $path): array
+    {
+        $hooks = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path)
+        );
+        $phpFiles = new \RegexIterator($iterator, '/^.+\.php$/i', \RegexIterator::GET_MATCH);
+
+        foreach ($phpFiles as $file) {
+            $filePath = $file[0];
+            $className = $this->getClassNameFromFile($filePath);
+            if (! $className) {
+                continue;
+            }
+
+            $fullClassName = $this->getFullClassName($filePath, $className);
+            if (! $fullClassName || ! class_exists($fullClassName)) {
+                continue;
+            }
+
+            $reflection = new \ReflectionClass($fullClassName);
+            if ($reflection->implementsInterface(\Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+                $hooks[] = $fullClassName;
             }
         }
 

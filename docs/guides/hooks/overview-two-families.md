@@ -34,7 +34,7 @@ PageHookManager::applyHeaderActions               ← page header action hooks
    └ runs callables registered for 'post.list', 'post.edit', …
 ```
 
-There is no parallel database catalogue for `FormHookManager`, `TableHookManager`, `ResourceHookManager`, or `PageHookManager` — only **event hooks** are persisted. Form/table hooks can be _shipped_ as discoverable classes (so `mks:discover` records them in the schema for inventory), but their execution always goes through the in-memory manager.
+There is no parallel database catalogue for `FormHookManager`, `TableHookManager`, `ResourceHookManager`, or `PageHookManager` — only **event hooks** are persisted. Form/table (and form **slot**) hooks can be _shipped_ as discoverable classes (so `mks:discover` records them in the schema for inventory: `form`, `form_slot`, `table`), but their execution always goes through the in-memory manager.
 
 ## Discovery hooks at a glance
 

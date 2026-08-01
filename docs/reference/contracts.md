@@ -150,6 +150,29 @@ interface FormHookListenerInterface
 
 See [Form hooks](../guides/hooks/form-hooks.md).
 
+### `FormSlotHookListenerInterface`
+
+`Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface` — [source](../../src/Core/Hooks/FormSlotHookListenerInterface.php).
+
+Named form slot extension (`before` / `after` / `replace`). Discovered by `mks:discover` as `hook_type = form_slot`.
+
+```php
+interface FormSlotHookListenerInterface
+{
+    public static function getFormName(): string;
+    public static function getPosition(): string; // before|after|replace
+    public static function getAnchor(): string;
+    public static function getPriority(): int;
+    public static function handle(\Filament\Schemas\Components\Component $original): \Filament\Schemas\Components\Component|array|null;
+}
+```
+
+- `hook_name` in `mks_hooks` is `"{formName}.{position}.{anchor}"`.
+- For `replace`, return `null` or `[]` to hide the original component. Last successful replace wins.
+- Prefer runtime `Hooks::beforeFormComponent()` / `afterFormComponent()` / `replaceFormComponent()` for closures.
+
+See [Named slot hooks](../guides/hooks/form-hooks.md#named-slot-hooks).
+
 ### `TableHookListenerInterface`
 
 `Miran\Mksine\Core\Hooks\TableHookListenerInterface` — [source](../../src/Core/Hooks/TableHookListenerInterface.php).

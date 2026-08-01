@@ -1243,12 +1243,12 @@ BLADE;
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="comment_author_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Name') }} <span class="text-red-500">*</span></label>
-                        <input type="text" id="comment_author_name" wire:model="author_name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Your name') }}">
+                        <input type="text" id="comment_author_name" wire:model.live="author_name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Your name') }}">
                         @error('author_name')<p class="mt-1 text-sm text-red-500">{{ \$message }}</p>@enderror
                     </div>
                     <div>
                         <label for="comment_author_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Email') }} <span class="text-red-500">*</span></label>
-                        <input type="email" id="comment_author_email" wire:model="author_email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Your email') }}">
+                        <input type="email" id="comment_author_email" wire:model.live="author_email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Your email') }}">
                         @error('author_email')<p class="mt-1 text-sm text-red-500">{{ \$message }}</p>@enderror
                     </div>
                 </div>
@@ -1258,7 +1258,7 @@ BLADE;
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Rating') }} ({{ __('optional') }})</label>
                 <div class="flex gap-1">
                     @for(\$i = 1; \$i <= 5; \$i++)
-                        <button type="button" wire:click="\$set('rating', {{ \$i }})" class="p-1 text-2xl leading-none transition {{ (\$rating ?? 0) >= \$i ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600 hover:text-amber-200' }}" aria-label="{{ \$i }} {{ __('stars') }}">★</button>
+                        <button type="button" wire:click="setRating({{ \$i }})" class="p-1 text-2xl leading-none transition {{ (\$rating ?? 0) >= \$i ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600 hover:text-amber-200' }}" aria-label="{{ \$i }} {{ __('stars') }}">★</button>
                     @endfor
                 </div>
                 @error('rating')<p class="mt-1 text-sm text-red-500">{{ \$message }}</p>@enderror
@@ -1266,7 +1266,7 @@ BLADE;
             @endif
             <div>
                 <label for="comment_content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ __('Comment') }} <span class="text-red-500">*</span></label>
-                <textarea id="comment_content" wire:model="content" rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Write your comment...') }}"></textarea>
+                <textarea id="comment_content" wire:model.live="content" rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="{{ __('Write your comment...') }}"></textarea>
                 @error('content')<p class="mt-1 text-sm text-red-500">{{ \$message }}</p>@enderror
             </div>
             <button type="submit" wire:loading.attr="disabled" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50">

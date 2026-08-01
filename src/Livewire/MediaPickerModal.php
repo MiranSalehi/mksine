@@ -8,6 +8,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -37,10 +38,7 @@ class MediaPickerModal extends Component
 
     public ?int $detailMediaId = null;
 
-    protected $listeners = [
-        'openMediaPicker' => 'open',
-    ];
-
+    #[On('openMediaPicker')]
     public function open(string $statePath, bool $multiple = false, array $acceptedFileTypes = ['image/*'], array $currentSelection = []): void
     {
         $this->statePath = $statePath;

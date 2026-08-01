@@ -10,7 +10,7 @@ This page is a high-altitude tour. Read it once before diving into any specific 
 
 ## What MKSine is
 
-A Laravel + Filament 4 package that turns a fresh Laravel app into a content/CMS-shaped admin without committing you to a particular feature set. It ships:
+A Laravel + Filament 4 / 5 package that turns a fresh Laravel app into a content/CMS-shaped admin without committing you to a particular feature set. It ships:
 
 - A small set of **first-party resources** (Posts, Pages, Categories, Comments, Tags, Media, Menus, Users, Roles).
 - A **plugin system** for shipping additional Filament resources, models, migrations, assets, and translations as composable units.
@@ -66,7 +66,7 @@ What it deliberately is not:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-The package depends on Laravel and Filament 4. Plugins depend on the package. Themes are standalone and accessed through the package's theme system.
+The package depends on Laravel and Filament 4 or 5. Plugins depend on the package. Themes are standalone and accessed through the package's theme system.
 
 ## Boot sequence (simplified)
 

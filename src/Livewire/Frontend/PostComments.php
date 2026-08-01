@@ -147,6 +147,15 @@ class PostComments extends Component
         $this->dispatch('focus-comment-form');
     }
 
+    /**
+     * Livewire 4 no longer reliably routes wire:click="$set(...)" as a magic action
+     * (it can be treated as a missing public method). Prefer an explicit action.
+     */
+    public function setRating(int $rating): void
+    {
+        $this->rating = max(1, min(5, $rating));
+    }
+
     public function cancelReply(): void
     {
         $this->parent_id = null;

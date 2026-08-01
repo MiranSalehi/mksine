@@ -54,7 +54,7 @@
                             <input
                                 type="text"
                                 id="comment_author_name"
-                                wire:model="author_name"
+                                wire:model.live="author_name"
                                 class="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-stone-900 shadow-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-stone-100 dark:focus:border-violet-500"
                                 placeholder="{{ __('mksine::frontend.your_name') }}"
                             />
@@ -67,7 +67,7 @@
                             <input
                                 type="email"
                                 id="comment_author_email"
-                                wire:model="author_email"
+                                wire:model.live="author_email"
                                 class="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-stone-900 shadow-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-stone-100 dark:focus:border-violet-500"
                                 placeholder="{{ __('mksine::frontend.your_email') }}"
                             />
@@ -85,7 +85,7 @@
                             @for ($i = 1; $i <= 5; $i++)
                                 <button
                                     type="button"
-                                    wire:click="$set('rating', {{ $i }})"
+                                    wire:click="setRating({{ $i }})"
                                     class="p-1 text-2xl leading-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded {{ ($rating ?? 0) >= $i ? 'text-amber-400' : 'text-stone-300 hover:text-amber-200 dark:text-stone-600' }}"
                                     aria-label="{{ $i }} {{ __('mksine::frontend.stars') }}"
                                 >
@@ -103,7 +103,7 @@
                     <label for="comment_content" class="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">{{ __('mksine::frontend.comment') }} <span class="text-red-500">*</span></label>
                     <textarea
                         id="comment_content"
-                        wire:model="content"
+                        wire:model.live="content"
                         rows="4"
                         class="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-stone-900 shadow-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-stone-100 dark:focus:border-violet-500"
                         placeholder="{{ __('mksine::frontend.write_comment') }}"

@@ -8,6 +8,42 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.3.0 - 2026-08-01
+
+### Added
+
+- **Named form slot hooks** on core Filament resource forms: `{form}.before.{anchor}`, `{form}.after.{anchor}`, `{form}.replace.{anchor}` (replace returning `null` / `[]` hides the component).
+- `FormHookManager::extendSlot()`, `FormSlotApplicator`, and `Hooks::beforeFormComponent()` / `afterFormComponent()` / `replaceFormComponent()`.
+- Discoverable `FormSlotHookListenerInterface` (`hook_type = form_slot` via `mks:discover`).
+- Whole-form hook wiring for `media.form`, `menu_location.form`, and `geo_state.form`.
+- Stable section `->key()` anchors and Media `disk_create` / `disk_edit` component keys for slot targeting.
+
+### Notes
+
+- Whole-form `extend()` callbacks still run first; slot hooks apply afterward while walking the schema tree.
+- Replace/hide is last-writer-wins across plugins — coordinate carefully.
+- See [Form hooks](docs/guides/hooks/form-hooks.md) for the per-resource anchor tables.
+
+## 1.2.0 - 2026-07-22
+
+### Added
+
+- **Filament 5 support** — `filament/filament` constraint is now `^4.0|^5.0`. Filament 5 hosts resolve Livewire 4 automatically.
+- Livewire 4 registration via `Livewire::addNamespace('mksine', …)` with a missing-component fallback for page-builder classes under `Core\PageBuilder\Livewire`.
+
+### Changed
+
+- Published `config/livewire.php` stub aligned with Livewire 4 (`component_layout`, `component_placeholder`).
+- Livewire event listeners on MediaPicker / PageBuilder / ComponentEditor use `#[On]` instead of `$listeners`.
+- Theme comment scaffolds and default theme use `wire:model.live` for Livewire 4-friendly binding.
+- Comment star rating uses explicit `setRating()` instead of `wire:click="$set(...)"` (broken under Livewire 4).
+- `MenuBuilder` no longer implements leftover `HasForms` (Action schemas only).
+
+### Notes
+
+- Filament 5 requires Livewire 4, Laravel 11.28+, and Tailwind CSS 4 on the host. Filament 4 + Livewire 3 installs continue to work via the dual Composer constraint.
+- See [Upgrade guide](docs/meta/upgrade-guide.md) for host migration steps.
+
 ## 1.1.1 - 2026-07-09
 
 ### Fixed

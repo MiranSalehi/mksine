@@ -33,7 +33,7 @@ Common usage:
 ```php
 use Miran\Mksine\Facades\Mksine;
 
-Mksine::version();                          // '1.1.1'
+Mksine::version();                          // '1.3.0'
 Mksine::isFeatureEnabled('page_builder');   // bool
 Mksine::config('plugins_path');             // 'plugins' (or your override)
 ```
@@ -53,6 +53,9 @@ A thin static façade over the hook managers. Not a Laravel `Facade` — it is a
 | `Hooks::pageManager(): PageHookManager` | Resolve the page manager. |
 | `Hooks::register(string $eventName, string $listenerClass, int $priority = 0): void` | Register an event listener at runtime. |
 | `Hooks::extendForm(string $formName, callable $callback): void` | Register a callable form extender. |
+| `Hooks::beforeFormComponent(string $formName, string $anchor, callable $callback, int $priority = 0): void` | Insert component(s) before a named field/section anchor. |
+| `Hooks::afterFormComponent(string $formName, string $anchor, callable $callback, int $priority = 0): void` | Insert component(s) after a named field/section anchor. |
+| `Hooks::replaceFormComponent(string $formName, string $anchor, callable $callback, int $priority = 0): void` | Replace or hide (`null`/`[]`) a named field/section anchor. |
 | `Hooks::extendTable(string $tableName, callable $callback): void` | Register a callable table extender. |
 | `Hooks::extendTableColumns(string $tableName, callable $callback): void` | Modify columns (callable receives the `Table`). |
 | `Hooks::extendTableActions(string $tableName, callable $callback): void` | Modify record actions. |
@@ -102,11 +105,13 @@ Notes:
 
 ```php
 public function extend(string $formName, callable $callback): void;
+public function extendSlot(string $formName, string $position, string $anchor, callable $callback, int $priority = 0): void;
 public function apply(string $formName, \Filament\Schemas\Schema $schema): \Filament\Schemas\Schema;
 public function clear(string $formName): void;
+public function clearAll(): void;
 ```
 
-Callbacks receive the original `Schema` and **must return** a `Schema`. Errors thrown inside a callback are caught and logged so other listeners still run (see source for the `try/catch`).
+Whole-form callbacks receive the original `Schema` and **must return** a `Schema`. After those callbacks, named slot hooks (`before` / `after` / `replace`) are applied by `FormSlotApplicator`. Errors thrown inside a callback are caught and logged so other listeners still run (see source for the `try/catch`). See [Form hooks](../guides/hooks/form-hooks.md#named-slot-hooks).
 
 ### `TableHookManager`
 

@@ -6,7 +6,7 @@ order: 0
 
 # Introduction
 
-`miran/mksine` is a Laravel + **Filament 4** content management foundation that adds:
+`miran/mksine` is a Laravel + **Filament 4 / 5** content management foundation that adds:
 
 - A **plugin system** (lifecycle, Filament autoloading, asset and translation publishing) — see [Plugin concepts](concepts/plugins.md).
 - A **hook system** with two distinct families: discovery-based class listeners synced to a database table, and runtime/Blade extension via a static helper — see [Hook concepts](concepts/hooks.md).
@@ -22,7 +22,7 @@ These docs are the **canonical**, **package-portable** reference. They ship insi
 These docs target **developers** who:
 
 - Build plugins, themes, hooks, page-builder blocks, or menu sources for an MKSine installation.
-- Integrate `miran/mksine` into a Laravel + Filament 4 application.
+- Integrate `miran/mksine` into a Laravel + Filament 4 or 5 application.
 - Operate that application in production (deployment, release packaging, troubleshooting).
 
 Out of scope:

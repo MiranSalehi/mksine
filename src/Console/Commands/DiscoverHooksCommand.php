@@ -45,6 +45,7 @@ class DiscoverHooksCommand extends Command
 
         $mergedListeners = [];
         $mergedFormHooks = [];
+        $mergedFormSlotHooks = [];
         $mergedTableHooks = [];
 
         foreach ($paths as $path) {
@@ -59,6 +60,10 @@ class DiscoverHooksCommand extends Command
                 $mergedFormHooks[$formName] = $listenerClass;
             }
 
+            foreach ($batch['form_slot_hooks'] ?? [] as $listenerClass => $slotHook) {
+                $mergedFormSlotHooks[$listenerClass] = $slotHook;
+            }
+
             foreach ($batch['table_hooks'] as $tableName => $listenerClass) {
                 $mergedTableHooks[$tableName] = $listenerClass;
             }
@@ -66,7 +71,7 @@ class DiscoverHooksCommand extends Command
 
         $discoveredListeners = array_values($mergedListeners);
 
-        if ($discoveredListeners === [] && $mergedFormHooks === [] && $mergedTableHooks === []) {
+        if ($discoveredListeners === [] && $mergedFormHooks === [] && $mergedFormSlotHooks === [] && $mergedTableHooks === []) {
             $this->warn('No listeners or hooks found.');
 
             return self::SUCCESS;
@@ -86,6 +91,12 @@ class DiscoverHooksCommand extends Command
             $this->info('Found '.count($mergedFormHooks).' form hook(s).');
             $synced = $discovery->syncFormHooks($mergedFormHooks);
             $this->info("Synced {$synced} form hook(s) with database.");
+        }
+
+        if ($mergedFormSlotHooks !== []) {
+            $this->info('Found '.count($mergedFormSlotHooks).' form slot hook(s).');
+            $synced = $discovery->syncFormSlotHooks($mergedFormSlotHooks);
+            $this->info("Synced {$synced} form slot hook(s) with database.");
         }
 
         if ($mergedTableHooks !== []) {

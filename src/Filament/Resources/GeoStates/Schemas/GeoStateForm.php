@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Enums\GeoSource;
 use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Services\Geo\GeoResolver;
@@ -17,30 +18,34 @@ final class GeoStateForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make()->schema([
-                Select::make('geo_country_id')
-                    ->label(__('mksine::geo.states.country'))
-                    ->relationship('country', 'name')
-                    ->options(fn (): array => app(GeoResolver::class)->countriesForSelect())
-                    ->searchable()
-                    ->required()
-                    ->disabled(fn (?string $operation): bool => $operation === 'edit'),
-                TextInput::make('code')
-                    ->label(__('mksine::geo.states.code'))
-                    ->maxLength(16),
-                TextInput::make('name')
-                    ->label(__('mksine::geo.states.name'))
-                    ->required()
-                    ->maxLength(255),
-                TextInput::make('native')
-                    ->label(__('mksine::geo.states.native'))
-                    ->maxLength(255),
-                Toggle::make('is_visible')
-                    ->label(__('mksine::geo.states.is_visible'))
-                    ->default(true),
-            ])->columns(2),
+        $schema = $schema->components([
+            Section::make()
+                ->key('details')
+                ->schema([
+                    Select::make('geo_country_id')
+                        ->label(__('mksine::geo.states.country'))
+                        ->relationship('country', 'name')
+                        ->options(fn (): array => app(GeoResolver::class)->countriesForSelect())
+                        ->searchable()
+                        ->required()
+                        ->disabled(fn (?string $operation): bool => $operation === 'edit'),
+                    TextInput::make('code')
+                        ->label(__('mksine::geo.states.code'))
+                        ->maxLength(16),
+                    TextInput::make('name')
+                        ->label(__('mksine::geo.states.name'))
+                        ->required()
+                        ->maxLength(255),
+                    TextInput::make('native')
+                        ->label(__('mksine::geo.states.native'))
+                        ->maxLength(255),
+                    Toggle::make('is_visible')
+                        ->label(__('mksine::geo.states.is_visible'))
+                        ->default(true),
+                ])->columns(2),
         ]);
+
+        return app(FormHookManager::class)->apply('geo_state.form', $schema);
     }
 
     /**

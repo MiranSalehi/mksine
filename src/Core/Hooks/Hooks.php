@@ -98,6 +98,49 @@ class Hooks
     }
 
     /**
+     * Insert component(s) before a named form field or section anchor.
+     *
+     * @param  callable  $callback  fn ($original): Component|array
+     */
+    public static function beforeFormComponent(
+        string $formName,
+        string $anchor,
+        callable $callback,
+        int $priority = 0,
+    ): void {
+        static::formManager()->extendSlot($formName, 'before', $anchor, $callback, $priority);
+    }
+
+    /**
+     * Insert component(s) after a named form field or section anchor.
+     *
+     * @param  callable  $callback  fn ($original): Component|array
+     */
+    public static function afterFormComponent(
+        string $formName,
+        string $anchor,
+        callable $callback,
+        int $priority = 0,
+    ): void {
+        static::formManager()->extendSlot($formName, 'after', $anchor, $callback, $priority);
+    }
+
+    /**
+     * Replace or hide a named form field or section anchor.
+     * Return null or [] to hide. Last registered (highest priority) wins.
+     *
+     * @param  callable  $callback  fn ($original): Component|array|null
+     */
+    public static function replaceFormComponent(
+        string $formName,
+        string $anchor,
+        callable $callback,
+        int $priority = 0,
+    ): void {
+        static::formManager()->extendSlot($formName, 'replace', $anchor, $callback, $priority);
+    }
+
+    /**
      * Extend a table with additional columns, filters, or actions.
      *
      * @param  string  $tableName  The table identifier (e.g., 'post.table')

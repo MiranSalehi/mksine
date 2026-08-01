@@ -20,6 +20,7 @@ If you want an admin toggle, a DB row, or a priority override surface, use a [di
 | --------------------------------------------------------------- | ---------------------- | -------------------------------------------- |
 | `Hooks::register($eventName, $listenerClass, $priority)`        | `HookManager`          | Event listener class for an event name       |
 | `Hooks::extendForm($formName, fn ($schema) => $schema)`         | `FormHookManager`      | Closure that returns a modified `Schema`     |
+| `Hooks::beforeFormComponent` / `afterFormComponent` / `replaceFormComponent` | `FormHookManager` | Named slot insert / replace / hide on a form anchor |
 | `Hooks::extendTable($tableName, fn ($table) => $table)`         | `TableHookManager`     | Closure that returns a modified `Table`      |
 | `Hooks::extendTableColumns/Actions/BulkActions/Filters(...)`    | `TableHookManager`     | Same closure shape, different scheduling bucket |
 | `Hooks::extendResourceRelations($name, fn ($relations))`        | `ResourceHookManager`  | Closure that returns a modified relations array |

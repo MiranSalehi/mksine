@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Support\MediaStoragePath;
 use Miran\Mksine\Support\UploadLimits;
 
@@ -16,12 +17,14 @@ class MediaForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema
+        $schema = $schema
             ->components([
                 Section::make(__('mksine::media.file_information'))
+                    ->key('file_information')
                     ->schema([
                         // Hidden disk field for create page (needed for mutateFormDataBeforeCreate)
                         Select::make('disk')
+                            ->key('disk_create')
                             ->label(__('mksine::media.disk'))
                             ->options(function () {
                                 $disks = config('filesystems.disks', []);
@@ -77,6 +80,7 @@ class MediaForm
                     ])
                     ->columns(1),
                 Section::make(__('mksine::media.details'))
+                    ->key('details')
                     ->schema([
                         TextInput::make('name')
                             ->label(__('mksine::media.name'))
@@ -84,6 +88,7 @@ class MediaForm
                             ->maxLength(255)
                             ->visibleOn(['create', 'edit']),
                         Select::make('disk')
+                            ->key('disk_edit')
                             ->label(__('mksine::media.disk'))
                             ->options(function () {
                                 $disks = config('filesystems.disks', []);
@@ -177,5 +182,7 @@ class MediaForm
                     ->collapsible()
                     ->visibleOn('edit'),
             ]);
+
+        return app(FormHookManager::class)->apply('media.form', $schema);
     }
 }

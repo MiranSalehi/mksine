@@ -2,7 +2,7 @@
 
 # MKSine
 
-**The Laravel + Filament 4 CMS foundation — build content sites, page builders, and plugin ecosystems without fighting your admin panel.**
+**The Laravel + Filament 4 / 5 CMS foundation — build content sites, page builders, and plugin ecosystems without fighting your admin panel.**
 
 <!-- ⬇️ PLACEHOLDER: hero GIF — page builder in action (drag block, edit, save, see it live) -->
 <!-- ![MKSine Page Builder Demo](./media/hero-pagebuilder.gif) -->

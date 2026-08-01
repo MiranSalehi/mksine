@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
+use Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface;
 use Miran\Mksine\Core\Hooks\MksineListenerInterface;
 use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
 use RecursiveDirectoryIterator;
@@ -33,7 +34,7 @@ class DiscoveryService
      * Discover all listeners and hooks from the given directory.
      *
      * @param  string  $listenersPath  Path to scan for listeners
-     * @return array{listeners: array, form_hooks: array, table_hooks: array}
+     * @return array{listeners: array, form_hooks: array, form_slot_hooks: array, table_hooks: array}
      */
     public function discoverAll(string $listenersPath): array
     {
@@ -41,6 +42,7 @@ class DiscoveryService
             return [
                 'listeners' => [],
                 'form_hooks' => [],
+                'form_slot_hooks' => [],
                 'table_hooks' => [],
             ];
         }
@@ -51,6 +53,7 @@ class DiscoveryService
         return [
             'listeners' => $this->discoverListeners($listenersPath, $phpFiles),
             'form_hooks' => $this->discoverFormHooks($listenersPath, $phpFiles),
+            'form_slot_hooks' => $this->discoverFormSlotHooks($listenersPath, $phpFiles),
             'table_hooks' => $this->discoverTableHooks($listenersPath, $phpFiles),
         ];
     }
@@ -190,6 +193,74 @@ class DiscoveryService
                 // Skip if getFormName() fails
                 continue;
             }
+        }
+
+        return $hooks;
+    }
+
+    /**
+     * Discover form slot hook listeners in the given directory.
+     *
+     * @param  array<string>|null  $phpFiles  Pre-scanned PHP files (for optimization)
+     * @return array<string, array{listener_class: string, form_name: string, position: string, anchor: string, priority: int, hook_name: string}>
+     */
+    public function discoverFormSlotHooks(string $path, ?array $phpFiles = null): array
+    {
+        $hooks = [];
+
+        if ($phpFiles === null) {
+            $phpFiles = $this->getPhpFiles($path);
+        }
+
+        foreach ($phpFiles as $filePath) {
+            $className = $this->getClassNameFromFile($filePath);
+
+            if (! $className) {
+                continue;
+            }
+
+            $fullClassName = $this->getFullClassName($filePath, $className);
+
+            if (! $fullClassName) {
+                continue;
+            }
+
+            if (! class_exists($fullClassName)) {
+                spl_autoload_call($fullClassName);
+            }
+
+            if (! class_exists($fullClassName)) {
+                continue;
+            }
+
+            $reflection = new \ReflectionClass($fullClassName);
+
+            if (! $reflection->implementsInterface(FormSlotHookListenerInterface::class)) {
+                continue;
+            }
+
+            try {
+                $formName = $fullClassName::getFormName();
+                $position = strtolower((string) $fullClassName::getPosition());
+                $anchor = (string) $fullClassName::getAnchor();
+                $priority = (int) $fullClassName::getPriority();
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            if (! in_array($position, ['before', 'after', 'replace'], true) || $anchor === '') {
+                continue;
+            }
+
+            $hookName = "{$formName}.{$position}.{$anchor}";
+            $hooks[$fullClassName] = [
+                'listener_class' => $fullClassName,
+                'form_name' => $formName,
+                'position' => $position,
+                'anchor' => $anchor,
+                'priority' => $priority,
+                'hook_name' => $hookName,
+            ];
         }
 
         return $hooks;
@@ -372,6 +443,82 @@ class DiscoveryService
                     }
 
                     // Skip on error and continue
+                    continue;
+                }
+            }
+
+            return $synced;
+        });
+    }
+
+    /**
+     * Sync discovered form slot hooks with database.
+     *
+     * @param  array<string, array{listener_class: string, form_name: string, position: string, anchor: string, priority: int, hook_name: string}>  $hooks
+     * @return int Number of synced hooks
+     */
+    public function syncFormSlotHooks(array $hooks): int
+    {
+        if (! $this->isDatabaseAvailable()) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($hooks) {
+            $synced = 0;
+
+            foreach ($hooks as $hook) {
+                $listenerClass = $hook['listener_class'];
+                $hookName = $hook['hook_name'];
+                $priority = $hook['priority'];
+
+                try {
+                    $existing = DB::table('mks_hooks')
+                        ->where('listener_class', $listenerClass)
+                        ->where('hook_type', 'form_slot')
+                        ->first();
+
+                    if ($existing) {
+                        $updates = [];
+
+                        if ($existing->hook_name !== $hookName) {
+                            $updates['hook_name'] = $hookName;
+                        }
+
+                        if ((int) $existing->priority !== $priority) {
+                            $updates['priority'] = $priority;
+                        }
+
+                        if ($updates !== []) {
+                            $updates['updated_at'] = now();
+                            DB::table('mks_hooks')
+                                ->where('listener_class', $listenerClass)
+                                ->where('hook_type', 'form_slot')
+                                ->update($updates);
+                            $synced++;
+                        }
+                    } else {
+                        DB::table('mks_hooks')->insert([
+                            'hook_type' => 'form_slot',
+                            'event_name' => null,
+                            'hook_name' => $hookName,
+                            'listener_class' => $listenerClass,
+                            'priority' => $priority,
+                            'is_enabled' => true,
+                            'is_system' => false,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        $synced++;
+                    }
+                } catch (\Exception $e) {
+                    if (config('app.debug') || config('mksine.log_hook_errors', false)) {
+                        Log::warning('MKS CMS: Failed to sync form slot hook', [
+                            'hook_name' => $hookName,
+                            'listener_class' => $listenerClass,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
                     continue;
                 }
             }

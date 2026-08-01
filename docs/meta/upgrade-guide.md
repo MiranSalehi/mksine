@@ -29,6 +29,38 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.3.0 (2026-08-01)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Form slot hooks.** Core resource forms expose named `before` / `after` / `replace` anchors. `FormHookManager::apply()` still runs whole-form callbacks first, then walks the schema for slots. Plugins that previously rewrote entire forms can migrate to slot helpers when they only need a precise injection point.
+- **New form names:** `media.form`, `menu_location.form`, `geo_state.form` now call `FormHookManager::apply()`.
+- **Section keys** on core forms are stable (`seo` → slot anchor `seo_section`). Media’s two `disk` fields use component keys `disk_create` / `disk_edit` for slots while keeping state path `disk`.
+
+### Migration
+
+1. Prefer `Hooks::afterFormComponent()` / `beforeFormComponent()` / `replaceFormComponent()` over whole-form rewrites when targeting a single field or section.
+2. Re-run `php artisan mks:discover` if you add `FormSlotHookListenerInterface` classes.
+3. Treat `replace` / hide as last-writer-wins when multiple plugins share an anchor.
+
+---
+
+## 1.2.0 (2026-07-22)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Filament 5 / Livewire 4.** Package constraint is `filament/filament: ^4.0|^5.0`. On Livewire 4, MKSine registers components with `Livewire::addNamespace('mksine', …)` because `Livewire::component('mksine::…')` aliases are not resolved for `::` names. Page-builder components under `Core\PageBuilder\Livewire` use a missing-component resolver. Livewire 3 hosts keep the previous `Livewire::component()` registration path.
+- **Published Livewire config stub** uses Livewire 4 keys (`component_layout`, `component_placeholder`). Existing hosts that already published `config/livewire.php` are unchanged until they re-publish or migrate keys manually when upgrading to Filament 5.
+
+### Host migration to Filament 5
+
+1. Ensure Laravel **11.28+** and Tailwind **4**.
+2. Follow Filament’s [v5 upgrade guide](https://filamentphp.com/docs/5.x/upgrade-guide) (`filament/upgrade`, then `filament/filament:^5` + Livewire 4).
+3. Update host `config/livewire.php`: rename `layout` → `component_layout`, `lazy_placeholder` → `component_placeholder` (keep MKSine `temporary_file_upload` limits).
+4. Run your test suite; smoke-test MediaPicker, Page Builder, Menu Builder, and storefront routes.
+
+---
+
 ## 1.1.0 (2026-07-08)
 
 ### Behavior changes (non-breaking, but visible)

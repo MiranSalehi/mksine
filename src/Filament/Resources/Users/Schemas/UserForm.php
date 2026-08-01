@@ -19,6 +19,7 @@ class UserForm
         $schema = $schema
             ->components([
                 Section::make(__('mksine::users.section_profile'))
+                    ->key('profile')
                     ->schema([
                         MediaPicker::make('avatar')
                             ->label(__('mksine::users.avatar'))
@@ -56,6 +57,7 @@ class UserForm
                     ->columnSpanFull(),
 
                 Section::make(__('mksine::users.section_contact'))
+                    ->key('contact')
                     ->schema([
                         Select::make('phone_country_code')
                             ->label(__('mksine::users.country_code'))
@@ -74,6 +76,7 @@ class UserForm
                     ->collapsible(),
 
                 Section::make(__('mksine::users.section_security'))
+                    ->key('security')
                     ->schema([
                         TextInput::make('password')
                             ->label(__('mksine::users.password'))

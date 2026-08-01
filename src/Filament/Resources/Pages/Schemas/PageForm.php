@@ -23,6 +23,7 @@ class PageForm
         $schema = $schema
             ->components([
                 Section::make(__('mksine::pages.page_information'))
+                    ->key('page_information')
                     ->schema([
                         TextInput::make('title')
                             ->label(__('mksine::pages.title'))
@@ -74,6 +75,7 @@ class PageForm
                     ])
                     ->columns(2),
                 Section::make(__('mksine::common.content'))
+                    ->key('content')
                     ->columnSpanFull()
                     ->schema([
                         CKEditor::make('content')
@@ -84,6 +86,7 @@ class PageForm
                     ])
                     ->visible(fn ($get) => $get('type') === 'simple'),
                 Section::make(__('mksine::pages.page_builder'))
+                    ->key('page_builder')
                     ->columnSpanFull()
                     ->schema([
                         PageBuilderField::make('builder_payload')
@@ -102,6 +105,7 @@ class PageForm
                         return $record instanceof Page && $record->getAttribute('type') === 'builder';
                     }),
                 Section::make(__('mksine::pages.builder_display'))
+                    ->key('builder_display')
                     ->columnSpanFull()
                     ->schema([
                         Toggle::make('show_page_header')
@@ -132,6 +136,7 @@ class PageForm
                         return $record instanceof Page && $record->getAttribute('type') === 'builder';
                     }),
                 Section::make(__('mksine::common.seo'))
+                    ->key('seo')
                     ->schema([
                         TextInput::make('meta_title')
                             ->label(__('mksine::pages.meta_title'))

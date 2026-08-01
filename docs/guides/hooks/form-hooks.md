@@ -30,7 +30,12 @@ public static function form(Schema $schema): Schema
 }
 ```
 
-`FormHookManager::apply($formName, $schema)` walks every callable registered for `$formName`, in registration order, and feeds each one the **current** `$schema`. The callable returns a (possibly modified) `Schema`. If it returns anything else, the modification is dropped and a warning is logged. Exceptions inside a callable are caught, logged via `Log::error()`, and **execution continues** with the next callable. This is intentional: one buggy plugin should not blank out a form for everyone.
+`FormHookManager::apply($formName, $schema)` runs in two phases:
+
+1. **Whole-form callbacks** — every callable registered via `extend()` / `Hooks::extendForm()`, in registration order. Each receives the current `Schema` and should return a `Schema`. Non-`Schema` returns are ignored; exceptions are logged and execution continues.
+2. **Named slot hooks** — `FormSlotApplicator` walks the component tree and applies `before` / `after` / `replace` hooks for each resolvable anchor (see [Named slot hooks](#named-slot-hooks)).
+
+Whole-form hooks always run first; slots see the schema after those callbacks.
 
 ## Class-based listener
 
@@ -111,7 +116,130 @@ Same `FormHookManager` under the hood, no class, no `mks_hooks` row.
 
 Form names are **conventional**, not enforced. The package and scaffolds use `'<resource>.form'` (e.g. `post.form`, `category.form`). Plugin authors should follow the same pattern (`'<plugin-id>::<resource>.form'` if you want to namespace explicitly to avoid collisions).
 
+Core MKSine resource form names:
+
+| Resource | Form name |
+|----------|-----------|
+| Post | `post.form` |
+| Page | `page.form` |
+| Category | `category.form` |
+| Comment | `comment.form` |
+| Media | `media.form` |
+| Menu | `menu.form` |
+| Menu location | `menu_location.form` |
+| User | `user.form` |
+| Geo state | `geo_state.form` |
+
 There is no central registry of names — if you typo `'post.from'`, the callback simply never runs and you get no error. Add a smoke test that asserts your hook fires, or document your form names in your plugin’s README.
+
+## Named slot hooks
+
+Prefer slot hooks when you need to inject, replace, or hide a **specific** field or section without rewriting the whole form.
+
+### API
+
+```php
+use Filament\Forms\Components\TextInput;
+use Miran\Mksine\Core\Hooks\Hooks;
+
+// Insert before / after an anchor
+Hooks::beforeFormComponent('post.form', 'seo_section', fn () => TextInput::make('canonical_url'));
+Hooks::afterFormComponent('post.form', 'title', fn () => TextInput::make('subtitle'));
+
+// Replace a component, or return null / [] to hide it
+Hooks::replaceFormComponent('post.form', 'excerpt', fn ($original) => TextInput::make('summary'));
+Hooks::replaceFormComponent('post.form', 'excerpt', fn () => null);
+```
+
+Equivalent low-level API: `FormHookManager::extendSlot($formName, $position, $anchor, $callback, $priority = 0)` where `$position` is `before`, `after`, or `replace`.
+
+| Position | Callback shape | Effect |
+|----------|----------------|--------|
+| `before` / `after` | `fn ($original): Component\|array` | Insert sibling component(s) |
+| `replace` | `fn ($original): Component\|array\|null` | Swap the component; `null` or `[]` **hides** it |
+
+**Replace / hide is a foot-gun across plugins:** when multiple replace hooks target the same anchor, **last writer wins** (higher `priority` runs later). Coordinate plugins or accept that one will override the other.
+
+### Discoverable class listeners
+
+Implement `FormSlotHookListenerInterface` (`getFormName`, `getPosition`, `getAnchor`, `getPriority`, `handle`). `mks:discover` stores them as `hook_type = form_slot` with `hook_name = "{form}.{position}.{anchor}"`.
+
+### Anchor rules
+
+Stable, locale-independent:
+
+| Target | Anchor |
+|--------|--------|
+| Field from `::make('name')` | `name` (e.g. `title`) |
+| Field with an explicit `->key('…')` that differs from the state name | the component key (e.g. Media `disk_create`, `disk_edit`) |
+| Section with `->key('seo')` | `{key}_section` (e.g. `seo_section`) |
+
+Section anchors use the `_section` suffix so Post’s `content` **section** (`content_section`) never collides with the `content` **field**.
+
+### Core resource anchors
+
+#### `post.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `content_section`, `settings_section`, `seo_section` |
+| Fields | `title`, `slug`, `excerpt`, `status`, `author_id`, `categories`, `published_at`, `featured_image`, `content`, `meta_title`, `meta_description` |
+
+#### `page.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `page_information_section`, `content_section`, `page_builder_section`, `builder_display_section`, `seo_section` |
+| Fields | `title`, `slug`, `type`, `status`, `published_at`, `content`, `builder_payload`, `show_page_header`, `builder_content_width`, `meta_title`, `meta_description` |
+
+#### `category.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `category_information_section`, `settings_section`, `seo_section` |
+| Fields | `name`, `slug`, `image`, `parent_id`, `sort_order`, `is_active`, `description`, `meta_title`, `meta_description` |
+
+#### `comment.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `comment_information_section`, `author_information_section`, `rating_status_section`, `technical_info_section` |
+| Fields | `commentable`, `parent_id`, `content`, `user_id`, `author_name`, `author_email`, `rating`, `status`, `ip_address`, `user_agent` |
+
+#### `media.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `file_information_section`, `details_section` |
+| Fields | `disk_create`, `file`, `name`, `disk_edit`, `file_name`, `mime_type`, `size`, `width`, `height`, `path`, `url` |
+
+Both disk selects share state path `disk`; use `disk_create` (create) and `disk_edit` (edit) as slot anchors.
+
+#### `menu.form`
+
+| Kind | Anchors |
+|------|---------|
+| Fields | `name`, `slug`, `description` |
+
+#### `menu_location.form`
+
+| Kind | Anchors |
+|------|---------|
+| Fields | `key`, `label`, `menu_id` |
+
+#### `user.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `profile_section`, `contact_section`, `security_section` |
+| Fields | `avatar`, `name`, `email`, `bio`, `date_of_birth`, `phone_country_code`, `phone_number`, `password`, `roles` |
+
+#### `geo_state.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `details_section` |
+| Fields | `geo_country_id`, `code`, `name`, `native`, `is_visible` |
 
 ## Replacing vs appending
 
@@ -154,4 +282,4 @@ Keep the listener thin (it returns a schema) and push real UI/logic into Blade c
 - [Two hook families](overview-two-families.md)
 - [Table hooks](table-hooks.md)
 - [Discovery paths](discovery-paths.md)
-- Reference: [`FormHookListenerInterface`](../../reference/contracts.md#formhooklistenerinterface), [`FormHookManager`](../../reference/facades-and-managers.md#formhookmanager)
+- Reference: [`FormHookListenerInterface`](../../reference/contracts.md#formhooklistenerinterface), [`FormSlotHookListenerInterface`](../../reference/contracts.md#formslothooklistenerinterface), [`FormHookManager`](../../reference/facades-and-managers.md#formhookmanager)

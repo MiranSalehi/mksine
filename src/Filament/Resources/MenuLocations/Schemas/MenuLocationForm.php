@@ -7,13 +7,14 @@ namespace Miran\Mksine\Filament\Resources\MenuLocations\Schemas;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Models\Menu;
 
 class MenuLocationForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
+        $schema = $schema->components([
             TextInput::make('key')
                 ->label(__('mksine::menu_locations.key'))
                 ->disabled()
@@ -28,6 +29,7 @@ class MenuLocationForm
                 ->label(__('mksine::menu_locations.assigned_menu'))
                 ->options(function () {
                     $menus = Menu::query()->orderBy('name')->get();
+
                     return $menus->pluck('name', 'id')->toArray();
                 })
                 ->searchable()
@@ -35,5 +37,7 @@ class MenuLocationForm
                 ->placeholder(__('mksine::menu_locations.no_menu_assigned'))
                 ->helperText(__('mksine::menu_locations.assigned_menu_helper')),
         ]);
+
+        return app(FormHookManager::class)->apply('menu_location.form', $schema);
     }
 }

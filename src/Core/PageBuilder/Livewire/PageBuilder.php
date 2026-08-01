@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Core\PageBuilder\Livewire;
 
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
@@ -98,13 +99,6 @@ class PageBuilder extends Component
      * Epoch (ms) when component mounted – used to ignore spurious openPasteModal on load.
      */
     protected ?float $mountedAt = null;
-
-    protected $listeners = [
-        'builder:reorder' => 'reorderBlocks',
-        'builder:reorderColumn' => 'reorderColumnBlocks',
-        'saveBlockData' => 'handleSaveBlockData',
-        'closeEditor' => 'closeEditor',
-    ];
 
     /**
      * Run at the start of every request. Reset paste modal to avoid persistence
@@ -605,6 +599,7 @@ class PageBuilder extends Component
     /**
      * Handle save block data from editor component.
      */
+    #[On('saveBlockData')]
     public function handleSaveBlockData(string $blockId, array $data, ?string $parentId = null, ?int $columnIndex = null): void
     {
         $this->editingBlockId = $blockId;
@@ -727,6 +722,7 @@ class PageBuilder extends Component
     /**
      * Close editor modal.
      */
+    #[On('closeEditor')]
     public function closeEditor(): void
     {
         $this->editingBlockId = null;
@@ -843,6 +839,7 @@ class PageBuilder extends Component
     /**
      * Reorder blocks at root level.
      */
+    #[On('builder:reorder')]
     public function reorderBlocks(array $order): void
     {
         $this->saveHistory();
@@ -866,6 +863,7 @@ class PageBuilder extends Component
     /**
      * Reorder blocks within a column.
      */
+    #[On('builder:reorderColumn')]
     public function reorderColumnBlocks(string $parentId, int $columnIndex, array $order): void
     {
         if (! $this->columnItemsExist($parentId, $columnIndex)) {

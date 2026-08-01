@@ -7,8 +7,6 @@ namespace Miran\Mksine\Filament\Pages;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
@@ -18,10 +16,8 @@ use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuItem;
 
-class MenuBuilder extends Page implements HasForms
+class MenuBuilder extends Page
 {
-    use InteractsWithForms;
-
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bars-3-bottom-left';
 
     protected static ?int $navigationSort = 3;

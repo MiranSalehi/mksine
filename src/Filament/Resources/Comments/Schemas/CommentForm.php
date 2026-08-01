@@ -21,6 +21,7 @@ class CommentForm
         $schema = $schema
             ->components([
                 Section::make(__('mksine::comments.comment_information'))
+                    ->key('comment_information')
                     ->schema([
                         MorphToSelect::make('commentable')
                             ->label(__('mksine::comments.commentable'))
@@ -64,6 +65,7 @@ class CommentForm
                     ])
                     ->columns(2),
                 Section::make(__('mksine::comments.author_information'))
+                    ->key('author_information')
                     ->schema([
                         Select::make('user_id')
                             ->label(__('mksine::comments.registered_user'))
@@ -85,6 +87,7 @@ class CommentForm
                     ->columns(3)
                     ->collapsible(),
                 Section::make(__('mksine::comments.rating_status'))
+                    ->key('rating_status')
                     ->schema([
                         Select::make('rating')
                             ->label(__('mksine::comments.rating'))
@@ -112,6 +115,7 @@ class CommentForm
                     ->columns(2)
                     ->collapsible(),
                 Section::make(__('mksine::comments.technical_info'))
+                    ->key('technical_info')
                     ->schema([
                         TextInput::make('ip_address')
                             ->label(__('mksine::comments.ip_address'))
