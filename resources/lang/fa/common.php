@@ -4,6 +4,7 @@ return array (
   'system' => 'سیستم',
   'content' => 'محتوا',
   'appearance' => 'ظاهر',
+  'tools' => 'ابزارها',
   'access_control' => 'دسترسی',
   'access_rights' => 'حق دسترسی',
   'media_group' => 'رسانه',

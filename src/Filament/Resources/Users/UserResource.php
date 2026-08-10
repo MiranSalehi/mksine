@@ -41,10 +41,10 @@ class UserResource extends Resource
         return __('mksine::users.plural_model_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
         return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
+            ? AdminSidebarNavigation::case(AdminSidebarNavigation::GROUP_USERS)
             : AdminSidebarNavigation::accessControlGroup();
     }
 

@@ -51,9 +51,9 @@ class SystemUpdate extends Page
         return __('mksine::updater.core_navigation_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.system');
+        return \Miran\Mksine\Filament\Support\AdminNavigationGroup::System;
     }
 
     public function getTitle(): string

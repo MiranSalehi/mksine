@@ -160,10 +160,26 @@ class ThemeBladeDirectives
 
         // Project themes: assets are in public/themes/{identifier}/
         if ($theme->isProjectTheme()) {
-            return asset("themes/{$theme->identifier}/{$path}");
+            return static::versionedAssetUrl("themes/{$theme->identifier}/{$path}");
         }
 
         // Package themes: assets are in public/vendor/mksine/themes/{identifier}/
-        return asset("vendor/mksine/themes/{$theme->identifier}/{$path}");
+        return static::versionedAssetUrl("vendor/mksine/themes/{$theme->identifier}/{$path}");
+    }
+
+    /**
+     * Append ?v=<filemtime> so deploys bust CDN/browser caches for static theme
+     * assets. Without it, long-lived edge caches keep serving pre-deploy builds.
+     */
+    protected static function versionedAssetUrl(string $publicPath): string
+    {
+        $url = asset($publicPath);
+
+        $file = public_path($publicPath);
+        if (is_file($file)) {
+            $url .= '?v='.filemtime($file);
+        }
+
+        return $url;
     }
 }

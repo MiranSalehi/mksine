@@ -31,9 +31,7 @@ class Languages extends Page implements HasSchemas
 
     protected static ?string $slug = 'languages';
 
-    protected static ?int $navigationSort = 7;
-
-    protected static string|\UnitEnum|null $navigationGroup = null;
+    protected static ?int $navigationSort = 10;
 
     protected string $view = 'mksine::filament.pages.languages';
 
@@ -45,9 +43,9 @@ class Languages extends Page implements HasSchemas
         return __('mksine::languages.navigation_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.system');
+        return AdminSidebarNavigation::toolsGroup();
     }
 
     public function getTitle(): string

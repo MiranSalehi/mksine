@@ -44,8 +44,8 @@ class MksinePlugin implements Plugin
             ->plugins([
                 FilamentShieldPlugin::make()
                     ->navigationSort(30)
-                    ->navigationGroup(fn(): string => AdminSidebarNavigation::usesShopSidebar()
-                        ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_USERS)
+                    ->navigationGroup(fn () => AdminSidebarNavigation::usesShopSidebar()
+                        ? AdminSidebarNavigation::case(AdminSidebarNavigation::GROUP_USERS)
                         : AdminSidebarNavigation::accessControlGroup())
                     ->navigationLabel(fn(): string => AdminSidebarNavigation::usesShopSidebar()
                         ? __('mksine::common.access_rights')
@@ -83,10 +83,14 @@ class MksinePlugin implements Plugin
                     ->url(fn (): string => StorefrontUrl::resolve(), shouldOpenInNewTab: true)
                     ->sort(20),
             ]);
+
+        // Register early so group icons exist before navigation is first resolved.
+        $panel->navigationGroups(AdminSidebarNavigation::panelGroups());
     }
 
     public function boot(Panel $panel): void
     {
+        // Re-apply with the request locale so translated group labels keep their icons.
         $panel->navigationGroups(AdminSidebarNavigation::panelGroups());
 
         // Register MediaPickerModal component to be rendered on every page
@@ -108,7 +112,8 @@ class MksinePlugin implements Plugin
         FilamentView::registerRenderHook(
             PanelsRenderHook::SCRIPTS_AFTER,
             fn(): string => view('mksine::filament.partials.sidebar-store-fix')->render()
-                . view('mksine::filament.partials.sidebar-nav-search-script')->render(),
+                . view('mksine::filament.partials.sidebar-nav-search-script')->render()
+                . view('mksine::filament.partials.sidebar-wp-flyout-script')->render(),
         );
 
         FilamentView::registerRenderHook(

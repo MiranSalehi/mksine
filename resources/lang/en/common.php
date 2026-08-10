@@ -4,6 +4,7 @@ return [
     'system' => 'System',
     'content' => 'Content',
     'appearance' => 'Appearance',
+    'tools' => 'Tools',
     'access_control' => 'Access Control',
     'access_rights' => 'Access rights',
     'media_group' => 'Media',

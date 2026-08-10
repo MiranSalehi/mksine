@@ -8,12 +8,12 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Categories\Pages\CreateCategory;
 use Miran\Mksine\Filament\Resources\Categories\Pages\EditCategory;
 use Miran\Mksine\Filament\Resources\Categories\Pages\ListCategories;
 use Miran\Mksine\Filament\Resources\Categories\Schemas\CategoryForm;
 use Miran\Mksine\Filament\Resources\Categories\Tables\CategoryTable;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Category;
 
 class CategoryResource extends Resource
@@ -39,9 +39,9 @@ class CategoryResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.content');
+        return AdminSidebarNavigation::contentGroup();
     }
 
     public static function form(Schema $schema): Schema

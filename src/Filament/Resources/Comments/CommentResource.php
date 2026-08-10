@@ -9,12 +9,12 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Comments\Pages\CreateComment;
 use Miran\Mksine\Filament\Resources\Comments\Pages\EditComment;
 use Miran\Mksine\Filament\Resources\Comments\Pages\ListComments;
 use Miran\Mksine\Filament\Resources\Comments\Schemas\CommentForm;
 use Miran\Mksine\Filament\Resources\Comments\Tables\CommentTable;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Comment;
 
 class CommentResource extends Resource
@@ -24,6 +24,11 @@ class CommentResource extends Resource
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChatBubbleLeftRight;
 
     protected static ?int $navigationSort = 4;
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return AdminSidebarNavigation::contentGroup();
+    }
 
     public static function getNavigationLabel(): string
     {
@@ -38,11 +43,6 @@ class CommentResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('mksine::comments.plural_model_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return __('mksine::common.content');
     }
 
     public static function form(Schema $schema): Schema

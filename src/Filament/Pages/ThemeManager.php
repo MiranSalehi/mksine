@@ -39,20 +39,16 @@ class ThemeManager extends Page
 
     protected static ?string $slug = 'themes';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationLabel(): string
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? __('mksine::themes.navigation_label')
-            : __('mksine::themes.navigation_label_cms');
+        return __('mksine::themes.navigation_label_cms');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_THEME_PLUGINS)
-            : AdminSidebarNavigation::appearanceGroup();
+        return AdminSidebarNavigation::appearanceGroup();
     }
 
     public function getTitle(): string

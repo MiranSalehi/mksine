@@ -10,12 +10,12 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\GeoStates\Pages\EditGeoState;
 use Miran\Mksine\Filament\Resources\GeoStates\Pages\ListGeoStates;
 use Miran\Mksine\Filament\Resources\GeoStates\RelationManagers\CitiesRelationManager;
 use Miran\Mksine\Filament\Resources\GeoStates\Schemas\GeoStateForm;
 use Miran\Mksine\Filament\Resources\GeoStates\Tables\GeoStateTable;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Services\Geo\StoreGeoSettings;
 
@@ -25,7 +25,7 @@ class GeoStateResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static ?int $navigationSort = 11;
+    protected static ?int $navigationSort = 20;
 
     public static function getNavigationLabel(): string
     {
@@ -42,9 +42,9 @@ class GeoStateResource extends Resource
         return __('mksine::geo.states.plural_model_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.system');
+        return AdminSidebarNavigation::toolsGroup();
     }
 
     public static function form(Schema $schema): Schema

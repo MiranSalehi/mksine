@@ -8,13 +8,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\MenuLocations\Pages\EditMenuLocation;
 use Miran\Mksine\Filament\Resources\MenuLocations\Pages\ListMenuLocations;
 use Miran\Mksine\Filament\Resources\MenuLocations\Schemas\MenuLocationForm;
 use Miran\Mksine\Filament\Resources\MenuLocations\Tables\MenuLocationTable;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\MenuLocation;
 
 class MenuLocationResource extends Resource
@@ -27,9 +27,12 @@ class MenuLocationResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? __('mksine::menu_locations.navigation_label')
-            : __('mksine::menu_locations.navigation_label_cms');
+        return __('mksine::menu_locations.navigation_label_cms');
+    }
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function getModelLabel(): string
@@ -40,13 +43,6 @@ class MenuLocationResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('mksine::menu_locations.plural_model_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_MENUS)
-            : AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function form(Schema $schema): Schema

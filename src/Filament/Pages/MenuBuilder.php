@@ -64,9 +64,9 @@ class MenuBuilder extends Page
         return __('mksine::menu_builder.navigation_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.appearance');
+        return \Miran\Mksine\Filament\Support\AdminNavigationGroup::Appearance;
     }
 
     public function getTitle(): string

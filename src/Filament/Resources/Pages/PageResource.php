@@ -10,12 +10,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Miran\Mksine\Core\Hooks\ResourceHookManager;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Resources\Pages\Pages\CreatePage;
 use Miran\Mksine\Filament\Resources\Pages\Pages\EditPage;
 use Miran\Mksine\Filament\Resources\Pages\Pages\ListPages;
 use Miran\Mksine\Filament\Resources\Pages\Schemas\PageForm;
 use Miran\Mksine\Filament\Resources\Pages\Tables\PageTable;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\Page;
 
 class PageResource extends Resource
@@ -41,9 +41,9 @@ class PageResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.content');
+        return AdminSidebarNavigation::contentGroup();
     }
 
     public static function form(Schema $schema): Schema

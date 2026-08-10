@@ -26,9 +26,12 @@ class MenuResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? __('mksine::menus.navigation_list')
-            : __('mksine::menus.navigation_label');
+        return __('mksine::menus.navigation_label');
+    }
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function getModelLabel(): string
@@ -39,13 +42,6 @@ class MenuResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('mksine::menus.plural_model_label');
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_MENUS)
-            : AdminSidebarNavigation::appearanceGroup();
     }
 
     public static function form(Schema $schema): Schema

@@ -28,7 +28,7 @@ class ConsoleTerminal extends Page
 
     protected static ?string $slug = 'console-terminal';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 30;
 
     protected string $view = 'mksine::filament.pages.console-terminal';
 
@@ -98,9 +98,9 @@ class ConsoleTerminal extends Page
         return __('mksine::console_terminal.navigation_label');
     }
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_SYSTEM);
+        return AdminSidebarNavigation::toolsGroup();
     }
 
     public static function shouldRegisterNavigation(): bool

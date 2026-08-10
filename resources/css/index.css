@@ -667,3 +667,280 @@
 .fi-sidebar:not(.fi-sidebar-open) .mksine-sidebar-collapse-label {
     display: none;
 }
+
+/*
+ * WordPress-style open sidebar:
+ * - Ungrouped items (Dashboard, Plugins, Settings, …) stay normal leaves
+ * - Solo group (1 child): looks like a leaf parent, click opens that child, no chevron
+ * - Parent group (2+ children): icon + chevron + hover flyout; click opens first child
+ * - Before JS runs, children stay visible (progressive enhancement)
+ * - Search filtering restores inline children
+ */
+@media (min-width: 1024px) {
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn {
+        border-radius: 0.625rem;
+        padding-block: 0.5rem;
+        padding-inline: 0.625rem;
+        min-height: 2.5rem;
+        gap: 0.625rem;
+        cursor: pointer;
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn:hover,
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-flyout-open > .fi-sidebar-group-btn {
+        background-color: var(--gray-50);
+    }
+
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn:hover,
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-flyout-open > .fi-sidebar-group-btn {
+        background-color: color-mix(in oklab, white 5%, transparent);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn > .fi-icon {
+        display: block;
+        flex-shrink: 0;
+        width: 1.25rem;
+        height: 1.25rem;
+        color: var(--gray-500);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn .fi-sidebar-group-label {
+        flex: 1 1 auto;
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--gray-700);
+        padding-inline: 0;
+        line-height: 1.25rem;
+    }
+
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-collapsible > .fi-sidebar-group-btn .fi-sidebar-group-label {
+        color: var(--gray-200);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn {
+        background-color: var(--primary-50);
+    }
+
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn {
+        background-color: color-mix(in oklab, var(--primary-500) 14%, var(--color-gray-900));
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn .fi-sidebar-group-label {
+        color: var(--primary-700);
+        font-weight: 600;
+    }
+
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn .fi-sidebar-group-label {
+        color: var(--primary-400);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn > .fi-icon {
+        color: var(--primary-600);
+    }
+
+    .dark .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.fi-active > .fi-sidebar-group-btn > .fi-icon {
+        color: var(--primary-400);
+    }
+
+    /* Solo parents: no submenu indicator. */
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-solo > .fi-sidebar-group-btn .fi-sidebar-group-collapse-btn {
+        display: none !important;
+    }
+
+    /*
+     * Multi-child parents: hide Filament accordion chevron; draw a physical CSS chevron.
+     * IMPORTANT: do NOT use ›/‹ glyphs — bidi mirroring flips them in RTL and they look wrong.
+     * LTR → physical right (>), RTL → physical left (<).
+     */
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent > .fi-sidebar-group-btn .fi-sidebar-group-collapse-btn {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent > .fi-sidebar-group-btn::after {
+        content: '';
+        box-sizing: border-box;
+        flex-shrink: 0;
+        width: 0.45rem;
+        height: 0.45rem;
+        margin-inline-start: auto;
+        border-style: solid;
+        border-color: var(--gray-400);
+        /* Physical top+right borders → rotate into a right-pointing chevron (English). */
+        border-width: 2px 2px 0 0;
+        transform: rotate(45deg);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent[data-mksine-dir='rtl'] > .fi-sidebar-group-btn::after,
+    html[dir='rtl'] .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent:not([data-mksine-dir='ltr']) > .fi-sidebar-group-btn::after {
+        /* Physical top+left borders → rotate into a left-pointing chevron (Persian). */
+        border-width: 2px 0 0 2px;
+        transform: rotate(-45deg);
+    }
+
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent.mksine-nav-flyout-open > .fi-sidebar-group-btn::after {
+        border-color: var(--gray-500);
+    }
+
+    /*
+     * WP mode: never show Filament accordion children under a *labeled* parent.
+     * Label-less groups (Dashboard / Plugins / Settings) must stay visible.
+     */
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-parent:has(> .fi-sidebar-group-btn) > .fi-sidebar-group-items,
+    .fi-sidebar.fi-sidebar-open .fi-sidebar-nav:not(.mksine-sidebar-is-filtering) .fi-sidebar-group.mksine-nav-solo:has(> .fi-sidebar-group-btn) > .fi-sidebar-group-items {
+        display: none !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
+
+.mksine-wp-nav-flyout {
+    position: fixed;
+    z-index: 99999;
+    min-width: 14rem;
+    max-width: 18rem;
+    max-height: min(70vh, 28rem);
+    overflow-y: auto;
+    padding: 0.375rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--gray-200);
+    background-color: var(--color-white, #fff);
+    box-shadow:
+        0 10px 15px -3px color-mix(in oklab, var(--gray-900) 14%, transparent),
+        0 4px 6px -4px color-mix(in oklab, var(--gray-900) 12%, transparent);
+    opacity: 0;
+    transform: translate3d(-0.4rem, 0, 0);
+    transition:
+        opacity 160ms ease,
+        transform 160ms ease;
+    pointer-events: none;
+    will-change: opacity, transform;
+}
+
+.mksine-wp-nav-flyout[data-dir='rtl'] {
+    transform: translate3d(0.4rem, 0, 0);
+}
+
+.mksine-wp-nav-flyout.is-open {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    pointer-events: auto;
+}
+
+.mksine-wp-nav-flyout[hidden],
+.mksine-wp-nav-flyout-bridge[hidden] {
+    display: none !important;
+}
+
+.mksine-wp-nav-flyout-bridge {
+    position: fixed;
+    z-index: 99998;
+    background: transparent;
+}
+
+.dark .mksine-wp-nav-flyout {
+    border-color: var(--gray-700);
+    background-color: var(--color-gray-900);
+    box-shadow:
+        0 10px 15px -3px color-mix(in oklab, black 45%, transparent),
+        0 4px 6px -4px color-mix(in oklab, black 35%, transparent);
+}
+
+.mksine-wp-nav-flyout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mksine-wp-nav-flyout-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    color: var(--gray-700);
+    text-decoration: none;
+}
+
+.mksine-wp-nav-flyout-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--gray-400);
+}
+
+.mksine-wp-nav-flyout-icon svg,
+.mksine-wp-nav-flyout-icon .fi-icon,
+.mksine-wp-nav-flyout-icon-svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+.mksine-wp-nav-flyout-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mksine-wp-nav-flyout-link:hover {
+    background-color: var(--gray-50);
+}
+
+.mksine-wp-nav-flyout-link:hover .mksine-wp-nav-flyout-icon {
+    color: var(--gray-500);
+}
+
+.mksine-wp-nav-flyout-link.is-active {
+    background-color: var(--primary-50);
+    color: var(--primary-700);
+    font-weight: 600;
+}
+
+.mksine-wp-nav-flyout-link.is-active .mksine-wp-nav-flyout-icon {
+    color: var(--primary-600);
+}
+
+.dark .mksine-wp-nav-flyout-link {
+    color: var(--gray-200);
+}
+
+.dark .mksine-wp-nav-flyout-icon {
+    color: var(--gray-500);
+}
+
+.dark .mksine-wp-nav-flyout-link:hover {
+    background-color: color-mix(in oklab, white 5%, transparent);
+}
+
+.dark .mksine-wp-nav-flyout-link.is-active {
+    background-color: color-mix(in oklab, var(--primary-500) 14%, var(--color-gray-900));
+    color: var(--primary-400);
+}
+
+.dark .mksine-wp-nav-flyout-link.is-active .mksine-wp-nav-flyout-icon {
+    color: var(--primary-400);
+}

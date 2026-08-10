@@ -39,9 +39,9 @@ class PostResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return __('mksine::common.content');
+        return AdminSidebarNavigation::contentGroup();
     }
 
     public static function form(Schema $schema): Schema

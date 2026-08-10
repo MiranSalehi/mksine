@@ -11,11 +11,12 @@ class SettingsCluster extends Cluster
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 80;
 
     public static function getNavigationGroup(): ?string
     {
-        return __('mksine::common.system');
+        // Top-level like WordPress Settings — not nested under System.
+        return null;
     }
 
     public static function getNavigationLabel(): string

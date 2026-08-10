@@ -9,7 +9,15 @@ use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Plugins\PluginManager;
 
 /**
- * Shop sidebar (Voltech / surawshop) when the ecom plugin is active; full CMS sidebar otherwise.
+ * Admin sidebar groups for WordPress-style parent → child navigation.
+ *
+ * Contract for core + plugins:
+ * - Return {@see AdminNavigationGroup} from getNavigationGroup() (not translated strings)
+ * - 1 item in a group ⇒ top-level “solo” parent (no chevron; click opens that item)
+ * - 2+ items in the same group ⇒ hover flyout + chevron (plugins can add children later)
+ * - Leave getNavigationGroup() null for true leaf top-level items (Dashboard, Plugins, Settings, …)
+ *
+ * Open-sidebar flyouts are handled in admin CSS/JS; collapsed sidebar keeps Filament dropdowns.
  */
 final class AdminSidebarNavigation
 {
@@ -31,6 +39,10 @@ final class AdminSidebarNavigation
 
     public const string GROUP_SYSTEM = 'system';
 
+    public const string GROUP_TOOLS = 'tools';
+
+    public const string GROUP_APPEARANCE = 'appearance';
+
     public static function usesShopSidebar(): bool
     {
         try {
@@ -44,33 +56,20 @@ final class AdminSidebarNavigation
         }
     }
 
-    public static function group(string $key): string
+    /**
+     * Preferred group identity for Filament resources/pages (locale-safe).
+     */
+    public static function case(string $key): AdminNavigationGroup
     {
-        return match ($key) {
-            self::GROUP_MEDIA => __('mksine::common.media_group'),
-            self::GROUP_MENUS => __('mksine::common.menus_group'),
-            self::GROUP_PRODUCTS => self::ecomNavigation('products', 'Products'),
-            self::GROUP_ORDERS => self::ecomNavigation('orders', 'Orders'),
-            self::GROUP_STORE_SETTINGS => self::ecomNavigation('store_settings', 'Store settings'),
-            self::GROUP_USERS => __('mksine::common.users_group'),
-            self::GROUP_THEME_PLUGINS => __('mksine::common.theme_plugins_group'),
-            self::GROUP_CONTENT => self::contentGroup(),
-            self::GROUP_SYSTEM => self::systemGroup(),
-            default => __('mksine::common.media_group'),
-        };
+        return AdminNavigationGroup::from($key);
     }
 
     /**
-     * @return list<string>
+     * @deprecated Prefer {@see case()} so icons survive locale changes.
      */
-    public static function cmsOrderedGroupLabels(): array
+    public static function group(string $key): string
     {
-        return [
-            __('mksine::common.content'),
-            __('mksine::common.appearance'),
-            __('mksine::common.access_control'),
-            __('mksine::common.system'),
-        ];
+        return self::case($key)->getLabel();
     }
 
     /**
@@ -80,14 +79,14 @@ final class AdminSidebarNavigation
     {
         return [
             self::GROUP_MEDIA,
-            self::GROUP_MENUS,
+            self::GROUP_CONTENT,
             self::GROUP_ORDERS,
             self::GROUP_PRODUCTS,
-            self::GROUP_CONTENT,
+            self::GROUP_APPEARANCE,
             self::GROUP_STORE_SETTINGS,
             self::GROUP_USERS,
+            self::GROUP_TOOLS,
             self::GROUP_SYSTEM,
-            self::GROUP_THEME_PLUGINS,
         ];
     }
 
@@ -96,7 +95,41 @@ final class AdminSidebarNavigation
      */
     public static function cmsGroupKeys(): array
     {
-        return ['content', 'appearance', 'access_control', 'system'];
+        return [
+            self::GROUP_MEDIA,
+            self::GROUP_CONTENT,
+            self::GROUP_APPEARANCE,
+            AdminNavigationGroup::AccessControl->value,
+            self::GROUP_TOOLS,
+            self::GROUP_SYSTEM,
+        ];
+    }
+
+    /**
+     * @return list<AdminNavigationGroup>
+     */
+    public static function orderedCases(): array
+    {
+        $keys = self::usesShopSidebar() ? self::shopGroupKeys() : self::cmsGroupKeys();
+
+        return array_map(
+            fn (string $key): AdminNavigationGroup => AdminNavigationGroup::from($key),
+            $keys,
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function cmsOrderedGroupLabels(): array
+    {
+        return array_map(
+            fn (AdminNavigationGroup $case): string => $case->getLabel(),
+            array_map(
+                fn (string $key): AdminNavigationGroup => AdminNavigationGroup::from($key),
+                self::cmsGroupKeys(),
+            ),
+        );
     }
 
     /**
@@ -105,65 +138,65 @@ final class AdminSidebarNavigation
     public static function shopOrderedGroupLabels(): array
     {
         return array_map(
-            fn (string $key): string => self::group($key),
+            fn (string $key): string => AdminNavigationGroup::from($key)->getLabel(),
             self::shopGroupKeys(),
         );
     }
 
     /**
-     * Ordered sidebar group labels — must match navigation item {@see group()} / CMS group strings.
-     *
      * @return list<string>
      */
     public static function orderedGroupLabels(): array
     {
-        return self::usesShopSidebar()
-            ? self::shopOrderedGroupLabels()
-            : self::cmsOrderedGroupLabels();
+        return array_map(
+            fn (AdminNavigationGroup $case): string => $case->getLabel(),
+            self::orderedCases(),
+        );
     }
 
-    public static function contentGroup(): string
+    public static function contentGroup(): AdminNavigationGroup
     {
-        return __('mksine::common.content');
+        return AdminNavigationGroup::Content;
     }
 
-    public static function appearanceGroup(): string
+    public static function appearanceGroup(): AdminNavigationGroup
     {
-        return __('mksine::common.appearance');
+        return AdminNavigationGroup::Appearance;
     }
 
-    public static function accessControlGroup(): string
+    public static function accessControlGroup(): AdminNavigationGroup
     {
-        return __('mksine::common.access_control');
+        return AdminNavigationGroup::AccessControl;
     }
 
-    public static function systemGroup(): string
+    public static function systemGroup(): AdminNavigationGroup
     {
-        return __('mksine::common.system');
+        return AdminNavigationGroup::System;
+    }
+
+    public static function toolsGroup(): AdminNavigationGroup
+    {
+        return AdminNavigationGroup::Tools;
     }
 
     /**
-     * Navigation groups keyed by label so Filament preserves Voltech / CMS sort order.
-     *
      * @return array<string, NavigationGroup>
      */
     public static function panelGroups(): array
     {
         $groups = [];
 
-        foreach (self::orderedGroupLabels() as $label) {
-            $groups[$label] = NavigationGroup::make($label)
-                ->collapsed(false)
+        foreach (self::orderedCases() as $case) {
+            // Key by enum name so Filament matches UnitEnum navigation groups.
+            // Label must be a Closure: register() may freeze strings before Language Switch
+            // sets the request locale, which mixed Persian parents with English children.
+            $groups[$case->name] = NavigationGroup::make()
+                ->label(fn (): string => $case->getLabel())
+                ->icon($case->getIcon())
+                ->collapsed()
                 ->collapsible();
         }
 
         return $groups;
-    }
-
-    private static function ecomNavigation(string $key, string $fallback): string
-    {
-        $translated = __("ecom::admin.navigation.{$key}");
-
-        return $translated !== "ecom::admin.navigation.{$key}" ? $translated : $fallback;
     }
 }

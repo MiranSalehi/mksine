@@ -23,7 +23,6 @@ use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Support\UploadLimits;
 use ZipArchive;
@@ -36,7 +35,8 @@ class ManagePlugins extends Page
 
     protected string $view = 'mksine::filament.pages.manage-plugins';
 
-    protected static ?int $navigationSort = 20;
+    /** Top-level like WordPress Plugins. */
+    protected static ?int $navigationSort = 70;
 
     public array $plugins = [];
 
@@ -81,9 +81,7 @@ class ManagePlugins extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_THEME_PLUGINS)
-            : AdminSidebarNavigation::systemGroup();
+        return null;
     }
 
     public function getTitle(): string

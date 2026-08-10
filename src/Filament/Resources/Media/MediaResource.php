@@ -26,11 +26,10 @@ class MediaResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return AdminSidebarNavigation::usesShopSidebar()
-            ? AdminSidebarNavigation::group(AdminSidebarNavigation::GROUP_MEDIA)
-            : AdminSidebarNavigation::contentGroup();
+        // Always Media (WordPress-style), not nested under Content.
+        return AdminSidebarNavigation::case(AdminSidebarNavigation::GROUP_MEDIA);
     }
 
     public static function getNavigationLabel(): string
@@ -43,16 +42,12 @@ class MediaResource extends Resource
      */
     public static function getNavigationItems(): array
     {
-        if (! AdminSidebarNavigation::usesShopSidebar()) {
-            return parent::getNavigationItems();
-        }
-
         if (! static::hasPage('index')) {
             return [];
         }
 
         $items = [
-            NavigationItem::make(__('mksine::media.navigation_library'))
+            NavigationItem::make(fn (): string => __('mksine::media.navigation_library'))
                 ->group(static::getNavigationGroup())
                 ->icon(static::getNavigationIcon())
                 ->isActiveWhen(fn (): bool => original_request()->routeIs(static::getRouteBaseName().'.index')
@@ -62,7 +57,7 @@ class MediaResource extends Resource
         ];
 
         if (static::hasPage('create') && static::can('create')) {
-            $items[] = NavigationItem::make(__('mksine::media.navigation_create'))
+            $items[] = NavigationItem::make(fn (): string => __('mksine::media.navigation_create'))
                 ->group(static::getNavigationGroup())
                 ->icon(Heroicon::OutlinedPlusCircle)
                 ->isActiveWhen(fn (): bool => original_request()->routeIs(static::getRouteBaseName().'.create'))
