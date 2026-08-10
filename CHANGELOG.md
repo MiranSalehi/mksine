@@ -8,6 +8,33 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.4.0 - 2026-08-10
+
+### Added
+
+- **WordPress-style admin sidebar** — labeled navigation groups with 2+ children open a hover flyout beside the parent (desktop); click opens the first child. Solo groups (1 child) render as a top-level parent without a chevron.
+- **`AdminNavigationGroup` enum** — locale-stable group identity (`HasLabel` + `HasIcon`) so group icons survive UI locale changes.
+- **Tools** navigation group label translations (`en` / `fa` / `ku`).
+
+### Changed
+
+- Core Filament resources/pages prefer returning `AdminNavigationGroup` (via `AdminSidebarNavigation::case()`) from `getNavigationGroup()` instead of translated strings.
+- `AdminSidebarNavigation::panelGroups()` registers groups with Closure labels resolved at render time.
+- Media custom navigation items use Closure labels so child flyout labels follow the active locale.
+- Ungrouped leaves (Dashboard, Plugins, Settings) stay visible when the sidebar is open; only labeled parent/solo groups use the flyout hide rules.
+
+### Fixed
+
+- Mixed Persian/English sidebar labels when Language Switch locale differed from bootstrap registration time.
+- Flyout vs Filament accordion dual display and hover flicker (dedicated flyout panel; children stay in place).
+- Parent chevron direction: physical CSS chevrons point toward the flyout (`>` LTR / `<` RTL) without Unicode bidi mirroring.
+- Flyout child icons cloned from the collapsed-sidebar dropdown when open-sidebar strips item icons.
+
+### Notes
+
+- Plugins that still return translated group *strings* may lose icons when the UI locale changes — migrate to `AdminNavigationGroup` / `AdminSidebarNavigation::case()`.
+- Rebuild/publish admin assets after upgrade (`npm run build:styles` in the package when developing from source, then `php artisan filament:assets`).
+
 ## 1.3.0 - 2026-08-01
 
 ### Added

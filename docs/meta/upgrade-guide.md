@@ -29,6 +29,21 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.4.0 (2026-08-10)
+
+### Behavior changes (non-breaking, but visible)
+
+- **WordPress-style admin sidebar.** Labeled groups with multiple children show a hover flyout on desktop instead of expanding inline. Solo groups act as a single top-level destination. Ungrouped items (Dashboard, Plugins, Settings) remain normal leaves.
+- **Locale-stable navigation groups.** Prefer `AdminNavigationGroup` / `AdminSidebarNavigation::case('…')` from `getNavigationGroup()` so icons and labels stay correct when the panel locale changes.
+
+### Migration
+
+1. Update plugin/theme Filament resources that return translated group strings to return `AdminNavigationGroup` (or `AdminSidebarNavigation::case()`).
+2. After upgrading from source/vendor assets, run `php artisan filament:assets` (and rebuild `packages/mksine` styles if you develop the package tree).
+3. Smoke-test `/admin` sidebar in both LTR and RTL locales (hover parents, click parents, collapsed icon rail).
+
+---
+
 ## 1.3.0 (2026-08-01)
 
 ### Behavior changes (non-breaking, but visible)
