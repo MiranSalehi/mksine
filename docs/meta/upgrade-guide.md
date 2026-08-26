@@ -29,6 +29,27 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.5.0 (2026-08-26)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Theme plugin dependencies.** Project themes may declare required plugins in `theme.json` (`requires.plugins`). When the active theme’s dependencies are not satisfied, the storefront shows a warning page instead of throwing view errors; the admin panel shows banners and Theme Manager notices.
+- **Default homepage.** With no Front Page configured, the bundled `mksine` theme renders a placeholder index instead of the marketing demo blocks. Assign a page under Settings → Permalinks to replace it.
+- **Default theme locale.** The bundled `mksine` theme no longer exposes a header locale switcher; locale and text direction come from `APP_LOCALE` / `config('app.locale')`.
+
+### Migration
+
+1. **Themes that need plugins** — add to `theme.json`:
+   ```json
+   "requires": { "plugins": ["ecom"] }
+   ```
+   Re-discover themes (`php artisan mks:discover` or Theme Manager → Discover) after editing manifests.
+2. **Fresh installs** — remove Laravel’s default `Route::get('/', …)` from `routes/web.php` so MKSine owns `/`. See [Installation §3](../01-installation.md#remove-the-default-homepage-route-from-routeswebphp).
+3. **Custom themes** — if you relied on the old default `mksine` marketing homepage, use the page builder template or your own `home.blade.php`.
+4. After upgrade: `php artisan optimize:clear`.
+
+---
+
 ## 1.4.0 (2026-08-10)
 
 ### Behavior changes (non-breaking, but visible)

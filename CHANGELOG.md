@@ -8,6 +8,20 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.5.0 - 2026-08-26
+
+### Added
+
+- **Theme plugin dependencies** — `theme.json` supports `requires.plugins`; `ThemeDependencyChecker` resolves missing plugins; `EnsureActiveThemeDependencies` middleware shows a storefront warning page (HTTP 503) instead of runtime view errors when required plugins are inactive.
+- **Admin dependency warnings** — Theme Manager badges and activation notices, a Filament admin banner, and plugin deactivation warnings when the active theme declares inactive plugin dependencies.
+- **Default theme placeholder homepage** — the bundled `mksine` theme shows a skeleton placeholder index on empty sites until a Front Page is configured in Settings → Permalinks (marketing blocks remain available via the page builder template only).
+
+### Changed
+
+- **Default `mksine` theme home** — `home.blade.php` includes only the placeholder partial instead of the full marketing landing on an empty database.
+- **Default theme header** — removed the manual EN/FA/KU locale toggle; `lang` and `dir` follow `config('app.locale')` (RTL for `fa`, `ar`, `ku`, `he`).
+- **Installation docs** — document removing Laravel’s default `/` route from `routes/web.php`; troubleshooting and validation checklist updated.
+
 ## 1.4.0 - 2026-08-10
 
 ### Added
