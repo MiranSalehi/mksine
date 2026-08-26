@@ -22,6 +22,7 @@ return new class extends Migration
 
         Schema::table('comments', function (Blueprint $table): void {
             $table->dropForeign(['post_id']);
+            $table->dropIndex(['post_id', 'status']);
         });
 
         Schema::table('comments', function (Blueprint $table): void {
@@ -50,6 +51,7 @@ return new class extends Migration
 
         Schema::table('comments', function (Blueprint $table): void {
             $table->foreignId('post_id')->nullable()->constrained('posts')->cascadeOnDelete();
+            $table->index(['post_id', 'status']);
         });
 
         $postClass = Post::class;
