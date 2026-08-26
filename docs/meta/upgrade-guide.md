@@ -29,6 +29,14 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.5.1 (2026-08-26)
+
+### Fixed
+
+- **SQLite `mksine:install --migrate`.** If you use `DB_CONNECTION=sqlite` and migrations failed on `2026_04_28_180000_morph_commentable_on_comments_table`, update to this release and run `php artisan migrate` again on a clean database (or roll back the failed batch first). MySQL/MariaDB hosts need no action.
+
+---
+
 ## 1.5.0 (2026-08-26)
 
 ### Behavior changes (non-breaking, but visible)

@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.5.1 - 2026-08-26
+
+### Fixed
+
+- **SQLite fresh install** — `morph_commentable_on_comments_table` now drops the `comments_post_id_status_index` index before removing `post_id`, fixing `General error: 1 error in index comments_post_id_status_index after drop column: no such column: post_id` on `DB_CONNECTION=sqlite` (MySQL/MariaDB installs were unaffected).
+
 ## 1.5.0 - 2026-08-26
 
 ### Added
