@@ -273,7 +273,8 @@ class MksineInstallCommand extends Command
         $this->line('     Prerequisites:');
         $this->line('       1. <comment>php artisan filament:install --panels</comment> (or <comment>make:filament-panel admin</comment>)');
         $this->line('       2. Add <comment>MksinePlugin::make()</comment> to <comment>app/Providers/Filament/AdminPanelProvider.php</comment>');
-        $this->line('       3. Re-run <comment>php artisan mksine:install --migrate</comment> or run <comment>shield:generate --all</comment> manually');
+        $this->line('       3. Remove <comment>Route::get(\'/\', …)</comment> from <comment>routes/web.php</comment> (MKSine registers <comment>home</comment> at <comment>/</comment>)');
+        $this->line('       4. Re-run <comment>php artisan mksine:install --migrate</comment> or run <comment>shield:generate --all</comment> manually');
     }
 
     protected function hasDatabaseTable(string $table): bool

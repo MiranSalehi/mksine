@@ -103,6 +103,11 @@ See [Deployment and hosting](deployment-hosting.md).
 - [ ] Upload smoke test: a small image uploads and displays in the library.
 - [ ] Thumbnails generate (if `generate_thumbnails = true`) — `getimagesize` succeeds and required image libraries are installed.
 
+## Storefront
+
+- [ ] Default Laravel `Route::get('/', …)` is **not** in `routes/web.php` (MKSine registers `home` at `/`).
+- [ ] `/` renders the active theme, not the Laravel welcome page.
+
 ## Security
 
 - [ ] Filament admin panel exists (`filament:install --panels` or equivalent); `MksinePlugin::make()` is registered; **`Dashboard::class` is not** in `AdminPanelProvider::pages()`.

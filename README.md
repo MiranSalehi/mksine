@@ -34,6 +34,7 @@ If you've ever built a "simple site" in Laravel and ended up hand-rolling pages,
 composer require miran/mksine
 php artisan filament:install --panels
 # Register MksinePlugin in AdminPanelProvider (remove default Dashboard page)
+# Remove Route::get('/', …) from routes/web.php (MKSine owns the homepage)
 php artisan mksine:install --migrate
 php artisan mksine:create-super-admin
 ```

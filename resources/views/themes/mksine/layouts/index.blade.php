@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="ltr">
+@php
+    $locale = app()->getLocale();
+    $textDirection = in_array($locale, ['fa', 'ar', 'ku', 'he'], true) ? 'rtl' : 'ltr';
+@endphp
+<html lang="{{ str_replace('_', '-', $locale) }}" dir="{{ $textDirection }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,18 +22,6 @@
             $brandLeft = (string) $siteName;
             $brandRight = '';
         }
-        $localeCode = match (app()->getLocale()) {
-            'fa' => 'fa',
-            'en' => 'en',
-            default => strtolower(substr(str_replace('_', '-', app()->getLocale()), 0, 2)),
-        };
-        $localePairShort = array_values(array_unique(array_map(
-            static fn (string $l): string => strtoupper(substr(strtok($l, '_@'), 0, 2)),
-            app(\Miran\Mksine\Core\Translation\TranslationFileManager::class)->getAvailableLocales()
-        )));
-        $localePairLabel = $localePairShort === []
-            ? 'EN/FA'
-            : implode('/', $localePairShort);
     @endphp
     <title>{{ $title ?? $siteName }}</title>
     @php
@@ -44,9 +36,9 @@
         <link rel="icon" href="{{ $siteFaviconUrl }}" />
     @endif
 </head>
-<body>
+<body class="{{ $textDirection === 'rtl' ? 'rtl' : 'ltr' }}">
     @themeDoAction('layout.body_start')
-    <!-- Main header: logo + mega nav (desktop) / CMS menu (mobile drawer) + locale + theme -->
+    <!-- Main header: logo + mega nav (desktop) / CMS menu (mobile drawer) + theme -->
     <header class="site-header-bar relative sticky top-0 z-50 border-b border-gray-200 bg-white shadow-[0_1px_0_rgba(0,0,0,0.08)] dark:border-gray-800 dark:shadow-[0_1px_0_rgba(255,255,255,0.06)]">
         <div class="mx-auto flex min-h-16 max-w-[1400px] items-center justify-between gap-4 px-6 py-3 lg:min-h-[4.75rem] lg:gap-8 lg:px-10 xl:px-14">
             <div class="flex min-w-0 flex-1 items-center gap-6 lg:gap-10 xl:gap-14">
@@ -75,24 +67,6 @@
             </div>
 
             <div class="site-header-utils flex shrink-0 items-center gap-1 sm:gap-3">
-                <button
-                    type="button"
-                    class="site-header-locale-toggle hidden items-center gap-2 text-sm sm:inline-flex"
-                    data-direction-toggle
-                    title="{{ __('Toggle reading direction') }}"
-                    aria-label="{{ __('Toggle reading direction') }}"
-                >
-                    <span class="whitespace-nowrap font-medium text-gray-600 dark:text-gray-300">{{ $localePairLabel }}</span>
-                    <span class="site-header-locale-toggle__dir-icon shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true">
-                        <svg class="locale-dir-icon locale-dir-icon--ltr h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 10H21M17 6H3M17 14H3M3 18H21"/>
-                        </svg>
-                        <svg class="locale-dir-icon locale-dir-icon--rtl h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 10H3M21 6H7M21 14H7M21 18H3"/>
-                        </svg>
-                    </span>
-                </button>
-
                 <button type="button" class="site-header-icon-btn theme-toggle hidden md:inline-flex" data-theme-toggle title="{{ __('Toggle theme') }}">
                     <svg class="sun-icon h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>

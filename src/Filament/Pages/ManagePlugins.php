@@ -18,6 +18,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Plugins\PluginDiscovery;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
@@ -463,6 +464,9 @@ class ManagePlugins extends Page
     public function deactivatePlugin(string $pluginId): void
     {
         try {
+            $dependencyChecker = app(ThemeDependencyChecker::class);
+            $activeThemeRequiresPlugin = $dependencyChecker->activeThemeRequiresPlugin($pluginId);
+
             $pluginManager = app(PluginManager::class);
             $pluginManager->deactivate($pluginId);
 
@@ -470,6 +474,17 @@ class ManagePlugins extends Page
                 ->title(__('mksine::plugins.plugin_deactivated'))
                 ->success()
                 ->send();
+
+            if ($activeThemeRequiresPlugin) {
+                Notification::make()
+                    ->title(__('mksine::themes.deactivated_plugin_breaks_active_theme_title'))
+                    ->body(__('mksine::themes.deactivated_plugin_breaks_active_theme_body', [
+                        'plugin' => $dependencyChecker->pluginLabel($pluginId),
+                    ]))
+                    ->warning()
+                    ->persistent()
+                    ->send();
+            }
 
             $this->refreshPage();
         } catch (\Exception $e) {

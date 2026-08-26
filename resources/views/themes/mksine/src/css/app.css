@@ -290,32 +290,6 @@ html.dark .border-gray-200 {
  /* orange-600 */
 }
 
-/* Merged EUR/locale label + RTL/LTR toggle (one control) */
-.site-header-locale-toggle {
-    @apply cursor-pointer rounded-full border border-gray-200/90 bg-gray-100 px-3 py-2 text-gray-600 transition-colors;
-    @apply hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800;
-}
-
-.dark .site-header-locale-toggle {
-    @apply border-gray-600 bg-gray-800 text-gray-300;
-}
-
-.dark .site-header-locale-toggle:hover {
-    @apply border-amber-600/50 bg-gray-700 text-amber-400;
-}
-
-.site-header-locale-toggle__dir-icon .locale-dir-icon--rtl {
-    display: none;
-}
-
-html[dir='rtl'] .site-header-locale-toggle__dir-icon .locale-dir-icon--ltr {
-    display: none;
-}
-
-html[dir='rtl'] .site-header-locale-toggle__dir-icon .locale-dir-icon--rtl {
-    display: block;
-}
-
 /* =========================================================================
    Modern Menu Styling (e.g. mksine-menu-header_primary)
    ========================================================================= */

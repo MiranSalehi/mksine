@@ -31,6 +31,24 @@ composer update miran/mksine
 
 Confirm `MksinePlugin::make()` is on the admin panel. Re-run `php artisan mksine:install --migrate` on fresh installs if needed.
 
+### Homepage shows Laravel welcome instead of the theme
+
+**Symptom.** `/` displays the default Laravel welcome page (or a blank layout) instead of the active MKSine theme.
+
+**Cause.** `routes/web.php` still defines `Route::get('/', …)` from the Laravel skeleton. MKSine registers its own `home` route at `/`.
+
+**Cause.** `routes/web.php` still defines `Route::get('/', …)` from the Laravel skeleton. MKSine registers its own `home` route at `/`.
+
+**Fix.** Remove the default `/` route from `routes/web.php`. See [Installation §3 — Remove the default homepage route](../01-installation.md#remove-the-default-homepage-route-from-routeswebphp).
+
+### Homepage shows demo marketing blocks instead of the placeholder index
+
+**Symptom.** `/` looks like a full landing page (finance hero, pricing, testimonials) on a fresh install.
+
+**Cause.** An old copy of the bundled `mksine` theme still hard-codes marketing partials in `home.blade.php`, or a **Front Page** was assigned (for example by `MksineSeeder`) to a builder page that uses the `mksine-default-home` template.
+
+**Fix.** Upgrade `miran/mksine` to the current version. With no `front_page_id` in settings, `/` should show the placeholder index. To use a custom homepage, publish a page and set **Settings → Permalinks → Front Page**—do not rely on static demo markup in the theme.
+
 ### MKSine resources missing from Shield / super admin has no CMS permissions
 
 **Symptom.** Super admin can log in but CMS menu items are hidden or return 403; `permissions` table has few or no `*_post`, `*_media`, etc. rows.

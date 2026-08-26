@@ -12,7 +12,7 @@ class ThemeManager
     /**
      * Cache key for discovered themes (v2 stores plain arrays, not ThemeData objects).
      */
-    protected const CACHE_KEY = 'mksine.themes.discovered.v2';
+    protected const CACHE_KEY = 'mksine.themes.discovered.v3';
 
     /**
      * Cache TTL in seconds.

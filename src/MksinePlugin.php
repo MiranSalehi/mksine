@@ -128,6 +128,11 @@ class MksinePlugin implements Plugin
                 'label' => StorefrontUrl::siteLabel(),
             ])->render(),
         );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::CONTENT_BEFORE,
+            fn (): string => view('mksine::filament.partials.theme-dependency-warning-banner')->render(),
+        );
     }
 
     /**

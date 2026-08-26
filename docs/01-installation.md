@@ -21,10 +21,10 @@ MKSine is a **Filament 4 / 5** CMS package. You need a working Laravel applicati
 |------|------|------------------|
 | 1 | Require the package | `composer require miran/mksine` |
 | 2 | Create the Filament admin panel | `php artisan filament:install --panels` |
-| 3 | Register `MksinePlugin`; **remove** `Dashboard::class` from provider | Edit `AdminPanelProvider` (see below) |
+| 3 | Register `MksinePlugin`; **remove** `Dashboard::class` from provider; **remove** Laravel's `/` route from `routes/web.php` | Edit `AdminPanelProvider` and `routes/web.php` (see below) |
 | 4 | Publish configs, migrate, generate permissions | `php artisan mksine:install --migrate` (publishes `config/mksine.php`, `config/livewire.php`, `config/filament.php`) |
 | 5 | Create a super admin | `php artisan mksine:create-super-admin` |
-| 6 | Smoke test | Visit `/admin` |
+| 6 | Smoke test | Visit `/admin` and `/` |
 
 > **Why step 3 comes before step 4.** `mksine:install --migrate` runs `shield:generate --all`, which scans the **registered** Filament panel for resources, pages, and widgets. If `MksinePlugin` is not on the panel yet, MKSine permissions and policies are **not** created. You would need to run `php artisan shield:generate --all --panel=admin` again after registering the plugin.
 
@@ -84,6 +84,22 @@ public function panel(Panel $panel): Panel
 ```
 
 > **Required.** Delete `->pages([Dashboard::class])` (and the `use Filament\Pages\Dashboard` import if unused). Do not register both `Dashboard::class` and `MksinePlugin` on the same panel.
+
+### Remove the default homepage route from routes/web.php
+
+`php artisan filament:install --panels` does **not** touch `routes/web.php`. A fresh Laravel app still ships with:
+
+```php
+Route::get('/', function () {
+    return view('welcome');
+});
+```
+
+**Delete that route.** MKSine registers the public storefront homepage at `/` (permalink key `home_page_url`, route name `home`) from `packages/mksine/routes/web.php`. If the Laravel welcome route remains, `/` serves the framework skeleton instead of the active theme, and admin **View site** / `route('home')` links will not match what you expect.
+
+Keep any other app-specific routes in `routes/web.php` (profile APIs, custom endpoints, etc.). Only remove the default `/` handler.
+
+Until you assign a **Front Page** under **Settings → Permalinks**, the bundled `mksine` theme shows a **placeholder index** (content zones only—not demo marketing copy). Publish a page and select it as the front page when you are ready for real homepage content.
 
 `MksinePlugin`:
 
@@ -159,9 +175,10 @@ For a full interactive Shield setup (panel plugin registration, optional tenancy
 
 1. Visit the Filament panel URL (commonly `/admin`).
 2. Log in with the super admin you created.
-3. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
-4. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan filament:assets` and hard-refresh the browser. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
-5. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
+3. Visit `/` and confirm the **active theme** renders (not Laravel's default welcome page). If you still see the welcome view, remove `Route::get('/', …)` from `routes/web.php` (see [Installation §3](../01-installation.md#remove-the-default-homepage-route-from-routeswebphp)).
+4. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
+5. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan filament:assets` and hard-refresh the browser. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
+6. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
 
 ## What just got installed
 

@@ -52,4 +52,13 @@ return [
     'invalid_theme_missing_name' => 'theme.json نامعتبر: ناوی کەرەستە بەردەست نییە.',
     'theme_already_exists' => 'کەرەستەی «:id» پێشتر هەیە. تکایە یەکەم جار بسڕەوە.',
     'custom_css_js_modal_description' => 'ئەم فایلانە دوای داراییەکانی کەرەستە لە پێشەوە بار دەکرێن. بۆ ستایلی و سکریپتی تایبەت بەکاربهێنە بەبێ دەستکاریکردنی فایلەکانی کەرەستە.',
+    'missing_dependencies_badge' => 'پێوەکراوە ناچالاکەکان:',
+    'missing_dependencies_list' => 'پێویستی بە :plugins هەیە',
+    'activated_with_missing_dependencies_title' => 'کەرەستە بە پێوەکراوە ناچالاکەکان چالاک کرا',
+    'activated_with_missing_dependencies_body' => 'ئەم کەرەستەیە بۆ پیشاندانی فرۆشگا پێویستی بەم پێوەکراوانەیە: :plugins. سەردانکەران تا چالاککردنیان پەڕەی ئاگاداری دەبینن.',
+    'deactivated_plugin_breaks_active_theme_title' => 'پەیوەندی کەرەستەی چالاک پچڕا',
+    'deactivated_plugin_breaks_active_theme_body' => 'کەرەستەی چالاک پێویستی بە پێوەکراوی :plugin هەیە. فرۆشگا ئێستا پەڕەی ئاگاداری پیشان دەدات تا پێوەکراوە چالاک بکەیت یان کەرەستە بگۆڕیت.',
+    'admin_dependency_banner_title' => 'ئاگاداری فرۆشگا:',
+    'admin_dependency_banner_body' => 'کەرەستەی چالاک «:theme» پێویستی بە ئەم پێوەکراوە ناچالاکانەیە: :plugins.',
+    'admin_dependency_banner_link' => 'کردنەوەی بەڕێوەبردنی کەرەستەکان',
 ];

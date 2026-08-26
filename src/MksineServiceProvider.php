@@ -123,6 +123,7 @@ use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Core\Theme\ThemeEnqueue;
 use Miran\Mksine\Core\Theme\ThemeLivewireMissingComponentResolver;
+use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
@@ -340,6 +341,14 @@ class MksineServiceProvider extends PackageServiceProvider
         // Register ThemeManager as singleton
         $this->app->singleton(ThemeManager::class, function () {
             return new ThemeManager;
+        });
+
+        $this->app->singleton(ThemeDependencyChecker::class, function ($app) {
+            return new ThemeDependencyChecker(
+                $app->make(PluginManager::class)->getRegistry(),
+                $app->make(PluginManager::class),
+                $app->make(ThemeManager::class),
+            );
         });
 
         // Register ThemeEnqueue as singleton (per-request queue for wp_enqueue_style/script-style API)

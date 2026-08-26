@@ -208,13 +208,17 @@ class ThemeMakeCommand extends Command
     }
 
     /**
-     * Generate layout template (matches default theme: header/footer inline, theme/direction toggles).
+     * Generate layout template (matches default theme: header/footer inline, theme toggle).
      */
     protected function generateLayout(string $identifier): string
     {
         return <<<BLADE
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="ltr">
+@php
+    \$locale = app()->getLocale();
+    \$textDirection = in_array(\$locale, ['fa', 'ar', 'ku', 'he'], true) ? 'rtl' : 'ltr';
+@endphp
+<html lang="{{ str_replace('_', '-', \$locale) }}" dir="{{ \$textDirection }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -223,7 +227,7 @@ class ThemeMakeCommand extends Command
 
     @themeAssets
 </head>
-<body>
+<body class="{{ \$textDirection === 'rtl' ? 'rtl' : 'ltr' }}">
     @themeDoAction('layout.body_start')
     <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -239,10 +243,6 @@ class ThemeMakeCommand extends Command
                 </nav>
 
                 <div class="flex items-center gap-4">
-                    <button class="direction-toggle" data-direction-toggle title="{{ __('Toggle RTL/LTR') }}">
-                        <svg class="rtl-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H3M21 6H7M21 14H7M21 18H3"></path></svg>
-                        <svg class="ltr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10H21M17 6H3M17 14H3M3 18H21"></path></svg>
-                    </button>
                     <button class="theme-toggle" data-theme-toggle title="{{ __('Toggle Dark/Light') }}">
                         <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         <svg class="moon-icon hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
@@ -281,54 +281,16 @@ BLADE;
     {
         return <<<'BLADE'
 <div>
-    <section class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-12">
-        <div class="container mx-auto max-w-6xl px-4">
-            <div class="max-w-2xl">
-                <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ __('Welcome') }}</h1>
-                <p class="text-lg text-blue-100">{{ config('app.name') }}</p>
-            </div>
-        </div>
+    @themeDoAction('home.before_hero')
+
+    <section class="mx-auto max-w-4xl px-6 py-20 text-center">
+        <p class="text-sm font-semibold uppercase tracking-wide text-violet-600">{{ __('mksine::frontend.home_placeholder_eyebrow') }}</p>
+        <h1 class="mt-4 text-4xl font-bold text-slate-900 dark:text-white">{{ __('mksine::frontend.home_placeholder_title', ['site' => config('app.name')]) }}</h1>
+        <p class="mt-4 text-slate-600 dark:text-slate-300">{{ __('mksine::frontend.home_placeholder_lead') }}</p>
+        <a href="{{ url('/admin') }}" class="mt-8 inline-flex rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white">{{ __('mksine::frontend.home_placeholder_admin_cta') }}</a>
     </section>
 
-    <div class="container mx-auto max-w-6xl px-4 py-12">
-        <section class="mb-16">
-            <h2 class="text-3xl font-bold text-gray-800 mb-8">{{ __('Latest Articles') }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach ($latestPosts ?? [] as $post)
-                <article class="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition">
-                    <a href="{{ route('posts.show', $post->slug) }}">
-                        <div class="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-                            @if ($post->featuredImage?->url ?? $post->featured_image ?? null)
-                                <img src="{{ asset($post->featuredImage->url ?? $post->featured_image) }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
-                            @endif
-                        </div>
-                        <div class="p-4">
-                            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ $post->title }}</h3>
-                            <p class="text-gray-600 text-sm mb-4">{{ $post->excerpt }}</p>
-                            <div class="flex justify-between items-center text-xs text-gray-500">
-                                @if($post->author ?? null)
-                                    <span><a href="{{ route('authors.show', $post->author->id) }}" class="hover:text-blue-500">{{ $post->author->name }}</a></span>
-                                @endif
-                                <span>{{ $post->published_at?->format('M d, Y') }}</span>
-                            </div>
-                        </div>
-                    </a>
-                </article>
-                @endforeach
-            </div>
-        </section>
-
-        <section class="mb-16">
-            <h2 class="text-3xl font-bold text-gray-800 mb-8">{{ __('Categories') }}</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                @foreach ($categories ?? [] as $category)
-                    <a href="{{ $category->getUrl() ?? route('categories.show', $category->slug ?? $category->id) }}" class="bg-white border-2 border-gray-200 hover:border-blue-500 rounded-lg p-6 text-center transition">
-                        <h3 class="font-semibold text-gray-800">{{ $category->name }}</h3>
-                    </a>
-                @endforeach
-            </div>
-        </section>
-    </div>
+    @themeDoAction('home.after_hero')
 </div>
 BLADE;
     }
@@ -675,14 +637,12 @@ html.dark {
         color: white;
     }
     .btn-primary:hover { background-color: #db2777; }
-    .theme-toggle,
-    .direction-toggle {
+    .theme-toggle {
         @apply relative inline-flex items-center justify-center w-10 h-10 cursor-pointer rounded-md bg-transparent transition-all;
         border: 1px solid var(--border-color);
         color: var(--text-primary);
     }
-    .theme-toggle:hover,
-    .direction-toggle:hover {
+    .theme-toggle:hover {
         background-color: var(--bg-secondary);
         border-color: var(--color-primary);
     }
@@ -718,7 +678,6 @@ window.Alpine = Alpine;
 document.addEventListener('DOMContentLoaded', () => {
     Alpine.start();
     initDarkMode();
-    initDirectionToggle();
     initMobileMenu();
     initScrollToTop();
 });
@@ -736,22 +695,6 @@ function initDarkMode() {
             const isDark = document.documentElement.classList.contains('dark');
             document.documentElement.classList.toggle('dark', !isDark);
             localStorage.setItem(SITE_THEME_KEY, isDark ? 'light' : 'dark');
-        });
-    }
-}
-
-function initDirectionToggle() {
-    const currentDir = localStorage.getItem('direction') || 'ltr';
-    document.documentElement.setAttribute('dir', currentDir);
-    document.documentElement.setAttribute('lang', currentDir === 'rtl' ? 'fa' : 'en');
-    const dirToggle = document.querySelector('[data-direction-toggle]');
-    if (dirToggle) {
-        dirToggle.addEventListener('click', () => {
-            const html = document.documentElement;
-            const newDir = (html.getAttribute('dir') || 'ltr') === 'ltr' ? 'rtl' : 'ltr';
-            html.setAttribute('dir', newDir);
-            html.setAttribute('lang', newDir === 'rtl' ? 'fa' : 'en');
-            localStorage.setItem('direction', newDir);
         });
     }
 }

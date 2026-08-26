@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
@@ -407,6 +408,9 @@ class ThemeManager extends Page
             return;
         }
 
+        $dependencyChecker = app(ThemeDependencyChecker::class);
+        $missingPlugins = $dependencyChecker->missingPlugins($theme);
+
         $activated = $themeManager->activate($identifier);
 
         if ($activated) {
@@ -414,11 +418,22 @@ class ThemeManager extends Page
                 $themeManager->publishAssets($identifier);
             }
 
-            Notification::make()
-                ->title(__('mksine::themes.theme_activated'))
-                ->body(__('mksine::themes.theme_activated_name', ['name' => $theme->name]))
-                ->success()
-                ->send();
+            if ($missingPlugins !== []) {
+                Notification::make()
+                    ->title(__('mksine::themes.activated_with_missing_dependencies_title'))
+                    ->body(__('mksine::themes.activated_with_missing_dependencies_body', [
+                        'plugins' => implode(', ', $dependencyChecker->missingPluginLabels($theme)),
+                    ]))
+                    ->warning()
+                    ->persistent()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title(__('mksine::themes.theme_activated'))
+                    ->body(__('mksine::themes.theme_activated_name', ['name' => $theme->name]))
+                    ->success()
+                    ->send();
+            }
         } else {
             Notification::make()
                 ->title(__('mksine::themes.failed_activate_theme'))

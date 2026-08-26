@@ -6,6 +6,7 @@
                 @php
                     $screenshotUrl = app(\Miran\Mksine\Core\Theme\ThemeManager::class)->getScreenshotUrl($theme);
                     $isActive = $theme->identifier === $this->getActiveThemeIdentifier();
+                    $missingDependencies = app(\Miran\Mksine\Core\Theme\ThemeDependencyChecker::class)->missingPlugins($theme);
                 @endphp
                 <div
                     data-theme-card
@@ -74,6 +75,17 @@
                             <p class="mb-4 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                                 {{ $theme->description }}
                             </p>
+                        @endif
+
+                        @if($missingDependencies !== [])
+                            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                                <span class="font-semibold">{{ __('mksine::themes.missing_dependencies_badge') }}</span>
+                                <span>
+                                    {{ __('mksine::themes.missing_dependencies_list', [
+                                        'plugins' => implode(', ', app(\Miran\Mksine\Core\Theme\ThemeDependencyChecker::class)->missingPluginLabels($theme)),
+                                    ]) }}
+                                </span>
+                            </div>
                         @endif
 
                         {{-- Theme Meta --}}

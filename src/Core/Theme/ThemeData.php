@@ -24,6 +24,7 @@ final readonly class ThemeData
         public ?string $description = null,
         public ?string $screenshot = null,
         public array $assets = [],
+        public array $requires = [],
     ) {}
 
     /**
@@ -43,6 +44,7 @@ final readonly class ThemeData
             description: isset($data['description']) ? (string) $data['description'] : null,
             screenshot: isset($data['screenshot']) ? (string) $data['screenshot'] : null,
             assets: is_array($data['assets'] ?? null) ? $data['assets'] : [],
+            requires: is_array($data['requires'] ?? null) ? $data['requires'] : [],
         );
     }
 
@@ -61,6 +63,7 @@ final readonly class ThemeData
             description: $json['description'] ?? null,
             screenshot: $json['screenshot'] ?? null,
             assets: $json['assets'] ?? [],
+            requires: is_array($json['requires'] ?? null) ? $json['requires'] : [],
         );
     }
 
@@ -119,6 +122,7 @@ final readonly class ThemeData
             'description' => $this->description,
             'screenshot' => $this->screenshot,
             'assets' => $this->assets,
+            'requires' => $this->requires,
         ];
     }
 }

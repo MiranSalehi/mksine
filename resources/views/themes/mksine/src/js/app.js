@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Alpine.start();
     
     initDarkMode();
-    initDirectionToggle();
     initMobileMenu();
     initMegaHeader();
     initSmoothScroll();
@@ -50,33 +49,6 @@ function initDarkMode() {
             }
         });
     }
-}
-
-/**
- * RTL/LTR Direction Toggle
- */
-function initDirectionToggle() {
-    const currentDir = localStorage.getItem('direction') || 'ltr';
-    applyDirection(currentDir);
-
-    const dirToggle = document.querySelector('[data-direction-toggle]');
-    if (dirToggle) {
-        dirToggle.addEventListener('click', () => {
-            const html = document.documentElement;
-            const currentDir = html.getAttribute('dir') || 'ltr';
-            const newDir = currentDir === 'ltr' ? 'rtl' : 'ltr';
-            applyDirection(newDir);
-        });
-    }
-}
-
-function applyDirection(dir) {
-    const html = document.documentElement;
-    html.setAttribute('dir', dir);
-    html.setAttribute('lang', dir === 'rtl' ? 'fa' : 'en');
-    document.body.classList.toggle('rtl', dir === 'rtl');
-    document.body.classList.toggle('ltr', dir === 'ltr');
-    localStorage.setItem('direction', dir);
 }
 
 /**

@@ -52,4 +52,13 @@ return [
     'invalid_theme_missing_name' => 'Invalid theme.json: missing theme name.',
     'theme_already_exists' => 'Theme ":id" already exists. Please delete it first.',
     'custom_css_js_modal_description' => 'These files are loaded on the frontend after the theme assets. Use them for custom styles and scripts without editing theme files.',
+    'missing_dependencies_badge' => 'Missing plugins:',
+    'missing_dependencies_list' => 'Requires :plugins',
+    'activated_with_missing_dependencies_title' => 'Theme activated with missing plugins',
+    'activated_with_missing_dependencies_body' => 'This theme requires the following plugins to work on the storefront: :plugins. Visitors will see a warning page until they are activated.',
+    'deactivated_plugin_breaks_active_theme_title' => 'Active theme dependency broken',
+    'deactivated_plugin_breaks_active_theme_body' => 'The active theme requires the :plugin plugin. The storefront now shows a warning page until you activate the plugin or switch themes.',
+    'admin_dependency_banner_title' => 'Storefront warning:',
+    'admin_dependency_banner_body' => 'The active theme ":theme" requires inactive plugins: :plugins.',
+    'admin_dependency_banner_link' => 'Open Theme Manager',
 ];
