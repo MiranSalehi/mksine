@@ -56,6 +56,11 @@ class PageForm
                             ->required()
                             ->native(false)
                             ->live()
+                            ->afterStateHydrated(function (?string $state, callable $set, callable $get): void {
+                                if ($state === 'builder' && blank($get('builder_content_width'))) {
+                                    $set('builder_content_width', 'full');
+                                }
+                            })
                             ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
                                 if ($state === 'builder' && blank($get('builder_content_width'))) {
                                     $set('builder_content_width', 'full');
@@ -86,10 +91,10 @@ class PageForm
                         CKEditor::make('content')
                             ->label(__('mksine::pages.content'))
                             ->live(false)
-                            ->required(fn ($get) => $get('type') === 'simple')
+                            ->required(fn (callable $get, ?Page $record): bool => static::resolvePageType($get, $record) === 'simple')
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn ($get) => $get('type') === 'simple'),
+                    ->visible(fn (callable $get, ?Page $record): bool => static::resolvePageType($get, $record) === 'simple'),
                 Section::make(__('mksine::pages.page_builder'))
                     ->key('page_builder')
                     ->columnSpanFull()
@@ -98,17 +103,7 @@ class PageForm
                             ->label(__('mksine::page_builder.field_label'))
                             ->columnSpanFull(),
                     ])
-                    ->visible(static function ($get, ?Page $record): bool {
-                        if ($get('type') !== 'builder') {
-                            return false;
-                        }
-
-                        if (config('mksine.features.page_builder', false)) {
-                            return true;
-                        }
-
-                        return $record instanceof Page && $record->getAttribute('type') === 'builder';
-                    }),
+                    ->visible(fn (callable $get, ?Page $record): bool => static::showsBuilderSections($get, $record)),
                 Section::make(__('mksine::pages.builder_display'))
                     ->key('builder_display')
                     ->columnSpanFull()
@@ -127,20 +122,10 @@ class PageForm
                             ->default('full')
                             ->native(false)
                             ->selectablePlaceholder(false)
-                            ->required(fn (callable $get): bool => $get('type') === 'builder'),
+                            ->required(fn (callable $get, ?Page $record): bool => static::resolvePageType($get, $record) === 'builder'),
                     ])
                     ->columns(2)
-                    ->visible(static function ($get, ?Page $record): bool {
-                        if ($get('type') !== 'builder') {
-                            return false;
-                        }
-
-                        if (config('mksine.features.page_builder', false)) {
-                            return true;
-                        }
-
-                        return $record instanceof Page && $record->getAttribute('type') === 'builder';
-                    }),
+                    ->visible(fn (callable $get, ?Page $record): bool => static::showsBuilderSections($get, $record)),
                 Section::make(__('mksine::common.seo'))
                     ->key('seo')
                     ->schema([
@@ -162,5 +147,36 @@ class PageForm
 
         // Apply form hooks
         return $formHookManager->apply('page.form', $schema);
+    }
+
+    /**
+     * Resolve page type from live form state, falling back to the edited record on first paint.
+     */
+    public static function resolvePageType(callable $get, ?Page $record): string
+    {
+        $type = $get('type');
+
+        if (filled($type)) {
+            return (string) $type;
+        }
+
+        if ($record instanceof Page && filled($record->getAttribute('type'))) {
+            return (string) $record->getAttribute('type');
+        }
+
+        return 'simple';
+    }
+
+    public static function showsBuilderSections(callable $get, ?Page $record): bool
+    {
+        if (static::resolvePageType($get, $record) !== 'builder') {
+            return false;
+        }
+
+        if (config('mksine.features.page_builder', false)) {
+            return true;
+        }
+
+        return $record instanceof Page && $record->getAttribute('type') === 'builder';
     }
 }

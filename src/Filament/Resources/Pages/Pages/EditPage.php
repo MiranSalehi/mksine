@@ -36,6 +36,15 @@ class EditPage extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if (($data['type'] ?? null) === 'builder' && blank($data['builder_content_width'] ?? null)) {
+            $data['builder_content_width'] = 'full';
+        }
+
+        return $data;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['updated_by'] = Auth::id();
