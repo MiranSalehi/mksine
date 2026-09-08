@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.5.3 - 2026-09-09
+
+### Fixed
+
+- **Page edit (builder)** — builder sections (page builder field and display options) now show on first load when the saved page type is `builder`, without toggling type to simple and back; `PageForm` falls back to the record type before live form state hydrates.
+
 ## 1.5.2 - 2026-09-09
 
 ### Fixed
