@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.5.2 - 2026-09-09
+
+### Fixed
+
+- **Page create (builder)** — switching page type to “builder” no longer leaves `builder_content_width` null while the UI shows “Full width”; `PageForm` now sets state on type change, requires width only for builder pages, and `CreatePage` defaults blank width to `full`.
+
 ## 1.5.1 - 2026-08-26
 
 ### Fixed
