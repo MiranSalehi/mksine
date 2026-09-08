@@ -55,7 +55,12 @@ class PageForm
                             ->default('simple')
                             ->required()
                             ->native(false)
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
+                                if ($state === 'builder' && blank($get('builder_content_width'))) {
+                                    $set('builder_content_width', 'full');
+                                }
+                            }),
                         Select::make('status')
                             ->label(__('mksine::pages.status'))
                             ->options([
@@ -121,7 +126,8 @@ class PageForm
                             ])
                             ->default('full')
                             ->native(false)
-                            ->required(),
+                            ->selectablePlaceholder(false)
+                            ->required(fn (callable $get): bool => $get('type') === 'builder'),
                     ])
                     ->columns(2)
                     ->visible(static function ($get, ?Page $record): bool {

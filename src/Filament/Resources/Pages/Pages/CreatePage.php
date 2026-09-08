@@ -15,6 +15,10 @@ class CreatePage extends CreateRecord
         $data['created_by'] = Auth::id();
         $data['updated_by'] = Auth::id();
 
+        if (($data['type'] ?? null) === 'builder' && blank($data['builder_content_width'] ?? null)) {
+            $data['builder_content_width'] = 'full';
+        }
+
         return $data;
     }
 }
