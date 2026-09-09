@@ -123,6 +123,7 @@ Core MKSine resource form names:
 | Post | `post.form` |
 | Page | `page.form` |
 | Category | `category.form` |
+| Tag | `tag.form` |
 | Comment | `comment.form` |
 | Media | `media.form` |
 | Menu | `menu.form` |
@@ -183,14 +184,14 @@ Section anchors use the `_section` suffix so Post’s `content` **section** (`co
 | Kind | Anchors |
 |------|---------|
 | Sections | `content_section`, `settings_section`, `seo_section` |
-| Fields | `title`, `slug`, `excerpt`, `status`, `author_id`, `categories`, `published_at`, `featured_image`, `content`, `meta_title`, `meta_description` |
+| Fields | `title`, `slug`, `excerpt`, `status`, `author_id`, `categories`, `tags`, `published_at`, `featured_image`, `content`, `meta_title`, `meta_description` |
 
 #### `page.form`
 
 | Kind | Anchors |
 |------|---------|
 | Sections | `page_information_section`, `content_section`, `page_builder_section`, `builder_display_section`, `seo_section` |
-| Fields | `title`, `slug`, `type`, `status`, `published_at`, `content`, `builder_payload`, `show_page_header`, `builder_content_width`, `meta_title`, `meta_description` |
+| Fields | `title`, `slug`, `type`, `status`, `tags`, `published_at`, `content`, `builder_payload`, `show_page_header`, `builder_content_width`, `meta_title`, `meta_description` |
 
 #### `category.form`
 
@@ -198,6 +199,13 @@ Section anchors use the `_section` suffix so Post’s `content` **section** (`co
 |------|---------|
 | Sections | `category_information_section`, `settings_section`, `seo_section` |
 | Fields | `name`, `slug`, `image`, `parent_id`, `sort_order`, `is_active`, `description`, `meta_title`, `meta_description` |
+
+#### `tag.form`
+
+| Kind | Anchors |
+|------|---------|
+| Sections | `tag_information_section`, `seo_section` |
+| Fields | `name`, `slug`, `description`, `is_active`, `meta_title`, `meta_description` |
 
 #### `comment.form`
 

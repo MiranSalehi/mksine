@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Contracts\AllowsPublicComments;
 use Miran\Mksine\Traits\HasMediaAttachments;
+use Miran\Mksine\Traits\HasTags;
 
 class Post extends Model implements AllowsPublicComments
 {
     use HasFactory;
     use HasMediaAttachments;
+    use HasTags;
     use SoftDeletes;
 
     protected $fillable = [

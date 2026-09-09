@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Database\Factories\PageFactory;
+use Miran\Mksine\Traits\HasTags;
 
 class Page extends Model
 {
     use HasFactory;
+    use HasTags;
     use SoftDeletes;
 
     protected $fillable = [

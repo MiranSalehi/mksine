@@ -7,7 +7,9 @@ return [
     'edit_page' => 'ویرایش صفحه: :title',
     'edit_post' => 'ویرایش نوشته: :title',
     'edit_category' => 'ویرایش دسته: :name',
+    'edit_tag' => 'ویرایش برچسب: :name',
     'manage_pages' => 'صفحات',
     'manage_posts' => 'نوشته‌ها',
     'manage_categories' => 'دسته‌ها',
+    'manage_tags' => 'برچسب‌ها',
 ];

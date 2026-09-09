@@ -1083,7 +1083,7 @@ MD;
  *
  * Override a frontend page (replace default component):
  *   \$register_override('home', \\{$namespace}\\\\Home::class);
- * Page keys: home, category-list, category-show, post-list, post-show, page-show, author-show
+ * Page keys: home, category-list, category-show, tag-list, tag-show, post-list, post-show, page-show, author-show
  *
  * Add custom routes (use Route:: inside the callback):
  *   \$register_routes(function () {

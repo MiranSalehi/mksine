@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Models\Tag;
 
 final class FrontendAdminBarContextResolver
 {
@@ -21,6 +22,7 @@ final class FrontendAdminBarContextResolver
             'pages.show' => $this->resolvePageContext($routeName, $route?->parameter('slug')),
             'posts.show' => $this->resolvePostContext($routeName, $route?->parameter('slug')),
             'categories.show' => $this->resolveCategoryContext($routeName, $route?->parameter('path')),
+            'tags.show' => $this->resolveTagContext($routeName, $route?->parameter('slug')),
             'home' => $this->resolveHomeContext($routeName),
             default => new FrontendAdminBarContext(routeName: $routeName),
         };
@@ -58,6 +60,17 @@ final class FrontendAdminBarContextResolver
         $category = Category::findByFullPath($path);
 
         return new FrontendAdminBarContext(routeName: $routeName, category: $category);
+    }
+
+    private function resolveTagContext(string $routeName, mixed $slug): FrontendAdminBarContext
+    {
+        if (! is_string($slug) || $slug === '') {
+            return new FrontendAdminBarContext(routeName: $routeName);
+        }
+
+        $tag = Tag::query()->where('slug', $slug)->first();
+
+        return new FrontendAdminBarContext(routeName: $routeName, tag: $tag);
     }
 
     private function resolveHomeContext(string $routeName): FrontendAdminBarContext

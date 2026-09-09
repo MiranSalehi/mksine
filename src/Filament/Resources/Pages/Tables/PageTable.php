@@ -69,6 +69,11 @@ class PageTable
                     ->label(__('mksine::pages.author'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('tags.name')
+                    ->label(__('mksine::pages.tags'))
+                    ->badge()
+                    ->separator(',')
+                    ->toggleable(),
                 TextColumn::make('published_at')
                     ->label(__('mksine::pages.published_at'))
                     ->dateTime()
@@ -93,6 +98,12 @@ class PageTable
                         'published' => __('mksine::pages.status_published'),
                         'scheduled' => __('mksine::pages.status_scheduled'),
                     ]),
+                SelectFilter::make('tags')
+                    ->label(__('mksine::pages.tags'))
+                    ->relationship('tags', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
                 TrashedFilter::make(),
             ])
             ->recordActions([

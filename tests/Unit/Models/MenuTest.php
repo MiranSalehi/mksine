@@ -66,6 +66,7 @@ describe('MenuItem Model', function () {
         expect(MenuItem::TYPE_CATEGORY)->toBe('category');
         expect(MenuItem::TYPE_PAGE)->toBe('page');
         expect(MenuItem::TYPE_POST)->toBe('post');
+        expect(MenuItem::TYPE_TAG)->toBe('tag');
     });
 
     it('casts order to integer', function () {

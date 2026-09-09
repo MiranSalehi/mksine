@@ -10,6 +10,7 @@ return [
     'status' => 'Status',
     'author' => 'Author',
     'categories' => 'Categories',
+    'tags' => 'Tags',
     'published_at' => 'Published At',
     'featured_image' => 'Featured Image',
     'content' => 'Content',
