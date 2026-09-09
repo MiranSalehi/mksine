@@ -33,7 +33,7 @@ Common usage:
 ```php
 use Miran\Mksine\Facades\Mksine;
 
-Mksine::version();                          // '1.5.3'
+Mksine::version();                          // '1.6.0',
 Mksine::isFeatureEnabled('page_builder');   // bool
 Mksine::config('plugins_path');             // 'plugins' (or your override)
 ```

@@ -29,7 +29,7 @@ When adding an entry, copy this skeleton:
 
 ---
 
-## Unreleased
+## 1.6.0 (2026-09-09)
 
 ### Added
 
@@ -44,6 +44,8 @@ When adding an entry, copy this skeleton:
 5. New permalink settings: Tags URL (`/tags`) and Single Tag URL (`/tag/{slug}`).
 
 ---
+
+## 1.5.1 (2026-08-26)
 
 ### Fixed
 

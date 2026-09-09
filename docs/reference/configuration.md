@@ -14,7 +14,7 @@ This page is the canonical reference for `config/mksine.php`. The version of the
 
 ```php
 return [
-    'version' => '1.5.3',
+    'version' => '1.6.0',
     'features' => [...],
     'cache' => [...],
     'user_model' => App\Models\User::class,
@@ -34,7 +34,7 @@ return [
 
 | Default | Type |
 |---------|------|
-| `'1.5.3'` | string |
+| `'1.6.0'` | string |
 
 Read by [`Mksine::version()`](facades-and-managers.md#mksine-facade) and `mksine:info`. Treat it as **informational only** — change it through composer/git, not by editing this key.
 
