@@ -58,6 +58,11 @@ class PostsTable
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('tags.name')
+                    ->label(__('mksine::posts.tags'))
+                    ->badge()
+                    ->separator(',')
+                    ->toggleable(),
                 TextColumn::make('published_at')
                     ->label(__('mksine::posts.published_at'))
                     ->dateTime()
@@ -84,6 +89,12 @@ class PostsTable
                         'archived' => __('mksine::posts.status_archived'),
                     ])
                     ->native(false),
+                SelectFilter::make('tags')
+                    ->label(__('mksine::posts.tags'))
+                    ->relationship('tags', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload(),
                 Filter::make('published_at')
                     ->label(__('mksine::posts.published_at'))
                     ->schema([

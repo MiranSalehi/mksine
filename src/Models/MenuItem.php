@@ -16,6 +16,8 @@ class MenuItem extends Model
 
     public const TYPE_POST = 'post';
 
+    public const TYPE_TAG = 'tag';
+
     protected $fillable = [
         'menu_id',
         'parent_id',

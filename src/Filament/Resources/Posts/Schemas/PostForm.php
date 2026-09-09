@@ -12,6 +12,7 @@ use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
+use Miran\Mksine\Filament\Resources\Tags\Schemas\TagForm;
 
 class PostForm
 {
@@ -73,6 +74,7 @@ class PostForm
                             ->searchable()
                             ->enableBranchNode()
                             ->columnSpanFull(),
+                        TagForm::assignmentSelect('mksine::posts.tags'),
                         DateTimePicker::make('published_at')
                             ->label(__('mksine::posts.published_at'))
                             ->displayFormat('d/m/Y H:i')

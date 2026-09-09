@@ -16,6 +16,8 @@ class Permalink
         'home_page_url' => '/',
         'categories_url' => '/categories',
         'single_category_url' => '/category/{path}',
+        'tags_url' => '/tags',
+        'single_tag_url' => '/tag/{slug}',
         'posts_url' => '/posts',
         'single_post_url' => '/post/{slug}',
         'page_url' => '/page/{slug}',

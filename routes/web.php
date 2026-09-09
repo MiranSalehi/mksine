@@ -73,6 +73,8 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
     Route::get('/author/{id}', FrontendResolver::class)->defaults('page', 'author-show')->name('authors.show');
     Route::get(Permalink::getUri('categories_url'), FrontendResolver::class)->defaults('page', 'category-list')->name('categories.index');
     Route::get(Permalink::getUri('single_category_url'), FrontendResolver::class)->defaults('page', 'category-show')->where('path', '.*')->name('categories.show');
+    Route::get(Permalink::getUri('tags_url'), FrontendResolver::class)->defaults('page', 'tag-list')->name('tags.index');
+    Route::get(Permalink::getUri('single_tag_url'), FrontendResolver::class)->defaults('page', 'tag-show')->name('tags.show');
     Route::get(Permalink::getUri('posts_url'), FrontendResolver::class)->defaults('page', 'post-list')->name('posts.index');
     Route::get(Permalink::getUri('single_post_url'), FrontendResolver::class)->defaults('page', 'post-show')->name('posts.show');
     Route::get(Permalink::getUri('page_url'), FrontendResolver::class)->defaults('page', 'page-show')->name('pages.show');

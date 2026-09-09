@@ -22,6 +22,7 @@ return [
     'meta_description' => 'وەسفی مێتا',
     'meta_description_helper' => 'پێشنیارکراو: ١٥٠-١٦٠ پیت',
     'type' => 'جۆر',
+    'tags' => 'تاگەکان',
     'author' => 'نووسەر',
     'status_draft' => 'ڕەشنووس',
     'status_published' => 'بڵاوکراوەتەوە',

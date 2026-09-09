@@ -84,7 +84,7 @@ $register_routes(function () {
 
 What this does:
 
-- `$register_override($page, $componentClass)` stores the override in `ThemeRegistry`. The package’s router consults this when resolving the page → Livewire component mapping. Valid `$page` values: `home`, `category-list`, `category-show`, `post-list`, `post-show`, `page-show`, `author-show`.
+- `$register_override($page, $componentClass)` stores the override in `ThemeRegistry`. The package’s router consults this when resolving the page → Livewire component mapping. Valid `$page` values: `home`, `category-list`, `category-show`, `tag-list`, `tag-show`, `post-list`, `post-show`, `page-show`, `author-show`.
 - `$register_routes($callback)` defers the callback until the package registers theme routes. Use this for entirely new URLs your theme adds.
 
 The `php/` directory next to `theme.php` is auto-PSR-4-registered under `Themes\{StudlyIdentifier}\`. So `php/Livewire/Home.php` becomes `Themes\Stellar\Livewire\Home`. The autoload is registered both during `ThemeBootstrap::boot()` and during Livewire’s sub-request boot, so AJAX requests still find your classes.

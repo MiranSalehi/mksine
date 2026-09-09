@@ -22,6 +22,7 @@ return [
     'meta_description' => 'Meta Description',
     'meta_description_helper' => 'Recommended: 150-160 characters',
     'type' => 'Type',
+    'tags' => 'Tags',
     'author' => 'Author',
     'status_draft' => 'Draft',
     'status_published' => 'Published',

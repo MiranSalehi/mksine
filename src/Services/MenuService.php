@@ -12,6 +12,7 @@ use Miran\Mksine\Models\MenuItem;
 use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Models\Tag;
 
 /**
  * Service for retrieving menus and menu tree.
@@ -94,7 +95,7 @@ class MenuService
             return [];
         }
 
-        [$pageIds, $postIds, $categoryIds] = $this->collectReferenceIds($items);
+        [$pageIds, $postIds, $categoryIds, $tagIds] = $this->collectReferenceIds($items);
 
         $pages = $pageIds !== []
             ? Page::query()->published()->whereIn('id', $pageIds)->get()->keyBy('id')
@@ -109,8 +110,12 @@ class MenuService
             ? Category::query()->where('is_active', true)->whereIn('id', $categoryIds)->get()->keyBy('id')
             : collect();
 
+        $tags = $tagIds !== []
+            ? Tag::query()->where('is_active', true)->whereIn('id', $tagIds)->get()->keyBy('id')
+            : collect();
+
         return array_map(
-            fn (array $node): array => $this->resolveTreeNode($node, $pages, $posts, $ecomCategories, $cmsCategories),
+            fn (array $node): array => $this->resolveTreeNode($node, $pages, $posts, $ecomCategories, $cmsCategories, $tags),
             $items,
         );
     }
@@ -135,15 +140,16 @@ class MenuService
 
     /**
      * @param  array<int, array<string, mixed>>  $items
-     * @return array{0: list<int>, 1: list<int>, 2: list<int>}
+     * @return array{0: list<int>, 1: list<int>, 2: list<int>, 3: list<int>}
      */
     private function collectReferenceIds(array $items): array
     {
         $pageIds = [];
         $postIds = [];
         $categoryIds = [];
+        $tagIds = [];
 
-        $walk = function (array $nodes) use (&$walk, &$pageIds, &$postIds, &$categoryIds): void {
+        $walk = function (array $nodes) use (&$walk, &$pageIds, &$postIds, &$categoryIds, &$tagIds): void {
             foreach ($nodes as $node) {
                 $refId = (int) ($node['reference_id'] ?? 0);
                 if ($refId > 0) {
@@ -151,6 +157,7 @@ class MenuService
                         MenuItem::TYPE_PAGE => $pageIds[] = $refId,
                         MenuItem::TYPE_POST => $postIds[] = $refId,
                         MenuItem::TYPE_CATEGORY, MenuItem::TYPE_CUSTOM_LINK => $categoryIds[] = $refId,
+                        MenuItem::TYPE_TAG => $tagIds[] = $refId,
                         default => null,
                     };
                 }
@@ -168,6 +175,7 @@ class MenuService
             array_values(array_unique($pageIds)),
             array_values(array_unique($postIds)),
             array_values(array_unique($categoryIds)),
+            array_values(array_unique($tagIds)),
         ];
     }
 
@@ -176,10 +184,11 @@ class MenuService
      * @param  Collection<int, Post>  $posts
      * @param  Collection<int, object>  $ecomCategories
      * @param  Collection<int, Category>  $cmsCategories
+     * @param  Collection<int, Tag>  $tags
      * @param  array<string, mixed>  $node
      * @return array<string, mixed>
      */
-    private function resolveTreeNode(array $node, Collection $pages, Collection $posts, Collection $ecomCategories, Collection $cmsCategories): array
+    private function resolveTreeNode(array $node, Collection $pages, Collection $posts, Collection $ecomCategories, Collection $cmsCategories, Collection $tags): array
     {
         $refId = (int) ($node['reference_id'] ?? 0);
 
@@ -211,6 +220,14 @@ class MenuService
                 } elseif ($cmsCategories->has($refId) && $this->shouldReplacePlaceholderLabel((string) ($node['label'] ?? ''))) {
                     $node['label'] = $cmsCategories->get($refId)->name;
                 }
+            } elseif (($node['type'] ?? '') === MenuItem::TYPE_TAG) {
+                $tag = $tags->get($refId);
+                if ($tag !== null) {
+                    if ($this->shouldReplacePlaceholderLabel((string) ($node['label'] ?? ''))) {
+                        $node['label'] = $tag->name;
+                    }
+                    $node['url'] = $tag->getUrl();
+                }
             }
         }
 
@@ -222,7 +239,7 @@ class MenuService
         $children = $node['children'] ?? [];
         if (is_array($children) && $children !== []) {
             $node['children'] = array_map(
-                fn (array $child): array => $this->resolveTreeNode($child, $pages, $posts, $ecomCategories, $cmsCategories),
+                fn (array $child): array => $this->resolveTreeNode($child, $pages, $posts, $ecomCategories, $cmsCategories, $tags),
                 $children,
             );
         }
@@ -327,6 +344,11 @@ class MenuService
             'دسته',
             'Category',
             (string) __('mksine::categories.plural_model_label'),
+            'برچسب',
+            'تگ',
+            'Tag',
+            (string) __('mksine::tags.model_label'),
+            (string) __('mksine::tags.plural_model_label'),
         ];
 
         return in_array($label, $placeholders, true);

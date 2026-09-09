@@ -37,6 +37,13 @@ class SettingsPermalinksPage extends MksSettingsPage
                 ->label(__('mksine::settings.single_category_url'))
                 ->placeholder('/category/{path}')
                 ->helperText(__('mksine::settings.single_category_url_helper')),
+            TextInput::make('tags_url')
+                ->label(__('mksine::settings.tags_url'))
+                ->placeholder('/tags'),
+            TextInput::make('single_tag_url')
+                ->label(__('mksine::settings.single_tag_url'))
+                ->placeholder('/tag/{slug}')
+                ->helperText(__('mksine::settings.single_tag_url_helper')),
             TextInput::make('posts_url')
                 ->label(__('mksine::settings.posts_url'))
                 ->placeholder('/posts'),

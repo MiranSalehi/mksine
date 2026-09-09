@@ -132,7 +132,7 @@ Items without a URL and without valid children are skipped during normalization.
 
 ### Core CMS items
 
-The package registers its own items (Dashboard, contextual Edit page/post/category, list shortcuts) through `RegisterFrontendAdminBarCoreItems` on the same filter at priority `10`. Plugins should use higher priorities (e.g. `20+`) unless they intentionally need to run before core items.
+The package registers its own items (Dashboard, contextual Edit page/post/category/tag, list shortcuts) through `RegisterFrontendAdminBarCoreItems` on the same filter at priority `10`. Plugins should use higher priorities (e.g. `20+`) unless they intentionally need to run before core items.
 
 ### Context object
 
@@ -144,6 +144,7 @@ The package registers its own items (Dashboard, contextual Edit page/post/catego
 | `page` | `?Page` | Home (when mapped to a CMS page), `pages.show`, etc. |
 | `post` | `?Post` | `posts.show` |
 | `category` | `?Category` | `categories.show` |
+| `tag` | `?Tag` | `tags.show` |
 
 Use `$context` to show contextual edit links only on relevant pages.
 

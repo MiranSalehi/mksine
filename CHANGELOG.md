@@ -6,7 +6,9 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Added
+
+- **Native tags** — flat polymorphic tags on posts and pages (`tags` / `taggables`), Filament Tag resource, storefront archives at `/tags` and `/tag/{slug}`, and a `tag` menu item source. See the [upgrade guide](docs/meta/upgrade-guide.md).
 
 ## 1.5.3 - 2026-09-09
 

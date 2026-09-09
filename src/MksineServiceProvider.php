@@ -3,6 +3,7 @@
 namespace Miran\Mksine;
 
 use App\Policies\CategoryPolicy;
+use App\Policies\TagPolicy;
 use App\Policies\CommentPolicy;
 use App\Policies\GeoCityPolicy;
 use App\Policies\GeoCountryPolicy;
@@ -82,6 +83,7 @@ use Miran\Mksine\Core\MenuItemSources\CategoryMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\CustomLinkMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PageMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PostMenuItemSource;
+use Miran\Mksine\Core\MenuItemSources\TagMenuItemSource;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
@@ -132,6 +134,8 @@ use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Filament\Support\MksFilamentDateMacros;
 use Miran\Mksine\Livewire\Frontend\CategoryList;
 use Miran\Mksine\Livewire\Frontend\CategoryShow;
+use Miran\Mksine\Livewire\Frontend\TagList;
+use Miran\Mksine\Livewire\Frontend\TagShow;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
 use Miran\Mksine\Livewire\Frontend\Home;
 use Miran\Mksine\Livewire\Frontend\PageShow;
@@ -149,6 +153,7 @@ use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Models\Tag;
 use Miran\Mksine\Services\Geo\GeoResolver;
 use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
@@ -583,6 +588,7 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         $bindings = [
             Category::class => CategoryPolicy::class,
+            Tag::class => TagPolicy::class,
             Comment::class => CommentPolicy::class,
             Media::class => MediaPolicy::class,
             Menu::class => MenuPolicy::class,
@@ -621,6 +627,8 @@ class MksineServiceProvider extends PackageServiceProvider
             'mksine::frontend.home' => Home::class,
             'mksine::frontend.category-list' => CategoryList::class,
             'mksine::frontend.category-show' => CategoryShow::class,
+            'mksine::frontend.tag-list' => TagList::class,
+            'mksine::frontend.tag-show' => TagShow::class,
             'mksine::frontend.post-list' => PostList::class,
             'mksine::frontend.post-show' => PostShow::class,
             'mksine::frontend.post-comments' => PostComments::class,
@@ -696,6 +704,7 @@ class MksineServiceProvider extends PackageServiceProvider
         // Register core sources
         $sourceManager->register('custom_link', new CustomLinkMenuItemSource);
         $sourceManager->register('category', new CategoryMenuItemSource);
+        $sourceManager->register('tag', new TagMenuItemSource);
         $sourceManager->register('page', new PageMenuItemSource);
         $sourceManager->register('post', new PostMenuItemSource);
     }
@@ -853,6 +862,8 @@ class MksineServiceProvider extends PackageServiceProvider
             'create_posts_table',
             'create_categories_table',
             'create_category_post_table',
+            'create_tags_table',
+            'create_taggables_table',
         ];
     }
 

@@ -12,6 +12,7 @@ use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\PageBuilderField;
+use Miran\Mksine\Filament\Resources\Tags\Schemas\TagForm;
 use Miran\Mksine\Models\Page;
 
 class PageForm
@@ -77,6 +78,7 @@ class PageForm
                             ->required()
                             ->native(false)
                             ->live(),
+                        TagForm::assignmentSelect('mksine::pages.tags'),
                         DateTimePicker::make('published_at')
                             ->label(__('mksine::pages.publish_date'))
                             ->visible(fn ($get) => $get('status') === 'scheduled')

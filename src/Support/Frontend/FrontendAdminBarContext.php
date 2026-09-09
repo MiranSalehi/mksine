@@ -7,6 +7,7 @@ namespace Miran\Mksine\Support\Frontend;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Models\Tag;
 
 final readonly class FrontendAdminBarContext
 {
@@ -15,5 +16,6 @@ final readonly class FrontendAdminBarContext
         public ?Page $page = null,
         public ?Post $post = null,
         public ?Category $category = null,
+        public ?Tag $tag = null,
     ) {}
 }

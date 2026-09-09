@@ -12,6 +12,7 @@ use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Filament\Resources\Categories\CategoryResource;
 use Miran\Mksine\Filament\Resources\Pages\PageResource;
 use Miran\Mksine\Filament\Resources\Posts\PostResource;
+use Miran\Mksine\Filament\Resources\Tags\TagResource;
 
 final class RegisterFrontendAdminBarCoreItems
 {
@@ -60,6 +61,15 @@ final class RegisterFrontendAdminBarCoreItems
             );
         }
 
+        if ($context->tag !== null && $this->canManage('update', $context->tag)) {
+            $items[] = new FrontendAdminBarItem(
+                id: 'mksine.edit_tag',
+                label: __('mksine::frontend_admin_bar.edit_tag', ['name' => $context->tag->name]),
+                url: TagResource::getUrl('edit', ['record' => $context->tag], panel: $panel->getId()),
+                priority: 20,
+            );
+        }
+
         if ($context->routeName === 'posts.index' && $this->canManage('viewAny', PostResource::getModel())) {
             $items[] = new FrontendAdminBarItem(
                 id: 'mksine.manage_posts',
@@ -74,6 +84,15 @@ final class RegisterFrontendAdminBarCoreItems
                 id: 'mksine.manage_categories',
                 label: __('mksine::frontend_admin_bar.manage_categories'),
                 url: CategoryResource::getUrl(panel: $panel->getId()),
+                priority: 30,
+            );
+        }
+
+        if ($context->routeName === 'tags.index' && $this->canManage('viewAny', TagResource::getModel())) {
+            $items[] = new FrontendAdminBarItem(
+                id: 'mksine.manage_tags',
+                label: __('mksine::frontend_admin_bar.manage_tags'),
+                url: TagResource::getUrl(panel: $panel->getId()),
                 priority: 30,
             );
         }

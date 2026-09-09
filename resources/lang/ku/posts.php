@@ -10,6 +10,7 @@ return [
     'status' => 'دۆخ',
     'author' => 'نووسەر',
     'categories' => 'پۆلەکان',
+    'tags' => 'تاگەکان',
     'published_at' => 'بەرواری بڵاوکردنەوە',
     'featured_image' => 'وێنەی تایبەت',
     'content' => 'ناوەڕۆک',

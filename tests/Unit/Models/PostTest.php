@@ -55,4 +55,11 @@ describe('Post Model', function () {
 
         expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
     });
+
+    it('has tags morph relationship', function () {
+        $post = new Post;
+        $relation = $post->tags();
+
+        expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphToMany::class);
+    });
 });

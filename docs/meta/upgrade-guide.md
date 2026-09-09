@@ -29,7 +29,21 @@ When adding an entry, copy this skeleton:
 
 ---
 
-## 1.5.1 (2026-08-26)
+## Unreleased
+
+### Added
+
+- **Native tags.** Flat, polymorphic tags on `Post` and `Page` (`tags` + `taggables`). Admin: Content → Tags, plus a tags select on post and page forms. Storefront: `/tags` and `/tag/{slug}` (permalinks `tags_url` / `single_tag_url`). Archives list published posts and published pages in separate sections.
+
+### Migration
+
+1. Run `php artisan migrate` (creates `tags` and `taggables`).
+2. Run `php artisan shield:generate --all` so Filament Shield picks up `ViewAny:Tag` and related permissions.
+3. **Spatie `laravel-tags` clash.** Core uses tables `tags` and `taggables` and a public `tags()` relation on `Post`/`Page`. If a plugin already used Spatie `laravel-tags` on those models, rename or drop Spatie’s tables/relation before upgrading — they are not compatible.
+4. Custom themes: add `tag.blade.php` and `tags.blade.php`. The active host theme does **not** fall back to the bundled `mksine` theme views.
+5. New permalink settings: Tags URL (`/tags`) and Single Tag URL (`/tag/{slug}`).
+
+---
 
 ### Fixed
 
