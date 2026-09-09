@@ -211,6 +211,20 @@
                                                 </x-filament::button>
                                             @endif
 
+                                            @if ($this->canRollbackPlugin($pluginId))
+                                                <x-filament::button
+                                                    size="sm"
+                                                    color="gray"
+                                                    outlined
+                                                    icon="heroicon-o-arrow-uturn-left"
+                                                    wire:click="rollbackPluginAction('{{ $pluginId }}')"
+                                                    wire:loading.attr="disabled"
+                                                    wire:confirm="{{ __('mksine::updater.rollback_confirm_body') }}"
+                                                >
+                                                    {{ __('mksine::updater.rollback') }}
+                                                </x-filament::button>
+                                            @endif
+
                                             <x-filament::button
                                                 size="sm"
                                                 color="gray"

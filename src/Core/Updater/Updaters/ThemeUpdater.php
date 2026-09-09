@@ -4,34 +4,25 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Updater\Updaters;
 
-use Illuminate\Support\Facades\Artisan;
+use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use Miran\Mksine\Core\Updater\ArchiveExtractor;
+use Miran\Mksine\Core\Updater\ArtisanCaller;
 use Miran\Mksine\Core\Updater\AtomicReplacer;
 use Miran\Mksine\Core\Updater\BackupManager;
+use Miran\Mksine\Core\Updater\Support\RuntimeCache;
+use Miran\Mksine\Core\Updater\Support\ThemeZipIdentity;
+use Miran\Mksine\Core\Updater\UpdateContext;
 use Miran\Mksine\Core\Updater\UpdateException;
 use Miran\Mksine\Core\Updater\UpdateLog;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Core\Updater\UpdateTarget;
+use Miran\Mksine\Core\Updater\VersionGuard;
 use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Updates an installed project theme from a ZIP upload.
- *
- * Only project themes (living under resources/views/themes/{id}) are updatable.
- * Package themes ship via composer and must be updated through a deploy.
- *
- * Pipeline:
- *   1. Lock.
- *   2. Extract to staging dir next to target (same filesystem).
- *   3. Validate theme.json; ZIP identifier must equal target id; version must be higher.
- *   4. Require dist/ to be present (pre-built assets; server has no npm).
- *   5. Atomic swap.
- *   6. Clear theme cache; republish assets + translations.
- *
- * Theme updates never run migrations, so there is no DB-dirty risk.
- * The active theme remains active — views are picked up on the next render.
  */
 final class ThemeUpdater
 {
@@ -45,25 +36,19 @@ final class ThemeUpdater
         return $this->runner->run(
             UpdateTarget::Theme,
             $themeIdentifier,
-            function (UpdateLog $log, array &$steps, array &$warnings) use ($themeIdentifier, $zipPath, $force): array {
-                return $this->execute($themeIdentifier, $zipPath, $force, $log, $steps, $warnings);
+            function (UpdateLog $log, UpdateContext $ctx) use ($themeIdentifier, $zipPath, $force): void {
+                $this->execute($themeIdentifier, $zipPath, $force, $log, $ctx);
             }
         );
     }
 
-    /**
-     * @param  array<int,string>  $steps
-     * @param  array<int,string>  $warnings
-     * @return array{from: ?string, to: string, backup: ?string}
-     */
     private function execute(
         string $themeIdentifier,
         string $zipPath,
         bool $force,
         UpdateLog $log,
-        array &$steps,
-        array &$warnings,
-    ): array {
+        UpdateContext $ctx,
+    ): void {
         $current = $this->themeManager->get($themeIdentifier);
         if ($current === null) {
             throw UpdateException::validation("Theme '{$themeIdentifier}' is not discovered.");
@@ -84,14 +69,15 @@ final class ThemeUpdater
         $this->assertMaxZipSize($zipPath);
 
         $fromVersion = $current->version;
+        $ctx->fromVersion = $fromVersion;
         $log->step('validate-zip', "zip={$zipPath}");
-        $steps[] = 'validate-zip';
+        $ctx->steps[] = 'validate-zip';
 
         $stagingDir = $themesDir.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-'.$themeIdentifier;
 
         $extractedRoot = ArchiveExtractor::extract($zipPath, $stagingDir);
         $log->step('extract', "root={$extractedRoot}");
-        $steps[] = 'extract';
+        $ctx->steps[] = 'extract';
 
         try {
             $themeJsonPath = $extractedRoot.DIRECTORY_SEPARATOR.'theme.json';
@@ -104,30 +90,17 @@ final class ThemeUpdater
                 throw UpdateException::validation('Invalid theme.json: missing "name".');
             }
 
-            // Identity guard — ZIP's identifier (root folder OR slugified name) must match target.
-            $rootFolderName = basename($extractedRoot);
-            $zipIdentifier = $rootFolderName !== basename($stagingDir)
-                ? $rootFolderName
-                : strtolower(str_replace([' ', '_'], '-', (string) $json['name']));
-
-            if ($zipIdentifier !== $themeIdentifier) {
+            if (! ThemeZipIdentity::matches($extractedRoot, $stagingDir, $json, $themeIdentifier)) {
+                $candidates = implode(', ', ThemeZipIdentity::candidates($extractedRoot, $stagingDir, $json));
                 throw UpdateException::validation(
-                    "ZIP theme identifier '{$zipIdentifier}' does not match target '{$themeIdentifier}'."
+                    "ZIP theme identity [{$candidates}] does not match target '{$themeIdentifier}'."
                 );
             }
 
             $toVersion = (string) ($json['version'] ?? '0.0.0');
-            if (! $force) {
-                $cmp = version_compare($toVersion, $fromVersion);
-                if ($cmp === 0) {
-                    throw UpdateException::validation("Theme '{$themeIdentifier}' is already at version {$fromVersion}. Use --force on CLI to reinstall.");
-                }
-                if ($cmp < 0) {
-                    throw UpdateException::validation("Downgrade rejected: {$fromVersion} -> {$toVersion}. Use --force on CLI to override.");
-                }
-            }
+            $ctx->toVersion = $toVersion;
+            VersionGuard::assertUpgrade($fromVersion, $toVersion, $force);
 
-            // dist/ is REQUIRED — production servers have no npm to build it.
             $distPath = $extractedRoot.DIRECTORY_SEPARATOR.'dist';
             if (! is_dir($distPath)) {
                 throw UpdateException::validation(
@@ -136,63 +109,54 @@ final class ThemeUpdater
             }
 
             $log->step('validate-manifest', "{$fromVersion} -> {$toVersion}");
-            $steps[] = 'validate-manifest';
+            $ctx->steps[] = 'validate-manifest';
 
-            // Swap.
             $backupManager = new BackupManager(UpdateTarget::Theme, $themeIdentifier);
             $backupManager->ensureRoot($current->path);
             $backupPath = $backupManager->newBackupPath($current->path, $fromVersion);
 
             $replacer = new AtomicReplacer;
             $replacer->swap($extractedRoot, $current->path, $backupPath);
-            $actualBackup = $replacer->backupPath();
+            $ctx->backupPath = $replacer->backupPath();
+            $ctx->swapped = true;
             $this->cleanupStagingRemnants($stagingDir);
+            RuntimeCache::resetOpcache();
 
-            $log->step('swap', "backup={$actualBackup}");
-            $steps[] = 'swap';
+            $log->step('swap', 'backup='.($ctx->backupPath ?? 'none'));
+            $ctx->steps[] = 'swap';
 
-            // Post-steps.
             $this->themeManager->clearCache();
             $log->step('clear-theme-cache');
-            $steps[] = 'clear-theme-cache';
+            $ctx->steps[] = 'clear-theme-cache';
 
             try {
                 $this->themeManager->publishAssets($themeIdentifier);
                 $log->step('publish-assets');
-                $steps[] = 'publish-assets';
+                $ctx->steps[] = 'publish-assets';
             } catch (\Throwable $e) {
-                $log->warning('publishAssets failed: '.$e->getMessage());
-                $warnings[] = 'Theme asset publish failed: '.$e->getMessage();
+                throw UpdateException::post('Theme asset publish failed: '.$e->getMessage(), $e);
             }
 
-            try {
-                Artisan::call('mks:theme-publish-lang', ['--theme' => $themeIdentifier]);
-                $log->step('publish-lang');
-                $steps[] = 'publish-lang';
-            } catch (\Throwable $e) {
-                $log->warning('theme-publish-lang failed: '.$e->getMessage());
-                $warnings[] = 'Theme translation publish failed: '.$e->getMessage();
-            }
+            ArtisanCaller::callOrFail('mks:theme-publish-lang', ['theme' => $themeIdentifier]);
+            $log->step('publish-lang');
+            $ctx->steps[] = 'publish-lang';
 
             try {
-                Artisan::call('optimize:clear');
+                ArtisanCaller::callOrFail('optimize:clear');
                 $log->step('optimize-clear');
-                $steps[] = 'optimize-clear';
-            } catch (\Throwable $e) {
+                $ctx->steps[] = 'optimize-clear';
+            } catch (UpdateException $e) {
                 $log->warning('optimize:clear failed: '.$e->getMessage());
+                $ctx->warnings[] = 'optimize:clear failed after swap.';
             }
+
+            $this->warnMissingPluginDependencies($themeIdentifier, $ctx);
 
             $keep = (int) config('mksine.updater.keep_backups', 3);
             $pruned = $backupManager->prune($current->path, $keep);
             if ($pruned !== []) {
                 $log->info('Pruned '.count($pruned).' old backup(s).');
             }
-
-            return [
-                'from' => $fromVersion,
-                'to' => $toVersion,
-                'backup' => $actualBackup,
-            ];
         } finally {
             if (is_dir($stagingDir)) {
                 try {
@@ -201,6 +165,25 @@ final class ThemeUpdater
                     // Non-fatal.
                 }
             }
+        }
+    }
+
+    private function warnMissingPluginDependencies(string $themeIdentifier, UpdateContext $ctx): void
+    {
+        try {
+            $theme = $this->themeManager->get($themeIdentifier);
+            if ($theme === null) {
+                return;
+            }
+
+            $missing = app(ThemeDependencyChecker::class)->missingPluginLabels($theme);
+            if ($missing === []) {
+                return;
+            }
+
+            $ctx->warnings[] = 'Theme requires inactive or missing plugin(s): '.implode(', ', $missing).'.';
+        } catch (\Throwable $e) {
+            $ctx->warnings[] = 'Could not verify theme plugin dependencies: '.$e->getMessage();
         }
     }
 

@@ -227,6 +227,10 @@ class ManagePlugins extends Page
     {
         SuperAdminGate::authorize();
 
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
+
         $pluginId = (string) ($data['plugin_id'] ?? '');
         $force = (bool) ($data['force'] ?? false);
         $path = $this->resolveUploadedZipPath($data['plugin_file'] ?? null);
@@ -248,9 +252,22 @@ class ManagePlugins extends Page
         $this->refreshPage();
     }
 
+    public function canRollbackPlugin(string $pluginId): bool
+    {
+        if (! SuperAdminGate::check() || ! (bool) config('mksine.updater.enabled', true)) {
+            return false;
+        }
+
+        return array_key_exists($pluginId, $this->getUpdatablePluginOptions());
+    }
+
     public function rollbackPluginAction(string $pluginId): void
     {
         SuperAdminGate::authorize();
+
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
 
         $result = (new RollbackManager)->rollbackPlugin($pluginId);
         $this->sendUpdateResultNotification($result, __('mksine::updater.plugin_rollback_title'));

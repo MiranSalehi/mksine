@@ -464,7 +464,7 @@ See [Operations → release archive](../operations/deployment-hosting.md) for th
 
 ## Updater commands
 
-See [Operations → ZIP updater](../operations/zip-updater.md) for the full pipeline description. All updater commands require Super Admin permission and honour `config('mksine.updater.enabled')`.
+See [Operations → ZIP updater](../operations/zip-updater.md). Plugin/theme ZIP commands and `mksine:update` honour `config('mksine.updater.enabled')`. The CLI does **not** require Super Admin; SSH access to Artisan is enough. Filament UI actions still require Super Admin.
 
 ### `mks-plugin:update`
 
@@ -474,9 +474,9 @@ mks-plugin:update {plugin} {file} [--force]
 
 Source: [`UpdatePluginCommand`](../../src/Console/Commands/UpdatePluginCommand.php).
 
-Update a **project** plugin (`plugins/{id}`) from a ZIP. The ZIP's `plugin.php` must declare the same `id` as the target and a strictly higher `version` (unless `--force` is passed).
+Update a **project** plugin (`plugins/{id}`) from a ZIP. The ZIP's `plugin.php` must declare the same `id` as the target and a strictly higher `version` (unless `--force` or `allow_same_version_reinstall`).
 
-Pipeline: validate → extract → deactivate old → atomic swap → publish-lang → publish assets → discover → `optimize:clear` → migrate last. On migration failure the plugin is marked `boot_failed=true` + `status=inactive` and the new code stays in place; see the operations doc for recovery.
+Pipeline: validate → extract → DB quiesce if active (no `deactivate()` hook) → atomic swap → publish-lang `{plugin}` → publish assets → discover → `optimize:clear` → migrate last. On migration failure the plugin is marked `boot_failed=true` + `status=inactive` and the new code stays in place; see the operations doc for recovery.
 
 ### `mks:theme-update`
 
@@ -486,33 +486,28 @@ mks:theme-update {theme} {file} [--force]
 
 Source: [`UpdateThemeCommand`](../../src/Console/Commands/UpdateThemeCommand.php).
 
-Update a **project** theme (`resources/views/themes/{id}`) from a ZIP. The ZIP must contain `theme.json`, a higher `version`, and a `dist/` directory (production has no npm to build).
+Update a **project** theme (`resources/views/themes/{id}`) from a ZIP. The ZIP must contain `theme.json`, a higher `version` (unless `--force`), and a `dist/` directory (production has no npm to build). Identity accepts `theme.json.identifier`, slugified name, folder name, or `{id}-*` GitHub wrappers.
 
 ### `mksine:update`
 
 ```
-mksine:update {file} [--force]
+mksine:update [--force] [--full-migrate]
 ```
 
 Source: [`UpdateCoreCommand`](../../src/Console/Commands/UpdateCoreCommand.php).
 
-Update the core `miran/mksine` package in path-repository installs (`packages/mksine/`). Rejected if:
+Updates `miran/mksine` with Composer (`composer update miran/mksine`), then a **new** PHP process for `vendor:publish --tag=mksine-migrations --force` and `migrate --force` (package migrations only unless `--full-migrate`). Does **not** accept a ZIP. If Composer is not on the server, the command fails and prints an offline deploy playbook (`composer.lock` + `vendor/`, optionally `packages/mksine` for path repos). Non-interactive runs require `--force`.
 
-- the ZIP's `composer.json` does not declare `"name": "miran/mksine"`,
-- the ZIP changes any entry in `require` or `require-dev` (production has no composer),
-- the new version is not strictly higher (override with `--force`).
-
-### `mks-plugin:rollback` / `mks:theme-rollback` / `mksine:rollback`
+### `mks-plugin:rollback` / `mks:theme-rollback`
 
 ```
 mks-plugin:rollback {plugin}
 mks:theme-rollback {theme}
-mksine:rollback
 ```
 
-Sources: [`RollbackPluginCommand`](../../src/Console/Commands/RollbackPluginCommand.php), [`RollbackThemeCommand`](../../src/Console/Commands/RollbackThemeCommand.php), [`RollbackCoreCommand`](../../src/Console/Commands/RollbackCoreCommand.php).
+Sources: [`RollbackPluginCommand`](../../src/Console/Commands/RollbackPluginCommand.php), [`RollbackThemeCommand`](../../src/Console/Commands/RollbackThemeCommand.php).
 
-Restore the most recent backup in `{target-parent}/.mks-backups/`. **Code-only** rollback — migrations are **not** reversed. Combine with a DB snapshot restore if needed.
+Restore the most recent backup in `{target-parent}/.mks-backups/`. **Code-only** rollback — migrations are **not** reversed. Combine with a DB snapshot restore if needed. Interactive sessions confirm; `--no-interaction` skips confirm.
 
 ## Typical sequences
 

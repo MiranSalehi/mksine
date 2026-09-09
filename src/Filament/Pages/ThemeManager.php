@@ -204,6 +204,10 @@ class ThemeManager extends Page
     {
         SuperAdminGate::authorize();
 
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
+
         $themeId = (string) ($data['theme_id'] ?? '');
         $force = (bool) ($data['force'] ?? false);
         $path = $this->resolveUploadedZipPath($data['theme_file'] ?? null);
@@ -225,9 +229,22 @@ class ThemeManager extends Page
         $this->redirect(static::getUrl());
     }
 
+    public function canRollbackTheme(string $themeId): bool
+    {
+        if (! SuperAdminGate::check() || ! (bool) config('mksine.updater.enabled', true)) {
+            return false;
+        }
+
+        return array_key_exists($themeId, $this->getUpdatableThemeOptions());
+    }
+
     public function rollbackThemeAction(string $themeId): void
     {
         SuperAdminGate::authorize();
+
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
 
         $result = (new RollbackManager)->rollbackTheme($themeId);
         $this->sendUpdateResultNotification($result, __('mksine::updater.theme_rollback_title'));

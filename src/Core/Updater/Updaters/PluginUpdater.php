@@ -4,37 +4,29 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Updater\Updaters;
 
-use Illuminate\Support\Facades\Artisan;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Plugins\PluginManifest;
 use Miran\Mksine\Core\Updater\ArchiveExtractor;
+use Miran\Mksine\Core\Updater\ArtisanCaller;
 use Miran\Mksine\Core\Updater\AtomicReplacer;
 use Miran\Mksine\Core\Updater\BackupManager;
+use Miran\Mksine\Core\Updater\Support\RuntimeCache;
+use Miran\Mksine\Core\Updater\UpdateContext;
 use Miran\Mksine\Core\Updater\UpdateException;
 use Miran\Mksine\Core\Updater\UpdateLog;
+use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Core\Updater\UpdateTarget;
+use Miran\Mksine\Core\Updater\VersionGuard;
 use Miran\Mksine\Models\Plugin as PluginModel;
 use Miran\Mksine\Support\UploadLimits;
 
 /**
  * Updates an installed project plugin from a ZIP upload.
  *
- * Pipeline order (publish-first, migrate-last):
- *   1. Lock.
- *   2. Validate ZIP: safe extract -> staging under plugins/ parent FS.
- *   3. Validate manifest: plugin.php exists, id matches, version > current.
- *   4. If plugin is active, call deactivate() on the OLD instance (same request).
- *   5. Atomic rename swap:  current -> backup, staging -> current.
- *   6. Post-steps (publish-lang, publish assets, discover, clear caches).
- *   7. Migrate LAST. On failure: mark boot_failed + status=inactive. Keep new code.
- *      We deliberately do NOT auto-rollback migrations — forward migrations are
- *      assumed backward-compatible per plugin authoring guidelines.
- *   8. Status = installed. User manually re-activates in the NEXT request so the
- *      autoloader picks up the new classes cleanly.
- *
- * Only plugins living under base_path('plugins') are updatable — composer-installed
- * mks-plugin packages must be updated through composer on the dev machine and deployed.
+ * Active plugins are demoted in the DB only (the plugin deactivate() hook is
+ * not invoked). After a successful swap the row stays `installed` so the
+ * operator re-activates on a subsequent request.
  */
 final class PluginUpdater
 {
@@ -48,26 +40,19 @@ final class PluginUpdater
         return $this->runner->run(
             UpdateTarget::Plugin,
             $pluginId,
-            function (UpdateLog $log, array &$steps, array &$warnings) use ($pluginId, $zipPath, $force): array {
-                return $this->execute($pluginId, $zipPath, $force, $log, $steps, $warnings);
+            function (UpdateLog $log, UpdateContext $ctx) use ($pluginId, $zipPath, $force): void {
+                $this->execute($pluginId, $zipPath, $force, $log, $ctx);
             }
         );
     }
 
-    /**
-     * @param  array<int,string>  $steps
-     * @param  array<int,string>  $warnings
-     * @return array{from: ?string, to: string, backup: ?string}
-     */
     private function execute(
         string $pluginId,
         string $zipPath,
         bool $force,
         UpdateLog $log,
-        array &$steps,
-        array &$warnings,
-    ): array {
-        // 1) Locate current plugin on disk. Only project plugins are updatable.
+        UpdateContext $ctx,
+    ): void {
         $currentManifest = $this->pluginManager->getManifest($pluginId);
         if ($currentManifest === null) {
             throw UpdateException::validation("Plugin '{$pluginId}' is not discovered. Only installed plugins can be updated.");
@@ -84,22 +69,23 @@ final class PluginUpdater
         }
 
         $fromVersion = $currentManifest->version();
+        $ctx->fromVersion = $fromVersion;
         $log->step('validate-zip', "zip={$zipPath}");
-        $steps[] = 'validate-zip';
+        $ctx->steps[] = 'validate-zip';
 
-        // 2) Extract to staging (same filesystem as plugins/ so rename is atomic).
-        $stagingParent = $pluginsDir;
-        $stagingDir = $stagingParent.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-'.$pluginId;
+        $stagingDir = $pluginsDir.DIRECTORY_SEPARATOR.'.mks-staging-'.bin2hex(random_bytes(4)).'-'.$pluginId;
         $this->assertMaxZipSize($zipPath);
 
         $extractedRoot = ArchiveExtractor::extract($zipPath, $stagingDir);
         $log->step('extract', "root={$extractedRoot}");
-        $steps[] = 'extract';
+        $ctx->steps[] = 'extract';
+
+        $wasActive = false;
 
         try {
-            // 3) Validate new manifest.
             $newManifest = $this->loadManifest($extractedRoot);
             $toVersion = $newManifest->version();
+            $ctx->toVersion = $toVersion;
 
             if ($newManifest->id() !== $pluginId) {
                 throw UpdateException::validation(
@@ -107,66 +93,44 @@ final class PluginUpdater
                 );
             }
 
-            if (! $force) {
-                $cmp = version_compare($toVersion, $fromVersion);
-                if ($cmp === 0) {
-                    throw UpdateException::validation(
-                        "Plugin '{$pluginId}' is already at version {$fromVersion}. Use --force on CLI to reinstall."
-                    );
-                }
-                if ($cmp < 0) {
-                    throw UpdateException::validation(
-                        "Downgrade rejected: {$fromVersion} -> {$toVersion}. Use --force on CLI to override."
-                    );
-                }
-            }
+            VersionGuard::assertUpgrade($fromVersion, $toVersion, $force);
+            $this->assertPluginVendorPresent($extractedRoot);
 
             $log->step('validate-manifest', "{$fromVersion} -> {$toVersion}");
-            $steps[] = 'validate-manifest';
+            $ctx->steps[] = 'validate-manifest';
 
-            // 4) Deactivate the currently-running instance so its resources are released.
-            $wasActive = $this->deactivateIfActive($pluginId, $log, $warnings);
+            $wasActive = $this->quiesceIfActive($pluginId, $log, $ctx);
 
-            // 5) Swap.
             $backupManager = new BackupManager(UpdateTarget::Plugin, $pluginId);
             $backupManager->ensureRoot($currentPath);
             $backupPath = $backupManager->newBackupPath($currentPath, $fromVersion);
 
             $replacer = new AtomicReplacer;
-            $replacer->swap($extractedRoot, $currentPath, $backupPath);
-            $actualBackupPath = $replacer->backupPath();
-
-            // If the extracted root was a sub-folder of staging, the rest of the staging
-            // parent is now empty — clean it up so we don't leak.
-            $this->cleanupStagingRemnants($stagingDir);
-
-            $log->step('swap', "backup={$actualBackupPath}");
-            $steps[] = 'swap';
-
-            // 6) Post-steps (publish-first; safe even if plugin isn't active).
-            $this->runPostSteps($pluginId, $log, $steps, $warnings);
-
-            // 7) Migrate LAST.
-            $migrateOk = $this->runMigrations($pluginId, $log, $warnings);
-
-            if (! $migrateOk) {
-                $this->markPluginDegraded(
-                    $pluginId,
-                    "Update migration failed — plugin marked as inactive (boot_failed=true). Inspect storage/logs/mksine-updates/ and run `php artisan mks-plugin:migrate {$pluginId}` manually."
-                );
-                $log->warning('Plugin marked as boot_failed/inactive. Manual migration recovery required.');
-
-                throw UpdateException::post(
-                    "Plugin '{$pluginId}' updated to {$toVersion} but migrations failed. Plugin is now INACTIVE. See log: ".$log->path()
-                );
+            try {
+                $replacer->swap($extractedRoot, $currentPath, $backupPath);
+            } catch (UpdateException $e) {
+                if ($wasActive) {
+                    $this->restoreActiveStatus($pluginId);
+                }
+                throw $e;
             }
 
-            // 8) Record state: never auto-activate. User re-activates in next request.
-            $this->stampModelOnSuccess($pluginId, $wasActive, $toVersion);
-            $log->step('status', $wasActive ? 'installed (was active — reactivate manually next request)' : 'installed (was not active)');
-            $steps[] = 'status';
+            $ctx->backupPath = $replacer->backupPath();
+            $ctx->swapped = true;
+            $this->cleanupStagingRemnants($stagingDir);
+            RuntimeCache::resetOpcache();
 
-            // Prune old backups.
+            $log->step('swap', 'backup='.($ctx->backupPath ?? 'none'));
+            $ctx->steps[] = 'swap';
+
+            $this->runPostSteps($pluginId, $log, $ctx);
+
+            $this->runMigrations($pluginId, $log, $ctx);
+
+            $this->stampModelOnSuccess($pluginId, $wasActive);
+            $log->step('status', $wasActive ? 'installed (was active — reactivate manually next request)' : 'installed (was not active)');
+            $ctx->steps[] = 'status';
+
             $keep = (int) config('mksine.updater.keep_backups', 3);
             $pruned = $backupManager->prune($currentPath, $keep);
             if ($pruned !== []) {
@@ -174,16 +138,9 @@ final class PluginUpdater
             }
 
             if ($wasActive) {
-                $warnings[] = 'Plugin was active before the update. Re-activate it from the Plugins page so the new code boots with a fresh autoloader.';
+                $ctx->warnings[] = 'Plugin was active before the update. Re-activate it from the Plugins page so the new code boots with a fresh autoloader.';
             }
-
-            return [
-                'from' => $fromVersion,
-                'to' => $toVersion,
-                'backup' => $actualBackupPath,
-            ];
         } finally {
-            // Ensure staging is gone no matter what.
             if (is_dir($stagingDir)) {
                 try {
                     ArchiveExtractor::deleteDirectory($stagingDir);
@@ -213,6 +170,42 @@ final class PluginUpdater
         }
     }
 
+    private function assertPluginVendorPresent(string $extractedRoot): void
+    {
+        $composerFile = $extractedRoot.DIRECTORY_SEPARATOR.'composer.json';
+        if (! is_file($composerFile)) {
+            return;
+        }
+
+        $decoded = json_decode((string) file_get_contents($composerFile), true);
+        if (! is_array($decoded)) {
+            throw UpdateException::validation('plugin composer.json is invalid JSON.');
+        }
+
+        $require = is_array($decoded['require'] ?? null) ? $decoded['require'] : [];
+        $packages = [];
+        foreach ($require as $package => $constraint) {
+            if (! is_string($package)) {
+                continue;
+            }
+            $lower = strtolower($package);
+            if ($lower === 'php' || str_starts_with($lower, 'ext-')) {
+                continue;
+            }
+            $packages[] = $package;
+        }
+
+        if ($packages === []) {
+            return;
+        }
+
+        if (! is_dir($extractedRoot.DIRECTORY_SEPARATOR.'vendor')) {
+            throw UpdateException::validation(
+                'Plugin ZIP declares Composer packages ('.implode(', ', $packages).') but has no vendor/ directory. Production servers cannot run composer — vendor the dependencies into the ZIP.'
+            );
+        }
+    }
+
     private function loadManifest(string $extractedRoot): PluginManifest
     {
         try {
@@ -222,89 +215,85 @@ final class PluginUpdater
         }
     }
 
-    private function deactivateIfActive(string $pluginId, UpdateLog $log, array &$warnings): bool
+    private function quiesceIfActive(string $pluginId, UpdateLog $log, UpdateContext $ctx): bool
     {
         $model = PluginModel::where('plugin_id', $pluginId)->first();
         $wasActive = $model?->isActive() ?? false;
 
-        if (! $wasActive) {
+        if (! $wasActive || $model === null) {
             return false;
         }
 
-        try {
-            $this->pluginManager->deactivate($pluginId);
-            $log->step('deactivate-old');
-        } catch (\Throwable $e) {
-            $log->warning('deactivate() of old plugin threw: '.$e->getMessage());
-            $warnings[] = 'Old plugin deactivate() threw; continuing with replace. Inspect plugin log for details.';
-            // We still mark the DB row as inactive so state is consistent.
-            $model?->update(['status' => PluginModel::STATUS_INACTIVE, 'deactivated_at' => now()]);
-        }
+        $model->update([
+            'status' => PluginModel::STATUS_INSTALLED,
+            'deactivated_at' => now(),
+        ]);
+        $log->step('quiesce-db');
+        $ctx->steps[] = 'quiesce-db';
 
         return true;
     }
 
-    /**
-     * @param  array<int,string>  $steps
-     * @param  array<int,string>  $warnings
-     */
-    private function runPostSteps(string $pluginId, UpdateLog $log, array &$steps, array &$warnings): void
+    private function restoreActiveStatus(string $pluginId): void
     {
-        // Force fresh discovery so PluginManager sees the new files.
-        try {
-            app()->forgetInstance(PluginManager::class);
-            Artisan::call('mks-plugin:discover');
-            $log->step('discover');
-            $steps[] = 'discover';
-        } catch (\Throwable $e) {
-            $log->warning('discover failed: '.$e->getMessage());
-            $warnings[] = 'mks-plugin:discover failed after swap: '.$e->getMessage();
+        PluginModel::where('plugin_id', $pluginId)->update([
+            'status' => PluginModel::STATUS_ACTIVE,
+            'deactivated_at' => null,
+        ]);
+    }
+
+    private function runPostSteps(string $pluginId, UpdateLog $log, UpdateContext $ctx): void
+    {
+        app()->forgetInstance(PluginManager::class);
+        $output = ArtisanCaller::callOrFail('mks-plugin:discover');
+        if ($output !== '') {
+            $log->info('discover output: '.str_replace(["\r", "\n"], [' ', ' '], $output));
         }
+        $log->step('discover');
+        $ctx->steps[] = 'discover';
+
+        ArtisanCaller::callOrFail('mks-plugin:publish-lang', ['plugin' => $pluginId]);
+        $log->step('publish-lang');
+        $ctx->steps[] = 'publish-lang';
+
+        ArtisanCaller::callOrFail('mks-plugin:publish', ['plugin' => $pluginId, '--force' => true]);
+        $log->step('publish-assets');
+        $ctx->steps[] = 'publish-assets';
 
         try {
-            Artisan::call('mks-plugin:publish-lang');
-            $log->step('publish-lang');
-            $steps[] = 'publish-lang';
-        } catch (\Throwable $e) {
-            $log->warning('publish-lang failed: '.$e->getMessage());
-            $warnings[] = 'mks-plugin:publish-lang failed after swap.';
-        }
-
-        try {
-            Artisan::call('mks-plugin:publish', ['plugin' => $pluginId, '--force' => true]);
-            $log->step('publish-assets');
-            $steps[] = 'publish-assets';
-        } catch (\Throwable $e) {
-            $log->warning('publish assets failed: '.$e->getMessage());
-            $warnings[] = 'mks-plugin:publish failed after swap.';
-        }
-
-        try {
-            Artisan::call('optimize:clear');
+            ArtisanCaller::callOrFail('optimize:clear');
             $log->step('optimize-clear');
-            $steps[] = 'optimize-clear';
-        } catch (\Throwable $e) {
+            $ctx->steps[] = 'optimize-clear';
+        } catch (UpdateException $e) {
             $log->warning('optimize:clear failed: '.$e->getMessage());
-            $warnings[] = 'optimize:clear failed after swap.';
+            $ctx->warnings[] = 'optimize:clear failed after swap.';
         }
     }
 
-    private function runMigrations(string $pluginId, UpdateLog $log, array &$warnings): bool
+    private function runMigrations(string $pluginId, UpdateLog $log, UpdateContext $ctx): void
     {
+        $ctx->dbPossiblyDirty = true;
+
         try {
-            Artisan::call('mks-plugin:migrate', ['plugin' => $pluginId]);
-            $output = trim(Artisan::output());
+            $output = ArtisanCaller::callOrFail('mks-plugin:migrate', ['plugin' => $pluginId]);
             if ($output !== '') {
                 $log->info('migrate output: '.str_replace(["\r", "\n"], [' ', ' '], $output));
             }
             $log->step('migrate');
+            $ctx->steps[] = 'migrate';
+            $ctx->dbPossiblyDirty = false;
+        } catch (UpdateException $e) {
+            $this->markPluginDegraded(
+                $pluginId,
+                "Update migration failed — plugin marked as inactive (boot_failed=true). Inspect storage/logs/mksine-updates/ and run `php artisan mks-plugin:migrate {$pluginId}` manually."
+            );
+            $log->warning('Plugin marked as boot_failed/inactive. Manual migration recovery required.');
+            $ctx->warnings[] = 'Migrations failed after swap: '.$e->getMessage();
 
-            return true;
-        } catch (\Throwable $e) {
-            $log->error('migrate failed: '.$e->getMessage());
-            $warnings[] = 'Migrations failed after swap: '.$e->getMessage();
-
-            return false;
+            throw UpdateException::post(
+                "Plugin '{$pluginId}' updated to ".($ctx->toVersion ?? '?').' but migrations failed. Plugin is now INACTIVE. See log: '.$log->path(),
+                $e
+            );
         }
     }
 
@@ -317,19 +306,17 @@ final class PluginUpdater
         $model->markBootFailed($error);
     }
 
-    private function stampModelOnSuccess(string $pluginId, bool $wasActive, string $toVersion): void
+    private function stampModelOnSuccess(string $pluginId, bool $wasActive): void
     {
         $model = PluginModel::firstOrCreate(
             ['plugin_id' => $pluginId],
             ['status' => PluginModel::STATUS_INSTALLED, 'installed_at' => now()]
         );
 
-        // Drop the boot-failed flag because code + DB are now consistent.
         if ($model->hasBootFailed()) {
             $model->clearBootFailure();
         }
 
-        // Always demote to 'installed' so next request re-activates with a clean autoloader.
         $payload = ['status' => PluginModel::STATUS_INSTALLED];
         if ($wasActive) {
             $payload['deactivated_at'] = now();

@@ -57,7 +57,6 @@ use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
-use Miran\Mksine\Console\Commands\RollbackCoreCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
 use Miran\Mksine\Console\Commands\RollbackThemeCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
@@ -809,13 +808,12 @@ class MksineServiceProvider extends PackageServiceProvider
             ThemeMakeCommand::class,
             ThemePublishCommand::class,
             ThemePublishLangCommand::class,
-            // Updater commands (ZIP-based plugin / theme / core updates)
+            // Updater: ZIP plugin/theme; Composer for core
             UpdatePluginCommand::class,
             UpdateThemeCommand::class,
             UpdateCoreCommand::class,
             RollbackPluginCommand::class,
             RollbackThemeCommand::class,
-            RollbackCoreCommand::class,
             ReleaseArchiveCommand::class,
             ConsoleRunDetachedCommand::class,
             CreateSuperAdminCommand::class,

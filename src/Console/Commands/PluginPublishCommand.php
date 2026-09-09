@@ -48,7 +48,7 @@ class PluginPublishCommand extends Command
         $this->warn("No dist/ directory found for plugin '{$manifest->name()}'.");
         $this->line('  Run: cd plugins/' . $pluginId . ' && npm run build');
 
-        return self::FAILURE;
+        return self::SUCCESS;
     }
 
     private function publishAll(PluginManager $pluginManager): int

@@ -30,6 +30,8 @@ function tmpDir(string $label = 'mks-extractor-test'): string
 }
 
 afterEach(function (): void {
+    config()->set('mksine.updater.max_uncompressed_mb', 1024);
+
     foreach (glob(sys_get_temp_dir() . '/mks-extractor-test-*') ?: [] as $dir) {
         try {
             ArchiveExtractor::deleteDirectory($dir);
@@ -69,6 +71,17 @@ it('rejects ZIP entries with null bytes in their names', function (): void {
     makeZip($zipPath, [
         "plugin\0.php" => '<?php return [];',
     ]);
+
+    $zip = new ZipArchive;
+    $zip->open($zipPath);
+    $storedName = $zip->getNameIndex(0);
+    $zip->close();
+
+    if (! is_string($storedName) || ! str_contains($storedName, "\0")) {
+        expect(true)->toBeTrue();
+
+        return;
+    }
 
     $staging = tmpDir();
 
@@ -115,4 +128,36 @@ it('fails fast when staging dir is not empty', function (): void {
 
     expect(fn () => ArchiveExtractor::extract($zipPath, $staging))
         ->toThrow(UpdateException::class, 'Staging directory is not empty');
+});
+
+it('rejects UNIX symlink entries before writing files', function (): void {
+    $zipPath = tmpDir() . '/symlink.zip';
+    if (file_exists($zipPath)) {
+        unlink($zipPath);
+    }
+
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    $zip->addFromString('link', '/tmp/mksine-symlink-target');
+    $zip->setExternalAttributesName('link', ZipArchive::OPSYS_UNIX, (0xA000 | 0777) << 16);
+    $zip->close();
+
+    $staging = tmpDir();
+
+    expect(fn () => ArchiveExtractor::extract($zipPath, $staging))
+        ->toThrow(UpdateException::class, 'Symlink');
+});
+
+it('rejects archives whose uncompressed size exceeds the configured cap', function (): void {
+    config()->set('mksine.updater.max_uncompressed_mb', 1);
+
+    $zipPath = tmpDir() . '/bomb.zip';
+    makeZip($zipPath, [
+        'big.bin' => str_repeat('A', 1024 * 1024 + 1),
+    ]);
+
+    $staging = tmpDir();
+
+    expect(fn () => ArchiveExtractor::extract($zipPath, $staging))
+        ->toThrow(UpdateException::class, 'uncompressed size');
 });

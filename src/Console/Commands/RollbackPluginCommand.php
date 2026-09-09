@@ -23,11 +23,17 @@ class RollbackPluginCommand extends Command
 
     public function handle(): int
     {
+        if (! config('mksine.updater.enabled', true)) {
+            $this->error('Updater is disabled via config(mksine.updater.enabled).');
+
+            return self::FAILURE;
+        }
+
         $pluginId = (string) $this->argument('plugin');
 
         $this->warn('Rolling back plugin ' . $pluginId . '. This restores CODE ONLY — migrations are NOT reversed.');
 
-        if (! $this->confirm('Continue?', false)) {
+        if ($this->input->isInteractive() && ! $this->confirm('Continue?', false)) {
             $this->line('Aborted.');
 
             return self::INVALID;

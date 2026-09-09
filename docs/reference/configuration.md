@@ -132,17 +132,18 @@ Tuning guidance:
 
 ## `updater`
 
-ZIP-based updater used by the Filament "Update" actions on the Plugins and Themes pages, the System Update page, and the matching CLI commands. See [ZIP updater](../operations/zip-updater.md).
+ZIP updater for **project plugins and themes**, plus the Composer playbook for core (`mksine:update` / System update page). See [ZIP updater](../operations/zip-updater.md).
 
 | Key | Env | Default | Notes |
 |-----|-----|---------|-------|
-| `enabled` | `MKS_CMS_UPDATER_ENABLED` | `true` | Master switch. When `false`, updater UI is hidden and CLI invocations fail early. |
+| `enabled` | `MKS_CMS_UPDATER_ENABLED` | `true` | Master switch. When `false`, updater UI is hidden and CLI invocations fail early (update and rollback). |
 | `keep_backups` | `MKS_CMS_UPDATER_KEEP_BACKUPS` | `3` | Number of historical backups kept per target under `{target-parent}/.mks-backups/`. Older entries are pruned after each successful update. |
-| `max_zip_size_mb` | `MKS_CMS_UPDATER_MAX_ZIP_MB` | `256` | Hard upload cap per ZIP. Applies to both UI and CLI. |
-| `lock_timeout_sec` | `MKS_CMS_UPDATER_LOCK_TTL` | `300` | Informational stale-lock threshold. `flock()` itself is non-blocking — the updater fails fast if another run is already holding the lock. |
+| `max_zip_size_mb` | `MKS_CMS_UPDATER_MAX_ZIP_MB` | `100` (or `MKS_CMS_MAX_UPLOAD_MB`) | Hard upload cap per plugin/theme ZIP. Applies to both UI and CLI. |
+| `max_uncompressed_mb` | `MKS_CMS_UPDATER_MAX_UNCOMPRESSED_MB` | `1024` | Zip-bomb guard: total uncompressed size of all entries. |
+| `max_zip_entries` | `MKS_CMS_UPDATER_MAX_ZIP_ENTRIES` | `10000` | Zip-bomb guard: maximum number of ZIP entries. |
 | `allow_same_version_reinstall` | `MKS_CMS_UPDATER_ALLOW_REINSTALL` | `false` | When `true`, same-version uploads are accepted without `--force`. Useful only for recovery from corrupted files. |
 
-Permissions: updater actions require the Shield Super Admin role (`config('filament-shield.super_admin.name')`, default `super_admin`). There is no way to relax this — only super admins can replace on-disk code.
+Filament updater actions require the Shield Super Admin role (`config('filament-shield.super_admin.name')`, default `super_admin`). CLI commands do not; they require OS access to Artisan.
 
 Logs: `storage/logs/mksine-updates/{target}-{id}-{TS}.log` per run.
 

@@ -133,6 +133,20 @@
                                     </x-filament::button>
                                 @endif
                             </div>
+                            @if ($this->canRollbackTheme($theme->identifier))
+                                <x-filament::button
+                                    wire:click="rollbackThemeAction('{{ $theme->identifier }}')"
+                                    wire:loading.attr="disabled"
+                                    wire:confirm="{{ __('mksine::updater.rollback_confirm_body') }}"
+                                    size="sm"
+                                    color="gray"
+                                    outlined
+                                    icon="heroicon-o-arrow-uturn-left"
+                                    class="w-full"
+                                >
+                                    {{ __('mksine::updater.rollback') }}
+                                </x-filament::button>
+                            @endif
                             <x-filament::button
                                 wire:click="mountAction('customCssJs', { themeIdentifier: '{{ $theme->identifier }}' })"
                                 size="sm"

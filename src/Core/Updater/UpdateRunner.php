@@ -8,34 +8,19 @@ use Closure;
 use Throwable;
 
 /**
- * Shared execution envelope for every updater.
- *
- * Centralises concerns that MUST be identical across plugin/theme/core:
- *   - max_execution_time lifted
- *   - ignore_user_abort so a closed browser tab won't corrupt a swap
- *   - exclusive lock on this target (throws if another run is in progress)
- *   - single log file per run
- *   - exception classification (validation/replace/post)
- *   - UpdateResult construction on every exit path
- *
- * Each concrete updater passes a closure that performs validation → swap →
- * post-steps. The closure receives the log + the current step accumulator.
+ * Shared execution envelope for plugin and theme ZIP updates.
  */
 final class UpdateRunner
 {
     /**
-     * @param  Closure(UpdateLog, array<int,string>&, array<int,string>&): array{from: ?string, to: string, backup: ?string}  $work
-     *         Returns an array with keys: from (prev version or null), to (new version), backup (path or null).
+     * @param  Closure(UpdateLog, UpdateContext): void  $work
      */
     public function run(UpdateTarget $target, string $identifier, Closure $work): UpdateResult
     {
         $log = UpdateLog::forRun($target, $identifier);
         $lock = new UpdateLock($target, $identifier);
+        $ctx = new UpdateContext;
 
-        $steps = [];
-        $warnings = [];
-
-        // Lift time + ensure we don't bail on browser close mid-swap.
         @set_time_limit(0);
         @ignore_user_abort(true);
 
@@ -50,8 +35,8 @@ final class UpdateRunner
                 identifier: $identifier,
                 fromVersion: null,
                 toVersion: null,
-                steps: $steps,
-                warnings: $warnings,
+                steps: $ctx->steps,
+                warnings: $ctx->warnings,
                 errorMessage: $e->getMessage(),
                 errorPhase: $e->phase(),
                 logPath: $log->path(),
@@ -60,69 +45,65 @@ final class UpdateRunner
             );
         }
 
-        $fromVersion = null;
-        $toVersion = null;
-        $backupPath = null;
-
         try {
-            $outcome = $work($log, $steps, $warnings);
-            $fromVersion = $outcome['from'] ?? null;
-            $toVersion = $outcome['to'] ?? null;
-            $backupPath = $outcome['backup'] ?? null;
+            $work($log, $ctx);
 
             $log->info(sprintf(
                 'Update complete: %s:%s %s -> %s',
                 $target->value,
                 $identifier,
-                $fromVersion ?? 'null',
-                $toVersion ?? 'null'
+                $ctx->fromVersion ?? 'null',
+                $ctx->toVersion ?? 'null'
             ));
 
             return UpdateResult::success(
                 target: $target,
                 identifier: $identifier,
-                fromVersion: $fromVersion,
-                toVersion: (string) $toVersion,
-                steps: $steps,
-                warnings: $warnings,
+                fromVersion: $ctx->fromVersion,
+                toVersion: (string) ($ctx->toVersion ?? ''),
+                steps: $ctx->steps,
+                warnings: $ctx->warnings,
                 logPath: $log->path(),
-                backupPath: $backupPath,
+                backupPath: $ctx->backupPath,
             );
         } catch (UpdateException $e) {
-            $log->error('Update failed (phase=' . $e->phase() . '): ' . $e->getMessage());
-            if ($e->isDbPossiblyDirty()) {
+            $log->error('Update failed (phase='.$e->phase().'): '.$e->getMessage());
+            $dbDirty = $ctx->dbPossiblyDirty;
+            if ($dbDirty) {
                 $log->warning('DB may be partially migrated. Manual inspection required.');
             }
 
             return UpdateResult::failure(
                 target: $target,
                 identifier: $identifier,
-                fromVersion: $fromVersion,
-                toVersion: $toVersion,
-                steps: $steps,
-                warnings: $warnings,
+                fromVersion: $ctx->fromVersion,
+                toVersion: $ctx->toVersion,
+                steps: $ctx->steps,
+                warnings: $ctx->warnings,
                 errorMessage: $e->getMessage(),
                 errorPhase: $e->phase(),
                 logPath: $log->path(),
-                backupPath: $backupPath,
-                dbPossiblyDirty: $e->isDbPossiblyDirty(),
+                backupPath: $ctx->backupPath,
+                dbPossiblyDirty: $dbDirty,
             );
         } catch (Throwable $e) {
-            $log->error('Unexpected error: ' . $e::class . ': ' . $e->getMessage());
+            $log->error('Unexpected error: '.$e::class.': '.$e->getMessage());
             $log->error($e->getTraceAsString());
+
+            $phase = $ctx->swapped ? UpdateException::PHASE_POST : UpdateException::PHASE_VALIDATION;
 
             return UpdateResult::failure(
                 target: $target,
                 identifier: $identifier,
-                fromVersion: $fromVersion,
-                toVersion: $toVersion,
-                steps: $steps,
-                warnings: $warnings,
+                fromVersion: $ctx->fromVersion,
+                toVersion: $ctx->toVersion,
+                steps: $ctx->steps,
+                warnings: $ctx->warnings,
                 errorMessage: $e->getMessage(),
-                errorPhase: UpdateException::PHASE_POST,
+                errorPhase: $phase,
                 logPath: $log->path(),
-                backupPath: $backupPath,
-                dbPossiblyDirty: true,
+                backupPath: $ctx->backupPath,
+                dbPossiblyDirty: $ctx->dbPossiblyDirty,
             );
         } finally {
             $lock->release();

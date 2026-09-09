@@ -5,27 +5,24 @@ declare(strict_types=1);
 namespace Miran\Mksine\Console\Commands;
 
 use Illuminate\Console\Command;
-use Miran\Mksine\Core\Updater\UpdateException;
-use Miran\Mksine\Core\Updater\Updaters\CoreUpdater;
-use Miran\Mksine\Core\Updater\UpdateRunner;
+use Miran\Mksine\Support\ComposerBinary;
+use Miran\Mksine\Support\Console\AdminConsolePhpBinary;
+use Miran\Mksine\Support\PackageVersion;
+use Symfony\Component\Process\Process;
 
 /**
- * CLI entry point for the core miran/mksine package update.
+ * Updates miran/mksine via Composer. Does not accept a ZIP — replacing
+ * vendor/ or packages/mksine from a ZIP would desync composer.lock.
  *
- * PREFERRED path for core updates: running from a fresh PHP process avoids
- * the mid-request class-table pitfalls inherent to replacing the code you
- * are currently executing.
- *
- * Usage:
- *   php artisan mksine:update {file} [--force]
+ *   php artisan mksine:update --force
  */
 class UpdateCoreCommand extends Command
 {
     protected $signature = 'mksine:update
-        {file : Absolute or relative path to the update ZIP}
-        {--force : Accept same-version or downgrade}';
+        {--force : Skip confirmation (required for non-interactive runs)}
+        {--full-migrate : Run all pending application migrations instead of package migrations only}';
 
-    protected $description = 'Update the core miran/mksine package from a ZIP file (path-repository installs only).';
+    protected $description = 'Update miran/mksine with Composer, then publish package migrations and migrate.';
 
     public function handle(): int
     {
@@ -35,70 +32,126 @@ class UpdateCoreCommand extends Command
             return self::FAILURE;
         }
 
-        $file = (string) $this->argument('file');
-        $force = (bool) $this->option('force');
+        $projectRoot = base_path();
+        $current = PackageVersion::current();
+        $this->info('Installed miran/mksine version: '.$current);
 
-        $absolute = $this->resolveFilePath($file);
-        if ($absolute === null) {
-            $this->error("ZIP file not found: {$file}");
+        $composerArgv = ComposerBinary::argv($projectRoot);
+        if ($composerArgv === null) {
+            $this->error('Composer is not available on this server.');
+            $this->newLine();
+            $this->line($this->offlinePlaybook());
 
             return self::FAILURE;
         }
 
-        if (! $this->confirm('This will replace packages/mksine with the contents of ' . basename($absolute) . '. Continue?', false)) {
-            $this->line('Aborted.');
+        $this->line('This will run: composer update miran/mksine');
+        $this->warn('ZIP replacement of vendor/ or packages/mksine is not supported — it would break composer.lock and the autoloader.');
+
+        if ($this->input->isInteractive()) {
+            if (! $this->confirm('Continue?', false)) {
+                $this->line('Aborted.');
+
+                return self::INVALID;
+            }
+        } elseif (! $this->option('force')) {
+            $this->error('Non-interactive runs require --force.');
 
             return self::INVALID;
         }
 
-        $updater = new CoreUpdater(new UpdateRunner);
+        $update = new Process(
+            array_merge($composerArgv, ['update', 'miran/mksine']),
+            $projectRoot,
+        );
+        $update->setTimeout(600);
+        $update->run(function (string $type, string $buffer): void {
+            $this->output->write($buffer);
+        });
 
-        $this->info('Updating core from ' . $absolute . '...');
-
-        try {
-            $result = $updater->update($absolute, $force);
-        } catch (\Throwable $e) {
-            $this->error('Unexpected failure: ' . $e->getMessage());
+        if (! $update->isSuccessful()) {
+            $this->error('composer update miran/mksine failed (exit '.$update->getExitCode().').');
 
             return self::FAILURE;
         }
 
-        foreach ($result->steps as $step) {
-            $this->line("  ✓ {$step}");
-        }
-        foreach ($result->warnings as $warning) {
-            $this->warn('  ! ' . $warning);
+        $finishCode = $this->runPostComposerArtisan();
+        if ($finishCode !== self::SUCCESS) {
+            return $finishCode;
         }
 
-        if ($result->success) {
-            $this->info(sprintf('Core updated: %s -> %s', $result->fromVersion ?? 'null', $result->toVersion ?? 'null'));
-            $this->line('Log: ' . $result->logPath);
+        $this->info('miran/mksine is now '.$this->freshPackageVersion().' (was '.$current.').');
+        $this->line('If this app uses a path repository, pull packages/mksine before composer update — Composer will not git-pull the path for you.');
 
-            return self::SUCCESS;
-        }
-
-        $this->error('Update failed (phase=' . $result->errorPhase . '): ' . $result->errorMessage);
-        if ($result->dbPossiblyDirty) {
-            $this->error('DB may be partially migrated — manual inspection required.');
-        }
-        $this->line('Log: ' . $result->logPath);
-
-        return $result->errorPhase === UpdateException::PHASE_POST
-            ? self::FAILURE
-            : self::INVALID;
+        return self::SUCCESS;
     }
 
-    private function resolveFilePath(string $file): ?string
+    private function runPostComposerArtisan(): int
     {
-        if (is_file($file)) {
-            return realpath($file) ?: $file;
+        $php = $this->phpBinary();
+        $artisan = base_path('artisan');
+
+        $publish = new Process(
+            [$php, $artisan, 'vendor:publish', '--tag=mksine-migrations', '--force'],
+            base_path(),
+        );
+        $publish->setTimeout(120);
+        $publish->run(function (string $type, string $buffer): void {
+            $this->output->write($buffer);
+        });
+        if (! $publish->isSuccessful()) {
+            $this->error('vendor:publish --tag=mksine-migrations failed.');
+
+            return self::FAILURE;
         }
 
-        $relative = base_path($file);
-        if (is_file($relative)) {
-            return realpath($relative) ?: $relative;
+        $migrateArgv = [$php, $artisan, 'migrate', '--force'];
+        if (! $this->option('full-migrate')) {
+            $migrateArgv[] = '--path='.PackageVersion::migrationsPathRelativeToBase();
         }
 
-        return null;
+        $migrate = new Process($migrateArgv, base_path());
+        $migrate->setTimeout(300);
+        $migrate->run(function (string $type, string $buffer): void {
+            $this->output->write($buffer);
+        });
+        if (! $migrate->isSuccessful()) {
+            $this->error('migrate failed.');
+
+            return self::FAILURE;
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function phpBinary(): string
+    {
+        try {
+            return AdminConsolePhpBinary::path();
+        } catch (\InvalidArgumentException) {
+            return PHP_BINARY;
+        }
+    }
+
+    private function freshPackageVersion(): string
+    {
+        return PackageVersion::current();
+    }
+
+    private function offlinePlaybook(): string
+    {
+        return <<<'TEXT'
+Update the package on a machine that has Composer, then deploy the lockfile and vendor tree:
+
+  composer update miran/mksine
+  php artisan vendor:publish --tag=mksine-migrations
+  php artisan migrate --force
+
+Copy at least composer.json, composer.lock, and vendor/ to the server.
+If you use a path repository, also copy packages/mksine after pulling the new package sources.
+
+On hosts without Composer, php artisan mks:release-archive can package that deployable tree.
+Core ZIP uploads are not supported: they cannot update composer.lock or dump the autoloader.
+TEXT;
     }
 }

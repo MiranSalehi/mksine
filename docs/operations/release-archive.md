@@ -4,7 +4,7 @@ title: Release archive (mks:release-archive)
 
 # Release archive (`mks:release-archive`)
 
-`mks:release-archive` produces a deployable `.zip` of the entire project — code, vendored dependencies, compiled assets — minus the things you don't ship to production. It exists because shared hosting, DirectAdmin and cPanel customers can't run `composer install` or `npm run build` on the server, and Git deploy isn't always an option. It is **not** a replacement for proper CI/CD.
+`mks:release-archive` produces a deployable `.zip` of the entire project — code, vendored dependencies, compiled assets — minus the things you don't ship to production. It exists because shared hosting, DirectAdmin and cPanel customers can't run `composer install` or `npm run build` on the server, and Git deploy isn't always an option. It is **not** a replacement for proper CI/CD, and it is **not** a core-only `miran/mksine` ZIP — core updates go through Composer. See [ZIP updater](zip-updater.md).
 
 This page documents what the command does, why it makes the choices it makes, and what to verify before relying on it for production deploys.
 

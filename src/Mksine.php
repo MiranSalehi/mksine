@@ -3,15 +3,16 @@
 namespace Miran\Mksine;
 
 use Illuminate\Support\Facades\Config;
+use Miran\Mksine\Support\PackageVersion;
 
 class Mksine
 {
     /**
-     * Get the configured CMS version
+     * Get the shipped package version (not a stale published config overlay).
      */
     public function version(): string
     {
-        return Config::get('mksine.version', '1.0.0');
+        return PackageVersion::current();
     }
 
     /**

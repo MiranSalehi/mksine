@@ -85,4 +85,38 @@ final class UpdateResult
             dbPossiblyDirty: $dbPossiblyDirty,
         );
     }
+
+    /**
+     * @return array{
+     *     success: bool,
+     *     target: string,
+     *     identifier: string,
+     *     fromVersion: ?string,
+     *     toVersion: ?string,
+     *     steps: list<string>,
+     *     warnings: list<string>,
+     *     errorMessage: ?string,
+     *     errorPhase: ?int,
+     *     logPath: string,
+     *     backupPath: ?string,
+     *     dbPossiblyDirty: bool
+     * }
+     */
+    public function toArray(): array
+    {
+        return [
+            'success' => $this->success,
+            'target' => $this->target->value,
+            'identifier' => $this->identifier,
+            'fromVersion' => $this->fromVersion,
+            'toVersion' => $this->toVersion,
+            'steps' => $this->steps,
+            'warnings' => $this->warnings,
+            'errorMessage' => $this->errorMessage,
+            'errorPhase' => $this->errorPhase,
+            'logPath' => $this->logPath,
+            'backupPath' => $this->backupPath,
+            'dbPossiblyDirty' => $this->dbPossiblyDirty,
+        ];
+    }
 }

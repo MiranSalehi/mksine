@@ -270,10 +270,18 @@ final class PluginLifecycle
         ]);
 
         try {
-            Artisan::call('migrate', [
+            $code = Artisan::call('migrate', [
                 '--path' => str_replace(base_path() . '/', '', $migrationsPath),
                 '--force' => true,
             ]);
+
+            if ($code !== 0) {
+                $output = trim(Artisan::output());
+
+                throw new \RuntimeException(
+                    "Plugin migrations failed for {$manifest->id()} (exit {$code}). {$output}"
+                );
+            }
         } catch (\Exception $e) {
             Log::error("Migration failed for plugin: {$manifest->id()}", [
                 'error' => $e->getMessage(),

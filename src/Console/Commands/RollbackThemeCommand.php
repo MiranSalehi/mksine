@@ -20,11 +20,17 @@ class RollbackThemeCommand extends Command
 
     public function handle(): int
     {
+        if (! config('mksine.updater.enabled', true)) {
+            $this->error('Updater is disabled via config(mksine.updater.enabled).');
+
+            return self::FAILURE;
+        }
+
         $themeId = (string) $this->argument('theme');
 
         $this->warn('Rolling back theme ' . $themeId . '.');
 
-        if (! $this->confirm('Continue?', false)) {
+        if ($this->input->isInteractive() && ! $this->confirm('Continue?', false)) {
             $this->line('Aborted.');
 
             return self::INVALID;

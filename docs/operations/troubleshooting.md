@@ -111,7 +111,7 @@ Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm the published file exists
 
 ### `plugin_file` / ZIP upload failed in admin (`mountedActions.* failed to upload`)
 
-**Symptom.** Uploading a plugin, theme, or core ZIP in Filament shows a generic Livewire error such as `mountedActions.0.data.plugin_file.{uuid} failed to upload` before the form submits.
+**Symptom.** Uploading a plugin or theme ZIP in Filament shows a generic Livewire error such as `mountedActions.0.data.plugin_file.{uuid} failed to upload` before the form submits.
 
 **Common causes.**
 
