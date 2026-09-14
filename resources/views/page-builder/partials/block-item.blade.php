@@ -68,16 +68,42 @@
             <button
                 type="button"
                 wire:click="editBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.07] dark:hover:text-zinc-300"
+                wire:loading.attr="disabled"
+                wire:target="editBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                class="relative inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/[0.07] dark:hover:text-zinc-300"
                 title="{{ __('mksine::page_builder.edit') }}" aria-label="{{ __('mksine::page_builder.edit') }}"
-            ><x-heroicon-o-pencil-square class="h-3.5 w-3.5" /></button>
+            >
+                <span wire:loading.class="opacity-0" wire:target="editBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})">
+                    <x-heroicon-o-pencil-square class="h-3.5 w-3.5" />
+                </span>
+                <span
+                    class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                    wire:loading.flex
+                    wire:target="editBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                >
+                    <x-filament::loading-indicator class="h-3.5 w-3.5 shrink-0" />
+                </span>
+            </button>
 
             <button
                 type="button"
                 wire:click="duplicateBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-emerald-600 dark:text-zinc-500 dark:hover:bg-white/[0.07] dark:hover:text-emerald-400"
+                wire:loading.attr="disabled"
+                wire:target="duplicateBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                class="relative inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-emerald-600 dark:text-zinc-500 dark:hover:bg-white/[0.07] dark:hover:text-emerald-400"
                 title="{{ __('mksine::page_builder.duplicate') }}" aria-label="{{ __('mksine::page_builder.duplicate') }}"
-            ><x-heroicon-o-document-duplicate class="h-3.5 w-3.5" /></button>
+            >
+                <span wire:loading.class="opacity-0" wire:target="duplicateBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})">
+                    <x-heroicon-o-document-duplicate class="h-3.5 w-3.5" />
+                </span>
+                <span
+                    class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                    wire:loading.flex
+                    wire:target="duplicateBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                >
+                    <x-filament::loading-indicator class="h-3.5 w-3.5 shrink-0" />
+                </span>
+            </button>
 
             <div class="relative inline-flex">
                 <button
@@ -107,9 +133,22 @@
                 type="button"
                 wire:click="removeBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
                 wire:confirm="{{ __('mksine::page_builder.delete_confirm') }}"
-                class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                wire:loading.attr="disabled"
+                wire:target="removeBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                class="relative inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                 title="{{ __('mksine::page_builder.delete') }}" aria-label="{{ __('mksine::page_builder.delete') }}"
-            ><x-heroicon-o-trash class="h-3.5 w-3.5" /></button>
+            >
+                <span wire:loading.class="opacity-0" wire:target="removeBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})">
+                    <x-heroicon-o-trash class="h-3.5 w-3.5" />
+                </span>
+                <span
+                    class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                    wire:loading.flex
+                    wire:target="removeBlock('{{ $block['id'] }}', {{ $parentId ? "'{$parentId}'" : 'null' }}, {{ $columnIndex ?? 'null' }})"
+                >
+                    <x-filament::loading-indicator class="h-3.5 w-3.5 shrink-0" />
+                </span>
+            </button>
         </div>
     </div>
 

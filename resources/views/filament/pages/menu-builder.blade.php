@@ -506,6 +506,51 @@
                 },
 
                 /**
+                 * WordPress-style outdent: after depth decreases, move the dragged
+                 * subtree to after the remaining former siblings (rows that follow,
+                 * are not part of this drag, and stay deeper than the new depth).
+                 * Leaving the row in place would make buildTreeFromFlatDOM nest those
+                 * siblings under it — PHP Out already avoids that; drag must match.
+                 */
+                repositionAfterOutdent(row, newDepth) {
+                    if (!this.draggedRow || row !== this.draggedRow) return;
+
+                    const descendantSet = new Set(
+                        this.descendantRows.map(({row: descRow}) => descRow)
+                    );
+                    const subtree = [this.draggedRow];
+                    this.descendantRows.forEach(({row: descRow}) => {
+                        if (descRow.isConnected) subtree.push(descRow);
+                    });
+
+                    let cursor = subtree[subtree.length - 1].nextElementSibling;
+                    let lastToSkip = null;
+
+                    while (cursor && cursor.classList.contains('menu-row')) {
+                        if (cursor === this.draggedRow || descendantSet.has(cursor)) {
+                            cursor = cursor.nextElementSibling;
+                            continue;
+                        }
+                        const d = parseInt(cursor.dataset.depth || '0', 10);
+                        if (d > newDepth) {
+                            lastToSkip = cursor;
+                            cursor = cursor.nextElementSibling;
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if (!lastToSkip || !lastToSkip.parentElement) return;
+
+                    let ref = lastToSkip;
+                    subtree.forEach((el) => {
+                        if (!el.parentElement) return;
+                        el.parentElement.insertBefore(el, ref.nextSibling);
+                        ref = el;
+                    });
+                },
+
+                /**
                  * Compute the [min, max] depth band the dragged row may legally occupy
                  * given its sibling neighbours in the flat DOM.
                  *
@@ -521,17 +566,12 @@
                  *   - `min = 0`. Outdenting any row to root is always permitted.
                  *
                  * Note on `min`:
-                 *   We deliberately do NOT clamp `min` to the next row's depth, even
-                 *   though that would keep the next row's parent chain intact. Clamping
-                 *   would prevent outdenting any non-last child (the next sibling at
-                 *   the same depth would force min = currentDepth, locking the row in
-                 *   place). That contradicts every modern menu builder UX.
-                 *
-                 *   When a middle child is outdented to a shallower depth, subsequent
-                 *   same-depth siblings naturally re-parent under the outdented row in
-                 *   `buildTreeFromFlatDOM` (depth-based stack walking). Users who want
-                 *   the middle child gone *without* the cascade should drag it past
-                 *   its remaining siblings before outdenting, or use the Out button.
+                 *   We deliberately do NOT clamp `min` to the next row's depth.
+                 *   Clamping would prevent outdenting any non-last child (the next
+                 *   sibling at the same depth would force min = currentDepth).
+                 *   When a middle child is outdented, repositionAfterOutdent moves
+                 *   the subtree after remaining siblings so they stay under the
+                 *   former parent — matching PHP outdentInTree / WordPress.
                  */
                 computeDepthBounds(row) {
                     const rows = this.getAllRows();
@@ -595,6 +635,7 @@
                 },
 
                 setRowDepth(row, depth) {
+                    const previous = parseInt(row.dataset.depth || '0', 10);
                     const safe = Math.max(0, Math.min(MENU_MAX_DEPTH, depth));
                     row.dataset.depth = String(safe);
                     row.style.paddingInlineStart = (safe * MENU_INDENT_PX) + 'px';
@@ -607,6 +648,11 @@
                         if (clone) {
                             clone.style.paddingInlineStart = (safe * MENU_INDENT_PX) + 'px';
                             clone.dataset.depth = String(safe);
+                            clone.classList.toggle('menu-row--nested', safe > 0);
+                        }
+
+                        if (safe < previous) {
+                            this.repositionAfterOutdent(row, safe);
                         }
 
                         // Keep the dragged subtree visually consistent: every descendant

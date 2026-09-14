@@ -21,10 +21,21 @@
                         <button
                             type="button"
                             wire:click="loadTemplate('{{ $key }}')"
-                            class="group flex flex-col items-start rounded-xl border border-zinc-200/80 bg-white p-4 text-left shadow-[0_1px_3px_0_rgb(0_0_0/0.05)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30"
+                            wire:loading.attr="disabled"
+                            wire:target="loadTemplate('{{ $key }}')"
+                            class="group relative flex flex-col items-start rounded-xl border border-zinc-200/80 bg-white p-4 text-left shadow-[0_1px_3px_0_rgb(0_0_0/0.05)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30"
                         >
-                            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
-                                <x-heroicon-o-squares-2x2 class="h-5 w-5" />
+                            <div class="relative mb-3 flex h-10 w-10 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
+                                <span wire:loading.class="opacity-0" wire:target="loadTemplate('{{ $key }}')">
+                                    <x-heroicon-o-squares-2x2 class="h-5 w-5" />
+                                </span>
+                                <span
+                                    class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                                    wire:loading.flex
+                                    wire:target="loadTemplate('{{ $key }}')"
+                                >
+                                    <x-filament::loading-indicator class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                                </span>
                             </div>
                             <span class="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">
                                 {{ $template['name'] ?? $key }}

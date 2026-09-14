@@ -24,6 +24,11 @@ class MenuBuilder extends Page
 
     protected static bool $shouldRegisterNavigation = false;
 
+    /**
+     * Matches MENU_MAX_DEPTH in the Alpine drag script (0-based data-depth).
+     */
+    public const MAX_ITEM_DEPTH = 4;
+
     protected string $view = 'mksine::filament.pages.menu-builder';
 
     #[Url]
@@ -474,9 +479,8 @@ class MenuBuilder extends Page
      * @param  array<int, array<string, mixed>>  $items
      * @return array<int, array<string, mixed>>
      */
-    private function indentInTree(array $items, int $itemId): array
+    private function indentInTree(array $items, int $itemId, int $depth = 0): array
     {
-        // Find item index at this level
         $idx = null;
         foreach ($items as $i => $item) {
             if ($item['id'] === $itemId) {
@@ -486,7 +490,10 @@ class MenuBuilder extends Page
         }
 
         if ($idx !== null && $idx > 0) {
-            // Detach item and append to previous sibling's children
+            if ($depth + 1 > self::MAX_ITEM_DEPTH) {
+                return $items;
+            }
+
             $target = $items[$idx];
             $newParent = $items[$idx - 1];
             $newParent['children'][] = $target;
@@ -496,9 +503,8 @@ class MenuBuilder extends Page
             return array_values($items);
         }
 
-        // Recurse into children
-        return array_map(function (array $item) use ($itemId): array {
-            $item['children'] = $this->indentInTree($item['children'], $itemId);
+        return array_map(function (array $item) use ($itemId, $depth): array {
+            $item['children'] = $this->indentInTree($item['children'], $itemId, $depth + 1);
 
             return $item;
         }, $items);

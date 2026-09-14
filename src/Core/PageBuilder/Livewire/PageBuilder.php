@@ -76,19 +76,21 @@ class PageBuilder extends Component
     public string $componentPickerTab = '';
 
     /**
-     * History stack for undo/redo.
+     * Last block JSON for copy (read by frontend after getBlockJsonForCopy).
      */
-    public array $historyStack = [];
+    public ?string $copyBlockJson = null;
+
+    /**
+     * Undo/redo snapshots. Kept off the Livewire snapshot (session, not public state).
+     *
+     * @var array<int, array<int, mixed>>
+     */
+    protected array $historyStack = [];
 
     /**
      * Current position in history (for redo).
      */
-    public int $historyPosition = -1;
-
-    /**
-     * Last block JSON for copy (read by frontend after getBlockJsonForCopy).
-     */
-    public ?string $copyBlockJson = null;
+    protected int $historyPosition = -1;
 
     /**
      * Maximum history size.
@@ -114,6 +116,42 @@ class PageBuilder extends Component
         $this->blocks = $value;
         $this->saveHistory();
         $this->mountedAt = microtime(true);
+    }
+
+    public function hydrate(): void
+    {
+        $this->restoreHistoryFromSession();
+    }
+
+    public function dehydrate(): void
+    {
+        $this->persistHistoryToSession();
+    }
+
+    protected function historySessionKey(): string
+    {
+        return 'mksine.page-builder.history.'.$this->getId();
+    }
+
+    protected function restoreHistoryFromSession(): void
+    {
+        $payload = session($this->historySessionKey(), [
+            'stack' => [],
+            'position' => -1,
+        ]);
+
+        $this->historyStack = is_array($payload['stack'] ?? null) ? $payload['stack'] : [];
+        $this->historyPosition = is_int($payload['position'] ?? null) ? $payload['position'] : -1;
+    }
+
+    protected function persistHistoryToSession(): void
+    {
+        session([
+            $this->historySessionKey() => [
+                'stack' => $this->historyStack,
+                'position' => $this->historyPosition,
+            ],
+        ]);
     }
 
     /**

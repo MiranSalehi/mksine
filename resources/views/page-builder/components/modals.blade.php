@@ -1,6 +1,6 @@
 @if($editingBlockId)
     <x-filament::modal id="block-editor-modal" :heading="$editorHeading" width="2xl" role="dialog" aria-modal="true" :aria-labelledby="'block-editor-modal-title'">
-        <div wire:key="block-editor-wrap-{{ $editingBlockId }}">
+        <div class="relative" wire:key="block-editor-wrap-{{ $editingBlockId }}">
             @livewire('mksine::component-editor', [
                 'blockId' => $editingBlockId,
                 'blockType' => $editingBlockData['block']['type'] ?? '',
@@ -14,7 +14,9 @@
 
 @if($showTemplatePanel)
     <x-filament::modal id="template-picker-modal" :heading="__('mksine::page_builder.choose_template')" width="4xl" role="dialog" aria-modal="true">
-        @include('mksine::page-builder.partials.template-picker-content', ['templatesByCategory' => $templatesByCategory])
+        <div class="relative">
+            @include('mksine::page-builder.partials.template-picker-content', ['templatesByCategory' => $templatesByCategory])
+        </div>
         <x-slot:footer>
             <x-filament::button color="gray" wire:click="closeTemplatePanel">
                 {{ __('mksine::page_builder.cancel') }}
@@ -32,7 +34,7 @@
         role="dialog"
         aria-modal="true"
     >
-        <div class="space-y-4">
+        <div class="relative space-y-4">
             {{-- Category tabs --}}
             <div
                 class="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60"
@@ -98,15 +100,28 @@
                     <div class="max-h-[min(28rem,calc(100vh-14rem))] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]">
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             @foreach($pickerItems as $info)
+                                @php
+                                    $addBlockTarget = "addBlock('{$info['type']}', ".($insertAtPosition ?? 'null').', '.($insertInParent ? "'{$insertInParent}'" : 'null').', '.($insertInColumn !== null ? $insertInColumn : 'null').')';
+                                @endphp
                                 <button
                                     type="button"
-                                    wire:click="addBlock('{{ $info['type'] }}', {{ $insertAtPosition ?? 'null' }}, {{ $insertInParent ? "'{$insertInParent}'" : 'null' }}, {{ $insertInColumn !== null ? $insertInColumn : 'null' }})"
+                                    wire:click="{{ $addBlockTarget }}"
                                     wire:loading.attr="disabled"
+                                    wire:target="{{ $addBlockTarget }}"
                                     wire:key="component-picker-card-{{ $componentPickerTab }}-{{ $info['type'] }}"
-                                    class="group flex min-w-0 items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-3.5 text-start shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30 dark:focus-visible:ring-violet-400"
+                                    class="group relative flex min-w-0 items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-3.5 text-start shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30 dark:focus-visible:ring-violet-400"
                                 >
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
-                                        <x-dynamic-component :component="$info['icon']" class="h-5 w-5" aria-hidden="true" />
+                                    <div class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
+                                        <span wire:loading.class="opacity-0" wire:target="{{ $addBlockTarget }}">
+                                            <x-dynamic-component :component="$info['icon']" class="h-5 w-5" aria-hidden="true" />
+                                        </span>
+                                        <span
+                                            class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                                            wire:loading.flex
+                                            wire:target="{{ $addBlockTarget }}"
+                                        >
+                                            <x-filament::loading-indicator class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                                        </span>
                                     </div>
                                     <div class="min-w-0 flex-1 pt-0.5">
                                         <span class="block text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">{{ $info['name'] }}</span>

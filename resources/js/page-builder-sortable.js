@@ -2,6 +2,7 @@ import Sortable from 'sortablejs';
 
 let rootSortable = null;
 const columnSortables = new Map();
+let lastSortableSignature = null;
 
 /** Shared group so blocks can move between root and nested column drop zones. */
 const BUILDER_GROUP = {
@@ -24,6 +25,34 @@ function destroySortables() {
   }
   columnSortables.forEach((s) => s.destroy());
   columnSortables.clear();
+}
+
+function sortableDomSignature(listEl) {
+  if (!listEl) return '';
+  const blockIds = [...listEl.querySelectorAll('[data-block-id]')].map((el) =>
+    el.getAttribute('data-block-id')
+  );
+  const cols = [...listEl.querySelectorAll('[data-sortable-column]')].map(
+    (el) => `${el.getAttribute('data-parent-id')}:${el.getAttribute('data-column-index')}`
+  );
+  return `${blockIds.join(',')}|${cols.join(',')}|${listEl.childElementCount}`;
+}
+
+function sortablesAreLive(listEl) {
+  if (!listEl || !rootSortable || rootSortable.el !== listEl || !rootSortable.el.isConnected) {
+    return false;
+  }
+  const colEls = [...listEl.querySelectorAll('[data-sortable-column]')];
+  if (columnSortables.size !== colEls.length) {
+    return false;
+  }
+  for (const colEl of colEls) {
+    const sortable = columnSortables.get(colEl);
+    if (!sortable || sortable.el !== colEl || !colEl.isConnected) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -247,9 +276,19 @@ function handleSortableEnd(evt) {
 
 function initPageBuilderSortable() {
   const listEl = document.getElementById('blocks-list');
-  if (!listEl) return;
+  if (!listEl) {
+    destroySortables();
+    lastSortableSignature = null;
+    return;
+  }
+
+  const signature = sortableDomSignature(listEl);
+  if (sortablesAreLive(listEl) && signature === lastSortableSignature) {
+    return;
+  }
 
   destroySortables();
+  lastSortableSignature = signature;
 
   const livewireId = getLivewireId();
   if (!livewireId || typeof window.Livewire === 'undefined') return;

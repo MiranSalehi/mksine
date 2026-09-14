@@ -84,6 +84,52 @@ describe('MenuBuilder indentInTree', function () {
         expect($a['children'][0]['id'])->toBe(2);
         expect($a['children'][0]['children'][0]['id'])->toBe(3);
     });
+
+    it('refuses to indent past MAX_ITEM_DEPTH', function () {
+        $page = new MenuBuilder;
+        $tree = [
+            ['id' => 1, 'label' => 'D0', 'children' => [
+                ['id' => 2, 'label' => 'D1', 'children' => [
+                    ['id' => 3, 'label' => 'D2', 'children' => [
+                        ['id' => 4, 'label' => 'D3', 'children' => [
+                            ['id' => 51, 'label' => 'D4a', 'children' => []],
+                            ['id' => 52, 'label' => 'D4b', 'children' => []],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ];
+
+        $result = menuBuilderReflect('indentInTree', $page, $tree, 52);
+
+        $d3 = $result[0]['children'][0]['children'][0]['children'][0];
+        expect($d3['id'])->toBe(4);
+        expect($d3['children'])->toHaveCount(2);
+        expect($d3['children'][0]['id'])->toBe(51);
+        expect($d3['children'][1]['id'])->toBe(52);
+        expect($d3['children'][0]['children'])->toBe([]);
+    });
+
+    it('allows indent onto MAX_ITEM_DEPTH from one level above', function () {
+        $page = new MenuBuilder;
+        $tree = [
+            ['id' => 1, 'label' => 'D0', 'children' => [
+                ['id' => 2, 'label' => 'D1', 'children' => [
+                    ['id' => 3, 'label' => 'D2', 'children' => [
+                        ['id' => 4, 'label' => 'D3a', 'children' => []],
+                        ['id' => 5, 'label' => 'D3b', 'children' => []],
+                    ]],
+                ]],
+            ]],
+        ];
+
+        $result = menuBuilderReflect('indentInTree', $page, $tree, 5);
+
+        $d2 = $result[0]['children'][0]['children'][0];
+        expect($d2['children'])->toHaveCount(1);
+        expect($d2['children'][0]['id'])->toBe(4);
+        expect($d2['children'][0]['children'][0]['id'])->toBe(5);
+    });
 });
 
 describe('MenuBuilder outdentInTree', function () {

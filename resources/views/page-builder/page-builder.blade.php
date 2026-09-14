@@ -97,8 +97,22 @@
             @include('mksine::page-builder.components.toolbar')
 
             {{-- Canvas --}}
-            <div class="mksine-pb-canvas relative z-0 w-full bg-zinc-50 px-4 py-5 dark:bg-zinc-950">
+            <div
+                class="mksine-pb-canvas relative z-0 w-full bg-zinc-50 px-4 py-5 dark:bg-zinc-950"
+                wire:loading.attr="aria-busy"
+                wire:target="addBlock,loadTemplate,undo,redo,duplicateBlock,removeBlock,saveBlock,reorderBlocks,reorderColumnBlocks,moveBlockAfterDrag,editBlock,openComponentPanel,toggleTemplatePanel"
+            >
                 @include('mksine::page-builder.components.block-list')
+                <div
+                    class="pointer-events-auto absolute inset-0 z-10 hidden items-center justify-center bg-white/55 dark:bg-zinc-950/55"
+                    wire:loading.flex
+                    wire:target="addBlock,loadTemplate,undo,redo,duplicateBlock,removeBlock,saveBlock,reorderBlocks,reorderColumnBlocks,moveBlockAfterDrag"
+                    aria-hidden="true"
+                >
+                    <div class="pointer-events-none flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-zinc-900/90">
+                        <x-filament::loading-indicator class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                    </div>
+                </div>
             </div>
         </div>
     </div>

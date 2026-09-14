@@ -2,14 +2,19 @@
     <div
         class="mksine-page-builder-field overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.05)] dark:border-white/[0.07] dark:bg-zinc-950"
         x-data="{
-            state: $wire.$entangle('{{ $getStatePath() }}').live,
+            state: $wire.$entangle('{{ $getStatePath() }}'),
+            _syncTimer: null,
             init() {
                 const statePath = '{{ $getStatePath() }}';
                 Livewire.on('builder-value-changed', (event) => {
-                    if (event.blocks !== undefined) {
-                        this.state = event.blocks;
-                        $wire.set(statePath, event.blocks);
+                    if (event.blocks === undefined) {
+                        return;
                     }
+                    this.state = event.blocks;
+                    clearTimeout(this._syncTimer);
+                    this._syncTimer = setTimeout(() => {
+                        $wire.set(statePath, event.blocks);
+                    }, 150);
                 });
             }
         }"
