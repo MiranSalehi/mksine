@@ -8,6 +8,18 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.6.1 - 2026-09-14
+
+### Fixed
+
+- **Menu builder drag** — outdenting a middle child no longer nests remaining siblings under it; the subtree moves after those siblings (same result as PHP Out / WordPress). `indentInTree` now shares Alpine’s max depth of 4.
+- **Page builder payload** — undo history is stored in session instead of the Livewire snapshot; Filament state sync is a single debounced `$wire.set` (no `.live` entangle); Sortable re-inits only when the block DOM actually changes.
+- **Page builder loading** — picker and template cards show a spinner only on the clicked item, not every card.
+
+### Changed
+
+- Page builder editor, toolbar, block actions, and canvas show `wire:loading` feedback without changing button or canvas size.
+
 ## 1.6.0 - 2026-09-09
 
 ### Added
