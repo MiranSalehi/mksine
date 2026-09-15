@@ -16,6 +16,7 @@ Group the contracts into five families:
 4. [Page builder contracts](#page-builder-contracts) — block contract.
 5. [Menu contracts](#menu-contracts) — item sources for the menu builder.
 6. [User contract](#user-contract) — minimal user shape consumed by CMS code.
+7. [SEO contract](#seo-contract) — pluggable analysis checks.
 
 Each section gives the FQCN, the source path, the full PHP signature copied from the package, and an intent paragraph.
 
@@ -340,6 +341,30 @@ interface MenuItemSourcePaginatedInterface extends MenuItemSourceInterface
 ```
 
 When implemented, the Menu Builder uses these methods instead of `getItems()`/in-memory filtering. Items may include `parent_id` to display a hierarchical picker.
+
+## SEO contract
+
+### `SeoCheck`
+
+`Miran\Mksine\Seo\SeoCheck` — [source](../../src/Seo/SeoCheck.php).
+
+Implement to append a check to `SeoAnalyzer` via `Hooks::addFilter(SeoAnalyzer::FILTER_CHECKS, …)`. Findings are advisory; they never fail validation.
+
+```php
+interface SeoCheck
+{
+    public function id(): string;
+
+    /**
+     * @return 'seo'|'readability'
+     */
+    public function panel(): string;
+
+    public function analyze(SeoContext $context): SeoFinding;
+}
+```
+
+See [SEO analysis](../guides/seo/analysis.md).
 
 ## User contract
 

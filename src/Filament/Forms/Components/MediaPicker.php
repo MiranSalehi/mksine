@@ -30,6 +30,8 @@ class MediaPicker extends Field
 
     protected int | Closure | null $minItems = null;
 
+    protected bool | Closure | null $isReorderable = null;
+
     protected ?Closure $authorizationCallback = null;
 
     protected function setUp(): void
@@ -209,6 +211,17 @@ class MediaPicker extends Field
         return $this;
     }
 
+    /**
+     * Allow drag/keyboard reorder of selected items. Defaults to true when multiple().
+     * Single pickers never show reorder chrome.
+     */
+    public function reorderable(bool | Closure $condition = true): static
+    {
+        $this->isReorderable = $condition;
+
+        return $this;
+    }
+
     public function getIsMultiple(): bool
     {
         return (bool) $this->evaluate($this->isMultiple);
@@ -229,8 +242,26 @@ class MediaPicker extends Field
         return (array) $this->evaluate($this->acceptedFileTypes);
     }
 
+    public function isReorderable(): bool
+    {
+        if (! $this->getIsMultiple()) {
+            return false;
+        }
+
+        if ($this->isReorderable === null) {
+            return true;
+        }
+
+        return (bool) $this->evaluate($this->isReorderable);
+    }
+
+    public function getIsReorderable(): bool
+    {
+        return $this->isReorderable();
+    }
+
     /**
-     * Get selected media items for display.
+     * Get selected media items for display, in Filament state order.
      */
     public function getSelectedMedia(): Collection
     {
@@ -240,20 +271,26 @@ class MediaPicker extends Field
             return collect();
         }
 
-        $ids = is_array($state) ? $state : [$state];
+        $ids = array_values(array_map('intval', is_array($state) ? $state : [$state]));
+        $media = Media::query()->whereIn('id', $ids)->get()->keyBy('id');
 
-        return Media::whereIn('id', $ids)->get();
+        return collect($ids)
+            ->map(fn (int $id): mixed => $media->get($id))
+            ->filter()
+            ->values();
     }
 
     protected function hydrateFromRelation(MediaPicker $component, Model $record): void
     {
         $collection = $this->getCollection() ?? $this->getName();
 
-        $mediaIds = MediaAttachment::where('mediable_type', get_class($record))
+        $mediaIds = MediaAttachment::query()
+            ->where('mediable_type', get_class($record))
             ->where('mediable_id', $record->getKey())
             ->where('collection_name', $collection)
+            ->ordered()
             ->pluck('media_id')
-            ->toArray();
+            ->all();
 
         $component->state($mediaIds);
     }
@@ -303,12 +340,13 @@ class MediaPicker extends Field
             ->delete();
 
         // Create new attachments
-        foreach ($mediaIds as $index => $mediaId) {
+        foreach (array_values($mediaIds) as $index => $mediaId) {
             MediaAttachment::create([
                 'media_id' => $mediaId,
                 'mediable_type' => get_class($record),
                 'mediable_id' => $record->getKey(),
                 'collection_name' => $collection,
+                'sort_order' => $index,
             ]);
         }
     }

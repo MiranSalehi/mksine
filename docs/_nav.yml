@@ -57,6 +57,10 @@ sidebar:
     items:
       - { title: Shortcodes, path: guides/content/shortcodes.md }
 
+  - section: SEO
+    items:
+      - { title: SEO analysis, path: guides/seo/analysis.md }
+
   - section: Hook guides
     items:
       - { title: Two families overview, path: guides/hooks/overview-two-families.md }

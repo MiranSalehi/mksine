@@ -37,4 +37,7 @@ return [
     'pagination_label' => 'لاپەڕەسازی میدیا',
     'pagination_summary' => 'نیشاندانی :from تا :to لە :total',
     'invalid_type' => 'ئەم جۆرە فایلە ڕێگەپێدراو نییە.',
+    'reorder_handle' => 'بۆ گۆڕینی ڕیز بکێشە',
+    'move_earlier' => 'بۆ پێشتر بگوازەوە',
+    'move_later' => 'بۆ دواتر بگوازەوە',
 ];

@@ -29,6 +29,7 @@ class PostFactory extends Factory
             'published_at' => null,
             'meta_title' => fake()->optional(0.6)->sentence(6),
             'meta_description' => fake()->optional(0.6)->paragraph(),
+            'focus_keyphrase' => fake()->optional(0.3)->words(2, true),
             'views_count' => fake()->numberBetween(0, 5000),
         ];
     }

@@ -12,6 +12,7 @@ use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
+use Miran\Mksine\Filament\Forms\Components\SeoAnalysis;
 use Miran\Mksine\Filament\Resources\Tags\Schemas\TagForm;
 
 class PostForm
@@ -34,6 +35,7 @@ class PostForm
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         Textarea::make('excerpt')
                             ->label(__('mksine::posts.excerpt'))
@@ -99,14 +101,30 @@ class PostForm
                 Section::make(__('mksine::common.seo'))
                     ->key('seo')
                     ->schema([
+                        TextInput::make('focus_keyphrase')
+                            ->label(__('mksine::seo.focus_keyphrase'))
+                            ->helperText(__('mksine::seo.focus_keyphrase_helper'))
+                            ->maxLength(191)
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
                         TextInput::make('meta_title')
                             ->label(__('mksine::posts.meta_title'))
                             ->maxLength(255)
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         Textarea::make('meta_description')
                             ->label(__('mksine::posts.meta_description'))
                             ->rows(2)
                             ->maxLength(500)
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
+                        SeoAnalysis::make('seo_analysis')
+                            ->titleField('title')
+                            ->slugField('slug')
+                            ->metaTitleField('meta_title')
+                            ->metaDescriptionField('meta_description')
+                            ->bodyField('content')
+                            ->focusKeyphraseField('focus_keyphrase')
                             ->columnSpanFull(),
                     ])
                     ->columnSpanFull()

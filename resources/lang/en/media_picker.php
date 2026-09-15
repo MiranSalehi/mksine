@@ -37,4 +37,7 @@ return [
     'pagination_label' => 'Media pagination',
     'pagination_summary' => 'Showing :from to :to of :total',
     'invalid_type' => 'This file type is not allowed.',
+    'reorder_handle' => 'Drag to reorder',
+    'move_earlier' => 'Move earlier',
+    'move_later' => 'Move later',
 ];

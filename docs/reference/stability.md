@@ -34,6 +34,7 @@ Implementations of these interfaces are how third-party code extends MKSine.
 | `Miran\Mksine\Core\PageBuilder\Contracts\BuilderComponentInterface` | [BuilderComponentInterface.php](../../src/Core/PageBuilder/Contracts/BuilderComponentInterface.php) | Page builder block contract | [contracts.md#buildercomponentinterface](contracts.md#buildercomponentinterface) |
 | `Miran\Mksine\Contracts\MenuItemSourceInterface` | [MenuItemSourceInterface.php](../../src/Contracts/MenuItemSourceInterface.php) | Custom menu item source | [contracts.md#menuitemsourceinterface](contracts.md#menuitemsourceinterface) |
 | `Miran\Mksine\Contracts\MenuItemSourcePaginatedInterface` | [MenuItemSourcePaginatedInterface.php](../../src/Contracts/MenuItemSourcePaginatedInterface.php) | Pagination + search extension for large sources | [contracts.md#menuitemsourcepaginatedinterface](contracts.md#menuitemsourcepaginatedinterface) |
+| `Miran\Mksine\Seo\SeoCheck` | [SeoCheck.php](../../src/Seo/SeoCheck.php) | Pluggable SEO / readability check | [SEO analysis](../guides/seo/analysis.md) |
 
 ## Public abstract base classes
 
@@ -89,6 +90,7 @@ These filter names are part of the public contract when documented here or in a 
 | Filter name | Value type | Reference |
 |-------------|------------|-----------|
 | `frontend_admin_bar.items` | `list<FrontendAdminBarItem>` | [Frontend admin bar](../guides/storefront/frontend-admin-bar.md) |
+| `mksine.seo.analysis_checks` | `list<SeoCheck>` | [SEO analysis](../guides/seo/analysis.md) |
 | `mksine.content.before_shortcodes` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
 | `mksine.content.after_shortcodes` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
 | `mksine.shortcode.{tag}` | `string` HTML | [Shortcodes](../guides/content/shortcodes.md) |
@@ -120,6 +122,19 @@ Helper functions: `mks_render_content()`, `mks_strip_shortcodes()`, `mks_shortco
 
 Built-in tags: `year`, `site_name`. See [Shortcodes](../guides/content/shortcodes.md).
 
+## Public SEO types
+
+| Class | Source | Purpose |
+|-------|--------|---------|
+| `Miran\Mksine\Seo\SeoAnalyzer` | [SeoAnalyzer.php](../../src/Seo/SeoAnalyzer.php) | Runs checks; constant `FILTER_CHECKS` |
+| `Miran\Mksine\Seo\SeoContext` | [SeoContext.php](../../src/Seo/SeoContext.php) | Title, slug, meta, HTML, locale, keyphrase |
+| `Miran\Mksine\Seo\SeoResult` | [SeoResult.php](../../src/Seo/SeoResult.php) | Overall score, traffic light, snippet, findings |
+| `Miran\Mksine\Seo\SeoFinding` | [SeoFinding.php](../../src/Seo/SeoFinding.php) | One check result |
+| `Miran\Mksine\Filament\Forms\Components\SeoAnalysis` | [SeoAnalysis.php](../../src/Filament/Forms/Components/SeoAnalysis.php) | Filament advisory panel (`dehydrated(false)`) |
+| `Miran\Mksine\Filament\Forms\Components\MediaPicker` | [MediaPicker.php](../../src/Filament/Forms/Components/MediaPicker.php) | Library picker; `reorderable()` when `multiple()` |
+
+See [SEO analysis](../guides/seo/analysis.md) and [Media library](../guides/media/library.md).
+
 ## Explicitly **not** public
 
 These are internal even though they live in `src/`:
@@ -128,7 +143,7 @@ These are internal even though they live in `src/`:
 - `Miran\Mksine\Core\Plugins\PluginDiscovery`, `PluginLifecycle`, `PluginRegistry`, `PluginManifest` — discovery internals.
 - `Miran\Mksine\Core\Plugins\Publishing\PluginVendorPublishRunner` — used by per-plugin publish-vendor commands; helper API but no semver guarantee yet (will be promoted once stable, see [Upgrade guide](../meta/upgrade-guide.md)).
 - `Miran\Mksine\Core\Hooks\HookDispatcher`, `HookCacheStore`, all listener discovery internals.
-- Everything under `Miran\Mksine\Filament\` (resources, pages, livewire components). Customize via hooks, not by extending these classes.
+- Everything under `Miran\Mksine\Filament\` (resources, pages, livewire components), except the public form fields listed above (`MediaPicker`, `SeoAnalysis`). Customize other Filament classes via hooks, not by extending them.
 - Everything under `Miran\Mksine\Models\` is **public** when used as Eloquent models from your code, but their **migrations and column shapes** are internal — use Eloquent attributes/relations rather than raw queries against MKSine tables. Geo catalogue models (`GeoCountry`, `GeoState`, `GeoCity`) follow the same rule.
 
 ## Deprecation policy

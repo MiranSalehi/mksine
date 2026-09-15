@@ -23,6 +23,7 @@ class Tag extends Model
         'is_active',
         'meta_title',
         'meta_description',
+        'focus_keyphrase',
     ];
 
     protected $casts = [

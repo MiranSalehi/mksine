@@ -29,6 +29,7 @@ class PageFactory extends Factory
             'builder_content_width' => 'contained',
             'meta_title' => fake()->optional(0.6)->sentence(6),
             'meta_description' => fake()->optional(0.6)->paragraph(),
+            'focus_keyphrase' => fake()->optional(0.3)->words(2, true),
             'published_at' => null,
             'created_by' => null,
             'updated_by' => null,

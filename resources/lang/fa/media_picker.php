@@ -37,4 +37,7 @@ return array (
   'pagination_label' => 'صفحه‌بندی رسانه',
   'pagination_summary' => 'نمایش :from تا :to از :total مورد',
   'invalid_type' => 'این نوع فایل مجاز نیست.',
+  'reorder_handle' => 'برای تغییر ترتیب بکشید',
+  'move_earlier' => 'انتقال به قبل',
+  'move_later' => 'انتقال به بعد',
 );

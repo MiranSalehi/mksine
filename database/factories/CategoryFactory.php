@@ -27,6 +27,7 @@ class CategoryFactory extends Factory
             'is_active' => fake()->boolean(90),
             'meta_title' => fake()->optional(0.5)->sentence(6),
             'meta_description' => fake()->optional(0.5)->paragraph(),
+            'focus_keyphrase' => fake()->optional(0.3)->words(2, true),
         ];
     }
 

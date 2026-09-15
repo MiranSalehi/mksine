@@ -74,10 +74,11 @@ media_id        fk
 mediable_type   string  - morph type
 mediable_id     bigint  - morph id
 collection_name string  - logical bucket per parent (e.g. "gallery", "cover")
+sort_order      unsigned int - editor order within the collection (0-based after save)
 alt             string|null - per-attachment alt override
 ```
 
-This is what `MediaPicker` writes when you use it in `relation` mode. There is no Eloquent relationship pre-wired on your model — you create one yourself if you want to query attachments directly.
+This is what `MediaPicker` writes when you use it in `relation` mode. `HasMediaAttachments::getMediaCollection()` / `getOrderedMedia()` return media in `sort_order` then `id`. There is no Eloquent relationship pre-wired on your model — you create one yourself if you want to query attachments directly.
 
 ## Authorization
 
@@ -161,6 +162,8 @@ MediaPicker::make('gallery')
     ->collection('gallery')
     ->relation(true) // default
     ->maxItems(20);
+    // ->reorderable() is true by default when multiple(); pass false to disable
+    // ->reorderable(false);
 ```
 
 Method reference (only public methods worth knowing):
@@ -168,6 +171,7 @@ Method reference (only public methods worth knowing):
 | Method                        | Purpose                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `multiple(bool $flag = true)` | Allow selecting more than one media item.                                                              |
+| `reorderable(bool $flag = true)` | Drag-and-keyboard reorder of selected chips. **Default true when `multiple()`**; single pickers never show reorder chrome. State array order is saved as `media_attachments.sort_order`. |
 | `collection(string $name)`    | Bucket name persisted to `media_attachments.collection_name`. Defaults to the field name.              |
 | `acceptedFileTypes(array)`    | Mime patterns accepted in the picker UI (`image/*`, `video/*`, `audio/*`, `application/pdf`, …). The library grid and new uploads are limited to these patterns, intersected with `config('mksine.media.allowed_types')`. |
 | `maxItems(int)`                | Server-side validation cap on selection count.                                                         |
@@ -176,7 +180,8 @@ Method reference (only public methods worth knowing):
 
 Important behaviours:
 
-- In `relation(true)` mode (the default), `MediaPicker` writes `media_attachments` rows during `saveRelationships`. The form column itself dehydrates to `null`, so don’t add a column to your model for it.
+- In `relation(true)` mode (the default), `MediaPicker` writes `media_attachments` rows during `saveRelationships`, including `sort_order` from the ID array index. The form column itself dehydrates to `null`, so don’t add a column to your model for it.
+- `$model->getMediaCollection('gallery')` (and `getOrderedMedia()`) returns `Media` models in that order. Featured/cover vs gallery stay **separate collections** — do not merge them on one picker.
 - `authorize()` runs before saving. If it returns `false`, validation fails — don’t put expensive queries in there.
 - The picker grid and uploads honour `acceptedFileTypes`, intersected with `config('mksine.media.allowed_types')`. Save-time validation still rejects a mismatched mime if state is tampered with.
 

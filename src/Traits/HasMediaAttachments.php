@@ -20,15 +20,26 @@ trait HasMediaAttachments
     }
 
     /**
-     * Get media attachments for a specific collection.
+     * Get media for a collection in editor order (`sort_order`, then `id`).
      */
     public function getMediaCollection(string $collectionName): Collection
     {
         return $this->mediaAttachments()
             ->where('collection_name', $collectionName)
+            ->ordered()
             ->with('media')
             ->get()
-            ->pluck('media');
+            ->pluck('media')
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * Alias for {@see getMediaCollection()} so consumers can ask for ordered media explicitly.
+     */
+    public function getOrderedMedia(string $collectionName): Collection
+    {
+        return $this->getMediaCollection($collectionName);
     }
 
     /**
@@ -74,12 +85,21 @@ trait HasMediaAttachments
 
         $mediaIds = is_array($mediaIds) ? $mediaIds : [$mediaIds];
 
-        foreach ($mediaIds as $mediaId) {
+        $sortOrder = 0;
+        if (! $clearExisting) {
+            $max = $this->mediaAttachments()
+                ->where('collection_name', $collectionName)
+                ->max('sort_order');
+            $sortOrder = $max === null ? 0 : ((int) $max + 1);
+        }
+
+        foreach (array_values($mediaIds) as $offset => $mediaId) {
             MediaAttachment::create([
                 'media_id' => $mediaId,
                 'mediable_type' => get_class($this),
                 'mediable_id' => $this->getKey(),
                 'collection_name' => $collectionName,
+                'sort_order' => $sortOrder + $offset,
             ]);
         }
     }

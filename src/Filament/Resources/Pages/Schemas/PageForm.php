@@ -12,6 +12,7 @@ use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\PageBuilderField;
+use Miran\Mksine\Filament\Forms\Components\SeoAnalysis;
 use Miran\Mksine\Filament\Resources\Tags\Schemas\TagForm;
 use Miran\Mksine\Models\Page;
 
@@ -37,6 +38,7 @@ class PageForm
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         Select::make('type')
                             ->label(__('mksine::pages.page_type'))
@@ -131,16 +133,32 @@ class PageForm
                 Section::make(__('mksine::common.seo'))
                     ->key('seo')
                     ->schema([
+                        TextInput::make('focus_keyphrase')
+                            ->label(__('mksine::seo.focus_keyphrase'))
+                            ->helperText(__('mksine::seo.focus_keyphrase_helper'))
+                            ->maxLength(191)
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
                         TextInput::make('meta_title')
                             ->label(__('mksine::pages.meta_title'))
                             ->maxLength(60)
                             ->helperText(__('mksine::pages.meta_title_helper'))
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         Textarea::make('meta_description')
                             ->label(__('mksine::pages.meta_description'))
                             ->maxLength(160)
                             ->rows(3)
                             ->helperText(__('mksine::pages.meta_description_helper'))
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
+                        SeoAnalysis::make('seo_analysis')
+                            ->titleField('title')
+                            ->slugField('slug')
+                            ->metaTitleField('meta_title')
+                            ->metaDescriptionField('meta_description')
+                            ->bodyField('content')
+                            ->focusKeyphraseField('focus_keyphrase')
                             ->columnSpanFull(),
                     ])
                     ->collapsed()

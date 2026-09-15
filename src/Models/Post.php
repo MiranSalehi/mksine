@@ -30,6 +30,7 @@ class Post extends Model implements AllowsPublicComments
         'published_at',
         'meta_title',
         'meta_description',
+        'focus_keyphrase',
         'views_count',
     ];
 

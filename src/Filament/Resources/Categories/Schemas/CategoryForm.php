@@ -11,6 +11,7 @@ use Filament\Schemas\Schema;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\CKEditor;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
+use Miran\Mksine\Filament\Forms\Components\SeoAnalysis;
 
 class CategoryForm
 {
@@ -32,6 +33,7 @@ class CategoryForm
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         MediaPicker::make('image')
                             ->label(__('mksine::categories.image'))
@@ -70,14 +72,30 @@ class CategoryForm
                 Section::make(__('mksine::common.seo'))
                     ->key('seo')
                     ->schema([
+                        TextInput::make('focus_keyphrase')
+                            ->label(__('mksine::seo.focus_keyphrase'))
+                            ->helperText(__('mksine::seo.focus_keyphrase_helper'))
+                            ->maxLength(191)
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
                         TextInput::make('meta_title')
                             ->label(__('mksine::categories.meta_title'))
                             ->maxLength(255)
+                            ->live(debounce: 400)
                             ->columnSpanFull(),
                         Textarea::make('meta_description')
                             ->label(__('mksine::categories.meta_description'))
                             ->rows(2)
                             ->maxLength(500)
+                            ->live(debounce: 400)
+                            ->columnSpanFull(),
+                        SeoAnalysis::make('seo_analysis')
+                            ->titleField('name')
+                            ->slugField('slug')
+                            ->metaTitleField('meta_title')
+                            ->metaDescriptionField('meta_description')
+                            ->bodyField('description')
+                            ->focusKeyphraseField('focus_keyphrase')
                             ->columnSpanFull(),
                     ])
                     ->columns(1)

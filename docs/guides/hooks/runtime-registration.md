@@ -171,4 +171,5 @@ The takeaway: **runtime hooks are code, discovery hooks are configuration**. Cho
 - [Resource hooks](resource-hooks.md)
 - [Page header hooks](page-header-hooks.md)
 - [Frontend admin bar](../storefront/frontend-admin-bar.md) — `Hooks::addFilter('frontend_admin_bar.items', …)`
+- [SEO analysis](../seo/analysis.md) — `Hooks::addFilter(SeoAnalyzer::FILTER_CHECKS, …)`
 - [Shortcodes](../content/shortcodes.md) — `Hooks::addShortcode()`

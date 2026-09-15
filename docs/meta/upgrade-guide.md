@@ -29,6 +29,17 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## Unreleased
+
+### Added
+
+- **Gallery reorder.** `media_attachments.sort_order` (unsigned int, default `0`, backfilled from `id` so previous `orderBy('id')` order is kept). `MediaPicker::multiple()` is reorderable by default; `->reorderable(false)` to opt out. Read with `$model->getMediaCollection($collection)` (now ordered) or `getOrderedMedia()`. See [Media library](../guides/media/library.md).
+- **SEO analysis.** Advisory scorer and Filament panel on Post, Page, Category, and Tag. Nullable `focus_keyphrase` (max 191) on those tables. Embed `SeoAnalysis::make()` on other resources; append checks with `Hooks::addFilter(SeoAnalyzer::FILTER_CHECKS, …)` (`mksine.seo.analysis_checks`). English may show a Flesch-like number; fa/ku use heading/sentence/paragraph heuristics only. See [SEO analysis](../guides/seo/analysis.md).
+
+### Migration
+
+1. Run `php artisan migrate` (sort_order + focus_keyphrase). `optimize:clear` is not required unless config is cached.
+
 ## 1.7.0 (2026-09-15)
 
 ### Behavior changes (non-breaking, but visible)

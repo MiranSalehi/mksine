@@ -6,7 +6,10 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Added
+
+- **Gallery reorder** — `media_attachments.sort_order` (backfilled from `id`); `MediaPicker::multiple()` is reorderable by default (drag + keyboard). `HasMediaAttachments::getMediaCollection()` / `getOrderedMedia()` return editor order. See [Media library](docs/guides/media/library.md).
+- **SEO analysis** — advisory Yoast-like scorer (`SeoAnalyzer`) and Filament `SeoAnalysis` field on Post, Page, Category, and Tag, plus `focus_keyphrase`. Plugins append checks with `Hooks::addFilter(SeoAnalyzer::FILTER_CHECKS, …)`. See [SEO analysis](docs/guides/seo/analysis.md).
 
 ## 1.7.0 - 2026-09-15
 

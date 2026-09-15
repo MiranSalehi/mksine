@@ -26,6 +26,7 @@ class Page extends Model
         'builder_content_width',
         'meta_title',
         'meta_description',
+        'focus_keyphrase',
         'published_at',
         'created_by',
         'updated_by',
