@@ -8,6 +8,13 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.2 - 2026-09-15
+
+### Fixed
+
+- **MediaPicker modal focus** — closing or confirming no longer leaves focus inside a hidden dialog (Chrome `aria-hidden` warning). Focus returns to the opener.
+- **MediaPicker gallery layout** — selected thumbs stay compact (`w-28` wrap) instead of stretching full width in a sidebar; reorder controls are centered under each image.
+
 ## 1.8.1 - 2026-09-15
 
 ### Fixed

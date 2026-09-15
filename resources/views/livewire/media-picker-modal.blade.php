@@ -2,7 +2,9 @@
     x-data="{
         show: @entangle('isOpen').live,
         closingMs: 220,
+        trigger: null,
         openFromEvent(detail) {
+            this.trigger = document.activeElement;
             this.show = true;
             $wire.open(
                 detail.statePath,
@@ -11,13 +13,37 @@
                 detail.currentSelection ?? []
             );
         },
+        releaseFocus() {
+            const root = this.$el.querySelector('.mksine-media-picker-root') ?? this.$el;
+            const active = document.activeElement;
+
+            if (active instanceof HTMLElement && root.contains(active)) {
+                active.blur();
+            }
+
+            if (this.trigger instanceof HTMLElement && typeof this.trigger.focus === 'function') {
+                this.trigger.focus({ preventScroll: true });
+            }
+
+            this.trigger = null;
+        },
         closeAnimated() {
             if (! this.show) {
                 return;
             }
 
+            this.releaseFocus();
             this.show = false;
             window.setTimeout(() => $wire.close(), this.closingMs);
+        },
+        confirmSelection(el) {
+            if (el.disabled) {
+                return;
+            }
+
+            this.releaseFocus();
+            this.show = false;
+            $wire.confirm();
         },
     }"
     x-on:open-media-picker.window="openFromEvent($event.detail)"
@@ -30,7 +56,7 @@
         style="display: none;"
         role="dialog"
         aria-modal="true"
-        :aria-hidden="! show"
+        :inert="! show"
     >
         {{-- Backdrop --}}
         <div
@@ -361,7 +387,7 @@
                         <button
                             type="button"
                             @if(count($selectedIds) === 0) disabled @endif
-                            x-on:click="if ($el.disabled) return; show = false; $wire.confirm()"
+                            x-on:click="confirmSelection($el)"
                             class="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                         >
                             {{ __('mksine::media_picker.confirm_selection') }}

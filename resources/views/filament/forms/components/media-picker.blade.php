@@ -121,12 +121,12 @@
         <template x-if="selectedMedia && selectedMedia.length > 0">
             <div
                 x-ref="selectedGrid"
-                class="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-3"
+                class="flex flex-wrap gap-3"
             >
                 <template x-for="(media, index) in selectedMedia" :key="media.id">
                     <div
                         :data-media-id="media.id"
-                        class="flex flex-col gap-1"
+                        class="flex w-28 shrink-0 flex-col gap-1"
                     >
                         <div class="group relative aspect-square overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50 shadow-sm ring-1 ring-black/5 transition-all duration-200 hover:shadow-md hover:ring-primary-500/30 dark:border-gray-600/60 dark:bg-gray-800/50 dark:ring-white/5 dark:hover:ring-primary-400/30">
                             <template x-if="media.mime_type && media.mime_type.startsWith('image/')">
@@ -184,7 +184,18 @@
                         </div>
 
                         @if ($isReorderable)
-                            <div class="flex items-center justify-between gap-1">
+                            <div class="flex items-center justify-center gap-0.5 rtl:flex-row-reverse">
+                                <button
+                                    type="button"
+                                    x-on:click.stop.prevent="moveMedia(media.id, -1)"
+                                    x-bind:disabled="index === 0"
+                                    class="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                    title="{{ __('mksine::media_picker.move_earlier') }}"
+                                    aria-label="{{ __('mksine::media_picker.move_earlier') }}"
+                                >
+                                    <x-heroicon-o-chevron-left class="h-4 w-4 rtl:hidden" />
+                                    <x-heroicon-o-chevron-right class="hidden h-4 w-4 rtl:block" />
+                                </button>
                                 <button
                                     type="button"
                                     data-reorder-handle
@@ -194,30 +205,17 @@
                                 >
                                     <x-heroicon-o-bars-2 class="h-4 w-4" />
                                 </button>
-                                <div class="flex items-center gap-0.5">
-                                    <button
-                                        type="button"
-                                        x-on:click.stop.prevent="moveMedia(media.id, -1)"
-                                        x-bind:disabled="index === 0"
-                                        class="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                        title="{{ __('mksine::media_picker.move_earlier') }}"
-                                        aria-label="{{ __('mksine::media_picker.move_earlier') }}"
-                                    >
-                                        <x-heroicon-o-chevron-left class="h-4 w-4 rtl:hidden" />
-                                        <x-heroicon-o-chevron-right class="hidden h-4 w-4 rtl:block" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        x-on:click.stop.prevent="moveMedia(media.id, 1)"
-                                        x-bind:disabled="index === selectedMedia.length - 1"
-                                        class="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                                        title="{{ __('mksine::media_picker.move_later') }}"
-                                        aria-label="{{ __('mksine::media_picker.move_later') }}"
-                                    >
-                                        <x-heroicon-o-chevron-right class="h-4 w-4 rtl:hidden" />
-                                        <x-heroicon-o-chevron-left class="hidden h-4 w-4 rtl:block" />
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    x-on:click.stop.prevent="moveMedia(media.id, 1)"
+                                    x-bind:disabled="index === selectedMedia.length - 1"
+                                    class="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                    title="{{ __('mksine::media_picker.move_later') }}"
+                                    aria-label="{{ __('mksine::media_picker.move_later') }}"
+                                >
+                                    <x-heroicon-o-chevron-right class="h-4 w-4 rtl:hidden" />
+                                    <x-heroicon-o-chevron-left class="hidden h-4 w-4 rtl:block" />
+                                </button>
                             </div>
                         @endif
                     </div>
