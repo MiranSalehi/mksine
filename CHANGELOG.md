@@ -6,9 +6,20 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
+- (none)
+
+## 1.7.0 - 2026-09-15
+
 ### Added
 
-- **Marketplace catalog (coming soon)** — Theme Manager and Plugins have an “Add from MKSine” tab that explains in-panel install from [mksine.com](https://mksine.com) is not connected yet, with a link to the public directory.
+- **MediaPicker video and audio** — picker fields can accept `video/*` and `audio/*`; the library grid, uploads, and selected chips preview A/V. Default `acceptedFileTypes` stays `['image/*']` so existing image fields are unchanged. Uploads are intersected with `config('mksine.media.allowed_types')`.
+- **Page builder Video and Audio blocks** — insert a library video or audio file with caption, controls, autoplay, and loop.
+- **CKEditor media insert** — the editor picker can insert `<video>` and `<audio>` as well as images.
+- **Marketplace catalog (coming soon)** — Theme Manager and Plugins have an “Add from MKSine” tab that explains in-panel install from [mksine.com](https://mksine.com) is not connected yet, with a link to the public directory. New config: `mksine.marketplace.url` / `directory_url`.
+
+### Changed
+
+- **Media allowlist** — `mksine.media.allowed_types` now includes `video/ogg` and audio types (`audio/mpeg`, `audio/mp4`, `audio/ogg`, `audio/wav`, `audio/x-wav`, `audio/webm`, `audio/aac`). Re-publish or merge config if you maintain a published `config/mksine.php`.
 
 ## 1.6.1 - 2026-09-14
 

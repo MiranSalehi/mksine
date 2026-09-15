@@ -29,6 +29,23 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.7.0 (2026-09-15)
+
+### Behavior changes (non-breaking, but visible)
+
+- **MediaPicker A/V.** Fields that pass `acceptedFileTypes(['video/*'])` or `['audio/*']` can browse, upload, and select those types. Fields that omit `acceptedFileTypes` still default to `image/*`.
+- **Page builder.** New Video and Audio blocks in the media category.
+- **CKEditor.** Insert media can add video and audio HTML, not only images.
+- **Marketplace tab.** Plugins and Theme Manager show **Add from MKSine** as a coming-soon catalog that links to [mksine.com/marketplace](https://mksine.com/marketplace). In-panel install from the directory is not wired yet.
+
+### Migration
+
+1. If you published `config/mksine.php`, merge `marketplace.url` / `marketplace.directory_url` and the expanded `media.allowed_types` list (ogg video plus common audio mimes). See [Configuration](../reference/configuration.md).
+2. Image-only pickers need no change. To allow A/V on a field: `->acceptedFileTypes(['video/*'])` or `['audio/*']`.
+3. After upgrade: `php artisan optimize:clear`.
+
+---
+
 ## 1.6.0 (2026-09-09)
 
 ### Added
