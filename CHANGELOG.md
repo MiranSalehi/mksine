@@ -6,6 +6,10 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
+- (none)
+
+## 1.8.0 - 2026-09-15
+
 ### Added
 
 - **Gallery reorder** — `media_attachments.sort_order` (backfilled from `id`); `MediaPicker::multiple()` is reorderable by default (drag + keyboard). `HasMediaAttachments::getMediaCollection()` / `getOrderedMedia()` return editor order. See [Media library](docs/guides/media/library.md).

@@ -29,7 +29,7 @@ When adding an entry, copy this skeleton:
 
 ---
 
-## Unreleased
+## 1.8.0 (2026-09-15)
 
 ### Added
 
