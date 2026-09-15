@@ -55,6 +55,16 @@ describe('Media Model', function () {
         expect($docMedia->isVideo())->toBeFalse();
     });
 
+    it('can check if media is audio', function () {
+        $audioMedia = new Media(['mime_type' => 'audio/mpeg']);
+        $imageMedia = new Media(['mime_type' => 'image/jpeg']);
+        $videoMedia = new Media(['mime_type' => 'video/mp4']);
+
+        expect($audioMedia->isAudio())->toBeTrue()
+            ->and($imageMedia->isAudio())->toBeFalse()
+            ->and($videoMedia->isAudio())->toBeFalse();
+    });
+
     it('can check if media is document', function () {
         $pdfMedia = new Media(['mime_type' => 'application/pdf']);
         $wordMedia = new Media(['mime_type' => 'application/msword']);

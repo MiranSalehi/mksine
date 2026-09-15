@@ -22,6 +22,7 @@ return [
     'all_types' => 'هەموو جۆرەکان',
     'images' => 'وێنەکان',
     'videos' => 'ڤیدیۆکان',
+    'audio' => 'دەنگ',
     'pdf' => 'PDF',
     'documents' => 'بڕگەنامەکان',
     'attachment_details' => 'وردەکاریی پێوەكراو',
@@ -35,4 +36,5 @@ return [
     'dimensions_unknown' => '—',
     'pagination_label' => 'لاپەڕەسازی میدیا',
     'pagination_summary' => 'نیشاندانی :from تا :to لە :total',
+    'invalid_type' => 'ئەم جۆرە فایلە ڕێگەپێدراو نییە.',
 ];

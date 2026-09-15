@@ -177,6 +177,7 @@ See [Troubleshooting](../../operations/troubleshooting.md) for the full diagnost
 
 ## Next steps
 
+- Admin **Add from MKSine** (Plugins page) is a coming-soon catalog that links to [mksine.com/marketplace](https://mksine.com/marketplace). In-panel install is not wired yet; keep using ZIP upload or a plugin folder on disk.
 - [Lifecycle](lifecycle.md) — exact semantics of `install/activate/deactivate/uninstall/boot`.
 - [Models and migrations](models-migrations.md) — table conventions, dependent migrations.
 - [Filament resources](filament-resources.md) — how the generated form/table hook into MKSine.

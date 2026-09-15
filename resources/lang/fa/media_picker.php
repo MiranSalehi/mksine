@@ -22,6 +22,7 @@ return array (
   'all_types' => 'همه انواع',
   'images' => 'تصاویر',
   'videos' => 'ویدیوها',
+  'audio' => 'صوتی',
   'pdf' => 'PDF',
   'documents' => 'اسناد',
   'attachment_details' => 'جزئیات پیوست',
@@ -35,4 +36,5 @@ return array (
   'dimensions_unknown' => '—',
   'pagination_label' => 'صفحه‌بندی رسانه',
   'pagination_summary' => 'نمایش :from تا :to از :total مورد',
+  'invalid_type' => 'این نوع فایل مجاز نیست.',
 );

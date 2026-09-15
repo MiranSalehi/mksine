@@ -314,7 +314,7 @@
                 editor.ui.componentFactory.add('insertMedia', locale => {
                     const view = new ButtonViewClass(locale);
                     view.set({ label: 'Insert Media', icon: ` <svg xmlns="http://www.w3.org/2000/svg" fill="#000000" width="20px" height="20px" viewBox="0 0 24 24"><path d="M19,13a1,1,0,0,0-1,1v.38L16.52,12.9a2.79,2.79,0,0,0-3.93,0l-.7.7L9.41,11.12a2.85,2.85,0,0,0-3.93,0L4,12.6V7A1,1,0,0,1,5,6h7a1,1,0,0,0,0-2H5A3,3,0,0,0,2,7V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3V14A1,1,0,0,0,19,13ZM5,20a1,1,0,0,1-1-1V15.43l2.9-2.9a.79.79,0,0,1,1.09,0l3.17,3.17,0,0L15.46,20Zm13-1a.89.89,0,0,1-.18.53L13.31,15l.7-.7a.77.77,0,0,1,1.1,0L18,17.21ZM22.71,4.29l-3-3a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,1,1,0,0,0-.33.21l-3,3a1,1,0,0,0,1.42,1.42L18,4.41V10a1,1,0,0,0,2,0V4.41l1.29,1.3a1,1,0,0,0,1.42,0A1,1,0,0,0,22.71,4.29Z"/></svg>`, tooltip: true });
-                    view.on('execute', () => window.dispatchEvent(new CustomEvent('open-media-picker', { detail: { statePath: mediaPickerStatePath, multiple: true, acceptedFileTypes: ['image/*'], currentSelection: [] } })));
+                    view.on('execute', () => window.dispatchEvent(new CustomEvent('open-media-picker', { detail: { statePath: mediaPickerStatePath, multiple: true, acceptedFileTypes: ['image/*', 'video/*', 'audio/*'], currentSelection: [] } })));
                     return view;
                 });
             }
@@ -384,9 +384,22 @@
                     selectedMedia.forEach((media, index) => {
                         const mediaUrl = media.url || (media.path ? '/storage/' + media.path : '');
                         if (!mediaUrl) return;
+                        const escapeAttr = (value) => String(value)
+                            .replace(/&/g, '&amp;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/</g, '&lt;');
+                        const insertHtml = (html) => {
+                            const viewFragment = editor.data.processor.toView(html);
+                            const modelFragment = editor.data.toModel(viewFragment);
+                            editor.model.insertContent(modelFragment, insertPosition);
+                        };
                         if (media.mime_type?.startsWith('image/')) {
                             const el = writer.createElement('imageBlock', { src: mediaUrl, alt: media.name || '' });
                             editor.model.insertContent(el, insertPosition);
+                        } else if (media.mime_type?.startsWith('video/')) {
+                            insertHtml('<figure class="media"><video controls preload="metadata" src="' + escapeAttr(mediaUrl) + '"></video></figure>');
+                        } else if (media.mime_type?.startsWith('audio/')) {
+                            insertHtml('<audio controls preload="metadata" src="' + escapeAttr(mediaUrl) + '"></audio>');
                         } else {
                             const el = writer.createElement('link', { href: mediaUrl }, writer.createText(media.name || 'Media'));
                             editor.model.insertContent(el, insertPosition);

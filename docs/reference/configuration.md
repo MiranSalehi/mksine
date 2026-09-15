@@ -27,6 +27,7 @@ return [
     'security' => [...],
     'country_dial_codes' => [...],
     'api' => [...],   // reserved
+    'marketplace' => [...],
 ];
 ```
 
@@ -117,6 +118,15 @@ Path **relative to `base_path()`** under which `mks-plugin:discover` scans for `
 
 > **Caveat.** `mks-plugin:make` writes to `base_path('plugins/{name}')` and ignores this key (verified in [`PluginMakeCommand`](../../src/Console/Commands/PluginMakeCommand.php)). If you customise the path, scaffold first and move the directory before running `mks-plugin:discover`.
 
+## `marketplace`
+
+Public catalog URLs shown in Theme Manager and Plugins (`Add from MKSine`). In-panel install is not connected yet; the UI is a coming-soon browser that links out.
+
+| Key | Env | Default |
+|-----|-----|---------|
+| `url` | `MKS_MARKETPLACE_URL` | `https://mksine.com` |
+| `directory_url` | `MKS_MARKETPLACE_DIRECTORY_URL` | `https://mksine.com/marketplace` |
+
 ## `plugins.boot_guard_ttl`
 
 | Default | Env | Type |
@@ -156,7 +166,7 @@ Media-library configuration used by the Media resource and uploaders.
 | `disk` | `MKS_CMS_MEDIA_DISK` | `'public'` | Must exist in `config('filesystems.disks')`. Use a private disk + `security.authorize_media = true` for paid content. |
 | `path` | `MKS_CMS_MEDIA_PATH` | `'media'` | Subdirectory under the disk. |
 | `max_size` | `MKS_CMS_MEDIA_MAX_SIZE` | `10240` (KB = 10 MB) | Hard cap enforced server-side. |
-| `allowed_types` | _none_ | image/{jpeg,png,gif,webp,svg+xml}, video/{mp4,webm}, application/pdf, MS Word, MS Excel | Strict allowlist. Add types in your published config. |
+| `allowed_types` | _none_ | image/{jpeg,png,gif,webp,svg+xml}, video/{mp4,webm,ogg}, audio/{mpeg,mp4,ogg,wav,webm,aac}, application/pdf, MS Word, MS Excel | Strict allowlist. Add types in your published config. |
 | `optimize_images` | `MKS_CMS_OPTIMIZE_IMAGES` | `true` | Runs the configured image optimizer on upload. |
 | `generate_thumbnails` | `MKS_CMS_GENERATE_THUMBNAILS` | `true` | Generates `thumbnail_sizes` variants on upload. |
 | `thumbnail_sizes` | _none_ | `small=150x150`, `medium=300x300`, `large=600x600` | Override per project. |

@@ -24,6 +24,7 @@ use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
+use Miran\Mksine\Filament\Pages\Concerns\InteractsWithMarketplaceCatalog;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Support\UploadLimits;
 use ZipArchive;
@@ -31,6 +32,7 @@ use ZipArchive;
 class ManagePlugins extends Page
 {
     use HasPageShield;
+    use InteractsWithMarketplaceCatalog;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-puzzle-piece';
 
@@ -101,6 +103,7 @@ class ManagePlugins extends Page
     protected function getHeaderActions(): array
     {
         return [
+            $this->browseMarketplaceAction(),
             Action::make('upload')
                 ->label(__('mksine::plugins.upload_plugin'))
                 ->icon('heroicon-o-arrow-up-tray')

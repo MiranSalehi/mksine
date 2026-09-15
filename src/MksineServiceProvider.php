@@ -86,6 +86,7 @@ use Miran\Mksine\Core\MenuItemSources\PostMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\TagMenuItemSource;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
+use Miran\Mksine\Core\PageBuilder\Components\AudioComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
@@ -107,6 +108,7 @@ use Miran\Mksine\Core\PageBuilder\Components\SliderComponent;
 use Miran\Mksine\Core\PageBuilder\Components\SpacerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\TabsComponent;
 use Miran\Mksine\Core\PageBuilder\Components\TextComponent;
+use Miran\Mksine\Core\PageBuilder\Components\VideoComponent;
 use Miran\Mksine\Core\PageBuilder\Livewire\ComponentEditor;
 use Miran\Mksine\Core\PageBuilder\Livewire\PageBuilder;
 use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
@@ -399,6 +401,8 @@ class MksineServiceProvider extends PackageServiceProvider
 
                 // Media
                 ImageComponent::class,
+                VideoComponent::class,
+                AudioComponent::class,
                 SliderComponent::class,
 
                 // Layout

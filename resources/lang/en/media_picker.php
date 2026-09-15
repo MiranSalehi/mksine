@@ -22,6 +22,7 @@ return [
     'all_types' => 'All Types',
     'images' => 'Images',
     'videos' => 'Videos',
+    'audio' => 'Audio',
     'pdf' => 'PDF',
     'documents' => 'Documents',
     'attachment_details' => 'Attachment Details',
@@ -35,4 +36,5 @@ return [
     'dimensions_unknown' => '—',
     'pagination_label' => 'Media pagination',
     'pagination_summary' => 'Showing :from to :to of :total',
+    'invalid_type' => 'This file type is not allowed.',
 ];

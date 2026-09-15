@@ -128,6 +128,7 @@
                             const isOk = (f) => {
                                 const t = f.type || '';
                                 if (!acc.length) return true;
+                                if (!t) return true;
                                 for (const p of acc) {
                                     if (p.endsWith('/*') && t.startsWith(p.slice(0, -1))) return true;
                                     if (p === t) return true;
@@ -207,27 +208,7 @@
                                     'is-focused' => $this->detailMediaId === $media->id,
                                 ])
                             >
-                                @if(str_starts_with($media->mime_type, 'image/') && ! str_starts_with($media->mime_type, 'image/svg'))
-                                    <img
-                                        src="{{ Storage::disk($media->disk)->url($media->path) }}"
-                                        alt="{{ $media->name }}"
-                                        class="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                                        loading="lazy"
-                                    >
-                                @elseif(str_starts_with($media->mime_type, 'image/svg'))
-                                    <div class="flex h-full w-full items-center justify-center bg-white p-2 dark:bg-gray-800">
-                                        <img
-                                            src="{{ Storage::disk($media->disk)->url($media->path) }}"
-                                            alt="{{ $media->name }}"
-                                            class="max-h-full max-w-full object-contain"
-                                            loading="lazy"
-                                        >
-                                    </div>
-                                @else
-                                    <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
-                                        <x-heroicon-o-document class="h-10 w-10 text-gray-400 dark:text-gray-500" />
-                                    </div>
-                                @endif
+                                @include('mksine::livewire.partials.media-picker-kind-preview', ['media' => $media, 'variant' => 'grid'])
 
                                 @if($this->isSelected($media->id))
                                     <div class="absolute inset-0 bg-primary-500/15">
@@ -295,25 +276,7 @@
                         @if($detailMedia = $this->detailMedia)
                             <div class="space-y-4 p-4">
                                 <div class="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10">
-                                    @if(str_starts_with($detailMedia->mime_type, 'image/') && ! str_starts_with($detailMedia->mime_type, 'image/svg'))
-                                        <img
-                                            src="{{ Storage::disk($detailMedia->disk)->url($detailMedia->path) }}"
-                                            alt="{{ $detailMedia->name }}"
-                                            class="aspect-video w-full object-contain bg-gray-50 dark:bg-gray-900"
-                                        >
-                                    @elseif(str_starts_with($detailMedia->mime_type, 'image/svg'))
-                                        <div class="flex aspect-video items-center justify-center bg-white p-4 dark:bg-gray-900">
-                                            <img
-                                                src="{{ Storage::disk($detailMedia->disk)->url($detailMedia->path) }}"
-                                                alt="{{ $detailMedia->name }}"
-                                                class="max-h-full max-w-full object-contain"
-                                            >
-                                        </div>
-                                    @else
-                                        <div class="flex aspect-video items-center justify-center bg-gray-100 dark:bg-gray-800">
-                                            <x-heroicon-o-document class="h-14 w-14 text-gray-400 dark:text-gray-500" />
-                                        </div>
-                                    @endif
+                                    @include('mksine::livewire.partials.media-picker-kind-preview', ['media' => $detailMedia, 'variant' => 'detail'])
                                 </div>
 
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">

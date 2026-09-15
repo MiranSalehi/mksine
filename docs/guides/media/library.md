@@ -59,10 +59,10 @@ deleted_at     timestamp - soft deletes
 
 The `Media` model exposes:
 
-- `isImage()`, `isVideo()`, `isDocument()` mime helpers.
+- `isImage()`, `isVideo()`, `isAudio()`, `isDocument()` mime helpers.
 - `getFullUrlAttribute()` returns the public URL, with `url` taking precedence over `Storage::disk(...)->url($path)`.
 - `getHumanSizeAttribute()` for display.
-- Scopes: `images()`, `videos()`, `documents()`.
+- Scopes: `images()`, `videos()`, `audios()`, `documents()`.
 
 ### `media_attachments`
 
@@ -169,7 +169,7 @@ Method reference (only public methods worth knowing):
 | ----------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `multiple(bool $flag = true)` | Allow selecting more than one media item.                                                              |
 | `collection(string $name)`    | Bucket name persisted to `media_attachments.collection_name`. Defaults to the field name.              |
-| `acceptedFileTypes(array)`    | Mime patterns accepted in the picker UI (`image/*`, `application/pdf`, …).                              |
+| `acceptedFileTypes(array)`    | Mime patterns accepted in the picker UI (`image/*`, `video/*`, `audio/*`, `application/pdf`, …). The library grid and new uploads are limited to these patterns, intersected with `config('mksine.media.allowed_types')`. |
 | `maxItems(int)`                | Server-side validation cap on selection count.                                                         |
 | `minItems(int)`                | Server-side floor (rejects save with fewer items).                                                     |
 | `authorize(Closure $fn)`      | Custom `Closure(array $ids): bool` to check whether the user may attach the selected ids.              |
@@ -178,7 +178,7 @@ Important behaviours:
 
 - In `relation(true)` mode (the default), `MediaPicker` writes `media_attachments` rows during `saveRelationships`. The form column itself dehydrates to `null`, so don’t add a column to your model for it.
 - `authorize()` runs before saving. If it returns `false`, validation fails — don’t put expensive queries in there.
-- The picker does not enforce your collection’s `acceptedFileTypes` against existing media. A user can pick a video out of the library even if you set `image/*`, because the filter is only applied to *new* uploads launched from the picker. Audit on save if it matters.
+- The picker grid and uploads honour `acceptedFileTypes`, intersected with `config('mksine.media.allowed_types')`. Save-time validation still rejects a mismatched mime if state is tampered with.
 
 ## Limitations
 

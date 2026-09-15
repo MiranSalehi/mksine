@@ -4,6 +4,12 @@
     @endphp
 
     <div class="mksine-manage-plugins-root space-y-6">
+        @include('mksine::filament.partials.marketplace-catalog', [
+            'kind' => 'plugins',
+            'isMarketplace' => $this->isMarketplaceCatalog(),
+        ])
+
+        @unless ($this->isMarketplaceCatalog())
         @if (empty($plugins))
             <x-filament::section>
                 <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -244,6 +250,7 @@
                 </div>
             </div>
         @endif
+        @endunless
     </div>
 
     <x-filament::modal

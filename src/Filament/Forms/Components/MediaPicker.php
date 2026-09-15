@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\MediaAttachment;
 use Miran\Mksine\Support\Logging\MksineLog;
+use Miran\Mksine\Support\MediaMime;
 
 class MediaPicker extends Field
 {
@@ -395,7 +396,7 @@ class MediaPicker extends Field
             $media = Media::whereIn('id', $ids)->get(['id', 'mime_type']);
 
             foreach ($media as $item) {
-                if (! $this->isMimeTypeAccepted($item->mime_type, $acceptedTypes)) {
+                if (! MediaMime::matches($item->mime_type, $acceptedTypes)) {
                     MksineLog::debug('MediaPicker: Invalid mime type detected', [
                         'media_id' => $item->id,
                         'mime_type' => $item->mime_type,
@@ -415,29 +416,6 @@ class MediaPicker extends Field
 
             return false;
         }
-    }
-
-    /**
-     * Check if a mime type is accepted.
-     */
-    protected function isMimeTypeAccepted(string $mimeType, array $acceptedTypes): bool
-    {
-        foreach ($acceptedTypes as $accepted) {
-            // Exact match
-            if ($accepted === $mimeType) {
-                return true;
-            }
-
-            // Wildcard match (e.g., 'image/*')
-            if (str_ends_with($accepted, '/*')) {
-                $prefix = substr($accepted, 0, -1); // 'image/'
-                if (str_starts_with($mimeType, $prefix)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     /**

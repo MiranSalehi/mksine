@@ -89,6 +89,14 @@ class Media extends Model
     }
 
     /**
+     * Check if media is audio.
+     */
+    public function isAudio(): bool
+    {
+        return str_starts_with($this->mime_type ?? '', 'audio/');
+    }
+
+    /**
      * Check if media is a document.
      */
     public function isDocument(): bool
@@ -138,6 +146,14 @@ class Media extends Model
     public function scopeVideos($query)
     {
         return $query->where('mime_type', 'like', 'video/%');
+    }
+
+    /**
+     * Scope: only audio.
+     */
+    public function scopeAudios($query)
+    {
+        return $query->where('mime_type', 'like', 'audio/%');
     }
 
     /**

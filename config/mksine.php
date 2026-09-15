@@ -192,6 +192,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Marketplace
+    |--------------------------------------------------------------------------
+    |
+    | Official catalog at mksine.com. In-panel install from the directory is
+    | not wired yet; Theme Manager and Plugins show a coming-soon browser
+    | that links here (WordPress-style “Add New”).
+    |
+    */
+    'marketplace' => [
+        'url' => env('MKS_MARKETPLACE_URL', 'https://mksine.com'),
+        'directory_url' => env('MKS_MARKETPLACE_DIRECTORY_URL', 'https://mksine.com/marketplace'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Updater Settings
     |--------------------------------------------------------------------------
     |
@@ -250,6 +265,14 @@ return [
             'image/svg+xml',
             'video/mp4',
             'video/webm',
+            'video/ogg',
+            'audio/mpeg',
+            'audio/mp4',
+            'audio/ogg',
+            'audio/wav',
+            'audio/x-wav',
+            'audio/webm',
+            'audio/aac',
             'application/pdf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

@@ -69,7 +69,27 @@
                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                             >
                         </template>
-                        <template x-if="!media.mime_type || !media.mime_type.startsWith('image/')">
+                        <template x-if="media.mime_type && media.mime_type.startsWith('video/')">
+                            <div class="relative h-full w-full bg-black">
+                                <video
+                                    :src="getMediaUrl(media)"
+                                    class="pointer-events-none h-full w-full object-cover"
+                                    muted
+                                    preload="metadata"
+                                    playsinline
+                                ></video>
+                                <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                                    <x-heroicon-s-play class="h-8 w-8 text-white/90" />
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="media.mime_type && media.mime_type.startsWith('audio/')">
+                            <div class="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-sky-50 to-indigo-100 px-2 dark:from-sky-950 dark:to-indigo-950">
+                                <x-heroicon-o-musical-note class="h-10 w-10 text-sky-500 dark:text-sky-400" />
+                                <p class="max-w-full truncate px-1 text-[10px] font-medium text-sky-800 dark:text-sky-200" x-text="media.name"></p>
+                            </div>
+                        </template>
+                        <template x-if="!media.mime_type || (!media.mime_type.startsWith('image/') && !media.mime_type.startsWith('video/') && !media.mime_type.startsWith('audio/'))">
                             <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
                                 <x-heroicon-o-document class="h-12 w-12 text-gray-400 dark:text-gray-500" />
                             </div>

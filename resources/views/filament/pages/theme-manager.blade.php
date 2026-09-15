@@ -1,5 +1,11 @@
 <x-filament-panels::page>
     <div class="mksine-theme-manager-root space-y-6">
+        @include('mksine::filament.partials.marketplace-catalog', [
+            'kind' => 'themes',
+            'isMarketplace' => $this->isMarketplaceCatalog(),
+        ])
+
+        @unless ($this->isMarketplaceCatalog())
         {{-- Themes Grid --}}
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             @forelse($this->getThemes() as $theme)
@@ -180,5 +186,6 @@
                 </div>
             @endforelse
         </div>
+        @endunless
     </div>
 </x-filament-panels::page>

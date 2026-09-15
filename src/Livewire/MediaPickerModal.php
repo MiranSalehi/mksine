@@ -8,12 +8,15 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Miran\Mksine\Models\Media;
+use Miran\Mksine\Support\MediaMime;
 use Miran\Mksine\Support\MediaStoragePath;
+use Miran\Mksine\Support\UploadLimits;
 
 class MediaPickerModal extends Component
 {
@@ -109,19 +112,39 @@ class MediaPickerModal extends Component
             return;
         }
 
-        $disk = 'public';
+        $uploadable = MediaMime::uploadableTypes($this->acceptedFileTypes);
+
+        $this->validate([
+            'uploadedFiles' => ['required', 'array'],
+            'uploadedFiles.*' => ['required', 'file', 'max:'.UploadLimits::mediaMaxKb()],
+        ]);
+
+        if ($uploadable === []) {
+            throw ValidationException::withMessages([
+                'uploadedFiles' => __('mksine::media_picker.invalid_type'),
+            ]);
+        }
+
+        foreach ($this->uploadedFiles as $index => $file) {
+            $mime = $file->getMimeType() ?: $file->getClientMimeType();
+            if (! MediaMime::matches($mime, $uploadable)) {
+                throw ValidationException::withMessages([
+                    "uploadedFiles.{$index}" => __('mksine::media_picker.invalid_type'),
+                ]);
+            }
+        }
+
+        $disk = (string) config('mksine.media.disk', 'public');
 
         foreach ($this->uploadedFiles as $file) {
-            // Store file in media directory (same as MediaResource)
             $path = $file->store(MediaStoragePath::datedDirectory(), $disk);
-
-            // Generate URL
             $url = Storage::disk($disk)->url($path);
+            $mime = $file->getMimeType() ?: $file->getClientMimeType();
 
             $media = Media::create([
                 'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'file_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
+                'mime_type' => $mime,
                 'path' => $path,
                 'disk' => $disk,
                 'size' => $file->getSize(),
@@ -186,6 +209,8 @@ class MediaPickerModal extends Component
             });
         }
 
+        $this->constrainQueryToAcceptedTypes($query);
+
         if ($this->typeFilter) {
             $query->where('mime_type', 'like', "{$this->typeFilter}%");
         }
@@ -193,15 +218,56 @@ class MediaPickerModal extends Component
         return $query;
     }
 
+    protected function constrainQueryToAcceptedTypes(Builder $query): void
+    {
+        $accepted = $this->acceptedFileTypes;
+
+        if (
+            $accepted === []
+            || in_array('*', $accepted, true)
+            || in_array('*/*', $accepted, true)
+        ) {
+            return;
+        }
+
+        $query->where(function (Builder $inner) use ($accepted): void {
+            foreach ($accepted as $pattern) {
+                if (str_ends_with($pattern, '/*')) {
+                    $inner->orWhere('mime_type', 'like', substr($pattern, 0, -1).'%');
+
+                    continue;
+                }
+
+                $inner->orWhere('mime_type', $pattern);
+            }
+        });
+    }
+
     public function getFileTypes(): array
     {
-        return [
+        $accepted = $this->acceptedFileTypes;
+        $types = [
             '' => __('mksine::media_picker.all_types'),
-            'image/' => __('mksine::media_picker.images'),
-            'video/' => __('mksine::media_picker.videos'),
-            'application/pdf' => __('mksine::media_picker.pdf'),
-            'application/' => __('mksine::media_picker.documents'),
         ];
+
+        if (MediaMime::acceptsFamily($accepted, 'image/')) {
+            $types['image/'] = __('mksine::media_picker.images');
+        }
+
+        if (MediaMime::acceptsFamily($accepted, 'video/')) {
+            $types['video/'] = __('mksine::media_picker.videos');
+        }
+
+        if (MediaMime::acceptsFamily($accepted, 'audio/')) {
+            $types['audio/'] = __('mksine::media_picker.audio');
+        }
+
+        if (MediaMime::acceptsFamily($accepted, 'application/')) {
+            $types['application/pdf'] = __('mksine::media_picker.pdf');
+            $types['application/'] = __('mksine::media_picker.documents');
+        }
+
+        return $types;
     }
 
     public function render(): View

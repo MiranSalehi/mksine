@@ -25,6 +25,7 @@ use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
+use Miran\Mksine\Filament\Pages\Concerns\InteractsWithMarketplaceCatalog;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Support\UploadLimits;
@@ -33,6 +34,7 @@ use ZipArchive;
 class ThemeManager extends Page
 {
     use HasPageShield;
+    use InteractsWithMarketplaceCatalog;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
 
@@ -92,6 +94,7 @@ class ThemeManager extends Page
     protected function getHeaderActions(): array
     {
         return [
+            $this->browseMarketplaceAction(),
             Action::make('upload')
                 ->label(__('mksine::themes.upload_theme'))
                 ->icon('heroicon-o-arrow-up-tray')

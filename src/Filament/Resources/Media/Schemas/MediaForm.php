@@ -10,6 +10,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Miran\Mksine\Core\Hooks\FormHookManager;
+use Miran\Mksine\Support\MediaMime;
 use Miran\Mksine\Support\MediaStoragePath;
 use Miran\Mksine\Support\UploadLimits;
 
@@ -42,7 +43,9 @@ class MediaForm
                         FileUpload::make('file')
                             ->label(__('mksine::media.file'))
                             ->required()
-                            ->acceptedFileTypes(['image/*', 'video/*', 'audio/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                            ->acceptedFileTypes(fn (): array => MediaMime::allowedTypes() !== []
+                                ? MediaMime::allowedTypes()
+                                : ['image/*', 'video/*', 'audio/*'])
                             ->maxSize(UploadLimits::mediaMaxKb())
                             ->disk(fn ($get) => $get('disk') ?? 'public')
                             ->directory(fn (): string => MediaStoragePath::datedDirectory())

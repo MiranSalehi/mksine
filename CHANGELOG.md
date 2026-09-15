@@ -6,7 +6,9 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Added
+
+- **Marketplace catalog (coming soon)** — Theme Manager and Plugins have an “Add from MKSine” tab that explains in-panel install from [mksine.com](https://mksine.com) is not connected yet, with a link to the public directory.
 
 ## 1.6.1 - 2026-09-14
 
