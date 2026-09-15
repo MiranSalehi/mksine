@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.3 - 2026-09-15
+
+### Fixed
+
+- **MediaPicker dist CSS** — rebuild `resources/dist/mksine.css` so compact gallery thumbs (`w-28`) are in the published stylesheet.
+
 ## 1.8.2 - 2026-09-15
 
 ### Fixed
