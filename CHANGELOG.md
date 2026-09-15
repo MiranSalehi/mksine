@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.1 - 2026-09-15
+
+### Fixed
+
+- **MediaPicker gallery chrome** — drag handle and move-earlier/later controls sit under each thumbnail instead of covering the image; selected tiles keep a minimum width so the grid stays readable.
+
 ## 1.8.0 - 2026-09-15
 
 ### Added
