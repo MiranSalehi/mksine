@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.5 - 2026-09-16
+
+### Fixed
+
+- **MediaPicker gallery RTL** — drag-and-drop reorder no longer inverts insert side on a right-to-left grid; LTR is unchanged.
+
 ## 1.8.4 - 2026-09-16
 
 ### Fixed

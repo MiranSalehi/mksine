@@ -48,6 +48,13 @@
                 return (ids || []).map((id) => map[id]).filter(Boolean);
             },
 
+            isRtlGrid() {
+                const el = this.$refs.selectedGrid;
+                const dir = el ? getComputedStyle(el).direction : document.documentElement.dir;
+
+                return String(dir).toLowerCase() === 'rtl';
+            },
+
             initSortable() {
                 if (this.sortable) {
                     this.sortable.destroy();
@@ -70,12 +77,20 @@
                     fallbackOnBody: true,
                     fallbackTolerance: 4,
                     ghostClass: 'opacity-40',
-                    onEnd: (evt) => {
-                        if (evt.oldIndex === evt.newIndex) {
-                            return;
+                    onMove: (evt) => {
+                        if (! this.isRtlGrid() || ! evt.related) {
+                            return true;
                         }
-                        this.syncOrderFromDom();
+                        const dragged = evt.dragged.getBoundingClientRect();
+                        const related = evt.related.getBoundingClientRect();
+                        const sameRow = Math.abs(dragged.top - related.top) < Math.max(dragged.height, related.height) * 0.5;
+                        if (! sameRow) {
+                            return true;
+                        }
+
+                        return evt.willInsertAfter ? -1 : 1;
                     },
+                    onEnd: () => this.syncOrderFromDom(),
                 });
             },
 
@@ -85,6 +100,10 @@
                     return;
                 }
                 const ids = Array.from(el.querySelectorAll('[data-media-id]')).map((node) => parseInt(node.getAttribute('data-media-id'), 10));
+                const current = this.stateIds();
+                if (ids.length === current.length && ids.every((id, index) => id === current[index])) {
+                    return;
+                }
                 this.applySelectionOrder(ids, this.selectedMedia);
             },
 
