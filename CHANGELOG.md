@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.6 - 2026-09-16
+
+### Fixed
+
+- **MediaPicker gallery RTL** — SortableJS uses physical `left`, so the selected-thumbs grid is `dir="ltr"` and drag-and-drop matches LTR; the rest of the form stays RTL.
+
 ## 1.8.5 - 2026-09-16
 
 ### Fixed

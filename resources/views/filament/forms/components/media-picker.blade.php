@@ -48,13 +48,6 @@
                 return (ids || []).map((id) => map[id]).filter(Boolean);
             },
 
-            isRtlGrid() {
-                const el = this.$refs.selectedGrid;
-                const dir = el ? getComputedStyle(el).direction : document.documentElement.dir;
-
-                return String(dir).toLowerCase() === 'rtl';
-            },
-
             initSortable() {
                 if (this.sortable) {
                     this.sortable.destroy();
@@ -77,19 +70,6 @@
                     fallbackOnBody: true,
                     fallbackTolerance: 4,
                     ghostClass: 'opacity-40',
-                    onMove: (evt) => {
-                        if (! this.isRtlGrid() || ! evt.related) {
-                            return true;
-                        }
-                        const dragged = evt.dragged.getBoundingClientRect();
-                        const related = evt.related.getBoundingClientRect();
-                        const sameRow = Math.abs(dragged.top - related.top) < Math.max(dragged.height, related.height) * 0.5;
-                        if (! sameRow) {
-                            return true;
-                        }
-
-                        return evt.willInsertAfter ? -1 : 1;
-                    },
                     onEnd: () => this.syncOrderFromDom(),
                 });
             },
@@ -154,6 +134,7 @@
         <div
             x-ref="selectedGrid"
             x-show="selectedMedia && selectedMedia.length > 0"
+            dir="ltr"
             class="grid grid-cols-3 gap-2"
         >
             <template x-for="(media, index) in selectedMedia" :key="media.id">
