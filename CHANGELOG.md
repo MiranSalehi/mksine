@@ -8,6 +8,13 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.7 - 2026-09-16
+
+### Fixed
+
+- **MediaPicker gallery drag** — Sortable’s fallback clone is ignored by Alpine (`x-ignore`) so dragging a thumb no longer throws `media is not defined`.
+- **Media library modal** — Browse Files no longer reserves an idle spinner slot; Upload keeps the spinner and label on one line.
+
 ## 1.8.6 - 2026-09-16
 
 ### Fixed

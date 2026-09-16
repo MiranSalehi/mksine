@@ -70,8 +70,18 @@
                     fallbackOnBody: true,
                     fallbackTolerance: 4,
                     ghostClass: 'opacity-40',
+                    onClone: (evt) => this.silenceAlpineClone(evt.clone),
+                    onStart: () => this.silenceAlpineClone(window.Sortable && window.Sortable.ghost),
                     onEnd: () => this.syncOrderFromDom(),
                 });
+            },
+
+            silenceAlpineClone(node) {
+                if (! node || node.nodeType !== 1) {
+                    return;
+                }
+                node.setAttribute('x-ignore', '');
+                node._x_ignore = true;
             },
 
             syncOrderFromDom() {

@@ -281,14 +281,15 @@
                                 wire:target="uploadedFiles"
                                 x-on:click="if (uploading) $event.preventDefault()"
                                 :class="uploading && 'pointer-events-none opacity-70'"
-                                class="inline-flex h-10 min-w-[11rem] shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-white px-5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors hover:bg-gray-50 hover:shadow dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-600"
+                                class="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-white px-5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200 transition-colors hover:bg-gray-50 hover:shadow dark:bg-gray-700 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-600"
                             >
                                 <svg
+                                    x-show="uploading"
+                                    x-cloak
                                     class="h-4 w-4 shrink-0 animate-spin text-gray-500"
                                     xmlns="http://www.w3.org/2000/svg"
                                     fill="none"
                                     viewBox="0 0 24 24"
-                                    x-bind:class="uploading ? 'opacity-100' : 'opacity-0'"
                                     aria-hidden="true"
                                 >
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -323,16 +324,22 @@
                                     type="button"
                                     wire:click="uploadFiles"
                                     wire:loading.attr="disabled"
-                                    class="inline-flex h-9 min-w-[7.5rem] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    wire:target="uploadFiles"
+                                    class="inline-flex h-9 shrink-0 flex-nowrap items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <span wire:loading.remove wire:target="uploadFiles">{{ __('mksine::media_picker.upload') }}</span>
-                                    <span wire:loading wire:target="uploadFiles" class="inline-flex items-center gap-2 whitespace-nowrap">
-                                        <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        {{ __('mksine::media_picker.uploading') }}
-                                    </span>
+                                    <svg
+                                        wire:loading.inline-flex
+                                        wire:target="uploadFiles"
+                                        class="h-4 w-4 shrink-0 animate-spin"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span class="whitespace-nowrap">{{ __('mksine::media_picker.upload') }}</span>
                                 </button>
                             </div>
                         @endif

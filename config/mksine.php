@@ -22,7 +22,7 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.8.6',
+    'version' => '1.8.7',
 
     /*
     |--------------------------------------------------------------------------
