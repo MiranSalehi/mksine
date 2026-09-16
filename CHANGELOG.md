@@ -8,6 +8,14 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.8.4 - 2026-09-16
+
+### Fixed
+
+- **MediaPicker gallery** — selected thumbs sit three per row; drag-and-drop reorder works (Sortable `forceFallback`); left/right arrows swap items even when IDs are strings.
+- **Media library modal** — All Types chevron uses logical `end` (RTL); Browse Files stays next to the dropzone copy and shows loading while files upload; choosing a thumb no longer re-renders the whole modal.
+- **Page builder toolbar** — Use Template and Add Component no longer reserve an empty spinner slot; the spinner replaces the icon only while the request runs.
+
 ## 1.8.3 - 2026-09-15
 
 ### Fixed

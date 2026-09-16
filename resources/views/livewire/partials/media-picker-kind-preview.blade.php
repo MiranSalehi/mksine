@@ -37,7 +37,7 @@
                 'pointer-events-none h-full w-full object-cover' => $variant === 'grid',
                 'aspect-video w-full' => $variant === 'detail',
             ])
-            @if($variant === 'grid') muted preload="metadata" playsinline @else controls preload="metadata" playsinline @endif
+            @if($variant === 'grid') muted preload="none" playsinline @else controls preload="metadata" playsinline @endif
         ></video>
         @if($variant === 'grid')
             <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">

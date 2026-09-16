@@ -21,18 +21,22 @@
                     wire:click="toggleTemplatePanel"
                     wire:loading.attr="disabled"
                     wire:target="toggleTemplatePanel,loadTemplate"
-                    class="hidden min-w-[9.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 sm:inline-flex dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400 dark:hover:border-white/[0.12] dark:hover:bg-white/[0.07] dark:hover:text-zinc-200"
+                    class="hidden items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 sm:inline-flex dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400 dark:hover:border-white/[0.12] dark:hover:bg-white/[0.07] dark:hover:text-zinc-200"
                     title="{{ __('mksine::page_builder.start_from_template') }}"
                     aria-label="{{ __('mksine::page_builder.start_from_template') }}"
                 >
-                    <span class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center" aria-hidden="true">
-                        <x-filament::loading-indicator
-                            class="h-3.5 w-3.5 opacity-0"
-                            wire:loading.class.remove="opacity-0"
+                    <span class="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-violet-500 dark:text-violet-400">
+                        <span wire:loading.class="opacity-0" wire:target="toggleTemplatePanel,loadTemplate">
+                            <x-heroicon-o-sparkles class="h-3.5 w-3.5" />
+                        </span>
+                        <span
+                            class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                            wire:loading.flex
                             wire:target="toggleTemplatePanel,loadTemplate"
-                        />
+                        >
+                            <x-filament::loading-indicator class="h-3.5 w-3.5 shrink-0" />
+                        </span>
                     </span>
-                    <x-heroicon-o-sparkles class="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
                     {{ __('mksine::page_builder.use_template') }}
                 </button>
             @endif
@@ -113,20 +117,24 @@
                 wire:click="openComponentPanel"
                 wire:loading.attr="disabled"
                 wire:target="openComponentPanel"
-                class="inline-flex h-8 min-w-[8.75rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-all
+                class="inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-all
                     {{ $showComponentPanel
                         ? 'bg-violet-700 text-white shadow-[0_2px_8px_0_rgb(109_40_217/0.4)] dark:bg-violet-500 dark:shadow-[0_2px_8px_0_rgb(139_92_246/0.35)]'
                         : 'bg-violet-600 text-white shadow-[0_2px_8px_0_rgb(124_58_237/0.3)] hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500' }}"
                 aria-label="{{ __('mksine::page_builder.add_component') }}"
             >
-                <span class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center" aria-hidden="true">
-                    <x-filament::loading-indicator
-                        class="h-3.5 w-3.5 opacity-0"
-                        wire:loading.class.remove="opacity-0"
+                <span class="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                    <span wire:loading.class="opacity-0" wire:target="openComponentPanel">
+                        <x-heroicon-o-plus class="h-3.5 w-3.5" />
+                    </span>
+                    <span
+                        class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                        wire:loading.flex
                         wire:target="openComponentPanel"
-                    />
+                    >
+                        <x-filament::loading-indicator class="h-3.5 w-3.5 shrink-0" />
+                    </span>
                 </span>
-                <x-heroicon-o-plus class="h-3.5 w-3.5" />
                 <span class="hidden sm:inline">{{ __('mksine::page_builder.add_component') }}</span>
             </button>
         </div>

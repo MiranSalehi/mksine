@@ -118,6 +118,46 @@ class Media extends Model
     }
 
     /**
+     * Lightweight payload for the media picker Alpine details pane.
+     *
+     * @return array{
+     *     id: int,
+     *     name: string,
+     *     file_name: string,
+     *     mime_type: ?string,
+     *     url: string,
+     *     size: int,
+     *     human_size: string,
+     *     width: ?int,
+     *     height: ?int,
+     *     created_at: ?string,
+     *     is_image: bool,
+     *     is_video: bool,
+     *     is_audio: bool
+     * }
+     */
+    public function toPickerCard(): array
+    {
+        $url = $this->url ?: Storage::disk($this->disk ?? 'public')->url((string) $this->path);
+
+        return [
+            'id' => (int) $this->id,
+            'name' => (string) $this->name,
+            'file_name' => (string) $this->file_name,
+            'mime_type' => $this->mime_type,
+            'url' => $url,
+            'size' => (int) ($this->size ?? 0),
+            'human_size' => $this->human_size,
+            'width' => $this->width,
+            'height' => $this->height,
+            'created_at' => $this->created_at?->translatedFormat('Y/m/d H:i'),
+            'is_image' => $this->isImage(),
+            'is_video' => $this->isVideo(),
+            'is_audio' => $this->isAudio(),
+        ];
+    }
+
+    /**
      * Get human-readable file size.
      */
     public function getHumanSizeAttribute(): string

@@ -75,6 +75,30 @@ describe('Media Model', function () {
         expect($imageMedia->isDocument())->toBeFalse();
     });
 
+    it('builds a picker card payload for alpine details', function () {
+        $media = new Media([
+            'name' => 'hero',
+            'file_name' => 'hero.jpg',
+            'mime_type' => 'image/jpeg',
+            'path' => 'media/hero.jpg',
+            'disk' => 'public',
+            'size' => 2048,
+            'width' => 1200,
+            'height' => 800,
+            'url' => '/storage/media/hero.jpg',
+        ]);
+
+        $card = $media->toPickerCard();
+
+        expect($card['name'])->toBe('hero')
+            ->and($card['file_name'])->toBe('hero.jpg')
+            ->and($card['url'])->toBe('/storage/media/hero.jpg')
+            ->and($card['human_size'])->toBe('2 KB')
+            ->and($card['is_image'])->toBeTrue()
+            ->and($card['is_video'])->toBeFalse()
+            ->and($card['is_audio'])->toBeFalse();
+    });
+
     it('provides human readable file size', function () {
         $smallFile = new Media(['size' => 500]);
         $kilobyteFile = new Media(['size' => 2048]);
