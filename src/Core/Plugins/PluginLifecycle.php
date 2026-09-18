@@ -270,18 +270,30 @@ final class PluginLifecycle
         ]);
 
         try {
-            $code = Artisan::call('migrate', [
-                '--path' => str_replace(base_path() . '/', '', $migrationsPath),
-                '--force' => true,
-            ]);
+            $relative = str_replace(base_path().DIRECTORY_SEPARATOR, '', $migrationsPath);
 
-            if ($code !== 0) {
-                $output = trim(Artisan::output());
+            if (array_key_exists('migrate', \Illuminate\Support\Facades\Artisan::all())) {
+                $code = Artisan::call('migrate', [
+                    '--path' => $relative,
+                    '--force' => true,
+                ]);
 
-                throw new \RuntimeException(
-                    "Plugin migrations failed for {$manifest->id()} (exit {$code}). {$output}"
-                );
+                if ($code !== 0) {
+                    $output = trim(Artisan::output());
+
+                    throw new \RuntimeException(
+                        "Plugin migrations failed for {$manifest->id()} (exit {$code}). {$output}"
+                    );
+                }
+
+                return;
             }
+
+            $migrator = app('migrator');
+            if (! $migrator->repositoryExists()) {
+                $migrator->getRepository()->createRepository();
+            }
+            $migrator->run([$migrationsPath]);
         } catch (\Exception $e) {
             Log::error("Migration failed for plugin: {$manifest->id()}", [
                 'error' => $e->getMessage(),

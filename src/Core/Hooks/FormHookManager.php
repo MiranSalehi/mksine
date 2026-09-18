@@ -121,4 +121,34 @@ class FormHookManager
         $this->hooks = [];
         $this->slots = [];
     }
+
+    /**
+     * @return list<array{name: string, extend: int, slots: int}>
+     */
+    public function inspect(): array
+    {
+        $names = array_values(array_unique(array_merge(
+            array_keys($this->hooks),
+            array_keys($this->slots),
+        )));
+        sort($names);
+
+        $rows = [];
+        foreach ($names as $name) {
+            $slotCount = 0;
+            foreach ($this->slots[$name] ?? [] as $positions) {
+                foreach ($positions as $anchors) {
+                    $slotCount += count($anchors);
+                }
+            }
+
+            $rows[] = [
+                'name' => $name,
+                'extend' => count($this->hooks[$name] ?? []),
+                'slots' => $slotCount,
+            ];
+        }
+
+        return $rows;
+    }
 }

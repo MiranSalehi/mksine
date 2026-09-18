@@ -5,15 +5,19 @@ namespace Miran\Mksine\Filament\Resources\Posts\Pages;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Auth;
-use Miran\Mksine\Core\Events\Posts\PostUpdated;
+use Miran\Mksine\Core\Content\PostLifecycle;
 use Miran\Mksine\Core\Events\Posts\PostUpdating;
+use Miran\Mksine\Core\Hooks\ContentFormHooks;
 use Miran\Mksine\Core\Hooks\HookManager;
 use Miran\Mksine\Core\Hooks\PageHookManager;
 use Miran\Mksine\Filament\Resources\Posts\PostResource;
+use Miran\Mksine\Models\Post;
 
 class EditPost extends EditRecord
 {
     protected static string $resource = PostResource::class;
+
+    private ?string $statusBeforeSave = null;
 
     protected function getHeaderActions(): array
     {
@@ -33,6 +37,8 @@ class EditPost extends EditRecord
         if (empty($data['slug']) && ! empty($data['title'])) {
             $data['slug'] = \Illuminate\Support\Str::slug($data['title']);
         }
+
+        $this->statusBeforeSave = is_string($this->record->status) ? $this->record->status : null;
 
         // Dispatch PostUpdating event
         $hookManager = app(HookManager::class);
@@ -56,22 +62,25 @@ class EditPost extends EditRecord
         // Merge mutations from event back into data
         $mutatedData = $event->allData();
 
-        return array_merge($data, $mutatedData);
+        return ContentFormHooks::mutate(array_merge($data, $mutatedData), 'post', $this->record);
+    }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return ContentFormHooks::fill($data, 'post', $this->record);
     }
 
     protected function afterSave(): void
     {
-        // Dispatch PostUpdated event
-        $hookManager = app(HookManager::class);
-        $event = new PostUpdated(
-            $this->record->fresh()->toArray(),
-            [
+        $post = $this->record->fresh();
+        if ($post instanceof Post) {
+            PostLifecycle::dispatchUpdated($post, [
                 'user_id' => Auth::check() ? Auth::id() : null,
                 'ip' => request()->ip(),
                 'post_id' => $this->record->getKey(),
-            ]
-        );
+            ], $this->statusBeforeSave);
+        }
 
-        $hookManager->dispatch($event);
+        ContentFormHooks::saved($this->record, 'post');
     }
 }

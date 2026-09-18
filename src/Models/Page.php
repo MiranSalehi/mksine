@@ -2,13 +2,16 @@
 
 namespace Miran\Mksine\Models;
 
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Database\Factories\PageFactory;
+use Miran\Mksine\Observers\ContentSlugObserver;
 use Miran\Mksine\Traits\HasTags;
 
+#[ObservedBy([ContentSlugObserver::class])]
 class Page extends Model
 {
     use HasFactory;

@@ -8,6 +8,8 @@ use Miran\Mksine\Models\Tag;
 
 class TagList extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     public function render()
@@ -22,6 +24,8 @@ class TagList extends Component
             ])
             ->orderBy('name')
             ->get();
+
+        $this->emitStorefrontView('tag_list');
 
         $view = view(theme_view('tags'), ['tags' => $tags]);
 

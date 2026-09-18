@@ -311,6 +311,36 @@ class HookManager
     }
 
     /**
+     * Read-only snapshot of runtime event listeners merged with DB state.
+     * Does not write to {@see mks_hooks}.
+     *
+     * @return list<array{family: string, name: string, listener: string, priority: int, is_system: bool, is_enabled: bool}>
+     */
+    public function inspect(): array
+    {
+        $rows = [];
+
+        foreach ($this->registry->all() as $eventName => $listeners) {
+            foreach ($listeners as $listenerConfig) {
+                $listenerClass = $listenerConfig['listener'];
+                $rows[] = [
+                    'family' => 'event',
+                    'name' => $eventName,
+                    'listener' => $listenerClass,
+                    'priority' => $this->stateRepository->getEffectivePriority(
+                        $listenerClass,
+                        $listenerConfig['priority'],
+                    ),
+                    'is_system' => $this->stateRepository->isSystem($listenerClass),
+                    'is_enabled' => $this->stateRepository->isEnabled($listenerClass),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
      * Clear the listener instance cache.
      * Useful for testing or when listeners need to be re-instantiated.
      */

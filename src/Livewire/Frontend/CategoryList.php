@@ -8,6 +8,8 @@ use Miran\Mksine\Models\Category;
 
 class CategoryList extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     public function render()
@@ -23,6 +25,8 @@ class CategoryList extends Component
             ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
             ->orderBy('sort_order')
             ->get();
+
+        $this->emitStorefrontView('category_list');
 
         $view = view(theme_view('categories'), ['categories' => $categories]);
 

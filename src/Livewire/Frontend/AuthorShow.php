@@ -4,10 +4,13 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
+use Miran\Mksine\Core\Content\ContentVisibility;
 use Miran\Mksine\Models\Post;
 
 class AuthorShow extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     public $author;
@@ -22,11 +25,13 @@ class AuthorShow extends Component
     {
         View::share('title', $this->author->name . ' - ' . __('mksine::frontend.author'));
 
-        $posts = Post::query()
+        $posts = ContentVisibility::constrain(Post::query(), 'post')
             ->where('author_id', $this->author->id)
             ->where('status', 'published')
             ->latest('published_at')
             ->paginate(12);
+
+        $this->emitStorefrontView('author', $this->author->id);
 
         $view = view(theme_view('author'), ['posts' => $posts]);
 

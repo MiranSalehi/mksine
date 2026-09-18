@@ -285,6 +285,7 @@ final class PluginRegistry
                 'status' => $this->getStatus($pluginId),
                 'author' => $manifest->author(),
                 'description' => $translator->description($manifest),
+                'screenshot_url' => $manifest->screenshotUrl(),
             ];
         }
 

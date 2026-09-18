@@ -122,6 +122,85 @@ final class PluginManifest
     }
 
     /**
+     * Relative image path inside the plugin directory (e.g. screenshot.png).
+     */
+    public function screenshot(): ?string
+    {
+        $value = $this->data['screenshot'] ?? null;
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = ltrim(str_replace('\\', '/', trim($value)), '/');
+        if ($value === '' || str_contains($value, '..')) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Absolute path to the screenshot file, or null if missing or unsafe.
+     */
+    public function screenshotAbsolutePath(): ?string
+    {
+        $relative = $this->screenshot();
+        if ($relative === null) {
+            return null;
+        }
+
+        $path = $this->basePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $realFile = realpath($path);
+        $realBase = realpath($this->basePath);
+        if (! $realFile || ! $realBase || ! str_starts_with($realFile, $realBase)) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($realFile, PATHINFO_EXTENSION));
+        if (! in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], true)) {
+            return null;
+        }
+
+        return $realFile;
+    }
+
+    public function screenshotMime(): ?string
+    {
+        $path = $this->screenshotAbsolutePath();
+        if ($path === null) {
+            return null;
+        }
+
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            default => 'image/png',
+        };
+    }
+
+    /**
+     * Admin/preview URL that streams the file from the plugin directory (no publish required).
+     */
+    public function screenshotUrl(): ?string
+    {
+        if ($this->screenshotAbsolutePath() === null || ! function_exists('route')) {
+            return null;
+        }
+
+        try {
+            return route('mksine.plugin.screenshot', ['id' => $this->id()]);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Get plugin dependencies.
      * Returns array of ['package-name' => 'version-constraint']
      */
@@ -365,20 +444,29 @@ final class PluginManifest
     public function publishAssets(): bool
     {
         $distPath = $this->basePath . '/resources/dist';
-
-        if (! is_dir($distPath)) {
-            return false;
-        }
-
+        $screenshot = $this->screenshotAbsolutePath();
+        $published = false;
         $dest = $this->publicPath();
 
-        if (! is_dir($dest)) {
-            mkdir($dest, 0755, true);
+        if (is_dir($distPath)) {
+            if (! is_dir($dest)) {
+                mkdir($dest, 0755, true);
+            }
+
+            $this->copyDirectory($distPath, $dest);
+            $published = true;
         }
 
-        $this->copyDirectory($distPath, $dest);
+        if ($screenshot !== null) {
+            if (! is_dir($dest)) {
+                mkdir($dest, 0755, true);
+            }
 
-        return true;
+            copy($screenshot, $dest.DIRECTORY_SEPARATOR.basename($screenshot));
+            $published = true;
+        }
+
+        return $published;
     }
 
     /**
@@ -526,6 +614,7 @@ final class PluginManifest
             'plugin_class' => $this->pluginClass(),
             'namespace' => $this->namespace(),
             'autoload' => $this->autoload(),
+            'screenshot' => $this->screenshot(),
             'base_path' => $this->basePath(),
         ];
     }

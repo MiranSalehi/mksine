@@ -196,6 +196,9 @@ return [
     // 'public_api' => [
     //     'facade' => '{$namespace}\\Facades\\{$this->studlyCase($name)}',
     // ],
+    
+    // Optional cover image (PNG/JPG/WebP/SVG relative to this folder)
+    // 'screenshot' => 'screenshot.png',
 ];
 PHP;
 

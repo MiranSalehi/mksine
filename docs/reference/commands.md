@@ -267,7 +267,7 @@ mks-plugin:publish {plugin?} [--force]
 
 Source: [`PluginPublishCommand`](../../src/Console/Commands/PluginPublishCommand.php).
 
-Copies `{plugin_root}/{id}/resources/dist/` to `public/plugins/{id}/`. Add `--force` to overwrite. With no argument, every active plugin is published.
+Copies `{plugin_root}/{id}/resources/dist/` to `public/plugins/{id}/`, and copies `plugin.php` `screenshot` when that file exists. Add `--force` to overwrite. With no argument, every discovered plugin is published.
 
 ### `mks-plugin:publish-lang`
 

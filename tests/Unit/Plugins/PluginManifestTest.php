@@ -71,6 +71,8 @@ PHP;
         expect($manifest->description())->toBeNull();
         expect($manifest->author())->toBeNull();
         expect($manifest->namespace())->toBeNull();
+        expect($manifest->screenshot())->toBeNull();
+        expect($manifest->screenshotAbsolutePath())->toBeNull();
     });
 
     it('throws exception when manifest file is missing', function () {
@@ -201,6 +203,42 @@ PHP;
         expect($array)->toHaveKey('name');
         expect($array)->toHaveKey('version');
         expect($array['id'])->toBe('test-plugin');
+        expect($array['screenshot'])->toBeNull();
+    });
+
+    it('resolves a screenshot file and rejects path traversal', function () {
+        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+        file_put_contents($this->tempDir.'/screenshot.png', $png);
+        file_put_contents($this->tempDir.'/plugin.php', <<<'PHP'
+<?php
+return [
+    'id' => 'shot-plugin',
+    'name' => 'Shot Plugin',
+    'version' => '0.1.0',
+    'screenshot' => 'screenshot.png',
+];
+PHP);
+
+        $manifest = PluginManifest::fromPath($this->tempDir);
+
+        expect($manifest->screenshot())->toBe('screenshot.png')
+            ->and($manifest->screenshotAbsolutePath())->toBe(realpath($this->tempDir.'/screenshot.png'))
+            ->and($manifest->screenshotMime())->toBe('image/png')
+            ->and($manifest->toArray()['screenshot'])->toBe('screenshot.png');
+
+        file_put_contents($this->tempDir.'/plugin.php', <<<'PHP'
+<?php
+return [
+    'id' => 'shot-plugin',
+    'name' => 'Shot Plugin',
+    'version' => '0.1.0',
+    'screenshot' => '../secret.png',
+];
+PHP);
+
+        $unsafe = PluginManifest::fromPath($this->tempDir);
+        expect($unsafe->screenshot())->toBeNull()
+            ->and($unsafe->screenshotAbsolutePath())->toBeNull();
     });
 
     it('returns null for non-existent paths', function () {

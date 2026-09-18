@@ -29,6 +29,21 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.9.0 (2026-09-18)
+
+### Added
+
+- **Marketplace install.** Plugins and Theme Manager fetch `GET {marketplace.api_url}/plugins` and `/themes`, then download the listing ZIP onto this site. Super-admin can update a project plugin/theme when the catalog version is newer.
+- **Plugin screenshots.** Optional `screenshot` in `plugin.php`; served at `/mksine/plugin/{id}/screenshot`.
+- **Content import.** `Miran\Mksine\Core\Content\ContentImport` plus filter `mksine.import.row`.
+- **Hooks.** `SystemEventCatalog`; `post.published`; `mksine.content.visible` / `mksine.content.query`; `mksine.storefront.viewed`; `mksine.storefront.not_found`; `mksine.content.slug_changed`.
+- **Plugin install migrations.** Plugin migration files run through the migrator even when the host app removed Laravel’s `migrate` command.
+
+### Migration
+
+1. If you published `config/mksine.php`, merge `marketplace.api_url`, `timeout`, `connect_timeout`, and `download_timeout`. See [Configuration](../reference/configuration.md).
+2. After upgrade: `php artisan optimize:clear`.
+
 ## 1.8.0 (2026-09-15)
 
 ### Added

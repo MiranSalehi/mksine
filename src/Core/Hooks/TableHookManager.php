@@ -191,4 +191,33 @@ class TableHookManager
         unset($this->bulkActionHooks[$tableName]);
         unset($this->filterHooks[$tableName]);
     }
+
+    /**
+     * @return list<array{name: string, extend: int, columns: int, actions: int, bulk_actions: int, filters: int}>
+     */
+    public function inspect(): array
+    {
+        $names = array_values(array_unique(array_merge(
+            array_keys($this->hooks),
+            array_keys($this->columnHooks),
+            array_keys($this->actionHooks),
+            array_keys($this->bulkActionHooks),
+            array_keys($this->filterHooks),
+        )));
+        sort($names);
+
+        $rows = [];
+        foreach ($names as $name) {
+            $rows[] = [
+                'name' => $name,
+                'extend' => count($this->hooks[$name] ?? []),
+                'columns' => count($this->columnHooks[$name] ?? []),
+                'actions' => count($this->actionHooks[$name] ?? []),
+                'bulk_actions' => count($this->bulkActionHooks[$name] ?? []),
+                'filters' => count($this->filterHooks[$name] ?? []),
+            ];
+        }
+
+        return $rows;
+    }
 }

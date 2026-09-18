@@ -43,4 +43,22 @@ final class HookFilterRegistry
 
         return $value;
     }
+
+    /**
+     * @return list<array{name: string, callbacks: int}>
+     */
+    public function inspect(): array
+    {
+        $rows = [];
+        foreach ($this->filters as $name => $entries) {
+            $rows[] = [
+                'name' => $name,
+                'callbacks' => count($entries),
+            ];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => $a['name'] <=> $b['name']);
+
+        return $rows;
+    }
 }

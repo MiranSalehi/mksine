@@ -11,6 +11,7 @@ use App\Policies\GeoStatePolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\MenuLocationPolicy;
 use App\Policies\MenuPolicy;
+use App\Policies\EntryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\PostPolicy;
 use App\Policies\RolePolicy;
@@ -138,6 +139,8 @@ use Miran\Mksine\Livewire\Frontend\CategoryList;
 use Miran\Mksine\Livewire\Frontend\CategoryShow;
 use Miran\Mksine\Livewire\Frontend\TagList;
 use Miran\Mksine\Livewire\Frontend\TagShow;
+use Miran\Mksine\Livewire\Frontend\EntryList;
+use Miran\Mksine\Livewire\Frontend\EntryShow;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
 use Miran\Mksine\Livewire\Frontend\Home;
 use Miran\Mksine\Livewire\Frontend\PageShow;
@@ -153,6 +156,7 @@ use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
+use Miran\Mksine\Models\Entry;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\Post;
 use Miran\Mksine\Models\Tag;
@@ -166,6 +170,7 @@ use Miran\Mksine\Core\Shortcodes\ContentRenderer;
 use Miran\Mksine\Core\Shortcodes\RegisterCoreShortcodes;
 use Miran\Mksine\Core\Shortcodes\ShortcodeProcessor;
 use Miran\Mksine\Core\Shortcodes\ShortcodeRegistry;
+use Miran\Mksine\Http\StorefrontNotFoundResponder;
 use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Testing\TestsMksine;
@@ -325,6 +330,8 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->app->singleton(MenuItemSourceManager::class, function () {
             return new MenuItemSourceManager;
         });
+
+        $this->app->singleton(\Miran\Mksine\Core\Content\ContentTypeRegistry::class);
 
         // Register MenuLocationManager as singleton
         $this->app->singleton(MenuLocationManager::class, function () {
@@ -564,6 +571,10 @@ class MksineServiceProvider extends PackageServiceProvider
         // Initialize and boot plugins
         $this->initializePluginSystem();
 
+        $this->app->booted(function (): void {
+            \Miran\Mksine\Core\Content\ContentTypeRoutes::register();
+        });
+
         // Active theme's theme.php (page-builder blocks, menu locations, route callbacks) normally loads
         // from package routes during bootPackageRoutes(). When routes are cached, that file may not run,
         // so components like voltech.special_offers never register and the front shows "unknown component".
@@ -599,6 +610,7 @@ class MksineServiceProvider extends PackageServiceProvider
             MenuLocation::class => MenuLocationPolicy::class,
             Page::class => PagePolicy::class,
             Post::class => PostPolicy::class,
+            Entry::class => EntryPolicy::class,
             Role::class => RolePolicy::class,
             GeoCountry::class => GeoCountryPolicy::class,
             GeoState::class => GeoStatePolicy::class,
@@ -637,6 +649,8 @@ class MksineServiceProvider extends PackageServiceProvider
             'mksine::frontend.post-show' => PostShow::class,
             'mksine::frontend.post-comments' => PostComments::class,
             'mksine::frontend.page-show' => PageShow::class,
+            'mksine::frontend.entry-list' => EntryList::class,
+            'mksine::frontend.entry-show' => EntryShow::class,
             'mksine::frontend.frontend-resolver' => FrontendResolver::class,
             ...$pageBuilderComponents,
         ];
@@ -947,7 +961,15 @@ class MksineServiceProvider extends PackageServiceProvider
             }
 
             $handler->renderable(function (\Throwable $e, $request) {
-                if (! $e instanceof HttpExceptionInterface || $e->getStatusCode() !== 403) {
+                if (! $e instanceof HttpExceptionInterface) {
+                    return null;
+                }
+
+                if ($e->getStatusCode() === 404) {
+                    return StorefrontNotFoundResponder::response($request);
+                }
+
+                if ($e->getStatusCode() !== 403) {
                     return null;
                 }
 

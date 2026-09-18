@@ -18,6 +18,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Plugins\PluginDiscovery;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Marketplace\MarketplaceKind;
 use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
@@ -90,6 +91,70 @@ class ManagePlugins extends Page
     public function getTitle(): string
     {
         return __('mksine::plugins.title');
+    }
+
+    protected function marketplaceKind(): MarketplaceKind
+    {
+        return MarketplaceKind::Plugin;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function marketplaceInstalledPackageIds(): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (array $plugin): string => (string) ($plugin['id'] ?? ''),
+            $this->plugins,
+        )));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function marketplaceInstalledVersions(): array
+    {
+        $versions = [];
+
+        foreach ($this->plugins as $plugin) {
+            $id = (string) ($plugin['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            $versions[$id] = (string) ($plugin['version'] ?? '');
+        }
+
+        return $versions;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function marketplaceUpdatablePackageIds(): array
+    {
+        return array_keys($this->getUpdatablePluginOptions());
+    }
+
+    protected function installMarketplaceZip(string $path): void
+    {
+        $this->processPluginUpload($path, redirect: false);
+    }
+
+    protected function applyMarketplaceUpdate(string $packageId, string $zipPath): void
+    {
+        SuperAdminGate::authorize();
+
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
+
+        $updater = new PluginUpdater(new UpdateRunner, app(PluginManager::class));
+        $result = $updater->update($packageId, $zipPath, false);
+        $this->sendUpdateResultNotification($result, __('mksine::updater.plugin_update_title'));
+
+        if ($result->success) {
+            $this->loadPlugins(rediscover: true);
+        }
     }
 
     public function getSubheading(): ?string
@@ -312,7 +377,7 @@ class ManagePlugins extends Page
         return null;
     }
 
-    protected function processPluginUpload(string $tempPath): void
+    protected function processPluginUpload(string $tempPath, bool $redirect = true): void
     {
         $pluginsPath = PluginDiscovery::defaultPluginsPath();
         $tempDir = storage_path('app/plugin-temp');
@@ -422,7 +487,10 @@ class ManagePlugins extends Page
                 ->send();
 
             $this->loadPlugins(rediscover: true);
-            $this->refreshPage();
+
+            if ($redirect) {
+                $this->refreshPage();
+            }
 
         } catch (\Throwable $e) {
             Notification::make()

@@ -21,7 +21,7 @@ class EnsureActiveThemeDependencies
 
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->routeIs('mksine.theme.screenshot', 'mksine.theme.custom.asset')) {
+        if ($request->routeIs('mksine.theme.screenshot', 'mksine.theme.custom.asset', 'mksine.plugin.screenshot')) {
             return $next($request);
         }
 

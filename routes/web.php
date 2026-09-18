@@ -43,6 +43,18 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
         return response()->file($path, ['Content-Type' => $mime]);
     })->name('mksine.theme.screenshot');
 
+    Route::get('/mksine/plugin/{id}/screenshot', function (string $id) {
+        $manifest = app(\Miran\Mksine\Core\Plugins\PluginManager::class)->getManifest($id);
+        $path = $manifest?->screenshotAbsolutePath();
+        $mime = $manifest?->screenshotMime();
+
+        if ($path === null || $mime === null) {
+            abort(404);
+        }
+
+        return response()->file($path, ['Content-Type' => $mime]);
+    })->where('id', '[a-z0-9\-]+')->name('mksine.plugin.screenshot');
+
     // Theme custom CSS/JS (admin-edited; served from storage)
     Route::get('/mksine/theme-custom/{identifier}.{type}', function (string $identifier, string $type) {
         if (! in_array($type, ['css', 'js'], true)) {

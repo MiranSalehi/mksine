@@ -7,6 +7,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
+use Miran\Mksine\Core\Hooks\ContentFormHooks;
 use Miran\Mksine\Filament\Resources\Pages\PageResource;
 use Miran\Mksine\Models\Page;
 
@@ -42,13 +43,18 @@ class EditPage extends EditRecord
             $data['builder_content_width'] = 'full';
         }
 
-        return $data;
+        return ContentFormHooks::fill($data, 'page', $this->record);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['updated_by'] = Auth::id();
 
-        return $data;
+        return ContentFormHooks::mutate($data, 'page', $this->record);
+    }
+
+    protected function afterSave(): void
+    {
+        ContentFormHooks::saved($this->record, 'page');
     }
 }

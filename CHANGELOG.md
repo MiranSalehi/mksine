@@ -8,6 +8,20 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.9.0 - 2026-09-18
+
+### Added
+
+- **Plugin migrations without `migrate`** — if the host app replaced Laravel’s `migrate` command (e.g. `migrate:smart` only), plugin install still runs the plugin migration files through the migrator.
+- **Content import API** — `Miran\Mksine\Core\Content\ContentImport` upserts Post/Page/Media by slug (or media url/path). Filter `mksine.import.row` may mutate or skip a row (`null`).
+- **Stable event catalog** — `Miran\Mksine\Core\Hooks\SystemEventCatalog` lists HookManager event names that must not be renamed. `post.published` fires when a post is created published or transitions to published.
+- **Content visibility hooks** — `mksine.content.visible` (single record) and `mksine.content.query` (list Builder) on storefront Post/Page/Entry/category/author. Default is public; Membership (and others) may hide or require login.
+- **Storefront view hook** — `mksine.storefront.viewed` event plus `Hooks::filter` of the same name, fired once per public GET after Page/Post/archive/home resolve (`path`, `content_type`, `content_id`, `status`). Not fired for Livewire follow-ups or admin/API paths.
+- **Storefront 404 hook** — `mksine.storefront.not_found` event plus `Hooks::filter` of the same name, fired for public GET/HEAD 404s (admin, Livewire, and API paths excluded). Filters may return a response (redirect).
+- **Content slug hook** — `mksine.content.slug_changed` after Post/Page slug updates (`type`, `id`, `old`, `new`, `old_path`, `new_path`).
+- **Plugin screenshots** — optional `screenshot` in `plugin.php` (PNG, JPG, GIF, WebP, or SVG). Admin Plugins list and `/mksine/plugin/{id}/screenshot` read the file from the plugin directory; `mks-plugin:publish` copies it when present.
+- **Marketplace install** — Plugins and Theme Manager **Add from MKSine** lists the official JSON catalog (`/api/marketplace/v1/{plugins|themes}`), downloads the listing ZIP, and installs it the same way as a local ZIP upload. New config: `marketplace.api_url`, `timeout`, `connect_timeout`, `download_timeout`. Super-admin can update a project plugin/theme when the catalog version is newer. Install/update stays on the catalog tab. Failed fetches have Retry. Listings show license, changelog, and a link to the public directory page.
+
 ## 1.8.7 - 2026-09-16
 
 ### Fixed

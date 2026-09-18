@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Hooks;
 
+use Illuminate\Support\Facades\Log;
+use Miran\Mksine\Core\Events\HookListenerExecuted;
 use Miran\Mksine\Core\Events\MksineEvent;
+use Throwable;
 
 /**
  * Dispatcher responsible for executing hooks in priority order.
@@ -69,6 +72,7 @@ final class HookDispatcher
 
             if ($listener->shouldQueue()) {
                 $pendingAsyncListeners[] = $listenerClass;
+                $this->reportExecution($event, $listenerClass, 0.0, queued: true, isSystem: $isSystem);
 
                 continue;
             }
@@ -77,7 +81,11 @@ final class HookDispatcher
                 continue;
             }
 
+            $started = hrtime(true);
             $listener->handle($event);
+            $elapsedMs = (hrtime(true) - $started) / 1_000_000;
+
+            $this->reportExecution($event, $listenerClass, $elapsedMs, queued: false, isSystem: $isSystem);
 
             if ($event->isPrevented()) {
                 break;
@@ -125,5 +133,73 @@ final class HookDispatcher
     public function clearCache(): void
     {
         $this->listenerInstances = [];
+    }
+
+    private function reportExecution(
+        MksineEvent $event,
+        string $listenerClass,
+        float $elapsedMs,
+        bool $queued,
+        bool $isSystem,
+    ): void {
+        $threshold = $this->slowThresholdMs();
+        $rounded = round($elapsedMs, 2);
+
+        if (! $queued && $this->shouldLogSlowHooks() && $elapsedMs > $threshold) {
+            try {
+                Log::warning('mksine.slow_hook', [
+                    'listener' => $listenerClass,
+                    'event' => $event->name(),
+                    'ms' => $rounded,
+                    'threshold_ms' => $threshold,
+                    'prevented' => $event->isPrevented(),
+                ]);
+            } catch (Throwable) {
+                //
+            }
+        }
+
+        if (! function_exists('event')) {
+            return;
+        }
+
+        try {
+            event(new HookListenerExecuted(
+                eventName: $event->name(),
+                listenerClass: $listenerClass,
+                elapsedMs: $rounded,
+                queued: $queued,
+                prevented: $event->isPrevented(),
+                isSystem: $isSystem,
+            ));
+        } catch (Throwable) {
+            //
+        }
+    }
+
+    private function shouldLogSlowHooks(): bool
+    {
+        if (! function_exists('config')) {
+            return true;
+        }
+
+        try {
+            return (bool) config('mksine.hooks.log_slow_hooks', true);
+        } catch (Throwable) {
+            return true;
+        }
+    }
+
+    private function slowThresholdMs(): int
+    {
+        if (! function_exists('config')) {
+            return 100;
+        }
+
+        try {
+            return (int) config('mksine.hooks.slow_hook_threshold', 100);
+        } catch (Throwable) {
+            return 100;
+        }
     }
 }

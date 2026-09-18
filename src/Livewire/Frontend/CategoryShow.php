@@ -4,10 +4,13 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
+use Miran\Mksine\Core\Content\ContentVisibility;
 use Miran\Mksine\Models\Category;
 
 class CategoryShow extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     public Category $category;
@@ -29,7 +32,7 @@ class CategoryShow extends Component
         View::share('metaDescription', mksine_meta_description($this->category->meta_description, $this->category->description));
         View::share('mksShortcodeContext', mks_shortcode_context(category: $this->category));
 
-        $posts = $this->category->posts()
+        $posts = ContentVisibility::constrain($this->category->posts()->getQuery(), 'post')
             ->where('posts.status', 'published')
             ->with(['author', 'featuredImage', 'categories'])
             ->latest('posts.published_at')
@@ -41,6 +44,8 @@ class CategoryShow extends Component
             ->orderBy('sort_order')
             ->take(10)
             ->get();
+
+        $this->emitStorefrontView('category', $this->category->id, $this->category->is_active ? 'published' : 'inactive');
 
         $view = view(theme_view('category'), [
             'posts' => $posts,

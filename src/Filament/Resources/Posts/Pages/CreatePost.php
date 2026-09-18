@@ -4,8 +4,9 @@ namespace Miran\Mksine\Filament\Resources\Posts\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
-use Miran\Mksine\Core\Events\Posts\PostCreated;
+use Miran\Mksine\Core\Content\PostLifecycle;
 use Miran\Mksine\Core\Events\Posts\PostCreating;
+use Miran\Mksine\Core\Hooks\ContentFormHooks;
 use Miran\Mksine\Core\Hooks\HookManager;
 use Miran\Mksine\Filament\Resources\Posts\PostResource;
 
@@ -45,22 +46,17 @@ class CreatePost extends CreateRecord
         // Merge mutations from event back into data
         $mutatedData = $event->allData();
 
-        return array_merge($data, $mutatedData);
+        return ContentFormHooks::mutate(array_merge($data, $mutatedData), 'post');
     }
 
     protected function afterCreate(): void
     {
-        // Dispatch PostCreated event
-        $hookManager = app(HookManager::class);
-        $event = new PostCreated(
-            $this->record->toArray(),
-            [
-                'user_id' => Auth::check() ? Auth::id() : null,
-                'ip' => request()->ip(),
-                'post_id' => $this->record->getKey(),
-            ]
-        );
+        PostLifecycle::dispatchCreated($this->record, [
+            'user_id' => Auth::check() ? Auth::id() : null,
+            'ip' => request()->ip(),
+            'post_id' => $this->record->getKey(),
+        ]);
 
-        $hookManager->dispatch($event);
+        ContentFormHooks::saved($this->record, 'post');
     }
 }

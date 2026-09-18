@@ -50,6 +50,7 @@ return [
     'namespace'   => 'MyPlugin',
     'plugin_class'=> 'MyPlugin\\MyPluginPlugin',
     'autoload'    => ['MyPlugin\\' => 'src/'],
+    'screenshot'  => 'screenshot.png', // optional PNG/JPG/WebP/SVG in the plugin root
     'hooks'       => [
         'public'  => [],
         'private' => [],
@@ -177,7 +178,7 @@ See [Troubleshooting](../../operations/troubleshooting.md) for the full diagnost
 
 ## Next steps
 
-- Admin **Add from MKSine** (Plugins page) is a coming-soon catalog that links to [mksine.com/marketplace](https://mksine.com/marketplace). In-panel install is not wired yet; keep using ZIP upload or a plugin folder on disk.
+- Admin **Add from MKSine** (Plugins page) lists approved plugins from [mksine.com/marketplace](https://mksine.com/marketplace) and can download + extract the ZIP here. Activate still happens from the Installed tab. You can also upload a ZIP or place a plugin folder on disk.
 - [Lifecycle](lifecycle.md) — exact semantics of `install/activate/deactivate/uninstall/boot`.
 - [Models and migrations](models-migrations.md) — table conventions, dependent migrations.
 - [Filament resources](filament-resources.md) — how the generated form/table hook into MKSine.

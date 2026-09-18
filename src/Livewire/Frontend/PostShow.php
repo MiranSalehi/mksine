@@ -4,11 +4,14 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
+use Miran\Mksine\Core\Content\ContentVisibility;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Post;
 
 class PostShow extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     public Post $post;
@@ -19,6 +22,8 @@ class PostShow extends Component
             ->where('status', 'published')
             ->with(['categories' => fn ($q) => $q->with('parent.parent.parent')])
             ->firstOrFail();
+
+        ContentVisibility::assertVisible($this->post, 'post');
     }
 
     public function render()
@@ -31,7 +36,7 @@ class PostShow extends Component
 
         $categoryIds = $this->post->categories->pluck('id')->toArray();
 
-        $relatedPosts = Post::query()
+        $relatedPosts = ContentVisibility::constrain(Post::query(), 'post')
             ->where('status', 'published')
             ->where('id', '!=', $this->post->id)
             ->when(count($categoryIds) > 0, fn ($q) => $q->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $categoryIds)))
@@ -40,7 +45,7 @@ class PostShow extends Component
             ->take(3)
             ->get();
 
-        $recentPosts = Post::query()
+        $recentPosts = ContentVisibility::constrain(Post::query(), 'post')
             ->where('status', 'published')
             ->where('id', '!=', $this->post->id)
             ->with(['featuredImage', 'author'])
@@ -64,6 +69,8 @@ class PostShow extends Component
             : (string) ($this->post->content ?? '');
         View::share('metaDescription', mksine_meta_description($this->post->meta_description, $fallbackDesc));
         View::share('mksShortcodeContext', mks_shortcode_context(post: $this->post));
+
+        $this->emitStorefrontView('post', $this->post->id, $this->post->status);
 
         $view = view(theme_view('single'), [
             'post' => $this->post,

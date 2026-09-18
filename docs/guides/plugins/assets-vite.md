@@ -24,6 +24,16 @@ resources/
 
 `resources/dist/` is **part of the plugin**. Its contents are gitignored by convention but the directory itself is tracked via `.gitkeep`. See the commit-policy section below.
 
+## Cover image (screenshot)
+
+Optional. In `plugin.php`:
+
+```php
+'screenshot' => 'screenshot.png',
+```
+
+The file lives **inside the plugin directory** (root or a subfolder such as `assets/screenshot.png`). PNG, JPG, GIF, WebP, or SVG. The admin Plugins list and the screenshot route (`/mksine/plugin/{id}/screenshot`) read it from disk — you do not have to publish first. `mks-plugin:publish` also copies it next to `public/plugins/{id}/` when present.
+
 ## Vite configuration
 
 The default `vite.config.js` writes to `resources/dist/` and emits stable filenames (no hashing):

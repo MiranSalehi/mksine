@@ -3,6 +3,10 @@
         @include('mksine::filament.partials.marketplace-catalog', [
             'kind' => 'themes',
             'isMarketplace' => $this->isMarketplaceCatalog(),
+            'installedIds' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledPackageIds() : [],
+            'installedVersions' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledVersions() : [],
+            'updatableIds' => $this->isMarketplaceCatalog() ? $this->marketplaceUpdatablePackageIds() : [],
+            'canMarketplaceUpdate' => $this->isMarketplaceCatalog() && $this->canRunMarketplaceUpdates(),
         ])
 
         @unless ($this->isMarketplaceCatalog())

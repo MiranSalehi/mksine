@@ -14,7 +14,7 @@ This page is the canonical reference for `config/mksine.php`. The version of the
 
 ```php
 return [
-    'version' => '1.8.7',
+    'version' => '1.9.0',
     'features' => [...],
     'cache' => [...],
     'user_model' => App\Models\User::class,
@@ -35,7 +35,7 @@ return [
 
 | Default | Type |
 |---------|------|
-| `'1.8.7'` | string |
+| `'1.9.0'` | string |
 
 Read by [`Mksine::version()`](facades-and-managers.md#mksine-facade) and `mksine:info`. Treat it as **informational only** — change it through composer/git, not by editing this key.
 
@@ -120,12 +120,16 @@ Path **relative to `base_path()`** under which `mks-plugin:discover` scans for `
 
 ## `marketplace`
 
-Public catalog URLs shown in Theme Manager and Plugins (`Add from MKSine`). In-panel install is not connected yet; the UI is a coming-soon browser that links out.
+Public catalog used by Theme Manager and Plugins (`Add from MKSine`). The panel fetches JSON from the official site, then downloads the listing ZIP onto **this** MKSine install.
 
 | Key | Env | Default |
 |-----|-----|---------|
 | `url` | `MKS_MARKETPLACE_URL` | `https://mksine.com` |
 | `directory_url` | `MKS_MARKETPLACE_DIRECTORY_URL` | `https://mksine.com/marketplace` |
+| `api_url` | `MKS_MARKETPLACE_API_URL` | `{url}/api/marketplace/v1` when empty |
+| `timeout` | `MKS_MARKETPLACE_TIMEOUT` | `15` |
+| `connect_timeout` | `MKS_MARKETPLACE_CONNECT_TIMEOUT` | `5` |
+| `download_timeout` | `MKS_MARKETPLACE_DOWNLOAD_TIMEOUT` | `60` |
 
 ## `plugins.boot_guard_ttl`
 

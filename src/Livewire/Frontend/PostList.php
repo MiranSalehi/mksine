@@ -4,18 +4,20 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Miran\Mksine\Core\Content\ContentVisibility;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Post;
 
 class PostList extends Component
 {
+    use Concerns\EmitsStorefrontView;
     use WithPagination;
 
     public bool $skipLayout = false;
 
     public function render()
     {
-        $posts = Post::query()
+        $posts = ContentVisibility::constrain(Post::query(), 'post')
             ->where('status', 'published')
             ->with(['author', 'featuredImage', 'categories'])
             ->latest('published_at')
@@ -27,6 +29,8 @@ class PostList extends Component
             ->orderBy('sort_order')
             ->take(10)
             ->get();
+
+        $this->emitStorefrontView('post_list');
 
         $view = view(theme_view('posts'), ['posts' => $posts, 'categories' => $categories]);
 

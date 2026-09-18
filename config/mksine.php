@@ -22,7 +22,7 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.8.7',
+    'version' => '1.9.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -195,14 +195,17 @@ return [
     | Marketplace
     |--------------------------------------------------------------------------
     |
-    | Official catalog at mksine.com. In-panel install from the directory is
-    | not wired yet; Theme Manager and Plugins show a coming-soon browser
-    | that links here (WordPress-style “Add New”).
+    | Official catalog at mksine.com. Theme Manager and Plugins fetch the
+    | public JSON API, then download the listing ZIP onto this site.
     |
     */
     'marketplace' => [
         'url' => env('MKS_MARKETPLACE_URL', 'https://mksine.com'),
         'directory_url' => env('MKS_MARKETPLACE_DIRECTORY_URL', 'https://mksine.com/marketplace'),
+        'api_url' => env('MKS_MARKETPLACE_API_URL', ''),
+        'timeout' => (int) env('MKS_MARKETPLACE_TIMEOUT', 15),
+        'connect_timeout' => (int) env('MKS_MARKETPLACE_CONNECT_TIMEOUT', 5),
+        'download_timeout' => (int) env('MKS_MARKETPLACE_DOWNLOAD_TIMEOUT', 60),
     ],
 
     /*

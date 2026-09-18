@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Miran\Mksine\Core\Marketplace\MarketplaceKind;
 use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
 use Miran\Mksine\Core\Updater\RollbackManager;
@@ -57,6 +58,62 @@ class ThemeManager extends Page
     public function getTitle(): string
     {
         return __('mksine::themes.title');
+    }
+
+    protected function marketplaceKind(): MarketplaceKind
+    {
+        return MarketplaceKind::Theme;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function marketplaceInstalledPackageIds(): array
+    {
+        return $this->getThemes()
+            ->map(fn ($theme): string => (string) $theme->identifier)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function marketplaceInstalledVersions(): array
+    {
+        return $this->getThemes()
+            ->mapWithKeys(fn ($theme): array => [(string) $theme->identifier => (string) $theme->version])
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function marketplaceUpdatablePackageIds(): array
+    {
+        return array_keys($this->getUpdatableThemeOptions());
+    }
+
+    protected function installMarketplaceZip(string $path): void
+    {
+        $this->processThemeUpload($path, redirect: false);
+    }
+
+    protected function applyMarketplaceUpdate(string $packageId, string $zipPath): void
+    {
+        SuperAdminGate::authorize();
+
+        if (! (bool) config('mksine.updater.enabled', true)) {
+            return;
+        }
+
+        $updater = new ThemeUpdater(new UpdateRunner, app(ThemeManagerService::class));
+        $result = $updater->update($packageId, $zipPath, false);
+        $this->sendUpdateResultNotification($result, __('mksine::updater.theme_update_title'));
+
+        if ($result->success) {
+            app(ThemeManagerService::class)->clearCache();
+        }
     }
 
     /**
@@ -291,7 +348,7 @@ class ThemeManager extends Page
     /**
      * Process theme ZIP upload.
      */
-    protected function processThemeUpload(string $tempPath): void
+    protected function processThemeUpload(string $tempPath, bool $redirect = true): void
     {
         $themesPath = resource_path('views/themes');
         $tempDir = storage_path('app/theme-temp');
@@ -400,7 +457,9 @@ class ThemeManager extends Page
                 ->success()
                 ->send();
 
-            $this->redirect(static::getUrl());
+            if ($redirect) {
+                $this->redirect(static::getUrl());
+            }
 
         } catch (\Throwable $e) {
             Notification::make()

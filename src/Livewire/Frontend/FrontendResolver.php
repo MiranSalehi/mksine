@@ -28,6 +28,8 @@ class FrontendResolver extends Component
         'post-show' => PostShow::class,
         'page-show' => PageShow::class,
         'author-show' => AuthorShow::class,
+        'entry-list' => EntryList::class,
+        'entry-show' => EntryShow::class,
     ];
 
     /** Map route name => page key (fallback when defaults are not available). */
@@ -86,14 +88,17 @@ class FrontendResolver extends Component
             return;
         }
 
-        $defaults = $route->getAction('defaults') ?? [];
+        $defaults = $route->defaults ?? [];
         if (isset($defaults['page']) && $defaults['page'] !== '') {
             $this->pageKey = (string) $defaults['page'];
         } else {
             $name = $route->getName();
             $this->pageKey = (string) (self::$routeNameToPage[$name] ?? 'home');
         }
-        $this->params = $route->parameters();
+        $passThrough = $defaults;
+        unset($passThrough['page']);
+        $merged = array_merge($passThrough, $route->parameters());
+        $this->params = array_intersect_key($merged, array_flip(['slug', 'path', 'id', 'contentType', 'pageId']));
     }
 
     protected function resolveComponent(): string

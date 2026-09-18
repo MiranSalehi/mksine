@@ -7,6 +7,10 @@
         @include('mksine::filament.partials.marketplace-catalog', [
             'kind' => 'plugins',
             'isMarketplace' => $this->isMarketplaceCatalog(),
+            'installedIds' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledPackageIds() : [],
+            'installedVersions' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledVersions() : [],
+            'updatableIds' => $this->isMarketplaceCatalog() ? $this->marketplaceUpdatablePackageIds() : [],
+            'canMarketplaceUpdate' => $this->isMarketplaceCatalog() && $this->canRunMarketplaceUpdates(),
         ])
 
         @unless ($this->isMarketplaceCatalog())
@@ -106,12 +110,20 @@
                                 >
                                     <td class="px-5 py-4 align-top">
                                         <div class="flex items-start gap-3">
+                                            @if (! empty($plugin['screenshot_url']))
+                                                <img
+                                                    src="{{ $plugin['screenshot_url'] }}"
+                                                    alt="{{ $plugin['name'] }}"
+                                                    class="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-inset ring-black/5 dark:ring-white/10"
+                                                />
+                                            @else
                                             <div @class([
                                                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-inset ring-white/60 dark:ring-white/10',
                                                 $this->getPluginIconGradientClasses($status),
                                             ])>
                                                 <x-heroicon-o-puzzle-piece class="h-5 w-5 text-gray-600 dark:text-gray-300" />
                                             </div>
+                                            @endif
                                             <div class="min-w-0 flex-1">
                                                 <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">
                                                     {{ $plugin['name'] }}

@@ -112,4 +112,17 @@ describe('HookManager', function () {
 
         expect(true)->toBeTrue();
     });
+
+    it('inspects registered listeners without mutating them', function () {
+        $this->manager->register('manager.test', SimpleListener::class, 15);
+
+        $rows = $this->manager->inspect();
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0]['family'])->toBe('event')
+            ->and($rows[0]['name'])->toBe('manager.test')
+            ->and($rows[0]['listener'])->toBe(SimpleListener::class)
+            ->and($rows[0]['priority'])->toBe(15)
+            ->and($rows[0]['is_enabled'])->toBeTrue();
+    });
 });

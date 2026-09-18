@@ -4,10 +4,13 @@ namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Support\Facades\View;
 use Livewire\Component;
+use Miran\Mksine\Core\Content\ContentVisibility;
 use Miran\Mksine\Models\Page;
 
 class PageShow extends Component
 {
+    use Concerns\EmitsStorefrontView;
+
     public bool $skipLayout = false;
 
     /** Set when opening via /page/{slug}. */
@@ -33,6 +36,8 @@ class PageShow extends Component
         } else {
             abort(404);
         }
+
+        ContentVisibility::assertVisible($this->pageModel, 'page');
     }
 
     public function render()
@@ -40,6 +45,8 @@ class PageShow extends Component
         View::share('title', mksine_document_title($this->pageModel->meta_title, $this->pageModel->title));
         View::share('metaDescription', mksine_meta_description($this->pageModel->meta_description, $this->pageModel->content));
         View::share('mksShortcodeContext', mks_shortcode_context(page: $this->pageModel));
+
+        $this->emitStorefrontView('page', $this->pageModel->id, $this->pageModel->status);
 
         $view = view(theme_view('page'), ['page' => $this->pageModel]);
 

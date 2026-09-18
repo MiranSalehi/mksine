@@ -9,6 +9,7 @@ use Miran\Mksine\Models\Tag;
 
 class TagShow extends Component
 {
+    use Concerns\EmitsStorefrontView;
     use WithPagination;
 
     public bool $skipLayout = false;
@@ -34,6 +35,8 @@ class TagShow extends Component
         View::share('title', mksine_document_title($this->tag->meta_title, $this->tag->name));
         View::share('metaDescription', mksine_meta_description($this->tag->meta_description, $this->tag->description));
         View::share('mksShortcodeContext', mks_shortcode_context());
+
+        $this->emitStorefrontView('tag', $this->tag->id, $this->tag->is_active ? 'published' : 'inactive');
 
         $posts = $this->tag->posts()
             ->where('posts.status', 'published')

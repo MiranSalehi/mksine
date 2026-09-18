@@ -106,4 +106,27 @@ class ResourceHookManager
         unset($this->relationHooks[$resourceName]);
         unset($this->widgetHooks[$resourceName]);
     }
+
+    /**
+     * @return list<array{name: string, relations: int, widgets: int}>
+     */
+    public function inspect(): array
+    {
+        $names = array_values(array_unique(array_merge(
+            array_keys($this->relationHooks),
+            array_keys($this->widgetHooks),
+        )));
+        sort($names);
+
+        $rows = [];
+        foreach ($names as $name) {
+            $rows[] = [
+                'name' => $name,
+                'relations' => count($this->relationHooks[$name] ?? []),
+                'widgets' => count($this->widgetHooks[$name] ?? []),
+            ];
+        }
+
+        return $rows;
+    }
 }

@@ -4,6 +4,7 @@ namespace Miran\Mksine\Filament\Resources\Pages\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
+use Miran\Mksine\Core\Hooks\ContentFormHooks;
 use Miran\Mksine\Filament\Resources\Pages\PageResource;
 
 class CreatePage extends CreateRecord
@@ -19,6 +20,11 @@ class CreatePage extends CreateRecord
             $data['builder_content_width'] = 'full';
         }
 
-        return $data;
+        return ContentFormHooks::mutate($data, 'page');
+    }
+
+    protected function afterCreate(): void
+    {
+        ContentFormHooks::saved($this->record, 'page');
     }
 }

@@ -119,7 +119,7 @@ php artisan mks:theme-publish
 
 ## Activate
 
-From the admin: **Appearance → Themes → Activate**. The **Add from MKSine** tab is a coming-soon catalog that links to [mksine.com/marketplace](https://mksine.com/marketplace); in-panel install is not wired yet (upload a ZIP or place a theme on disk). Programmatic equivalent:
+From the admin: **Appearance → Themes → Activate**. **Add from MKSine** lists approved themes from [mksine.com/marketplace](https://mksine.com/marketplace) and can install the ZIP onto this site. You can still upload a ZIP or place a theme on disk. Programmatic equivalent:
 
 ```php
 app(\Miran\Mksine\Core\Theme\ThemeManager::class)->activate('stellar');

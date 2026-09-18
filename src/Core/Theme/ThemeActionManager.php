@@ -66,4 +66,26 @@ class ThemeActionManager
 
         return $output;
     }
+
+    /**
+     * @return list<array{name: string, callbacks: int, priorities: list<int>}>
+     */
+    public function inspect(): array
+    {
+        $rows = [];
+        foreach ($this->actions as $hook => $items) {
+            $rows[] = [
+                'name' => $hook,
+                'callbacks' => count($items),
+                'priorities' => array_map(
+                    static fn (array $item): int => $item['priority'],
+                    $items,
+                ),
+            ];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => $a['name'] <=> $b['name']);
+
+        return $rows;
+    }
 }
