@@ -95,16 +95,15 @@ If the auto-patch can't run (heavily customized model), add the contract + trait
 
 **Symptom.** Panel loads but looks like a bare Filament install: no MKSine sidebar groups, wrong fonts/spacing, or missing dark-mode utilities.
 
-**Cause.** The panel `<link>` for MKSine admin CSS did not load. Current versions serve `resources/dist/mksine.css` from the package at `/mksine/admin-styles.css?v={filemtime}`. Older versions expected a published copy at `public/css/miran/mksine/mksine-styles.css`.
+**Cause.** Marketplace / plugin-manager Blade uses Tailwind classes that live in MKSine’s admin CSS, not Filament’s purged theme. If that stylesheet does not load, Heroicons fall back to the browser default (~300×150) and look like giant black icons. Current versions copy `resources/dist/mksine.css` to `/css/miran/mksine/mksine-styles.css` on the first panel request, and fall back to `/mksine/admin-styles.css`.
 
 **Fix.**
 
 ```bash
-composer update miran/mksine
 php artisan optimize:clear
 ```
 
-Confirm `vendor/miran/mksine/resources/dist/mksine.css` (or `packages/mksine/resources/dist/mksine.css` in the monorepo) ships with the package, and that the panel HTML includes `/mksine/admin-styles.css`. A hard-refresh is only needed if the browser kept an old published `/css/miran/mksine/mksine-styles.css` from a previous version.
+Reload the panel (no `filament:assets` required if `public/css` is writable). Confirm the page source has `<link … data-mksine-styles>` pointing at `/css/miran/mksine/mksine-styles.css` or `/mksine/admin-styles.css`, and that `vendor/miran/mksine/resources/dist/mksine.css` exists.
 
 ## Plugins
 

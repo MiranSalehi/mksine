@@ -38,6 +38,15 @@
 @endphp
 
 <div class="mksine-marketplace-catalog space-y-6">
+    {{-- Cap tab SVGs if admin CSS fails to load (bare SVGs default to 300×150). --}}
+    <style>
+        .mksine-marketplace-catalog [role="tab"] svg {
+            width: 1rem;
+            height: 1rem;
+            max-width: 1rem;
+            max-height: 1rem;
+        }
+    </style>
     <div
         role="tablist"
         aria-label="{{ $title }}"

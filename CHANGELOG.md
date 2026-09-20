@@ -6,7 +6,9 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Fixed
+
+- **Admin CSS on production** — Panel styles prefer the Filament public file (`/css/miran/mksine/mksine-styles.css`) and copy the package dist there when it is stale. The `/mksine/admin-styles.css` route is a fallback. Catalog tab icons have an inline size cap so a missing stylesheet cannot blow SVGs up to 300×150.
 
 ## 1.11.0 - 2026-09-20
 

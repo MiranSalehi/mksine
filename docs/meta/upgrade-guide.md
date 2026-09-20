@@ -38,8 +38,8 @@ When adding an entry, copy this skeleton:
 
 ### Migration
 
-1. After upgrade: `php artisan optimize:clear`. `filament:assets` is not required for this CSS.
-2. Confirm the panel HTML links to `/mksine/admin-styles.css` and that `vendor/miran/mksine/resources/dist/mksine.css` (or `packages/mksine/resources/dist/mksine.css` in the monorepo) is present.
+1. After upgrade: `php artisan optimize:clear`. `filament:assets` is not required if `public/css` is writable — the package copies admin CSS to `/css/miran/mksine/mksine-styles.css` on the next panel request.
+2. If icons on Plugins / Themes look huge, the MKSine stylesheet did not load. Check the panel `<link data-mksine-styles>` and that `vendor/miran/mksine/resources/dist/mksine.css` exists.
 
 ## 1.10.0 (2026-09-20)
 
