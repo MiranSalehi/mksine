@@ -29,6 +29,18 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.10.0 (2026-09-20)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Marketplace catalog UI.** Add from MKSine plugin listings use directory-style cards. Catalog JSON `downloads`, `rating_average`, and `rating_count` are shown when present; empty stats stay hidden. Installed vs available vs update-ready cards are visually distinct.
+- **Catalog fetch.** Browse HTTP defaults are `marketplace.timeout` 6s and `connect_timeout` 2s; retries only on connection errors. The index response is cached (`cache_seconds` / `cache_stale_seconds`) and kept when switching back to the tab.
+
+### Migration
+
+1. If you published `config/mksine.php`, merge `marketplace.timeout` / `connect_timeout` / `cache_seconds` / `cache_stale_seconds` if those keys are missing. See [Configuration](../reference/configuration.md).
+2. After upgrade: `php artisan optimize:clear` and `php artisan filament:assets`, then hard-refresh the admin catalog.
+
 ## 1.9.0 (2026-09-18)
 
 ### Added
@@ -41,7 +53,7 @@ When adding an entry, copy this skeleton:
 
 ### Migration
 
-1. If you published `config/mksine.php`, merge `marketplace.api_url`, `timeout`, `connect_timeout`, and `download_timeout`. See [Configuration](../reference/configuration.md).
+1. If you published `config/mksine.php`, merge `marketplace.api_url`, `timeout`, `connect_timeout`, `download_timeout`, `cache_seconds`, and `cache_stale_seconds`. See [Configuration](../reference/configuration.md).
 2. After upgrade: `php artisan optimize:clear`.
 
 ## 1.8.0 (2026-09-15)

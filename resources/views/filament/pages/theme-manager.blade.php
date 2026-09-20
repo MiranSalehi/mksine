@@ -3,6 +3,7 @@
         @include('mksine::filament.partials.marketplace-catalog', [
             'kind' => 'themes',
             'isMarketplace' => $this->isMarketplaceCatalog(),
+            'listings' => $this->isMarketplaceCatalog() ? $this->marketplaceListings() : null,
             'installedIds' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledPackageIds() : [],
             'installedVersions' => $this->isMarketplaceCatalog() ? $this->marketplaceInstalledVersions() : [],
             'updatableIds' => $this->isMarketplaceCatalog() ? $this->marketplaceUpdatablePackageIds() : [],

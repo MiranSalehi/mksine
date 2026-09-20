@@ -14,7 +14,7 @@ This page is the canonical reference for `config/mksine.php`. The version of the
 
 ```php
 return [
-    'version' => '1.9.0',
+    'version' => '1.10.0',
     'features' => [...],
     'cache' => [...],
     'user_model' => App\Models\User::class,
@@ -35,7 +35,7 @@ return [
 
 | Default | Type |
 |---------|------|
-| `'1.9.0'` | string |
+| `'1.10.0'` | string |
 
 Read by [`Mksine::version()`](facades-and-managers.md#mksine-facade) and `mksine:info`. Treat it as **informational only** — change it through composer/git, not by editing this key.
 
@@ -127,9 +127,11 @@ Public catalog used by Theme Manager and Plugins (`Add from MKSine`). The panel 
 | `url` | `MKS_MARKETPLACE_URL` | `https://mksine.com` |
 | `directory_url` | `MKS_MARKETPLACE_DIRECTORY_URL` | `https://mksine.com/marketplace` |
 | `api_url` | `MKS_MARKETPLACE_API_URL` | `{url}/api/marketplace/v1` when empty |
-| `timeout` | `MKS_MARKETPLACE_TIMEOUT` | `15` |
-| `connect_timeout` | `MKS_MARKETPLACE_CONNECT_TIMEOUT` | `5` |
+| `timeout` | `MKS_MARKETPLACE_TIMEOUT` | `6` |
+| `connect_timeout` | `MKS_MARKETPLACE_CONNECT_TIMEOUT` | `2` |
 | `download_timeout` | `MKS_MARKETPLACE_DOWNLOAD_TIMEOUT` | `60` |
+| `cache_seconds` | `MKS_MARKETPLACE_CACHE_SECONDS` | `120` (set `0` to disable) |
+| `cache_stale_seconds` | `MKS_MARKETPLACE_CACHE_STALE_SECONDS` | `600` |
 
 ## `plugins.boot_guard_ttl`
 

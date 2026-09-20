@@ -22,7 +22,7 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.9.0',
+    'version' => '1.10.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -203,9 +203,11 @@ return [
         'url' => env('MKS_MARKETPLACE_URL', 'https://mksine.com'),
         'directory_url' => env('MKS_MARKETPLACE_DIRECTORY_URL', 'https://mksine.com/marketplace'),
         'api_url' => env('MKS_MARKETPLACE_API_URL', ''),
-        'timeout' => (int) env('MKS_MARKETPLACE_TIMEOUT', 15),
-        'connect_timeout' => (int) env('MKS_MARKETPLACE_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('MKS_MARKETPLACE_TIMEOUT', 6),
+        'connect_timeout' => (int) env('MKS_MARKETPLACE_CONNECT_TIMEOUT', 2),
         'download_timeout' => (int) env('MKS_MARKETPLACE_DOWNLOAD_TIMEOUT', 60),
+        'cache_seconds' => (int) env('MKS_MARKETPLACE_CACHE_SECONDS', 120),
+        'cache_stale_seconds' => (int) env('MKS_MARKETPLACE_CACHE_STALE_SECONDS', 600),
     ],
 
     /*

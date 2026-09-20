@@ -58,8 +58,7 @@ trait InteractsWithMarketplaceCatalog
     public function showMarketplaceCatalog(): void
     {
         $this->catalog = 'marketplace';
-        $this->marketplacePage = 1;
-        $this->marketplaceSnapshot = null;
+        $this->hydrateMarketplaceCatalog();
     }
 
     public function isMarketplaceCatalog(): bool
@@ -88,13 +87,31 @@ trait InteractsWithMarketplaceCatalog
 
     public function loadMarketplaceCatalog(): void
     {
-        if (! $this->isMarketplaceCatalog()) {
+        $this->catalog = 'marketplace';
+
+        if ($this->marketplaceCatalogIsCurrent()) {
+            $this->skipRender();
+
             return;
         }
 
-        $fingerprint = $this->marketplaceKind()->value.'|'.trim($this->marketplaceSearch).'|'.$this->marketplacePage;
+        $this->hydrateMarketplaceCatalog();
+    }
 
-        if (is_array($this->marketplaceSnapshot) && ($this->marketplaceSnapshot['_key'] ?? null) === $fingerprint) {
+    protected function marketplaceCatalogFingerprint(): string
+    {
+        return $this->marketplaceKind()->value.'|'.trim($this->marketplaceSearch).'|'.$this->marketplacePage;
+    }
+
+    protected function marketplaceCatalogIsCurrent(): bool
+    {
+        return is_array($this->marketplaceSnapshot)
+            && ($this->marketplaceSnapshot['_key'] ?? null) === $this->marketplaceCatalogFingerprint();
+    }
+
+    protected function hydrateMarketplaceCatalog(): void
+    {
+        if ($this->marketplaceCatalogIsCurrent()) {
             return;
         }
 
@@ -105,13 +122,18 @@ trait InteractsWithMarketplaceCatalog
         );
 
         $snapshot = $result->toArray();
-        $snapshot['_key'] = $fingerprint;
+        $snapshot['_key'] = $this->marketplaceCatalogFingerprint();
         $this->marketplaceSnapshot = $snapshot;
     }
 
     public function retryMarketplaceCatalog(): void
     {
         $this->marketplaceSnapshot = null;
+        app(MarketplaceCatalogClient::class)->forgetIndex(
+            $this->marketplaceKind(),
+            trim($this->marketplaceSearch),
+            $this->marketplacePage,
+        );
         $this->loadMarketplaceCatalog();
     }
 

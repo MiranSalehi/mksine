@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core\Marketplace;
 
+use Carbon\Exceptions\InvalidFormatException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Number;
+
 final readonly class MarketplacePackage
 {
     public function __construct(
@@ -24,6 +28,10 @@ final readonly class MarketplacePackage
         public string $authorSlug,
         public string $authorUrl,
         public ?string $imageUrl = null,
+        public int $downloads = 0,
+        public ?float $ratingAverage = null,
+        public int $ratingCount = 0,
+        public ?string $categoryName = null,
     ) {}
 
     /**
@@ -52,6 +60,10 @@ final readonly class MarketplacePackage
         }
 
         $author = is_array($payload['author'] ?? null) ? $payload['author'] : [];
+        $category = is_array($payload['category'] ?? null) ? $payload['category'] : [];
+        $categoryName = trim((string) ($category['name'] ?? ''));
+        $ratingCount = max(0, (int) ($payload['rating_count'] ?? 0));
+        $ratingAverage = self::optionalRatingAverage($payload['rating_average'] ?? null, $ratingCount);
 
         return new self(
             kind: $kind,
@@ -71,6 +83,10 @@ final readonly class MarketplacePackage
             authorSlug: (string) ($author['slug'] ?? ''),
             authorUrl: (string) ($author['url'] ?? ''),
             imageUrl: self::optionalHttpUrl($payload['image_url'] ?? $payload['screenshot_url'] ?? null),
+            downloads: max(0, (int) ($payload['downloads'] ?? 0)),
+            ratingAverage: $ratingAverage,
+            ratingCount: $ratingCount,
+            categoryName: $categoryName !== '' ? $categoryName : null,
         );
     }
 
@@ -99,7 +115,90 @@ final readonly class MarketplacePackage
                 'url' => $this->authorUrl,
             ],
             'image_url' => $this->imageUrl,
+            'downloads' => $this->downloads,
+            'rating_average' => $this->ratingAverage,
+            'rating_count' => $this->ratingCount,
+            'category' => $this->categoryName === null ? null : [
+                'name' => $this->categoryName,
+            ],
         ];
+    }
+
+    public function hasRating(): bool
+    {
+        return $this->ratingCount > 0 && $this->ratingAverage !== null;
+    }
+
+    /**
+     * @return list<'full'|'empty'>
+     */
+    public function ratingStarStates(): array
+    {
+        $filled = (int) round(max(0.0, min(5.0, (float) $this->ratingAverage)));
+
+        return array_map(
+            static fn (int $index): string => $index <= $filled ? 'full' : 'empty',
+            range(1, 5),
+        );
+    }
+
+    public function formattedRatingAverage(): string
+    {
+        if ($this->ratingAverage === null) {
+            return '';
+        }
+
+        $formatted = Number::format($this->ratingAverage, precision: 1);
+
+        return is_string($formatted) ? $formatted : (string) $this->ratingAverage;
+    }
+
+    public function formattedDownloadCount(): ?string
+    {
+        if ($this->downloads < 1) {
+            return null;
+        }
+
+        if ($this->downloads < 1000) {
+            $formatted = Number::format($this->downloads);
+
+            return is_string($formatted) ? $formatted : (string) $this->downloads;
+        }
+
+        return Number::abbreviate($this->downloads, precision: 1);
+    }
+
+    public function lastPublishedForHumans(): ?string
+    {
+        $publishedAt = $this->lastPublishedAt();
+
+        return $publishedAt?->diffForHumans();
+    }
+
+    public function lastPublishedAt(): ?Carbon
+    {
+        if (! is_string($this->publishedAt) || trim($this->publishedAt) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($this->publishedAt);
+        } catch (InvalidFormatException) {
+            return null;
+        }
+    }
+
+    private static function optionalRatingAverage(mixed $value, int $ratingCount): ?float
+    {
+        if ($ratingCount < 1 || $value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return max(0.0, min(5.0, (float) $value));
     }
 
     private static function optionalHttpUrl(mixed $value): ?string

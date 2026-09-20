@@ -314,6 +314,71 @@
     color: var(--color-white);
 }
 
+.dark .mksine-marketplace-plugin-card:not(.is-installed):not(.is-update) {
+    background-color: color-mix(in oklab, var(--color-zinc-900) 85%, black);
+    border-color: color-mix(in oklab, var(--color-zinc-700) 65%, transparent);
+    color: var(--color-zinc-300);
+}
+
+.dark .mksine-marketplace-plugin-card.is-installed {
+    background-color: color-mix(in oklab, #064e3b 22%, var(--color-zinc-900));
+    border-color: color-mix(in oklab, #34d399 38%, transparent);
+    color: var(--color-zinc-300);
+}
+
+.dark .mksine-marketplace-plugin-card.is-update {
+    background-color: color-mix(in oklab, #78350f 22%, var(--color-zinc-900));
+    border-color: color-mix(in oklab, #f59e0b 40%, transparent);
+    color: var(--color-zinc-300);
+}
+
+.dark .mksine-marketplace-plugin-card h4,
+.dark .mksine-marketplace-plugin-card h4 a {
+    color: var(--color-white);
+}
+
+.dark .mksine-marketplace-plugin-card:not(.is-installed):not(.is-update) .mksine-marketplace-plugin-card-footer {
+    background-color: color-mix(in oklab, var(--color-zinc-800) 55%, black);
+    border-color: color-mix(in oklab, var(--color-zinc-700) 65%, transparent);
+    color: var(--color-zinc-400);
+}
+
+.dark .mksine-marketplace-plugin-card.is-installed .mksine-marketplace-plugin-card-footer {
+    background-color: color-mix(in oklab, #064e3b 18%, var(--color-zinc-800));
+    border-color: color-mix(in oklab, #34d399 25%, transparent);
+    color: #a7f3d0;
+}
+
+.dark .mksine-marketplace-plugin-card.is-update .mksine-marketplace-plugin-card-footer {
+    background-color: color-mix(in oklab, #78350f 18%, var(--color-zinc-800));
+    border-color: color-mix(in oklab, #f59e0b 28%, transparent);
+    color: #fde68a;
+}
+
+.dark .mksine-marketplace-directory-actions .is-outline {
+    background-color: color-mix(in oklab, var(--color-zinc-900) 80%, black);
+    border-color: color-mix(in oklab, var(--color-zinc-600) 70%, transparent);
+    color: var(--color-zinc-100);
+}
+
+.dark .mksine-marketplace-directory-actions .is-install {
+    background-color: var(--color-primary-600, #2563eb);
+    border-color: transparent;
+    color: #fff;
+}
+
+.dark .mksine-marketplace-directory-actions .is-installed {
+    background-color: color-mix(in oklab, #059669 28%, var(--color-zinc-900));
+    border-color: color-mix(in oklab, #34d399 35%, transparent);
+    color: #a7f3d0;
+}
+
+.dark .mksine-marketplace-directory-actions .is-update {
+    background-color: #d97706;
+    border-color: transparent;
+    color: #fff;
+}
+
 .dark .mksine-menu-builder-root .mksine-menu-panel {
     background-color: var(--color-zinc-900);
     border-color: color-mix(in oklab, white 7%, transparent);

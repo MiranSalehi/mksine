@@ -121,7 +121,7 @@ class ThemeManager extends Page
      */
     public function getThemes(): Collection
     {
-        return app(ThemeManagerService::class)->discover();
+        return once(fn (): Collection => app(ThemeManagerService::class)->discover());
     }
 
     /**

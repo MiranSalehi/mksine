@@ -8,6 +8,14 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.10.0 - 2026-09-20
+
+### Changed
+
+- **Marketplace catalog tabs** — Installed ↔ Add from MKSine stays on Livewire tabs. The catalog ZIP list is fetched once, cached (`marketplace.cache_seconds` / `cache_stale_seconds`), and kept when you leave the tab. HTTP browse timeouts default to 6s/2s and retry only on connection errors.
+
+- **Marketplace plugin catalog** — Add from MKSine uses directory-style cards (icon, summary, author, last published, stars, downloads) instead of a stacked list. Catalog JSON `downloads`, `rating_average`, and `rating_count` are now read. Empty ratings/downloads stay hidden; there is no fabricated “active installs” or compatibility check. Installed listings use a green card and check chip; available listings keep a filled Install now button.
+
 ## 1.9.0 - 2026-09-18
 
 ### Added

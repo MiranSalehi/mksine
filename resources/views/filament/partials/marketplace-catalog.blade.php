@@ -34,7 +34,7 @@
     $emptyCopy = $searchQuery !== ''
         ? ($isPlugins ? __('mksine::marketplace.empty_search_plugins') : __('mksine::marketplace.empty_search_themes'))
         : ($isPlugins ? __('mksine::marketplace.empty_plugins') : __('mksine::marketplace.empty_themes'));
-    $tabTargets = 'showInstalledCatalog,showMarketplaceCatalog,loadMarketplaceCatalog,retryMarketplaceCatalog,updatedMarketplaceSearch,goToMarketplacePage';
+    $tabSwitchTargets = 'showInstalledCatalog,showMarketplaceCatalog';
 @endphp
 
 <div class="mksine-marketplace-catalog space-y-6">
@@ -48,7 +48,7 @@
             role="tab"
             wire:click="showInstalledCatalog"
             wire:loading.attr="disabled"
-            wire:target="{{ $tabTargets }}"
+            wire:target="{{ $tabSwitchTargets }}"
             aria-selected="{{ $isMarketplace ? 'false' : 'true' }}"
             @class([
                 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition',
@@ -75,7 +75,7 @@
             role="tab"
             wire:click="showMarketplaceCatalog"
             wire:loading.attr="disabled"
-            wire:target="{{ $tabTargets }}"
+            wire:target="{{ $tabSwitchTargets }}"
             aria-selected="{{ $isMarketplace ? 'true' : 'false' }}"
             @class([
                 'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition',
@@ -84,13 +84,13 @@
             ])
         >
             <span class="relative inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                <span wire:loading.class="opacity-0" wire:target="showMarketplaceCatalog,loadMarketplaceCatalog">
+                <span wire:loading.class="opacity-0" wire:target="showMarketplaceCatalog">
                     <x-heroicon-o-squares-plus class="h-4 w-4" />
                 </span>
                 <span
                     class="pointer-events-none absolute inset-0 hidden items-center justify-center"
                     wire:loading.flex
-                    wire:target="showMarketplaceCatalog,loadMarketplaceCatalog"
+                    wire:target="showMarketplaceCatalog"
                 >
                     <x-filament::loading-indicator class="h-4 w-4 shrink-0" />
                 </span>
@@ -151,7 +151,6 @@
             @if (! $listings instanceof \Miran\Mksine\Core\Marketplace\MarketplaceCatalogResult)
                 <div
                     wire:init="loadMarketplaceCatalog"
-                    x-init="\$wire.loadMarketplaceCatalog()"
                     wire:key="mks-mkt-load-{{ $kind }}-{{ $searchQuery }}-{{ $marketplacePage ?? 1 }}"
                     class="min-h-[18rem]"
                     aria-busy="true"
@@ -159,15 +158,18 @@
                 >
                     <p class="sr-only">{{ __('mksine::marketplace.loading') }}</p>
                     @if ($isPlugins)
-                        <div class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/20 dark:ring-white/5">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             @foreach (range(1, 4) as $slot)
-                                <div class="flex h-[4.5rem] items-center gap-3 border-b border-gray-100 px-5 last:border-b-0 dark:border-gray-800">
-                                    <div class="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800"></div>
-                                    <div class="min-w-0 flex-1 space-y-2">
-                                        <div class="h-3 w-40 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
-                                        <div class="h-2.5 w-64 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/20">
+                                    <div class="flex gap-4 p-5">
+                                        <div class="h-[72px] w-[72px] shrink-0 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800"></div>
+                                        <div class="min-w-0 flex-1 space-y-2 pt-1">
+                                            <div class="h-4 w-40 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                            <div class="h-3 w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                            <div class="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                        </div>
                                     </div>
-                                    <div class="hidden h-8 w-20 shrink-0 animate-pulse rounded-lg bg-gray-100 sm:block dark:bg-gray-800"></div>
+                                    <div class="h-11 animate-pulse border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60"></div>
                                 </div>
                             @endforeach
                         </div>
@@ -206,65 +208,34 @@
                     </p>
                 </div>
             @elseif ($isPlugins)
-                <div class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/20 dark:ring-white/5">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     @foreach ($listings->items as $listing)
-                        @php
-                            $localVersion = $installedVersions[$listing->packageId] ?? null;
-                            $hasUpdate = is_string($localVersion) && \Miran\Mksine\Core\Marketplace\MarketplaceRelease::isNewer($listing->version, $localVersion);
-                        @endphp
-                        <div class="flex flex-col gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4 dark:border-gray-800">
-                            @if ($listing->imageUrl)
-                                <img
-                                    src="{{ $listing->imageUrl }}"
-                                    alt="{{ $listing->name }}"
-                                    class="h-11 w-11 shrink-0 rounded-xl object-cover ring-1 ring-inset ring-black/5 dark:ring-white/10"
-                                />
-                            @else
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
-                                <x-heroicon-o-puzzle-piece class="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                            </div>
-                            @endif
-                            <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $listing->name }}</p>
-                                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                    v{{ $listing->version }}
-                                    @if ($listing->authorName)
-                                        · {{ $listing->authorName }}
-                                    @endif
-                                    @if ($listing->license !== '')
-                                        · {{ $listing->license }}
-                                    @endif
-                                </p>
-                                @if ($hasUpdate && is_string($localVersion))
-                                    <p class="mt-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                                        {{ __('mksine::marketplace.version_upgrade', ['from' => $localVersion, 'to' => $listing->version]) }}
-                                    </p>
-                                @endif
-                                @if ($listing->summary !== '')
-                                    <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">{{ $listing->summary }}</p>
-                                @endif
-                                @if ($listing->changelog !== '')
-                                    <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 dark:text-gray-500">{{ $listing->changelog }}</p>
-                                @endif
-                            </div>
-                            @include('mksine::filament.partials.marketplace-listing-actions', [
-                                'listing' => $listing,
-                                'installedVersions' => $installedVersions,
-                                'updatableIds' => $updatableIds,
-                                'canMarketplaceUpdate' => $canMarketplaceUpdate,
-                                'stack' => false,
-                            ])
-                        </div>
+                        @include('mksine::filament.partials.marketplace-plugin-card', [
+                            'listing' => $listing,
+                            'installedVersions' => $installedVersions,
+                            'updatableIds' => $updatableIds,
+                            'canMarketplaceUpdate' => $canMarketplaceUpdate,
+                        ])
                     @endforeach
                 </div>
             @else
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($listings->items as $listing)
                         @php
-                            $localVersion = $installedVersions[$listing->packageId] ?? null;
-                            $hasUpdate = is_string($localVersion) && \Miran\Mksine\Core\Marketplace\MarketplaceRelease::isNewer($listing->version, $localVersion);
+                            $installed = array_key_exists($listing->packageId, $installedVersions);
+                            $localVersion = $installed ? (string) $installedVersions[$listing->packageId] : null;
+                            $hasUpdate = $installed && $localVersion !== '' && \Miran\Mksine\Core\Marketplace\MarketplaceRelease::isNewer($listing->version, $localVersion);
+                            $themeState = $hasUpdate ? 'update' : ($installed ? 'installed' : 'available');
                         @endphp
-                        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900/20 dark:ring-white/5">
+                        <div
+                            data-marketplace-state="{{ $themeState }}"
+                            @class([
+                                'mksine-marketplace-theme-card overflow-hidden rounded-xl border shadow-sm ring-1',
+                                'border-gray-200 bg-white ring-black/5 dark:border-gray-700 dark:bg-gray-900/20 dark:ring-white/5' => $themeState === 'available',
+                                'is-installed border-emerald-300 bg-emerald-50/70 ring-emerald-500/10 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:ring-emerald-500/20' => $themeState === 'installed',
+                                'is-update border-amber-300 bg-amber-50/80 ring-amber-500/10 dark:border-amber-500/40 dark:bg-amber-500/10 dark:ring-amber-500/20' => $themeState === 'update',
+                            ])
+                        >
                             @if ($listing->imageUrl)
                                 <img
                                     src="{{ $listing->imageUrl }}"
@@ -276,7 +247,19 @@
                             @endif
                             <div class="space-y-3 p-4">
                                 <div>
-                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $listing->name }}</h4>
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $listing->name }}</h4>
+                                        @if ($themeState === 'installed')
+                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200" role="status">
+                                                <x-heroicon-s-check class="h-3 w-3" />
+                                                {{ __('mksine::marketplace.installed_badge') }}
+                                            </span>
+                                        @elseif ($themeState === 'update')
+                                            <span class="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                                {{ __('mksine::marketplace.update') }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                                         v{{ $listing->version }}
                                         @if ($listing->authorName)
