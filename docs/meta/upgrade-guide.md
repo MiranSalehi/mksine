@@ -29,6 +29,18 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.11.0 (2026-09-20)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Marketplace plugin cards.** Add from MKSine uses 16:10 covers like the public directory, plus title, summary, author, stats, and category · version · license. Installed / available / update stay visually distinct without washing the cover.
+- **Admin CSS.** Panel styles are served from the package at `/mksine/admin-styles.css?v={filemtime}`. Catalog HTTP cache keys include `mksine.version`.
+
+### Migration
+
+1. After upgrade: `php artisan optimize:clear`. `filament:assets` is not required for this CSS.
+2. Confirm the panel HTML links to `/mksine/admin-styles.css` and that `vendor/miran/mksine/resources/dist/mksine.css` (or `packages/mksine/resources/dist/mksine.css` in the monorepo) is present.
+
 ## 1.10.0 (2026-09-20)
 
 ### Behavior changes (non-breaking, but visible)
@@ -39,7 +51,7 @@ When adding an entry, copy this skeleton:
 ### Migration
 
 1. If you published `config/mksine.php`, merge `marketplace.timeout` / `connect_timeout` / `cache_seconds` / `cache_stale_seconds` if those keys are missing. See [Configuration](../reference/configuration.md).
-2. After upgrade: `php artisan optimize:clear`. Admin catalog CSS is served from the package (`/mksine/admin-styles.css`); `filament:assets` is not required for this UI.
+2. After upgrade: `php artisan optimize:clear`.
 
 ## 1.9.0 (2026-09-18)
 

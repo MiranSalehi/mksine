@@ -6,6 +6,10 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
+- (none)
+
+## 1.11.0 - 2026-09-20
+
 ### Changed
 
 - **Marketplace plugin cards** — Add from MKSine matches the public directory card: 16:10 cover, title, summary, author, stats, then category · version · license. Install / Installed / Update stay on the card; covers are not cropped to a 72px icon.
