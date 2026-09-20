@@ -95,17 +95,16 @@ If the auto-patch can't run (heavily customized model), add the contract + trait
 
 **Symptom.** Panel loads but looks like a bare Filament install: no MKSine sidebar groups, wrong fonts/spacing, or missing dark-mode utilities.
 
-**Cause.** Either MKSine admin CSS (`mksine-styles`) was not published to `public/`, or you are on an early package version whose style render-hook only loaded the CSS in a monorepo (`base_path('packages/mksine/...')`). On a Composer install that path never exists, so the `<link>` was skipped even though the CSS was published. Current versions load it via `FilamentAsset::getStyleHref()` regardless of install layout.
+**Cause.** The panel `<link>` for MKSine admin CSS did not load. Current versions serve `resources/dist/mksine.css` from the package at `/mksine/admin-styles.css?v={filemtime}`. Older versions expected a published copy at `public/css/miran/mksine/mksine-styles.css`.
 
 **Fix.**
 
 ```bash
 composer update miran/mksine
-php artisan filament:assets
-php artisan view:clear
+php artisan optimize:clear
 ```
 
-Hard-refresh the browser (`Cmd/Ctrl+Shift+R`). Confirm the published file exists at `public/css/miran/mksine/mksine-styles.css`, and that `vendor/miran/mksine/resources/dist/mksine.css` ships with the package. After every `miran/mksine` upgrade, run `filament:assets` again.
+Confirm `vendor/miran/mksine/resources/dist/mksine.css` (or `packages/mksine/resources/dist/mksine.css` in the monorepo) ships with the package, and that the panel HTML includes `/mksine/admin-styles.css`. A hard-refresh is only needed if the browser kept an old published `/css/miran/mksine/mksine-styles.css` from a previous version.
 
 ## Plugins
 

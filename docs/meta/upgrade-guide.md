@@ -39,7 +39,7 @@ When adding an entry, copy this skeleton:
 ### Migration
 
 1. If you published `config/mksine.php`, merge `marketplace.timeout` / `connect_timeout` / `cache_seconds` / `cache_stale_seconds` if those keys are missing. See [Configuration](../reference/configuration.md).
-2. After upgrade: `php artisan optimize:clear` and `php artisan filament:assets`, then hard-refresh the admin catalog.
+2. After upgrade: `php artisan optimize:clear`. Admin catalog CSS is served from the package (`/mksine/admin-styles.css`); `filament:assets` is not required for this UI.
 
 ## 1.9.0 (2026-09-18)
 

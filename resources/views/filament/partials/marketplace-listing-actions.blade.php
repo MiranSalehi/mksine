@@ -10,7 +10,7 @@
     $stack = $stack ?? false;
     $appearance = $appearance ?? 'buttons';
     $isDirectory = $appearance === 'directory';
-    $directoryBase = 'inline-flex w-full min-w-[8.5rem] items-center justify-center rounded-md px-3 py-1.5 text-center text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
+    $directoryBase = 'inline-flex flex-1 items-center justify-center rounded-md px-3 py-1.5 text-center text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
     $outlineClass = $directoryBase.' is-outline border border-gray-300 bg-white font-medium text-gray-800 hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800';
     $installClass = $directoryBase.' is-install border border-transparent bg-primary-600 text-white hover:bg-primary-500';
     $updateClass = $directoryBase.' is-update border border-transparent bg-amber-500 text-white hover:bg-amber-400 focus-visible:ring-amber-500';
@@ -18,7 +18,7 @@
 @endphp
 
 @if ($isDirectory)
-    <ul class="mksine-marketplace-directory-actions flex shrink-0 list-none flex-col items-stretch gap-1.5 p-0">
+    <ul class="mksine-marketplace-directory-actions flex list-none flex-row items-stretch gap-1.5 p-0">
         <li>
             @if ($showUpdate)
                 <button

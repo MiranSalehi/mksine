@@ -104,7 +104,7 @@ final class MarketplaceCatalogClient
 
     private function indexCacheKey(MarketplaceKind $kind, string $search, int $page): string
     {
-        return 'mksine.marketplace.catalog.v1.'.$kind->value.'.'.hash(
+        return 'mksine.marketplace.catalog.'.(string) config('mksine.version', 'dev').'.'.$kind->value.'.'.hash(
             'sha1',
             Marketplace::apiUrl().'|'.$search.'|'.$page,
         );

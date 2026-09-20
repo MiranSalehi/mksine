@@ -314,6 +314,12 @@
     color: var(--color-white);
 }
 
+.dark .mksine-marketplace-plugin-card-media {
+    background:
+        linear-gradient(135deg, rgb(124 58 237 / 0.18), transparent 62%),
+        color-mix(in oklab, var(--color-zinc-900) 88%, black);
+}
+
 .dark .mksine-marketplace-plugin-card:not(.is-installed):not(.is-update) {
     background-color: color-mix(in oklab, var(--color-zinc-900) 85%, black);
     border-color: color-mix(in oklab, var(--color-zinc-700) 65%, transparent);

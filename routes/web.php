@@ -4,8 +4,12 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeManager;
+use Miran\Mksine\Http\Controllers\AdminStylesController;
 use Miran\Mksine\Http\Middleware\EnsureActiveThemeDependencies;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
+
+Route::get('/mksine/admin-styles.css', AdminStylesController::class)
+    ->name('mksine.admin-styles');
 
 Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function () {
     // Load active theme's theme.php (overrides + route callbacks)

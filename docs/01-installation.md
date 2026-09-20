@@ -177,7 +177,7 @@ For a full interactive Shield setup (panel plugin registration, optional tenancy
 2. Log in with the super admin you created.
 3. Visit `/` and confirm the **active theme** renders (not Laravel's default welcome page). If you still see the welcome view, remove `Route::get('/', …)` from `routes/web.php` (see [Installation §3](../01-installation.md#remove-the-default-homepage-route-from-routeswebphp)).
 4. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
-5. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan filament:assets` and hard-refresh the browser. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
+5. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan optimize:clear` and confirm `/mksine/admin-styles.css` returns CSS. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
 6. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
 
 ## What just got installed

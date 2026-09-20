@@ -160,16 +160,13 @@
                     @if ($isPlugins)
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             @foreach (range(1, 4) as $slot)
-                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/20">
-                                    <div class="flex gap-4 p-5">
-                                        <div class="h-[72px] w-[72px] shrink-0 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800"></div>
-                                        <div class="min-w-0 flex-1 space-y-2 pt-1">
-                                            <div class="h-4 w-40 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
-                                            <div class="h-3 w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
-                                            <div class="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
-                                        </div>
+                                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/20">
+                                    <div class="aspect-16/10 animate-pulse bg-gray-100 dark:bg-gray-800"></div>
+                                    <div class="space-y-2 p-4">
+                                        <div class="h-4 w-40 max-w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                        <div class="h-3 w-full animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
+                                        <div class="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800"></div>
                                     </div>
-                                    <div class="h-11 animate-pulse border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/60"></div>
                                 </div>
                             @endforeach
                         </div>

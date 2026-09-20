@@ -6,7 +6,11 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Changed
+
+- **Marketplace plugin cards** — Add from MKSine matches the public directory card: 16:10 cover, title, summary, author, stats, then category · version · license. Install / Installed / Update stay on the card; covers are not cropped to a 72px icon.
+
+- **Admin CSS after upgrade** — Panel styles load from `/mksine/admin-styles.css` (package `resources/dist/mksine.css`) with a filemtime cache buster. Catalog HTTP cache keys include `mksine.version`. After `composer update miran/mksine`, `php artisan optimize:clear` is enough; `filament:assets` is not required for this CSS.
 
 ## 1.10.0 - 2026-09-20
 
