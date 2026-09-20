@@ -29,6 +29,17 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## 1.11.1 (2026-09-20)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Admin CSS load path.** 1.11.0 pointed the panel at `/mksine/admin-styles.css`. Hosts that only proxy `/admin` and `/css` never received the stylesheet, so catalog Heroicons rendered at the browser default (~300×150). 1.11.1 prefers `/css/miran/mksine/mksine-styles.css` and copies the package dist there when stale.
+
+### Migration
+
+1. After upgrade: `php artisan optimize:clear`. Open Plugins once so the published CSS can sync.
+2. `filament:assets` is not required if `public/css` is writable.
+
 ## 1.11.0 (2026-09-20)
 
 ### Behavior changes (non-breaking, but visible)
@@ -38,8 +49,8 @@ When adding an entry, copy this skeleton:
 
 ### Migration
 
-1. After upgrade: `php artisan optimize:clear`. `filament:assets` is not required if `public/css` is writable — the package copies admin CSS to `/css/miran/mksine/mksine-styles.css` on the next panel request.
-2. If icons on Plugins / Themes look huge, the MKSine stylesheet did not load. Check the panel `<link data-mksine-styles>` and that `vendor/miran/mksine/resources/dist/mksine.css` exists.
+1. After upgrade: `php artisan optimize:clear`.
+2. If Plugins / Themes icons are huge, upgrade to 1.11.1 — this release’s CSS URL is often blocked on production.
 
 ## 1.10.0 (2026-09-20)
 
