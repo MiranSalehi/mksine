@@ -50,6 +50,9 @@ return [
     'namespace'   => 'MyPlugin',
     'plugin_class'=> 'MyPlugin\\MyPluginPlugin',
     'autoload'    => ['MyPlugin\\' => 'src/'],
+    // Optional. A Filament\PanelProvider subclass. Registered for every
+    // discovered plugin during package register(), not from plugin boot.
+    // 'filament_panel_provider' => MyPlugin\Filament\MyPanelProvider::class,
     'screenshot'  => 'screenshot.png', // optional PNG/JPG/WebP/SVG in the plugin root
     'hooks'       => [
         'public'  => [],
@@ -136,23 +139,27 @@ Translations land in `lang/vendor/my-plugin/` and **always overwrite**. See [Tra
 
 ## 9. Class-based hook listeners
 
-If your plugin defines listeners (anything implementing `MksineListenerInterface`, `FormHookListenerInterface`, `TableHookListenerInterface`):
+Event listeners under `{plugin_root}/my-plugin/src/Hooks/Listeners` are scanned by `mks:discover` for every discovered plugin. You do not add that directory to the host `config/mksine.php`. If the directory is missing, discovery skips it with no warning.
 
-1. Add the directory to `mksine.hooks.discovery_paths`:
+Form and table listeners that live somewhere else, and application listeners, still go in `mksine.hooks.discovery_paths`.
 
-   ```php
-   'discovery_paths' => [
-       base_path(config('mksine.plugins_path').'/my-plugin/src/Hooks/Listeners'),
-   ],
-   ```
+Listeners are not registered on every request. After adding or renaming a class, run:
 
-2. Run:
-
-   ```bash
-   php artisan mks:discover
-   ```
+```bash
+php artisan mks:discover
+```
 
 See [Hooks → Discovery paths](../hooks/discovery-paths.md).
+
+## 9a. A plugin-owned Filament panel
+
+Set `filament_panel_provider` in `plugin.php` to a subclass of `Filament\PanelProvider`. MKSine registers that provider during its own `register()`, after plugin autoload and before Filament builds panel routes. Do not register the panel from `boot()`: Filament has already built routes by then and the panel URL 404s.
+
+The provider is registered for every plugin discovered on disk, not only the active row in `mks_plugins`. This layer does not hide the panel when the plugin is inactive. The provider’s `register()` runs, so bindings next to `panel()` are applied. A missing class, a class that is not a `PanelProvider`, or an exception from `register()` is logged and skipped.
+
+Panel ids must be unique. Filament stores panels by id and overwrites the previous panel when another provider uses the same id.
+
+Panel access stays on the host user model. A plugin listener for `mksine.user.can_access_panel` returns a bool only for its own panel and returns the incoming value for every other panel. Returning `true` for an unknown panel grants access to every panel. `null` leaves MKSine’s existing super-admin and permission checks in place.
 
 ## 10. Commit policy
 

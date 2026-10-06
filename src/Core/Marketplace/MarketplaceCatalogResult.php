@@ -57,17 +57,10 @@ final readonly class MarketplaceCatalogResult
             return self::failed((string) ($data['error'] ?? ''));
         }
 
-        $items = [];
-        foreach ($data['items'] ?? [] as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
+        [$items, $signatureFailures] = MarketplacePackage::collectFromApi($data['items'] ?? [], $kind);
 
-            try {
-                $items[] = MarketplacePackage::fromApi($row, $kind);
-            } catch (MarketplaceException) {
-                continue;
-            }
+        if ($items === [] && $signatureFailures > 0 && MarketplaceReleaseTrust::isRequired()) {
+            return self::failed(__('mksine::marketplace.signature_invalid'));
         }
 
         return new self(

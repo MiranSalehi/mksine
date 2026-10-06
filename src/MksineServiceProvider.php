@@ -59,6 +59,7 @@ use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
+use Miran\Mksine\Console\Commands\SignMarketplaceReleaseCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
 use Miran\Mksine\Console\Commands\RollbackThemeCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
@@ -454,9 +455,18 @@ class MksineServiceProvider extends PackageServiceProvider
         });
 
         // Register plugin PSR-4 autoload before any service provider boot() so application code
-        // (e.g. App\Models\User traits) can reference plugin namespaces. Full initialize() runs
-        // later; it also touches the database and must run after the DB layer is ready.
-        $this->app->make(PluginManager::class)->registerPluginAutoload();
+        // can reference plugin namespaces. Full initialize() runs later; it also touches the
+        // database and must run after the DB layer is ready.
+        $plugins = $this->app->make(PluginManager::class);
+        $plugins->registerPluginAutoload();
+
+        // Filament builds panel routes when it resolves PanelRegistry in its own boot.
+        // Plugin boot (packageBooted / bootPlugins) runs too late for a new panel: the
+        // route is already missing and the panel 404s. Register declared providers here,
+        // for every discovered plugin, before that resolve. Do not consult isActive();
+        // the database is not ready, and hiding a panel for an inactive plugin is not
+        // this layer's job.
+        $plugins->registerDiscoveredFilamentPanelProviders($this->app);
     }
 
     public function packageBooted(): void
@@ -842,6 +852,7 @@ class MksineServiceProvider extends PackageServiceProvider
             RollbackPluginCommand::class,
             RollbackThemeCommand::class,
             ReleaseArchiveCommand::class,
+            SignMarketplaceReleaseCommand::class,
             ConsoleRunDetachedCommand::class,
             CreateSuperAdminCommand::class,
             FreshSuperAdminCommand::class,

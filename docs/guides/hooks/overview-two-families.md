@@ -40,7 +40,7 @@ There is no parallel database catalogue for `FormHookManager`, `TableHookManager
 
 - Implement [`MksineListenerInterface`](../../reference/contracts.md#mksinelistenerinterface), [`FormHookListenerInterface`](../../reference/contracts.md#formhooklistenerinterface), or [`TableHookListenerInterface`](../../reference/contracts.md#tablehooklistenerinterface).
 - Place the class anywhere PSR-4 can find it.
-- Add the **directory root** to `config('mksine.hooks.discovery_paths')` (the package’s own `Core/Listeners` is always scanned).
+- Put event listeners in the plugin’s `src/Hooks/Listeners` (scanned automatically) or add another directory root to `config('mksine.hooks.discovery_paths')`. The package’s own `Core/Listeners` is always scanned.
 - Run `php artisan mks:discover`. The class is recorded in `mks_hooks`; the host can flip `is_enabled` or override `priority` from the admin or directly in the table.
 - Reads are deterministic: `HookManager` filters `is_enabled = false` listeners _unless_ they are flagged `is_system = true` ([`HookDispatcher::dispatch`](../../reference/contracts.md#hookasyncdispatcherinterface)).
 

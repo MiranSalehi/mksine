@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Plugins;
 
 use Composer\Autoload\ClassLoader;
+use Filament\PanelProvider;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Plugins\Contracts\PluginInterface;
@@ -64,6 +66,81 @@ final class PluginManager
     private function getDiscoveredManifests(): array
     {
         return $this->discoveredManifests ??= $this->discovery->discover();
+    }
+
+    /**
+     * Filesystem manifests for callers that must not touch the database.
+     *
+     * Safe during {@see \Illuminate\Support\ServiceProvider::register()}: this does
+     * not call {@see initialize()} and does not read `mks_plugins`.
+     *
+     * @return array<string, PluginManifest>
+     */
+    public function discoveredManifests(): array
+    {
+        return $this->getDiscoveredManifests();
+    }
+
+    /**
+     * Register Filament panel providers declared on discovered plugins.
+     *
+     * Call this from the package `register()` phase, immediately after plugin
+     * autoload, and before Filament resolves {@see \Filament\PanelRegistry} and
+     * builds panel routes. Registering a panel from {@see bootPlugins()} is too
+     * late: those routes already exist and the new panel 404s.
+     *
+     * Every manifest on disk is registered, not only the plugin marked active.
+     * Active state is not reliable here (the database is not ready). Closing a
+     * panel while its plugin is inactive is not this layer's job.
+     *
+     * The provider's own `register()` runs via the container, so bindings it
+     * declares next to `panel()` are applied. This method does not build a
+     * {@see \Filament\Panel} and does not call `Filament::registerPanel()` itself.
+     *
+     * Panel ids must be unique. Filament stores panels by id and overwrites the
+     * previous panel when a later provider uses the same id.
+     *
+     * A missing class, a class that is not a {@see PanelProvider} subclass, or an
+     * exception thrown while registering the provider is logged and skipped. One
+     * broken plugin must not take down the CMS.
+     */
+    public function registerDiscoveredFilamentPanelProviders(Application $app): void
+    {
+        foreach ($this->discoveredManifests() as $manifest) {
+            $class = $manifest->filamentPanelProvider();
+
+            if ($class === null) {
+                continue;
+            }
+
+            try {
+                if (! class_exists($class)) {
+                    Log::warning('Plugin Filament panel provider class does not exist.', [
+                        'plugin' => $manifest->id(),
+                        'filament_panel_provider' => $class,
+                    ]);
+
+                    continue;
+                }
+
+                if (! is_subclass_of($class, PanelProvider::class)) {
+                    Log::warning('Plugin Filament panel provider must extend '.PanelProvider::class.'.', [
+                        'plugin' => $manifest->id(),
+                        'filament_panel_provider' => $class,
+                    ]);
+
+                    continue;
+                }
+
+                $app->register($class);
+            } catch (\Throwable $e) {
+                Log::warning('Plugin Filament panel provider failed to register.', [
+                    'plugin' => $manifest->id(),
+                    'filament_panel_provider' => $class,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

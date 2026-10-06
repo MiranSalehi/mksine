@@ -23,6 +23,7 @@ final readonly class MarketplacePackage
         public string $url,
         public string $downloadUrl,
         public string $archiveSha256,
+        public string $archiveSignature,
         public int $archiveBytes,
         public string $authorName,
         public string $authorSlug,
@@ -54,10 +55,13 @@ final readonly class MarketplacePackage
         $packageId = (string) ($payload['package_id'] ?? '');
         $downloadUrl = (string) ($payload['download_url'] ?? '');
         $sha256 = strtolower((string) ($payload['archive_sha256'] ?? ''));
+        $signature = strtolower(trim((string) ($payload['archive_signature'] ?? '')));
 
         if ($slug === '' || $packageId === '' || $downloadUrl === '' || ! preg_match('/^[a-f0-9]{64}$/', $sha256)) {
             throw new MarketplaceException('The catalog listing is incomplete.');
         }
+
+        MarketplaceReleaseTrust::assertValid($kind->value, $packageId, (string) ($payload['version'] ?? ''), $sha256, $signature);
 
         $author = is_array($payload['author'] ?? null) ? $payload['author'] : [];
         $category = is_array($payload['category'] ?? null) ? $payload['category'] : [];
@@ -78,6 +82,7 @@ final readonly class MarketplacePackage
             url: (string) ($payload['url'] ?? ''),
             downloadUrl: $downloadUrl,
             archiveSha256: $sha256,
+            archiveSignature: $signature,
             archiveBytes: (int) ($payload['archive_bytes'] ?? 0),
             authorName: (string) ($author['name'] ?? ''),
             authorSlug: (string) ($author['slug'] ?? ''),
@@ -108,6 +113,7 @@ final readonly class MarketplacePackage
             'url' => $this->url,
             'download_url' => $this->downloadUrl,
             'archive_sha256' => $this->archiveSha256,
+            'archive_signature' => $this->archiveSignature,
             'archive_bytes' => $this->archiveBytes,
             'author' => [
                 'name' => $this->authorName,
@@ -213,5 +219,31 @@ final readonly class MarketplacePackage
         }
 
         return $value;
+    }
+
+    /**
+     * @param  iterable<mixed>  $rows
+     * @return array{0: list<self>, 1: int}
+     */
+    public static function collectFromApi(iterable $rows, MarketplaceKind $kind): array
+    {
+        $items = [];
+        $signatureFailures = 0;
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            try {
+                $items[] = self::fromApi($row, $kind);
+            } catch (MarketplaceException $exception) {
+                if ($exception->isSignatureFailure()) {
+                    $signatureFailures++;
+                }
+            }
+        }
+
+        return [$items, $signatureFailures];
     }
 }

@@ -37,6 +37,7 @@ return [
     'pagination_label' => 'Media pagination',
     'pagination_summary' => 'Showing :from to :to of :total',
     'invalid_type' => 'This file type is not allowed.',
+    'unsafe_svg' => 'This SVG contains scripting and was rejected.',
     'reorder_handle' => 'Drag to reorder',
     'move_earlier' => 'Move earlier',
     'move_later' => 'Move later',

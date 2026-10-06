@@ -6,7 +6,9 @@ use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Http\Controllers\AdminStylesController;
 use Miran\Mksine\Http\Middleware\EnsureActiveThemeDependencies;
+use Miran\Mksine\Http\Responses\ScreenshotResponse;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
+use Miran\Mksine\Support\FilesystemPath;
 
 Route::get('/mksine/admin-styles.css', AdminStylesController::class)
     ->name('mksine.admin-styles');
@@ -29,9 +31,7 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
         }
 
         // Prevent path traversal
-        $realPath = realpath($path);
-        $realThemePath = realpath($theme->path);
-        if (! $realPath || ! $realThemePath || ! str_starts_with($realPath, $realThemePath)) {
+        if (! FilesystemPath::isWithin($theme->path, $path)) {
             abort(404);
         }
 
@@ -44,7 +44,7 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
             default => 'image/png',
         };
 
-        return response()->file($path, ['Content-Type' => $mime]);
+        return ScreenshotResponse::make($path, $mime);
     })->name('mksine.theme.screenshot');
 
     Route::get('/mksine/plugin/{id}/screenshot', function (string $id) {
@@ -56,7 +56,7 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
             abort(404);
         }
 
-        return response()->file($path, ['Content-Type' => $mime]);
+        return ScreenshotResponse::make($path, $mime);
     })->where('id', '[a-z0-9\-]+')->name('mksine.plugin.screenshot');
 
     // Theme custom CSS/JS (admin-edited; served from storage)

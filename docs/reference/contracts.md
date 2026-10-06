@@ -111,7 +111,7 @@ See [Registering Filament plugins](../guides/plugins/filament-plugins.md).
 
 `Miran\Mksine\Core\Hooks\MksineListenerInterface` — [source](../../src/Core/Hooks/MksineListenerInterface.php).
 
-Event listener for the discovery family. Discovered by `mks:discover` from any path under `Core/Listeners` or `mksine.hooks.discovery_paths`.
+Event listener for the discovery family. Discovered by `mks:discover` from `Core/Listeners`, a discovered plugin’s `src/Hooks/Listeners`, or `mksine.hooks.discovery_paths`.
 
 ```php
 interface MksineListenerInterface

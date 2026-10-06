@@ -12,7 +12,7 @@ The hook system is how MKSine lets you extend behavior without forking the packa
 
 ### Discovery hooks
 
-Class-based listeners scanned by `php artisan mks:discover`. The scanner reads canonical paths (the package's own `Core/Listeners/` plus `config('mksine.hooks.discovery_paths')`), inspects each class for the relevant interface, and writes a row into `mks_hooks` per discovered listener.
+Class-based listeners scanned by `php artisan mks:discover`. The scanner reads the package's own `Core/Listeners/`, each discovered plugin's `src/Hooks/Listeners/` when that directory exists, and `config('mksine.hooks.discovery_paths')`. It inspects each class for the relevant interface and writes a row into `mks_hooks` per discovered listener. Listeners are not registered on every request.
 
 The DB row is not just bookkeeping — it lets the admin enable, disable, and reorder listeners without code changes. System-flagged listeners always run; user-flagged ones honour the toggle.
 

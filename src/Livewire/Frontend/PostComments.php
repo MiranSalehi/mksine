@@ -1,19 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Miran\Mksine\Livewire\Frontend;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Miran\Mksine\Contracts\AllowsPublicComments;
 use Miran\Mksine\Models\Comment;
 use Miran\Mksine\Models\Post;
+use Miran\Mksine\Support\CommentableType;
 
 class PostComments extends Component
 {
+    #[Locked]
     public string $commentableType;
 
+    #[Locked]
     public int $commentableId;
 
     /**
@@ -66,18 +74,30 @@ class PostComments extends Component
     }
 
     /**
-     * @param  int  $postId  Legacy: same as Post target (use {@see Post::class} + id via commentable args for new code).
+     * @param  int  $postId  Legacy: same as Post target (use commentable args for new code).
      */
     public function mount(int $postId = 0, string $variant = 'full', ?string $commentableType = null, ?int $commentableId = null): void
     {
         if ($commentableType !== null && $commentableType !== '' && $commentableId !== null && $commentableId > 0) {
-            $this->commentableType = $commentableType;
+            $resolved = CommentableType::resolve($commentableType);
+
+            if ($resolved === null) {
+                throw new InvalidArgumentException('PostComments requires a registered commentable type.');
+            }
+
+            $this->commentableType = $resolved;
             $this->commentableId = $commentableId;
         } elseif ($postId > 0) {
-            $this->commentableType = Post::class;
+            $resolved = CommentableType::resolve(Post::class);
+
+            if ($resolved === null) {
+                throw new InvalidArgumentException('PostComments requires a registered commentable type.');
+            }
+
+            $this->commentableType = $resolved;
             $this->commentableId = $postId;
         } else {
-            throw new \InvalidArgumentException('PostComments requires postId > 0 or both commentableType and commentableId.');
+            throw new InvalidArgumentException('PostComments requires postId > 0 or both commentableType and commentableId.');
         }
 
         $this->variant = in_array($variant, ['full', 'form_only'], true) ? $variant : 'full';
@@ -91,18 +111,16 @@ class PostComments extends Component
     {
         $this->validate();
 
-        if (! is_subclass_of($this->commentableType, Model::class) || ! class_exists($this->commentableType)) {
-            $this->addError('content', __('Invalid comment target.'));
+        $commentable = $this->commentable();
+
+        if (! $commentable instanceof AllowsPublicComments) {
+            $this->addError('content', __('mksine::frontend.invalid_comment_target'));
 
             return;
         }
 
-        /** @var class-string<Model> $class */
-        $class = $this->commentableType;
-        $commentable = $class::query()->findOrFail($this->commentableId);
-
-        if ($commentable instanceof AllowsPublicComments && ! $commentable->allowsPublicComments()) {
-            $this->addError('content', __('Comments are closed for this item.'));
+        if (! $commentable->allowsPublicComments()) {
+            $this->addError('content', __('mksine::frontend.comments_closed'));
 
             return;
         }
@@ -110,29 +128,44 @@ class PostComments extends Component
         if ($this->parent_id) {
             $parent = Comment::query()
                 ->where('id', $this->parent_id)
-                ->where('commentable_type', $this->commentableType)
-                ->where('commentable_id', $this->commentableId)
+                ->where('commentable_type', $commentable->getMorphClass())
+                ->where('commentable_id', $commentable->getKey())
                 ->first();
             if (! $parent) {
-                $this->addError('parent_id', __('Invalid reply target.'));
+                $this->addError('parent_id', __('mksine::frontend.invalid_reply_target'));
 
                 return;
             }
         }
 
-        Comment::create([
-            'commentable_type' => $this->commentableType,
-            'commentable_id' => $this->commentableId,
-            'user_id' => Auth::id(),
-            'parent_id' => $this->parent_id ?: null,
-            'author_name' => Auth::check() ? null : $this->author_name,
-            'author_email' => Auth::check() ? null : $this->author_email,
-            'content' => $this->content,
-            'rating' => $this->rating,
-            'status' => Comment::STATUS_PENDING,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        $submitted = RateLimiter::attempt(
+            CommentableType::rateLimitKey(),
+            CommentableType::maxPerMinute(),
+            function () use ($commentable): true {
+                Comment::create([
+                    'commentable_type' => $commentable->getMorphClass(),
+                    'commentable_id' => $commentable->getKey(),
+                    'user_id' => Auth::id(),
+                    'parent_id' => $this->parent_id ?: null,
+                    'author_name' => Auth::check() ? null : $this->author_name,
+                    'author_email' => Auth::check() ? null : $this->author_email,
+                    'content' => $this->content,
+                    'rating' => $this->rating,
+                    'status' => Comment::STATUS_PENDING,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+
+                return true;
+            },
+            CommentableType::decaySeconds(),
+        );
+
+        if ($submitted === false) {
+            $this->addError('content', __('mksine::frontend.comment_too_many'));
+
+            return;
+        }
 
         $this->content = '';
         $this->rating = null;
@@ -167,9 +200,15 @@ class PostComments extends Component
             return collect();
         }
 
+        $commentable = $this->commentable();
+
+        if ($commentable === null) {
+            return collect();
+        }
+
         return Comment::query()
-            ->where('commentable_type', $this->commentableType)
-            ->where('commentable_id', $this->commentableId)
+            ->where('commentable_type', $commentable->getMorphClass())
+            ->where('commentable_id', $commentable->getKey())
             ->approved()
             ->root()
             ->with(['replies' => fn ($q) => $q->approved()->orderBy('created_at')])
@@ -179,14 +218,7 @@ class PostComments extends Component
 
     public function getCommentableProperty(): ?Model
     {
-        if (! is_subclass_of($this->commentableType, Model::class) || ! class_exists($this->commentableType)) {
-            return null;
-        }
-
-        /** @var class-string<Model> $class */
-        $class = $this->commentableType;
-
-        return $class::query()->find($this->commentableId);
+        return $this->commentable();
     }
 
     public function render()
@@ -194,8 +226,38 @@ class PostComments extends Component
         return view('mksine::themes.mksine.partials.post-comments', [
             'comments' => $this->comments,
             'commentable' => $this->commentable,
-            'parentComment' => $this->parent_id ? Comment::find($this->parent_id) : null,
+            'parentComment' => $this->parentComment(),
             'variant' => $this->variant,
         ]);
+    }
+
+    private function commentable(): ?Model
+    {
+        $class = CommentableType::resolve($this->commentableType);
+
+        if ($class === null) {
+            return null;
+        }
+
+        return $class::query()->find($this->commentableId);
+    }
+
+    private function parentComment(): ?Comment
+    {
+        if ($this->parent_id === null || $this->parent_id < 1) {
+            return null;
+        }
+
+        $commentable = $this->commentable();
+
+        if ($commentable === null) {
+            return null;
+        }
+
+        return Comment::query()
+            ->where('id', $this->parent_id)
+            ->where('commentable_type', $commentable->getMorphClass())
+            ->where('commentable_id', $commentable->getKey())
+            ->first();
     }
 }

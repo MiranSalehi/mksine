@@ -9,8 +9,10 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 use Miran\Mksine\Core\Hooks\FormHookManager;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
+use Miran\Mksine\Support\Access\RoleEscalationGuard;
 
 class UserForm
 {
@@ -82,20 +84,29 @@ class UserForm
                             ->label(__('mksine::users.password'))
                             ->password()
                             ->revealable()
-                            ->dehydrated(fn(?string $state): bool => filled($state))
-                            ->required(fn(string $context): bool => $context === 'create')
+                            ->dehydrated(fn (?string $state): bool => filled($state))
+                            ->required(fn (string $context): bool => $context === 'create')
                             ->maxLength(255)
-                            ->helperText(fn(string $context): ?string => $context === 'edit'
+                            ->helperText(fn (string $context): ?string => $context === 'edit'
                                 ? __('mksine::users.password_leave_blank')
                                 : null),
                         CheckboxList::make('roles')
-                            ->relationship('roles', 'name')
+                            // Hiding protected roles also removes them from the implicit
+                            // `in` rule Filament derives from the options, so a tampered
+                            // request cannot grant super admin either.
+                            ->relationship(
+                                'roles',
+                                'name',
+                                fn (Builder $query): Builder => RoleEscalationGuard::canManageProtectedRoles()
+                                    ? $query
+                                    : $query->whereNotIn('name', RoleEscalationGuard::protectedRoleNames()),
+                            )
                             ->searchable(),
                     ])
                     ->columnSpanFull()
                     ->inlineLabel()
                     ->collapsible()
-                    ->collapsed(fn(string $context): bool => $context === 'edit'),
+                    ->collapsed(fn (string $context): bool => $context === 'edit'),
             ]);
 
         // Apply form hooks

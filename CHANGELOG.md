@@ -6,7 +6,43 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Added
+
+- **Plugins can register their own Filament panel, panel access, and hook listeners without host hardcoding.** Optional `filament_panel_provider` in `plugin.php` is registered during package `register()` for every discovered plugin (active state is not consulted; hiding the panel when a plugin is inactive is not this layer’s job). `InteractsWithMksine::canAccessPanel()` asks the `mksine.user.can_access_panel` filter first and keeps the existing Shield checks unless a listener returns a bool. `mks:discover` also scans each plugin’s `src/Hooks/Listeners` when that directory exists. `hooks.discovery_paths` is unchanged.
+
+### Security
+
+- **Marketplace ZIPs are authenticated, not just checksummed** — `archive_sha256` came from the same catalog JSON as `download_url`, so a compromised mksine.com could ship both a malicious ZIP and a matching hash. Listings now carry `archive_signature` (Ed25519 over `mksine-marketplace-v1`, kind, package_id, version, sha256). The public key ships in `resources/keys/*.ed25519.pub`; extra keys can be added via `mksine.marketplace.signing_public_keys`. Verification runs when the listing is parsed and again against the bytes on disk. Catalog and download HTTP no longer follow redirects (`withoutRedirecting()`), so host pinning cannot be skipped with a 302. A signature that is present is always checked. `require_release_signature` defaults off until the catalog API sends `archive_signature`; the live directory omits it, and requiring it hid every listing behind the Add from MKSine error. Set `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE=true` once the API signs. Operators sign with `php artisan mksine:sign-marketplace-release` and an offline `.sec` file — the secret is never printed and is gitignored.
+
+- **Public comments can no longer be attached to arbitrary Eloquent models, and inserts are rate-limited** — `PostComments` stored `commentableType` / `commentableId` as unlocked public properties, and the only check was `is_subclass_of(..., Model::class)`. Combined with a fail-open `AllowsPublicComments` gate (skipped when the model did not implement the interface), a visitor could retarget the form at `User` or an order and insert 5 000-character rows with no throttle. Both properties are now `#[Locked]`, the type must be in `mksine.commentable_types` *and* implement `AllowsPublicComments`, `allowsPublicComments()` is required (fail closed), and `RateLimiter::attempt()` caps submissions per IP (`mksine.comments.max_per_minute`, default 5 / 60s). `ContentTypeRegistry` is not the allowlist: Post is reserved out of that registry, and ecom comments target Product, which is not a CPT.
+
+- **Media file metadata is no longer writable from the edit form** — `file_name`, `mime_type`, `size`, `width`, `height`, `path` and `url` were `disabled()` *and* `dehydrated()`, so Livewire still saved whatever the client put in form state. All seven are in `Media::$fillable`, and `mutateFormDataBeforeSave` preferred the submitted value over `mime_content_type()`. Anyone with `Update:Media` could upload an SVG, label it `image/png`, and walk it past the picker mime filter. Those fields are now `dehydrated(false)`, and both create and save run `Miran\Mksine\Support\MediaStoredFile`, which forgets the client values and re-reads mime, size, dimensions, path and URL from the file on disk. Path segments containing `..` are rejected.
+
+- **SVG is no longer an allowed media type, and scriptable SVGs are rejected everywhere** — media is served from the site's own origin, so an uploaded `<svg onload="…">` was stored XSS against every visitor who opened it, and the only check was a mime allowlist that `image/svg+xml` was on by default. `image/svg+xml` is off the default `mksine.media.allowed_types`, and both upload paths (the media picker and the Media resource form) now run the file through `Miran\Mksine\Support\SvgSafety`, which parses the document with libxml and refuses scripts, `on*` handlers, `foreignObject`, animation elements that can retarget `href`, script URIs, remote `<use>`, `@import`, and internal DTD subsets. The check keys off the filename extension as well as the detected mime, because the web server picks the content type from the extension the file lands on disk with.
+
+- **Theme and plugin screenshots are validated and served inert** — an uploaded archive could ship `screenshot.svg` containing a script, and both routes served it with `Content-Type: image/svg+xml` into an admin's session. Screenshots now go through `Miran\Mksine\Http\Responses\ScreenshotResponse`, which 404s an unsafe SVG and adds `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; …; sandbox`.
+
+- **Livewire's temporary-upload preview no longer serves SVG** — `preview_mimes` included `svg`, and the preview route streams the *temporary* file back on this origin with its own content type before any validation rule runs, so it handed out a signed same-origin XSS URL for any SVG that reached the upload endpoint, regardless of the media allowlist. SVG uploads lose their inline preview.
+
+- **Plugin ZIP upload no longer executes the archive** — the uploaded `plugin.php` was written to a temp file and `require`d to read its `id`, which handed arbitrary code execution to anyone who could reach the upload form, before any validation ran. The manifest is now read statically by `Miran\Mksine\Core\Plugins\PluginManifestSource` (tokeniser, no execution), so a rejected archive never runs.
+
+- **Plugin and theme archives can no longer escape their install root** — the manifest `id`, the `theme.json` `name`, and the archive's root folder were interpolated straight into the target path, so `'id' => '../../public'` wrote outside `plugins/`. Identifiers are validated against `Miran\Mksine\Support\PackageIdentifier` and archives are unpacked through `ArchiveExtractor`, which rejects traversal entries, symlinks and zip bombs.
+
+- **Code-mutating plugin and theme actions require Super Admin** — upload, install, activate, deactivate, uninstall and delete on the Plugins and Themes pages, plus the per-theme Custom CSS/JS editor, now call `SuperAdminGate::authorize()`. Previously any role with page access could install and activate plugin code.
+
+- **Theme custom CSS/JS paths are confined to their storage directory** — `ThemeManager::getCustomStoragePath()` and `getExtraAssetsStoragePath()` interpolated an unvalidated identifier, allowing any `.css`/`.js` file on disk to be overwritten. The Custom CSS/JS modal now only accepts identifiers of discovered themes.
+
+- **The media picker enforces the Media policy** — `MediaPickerModal` had no authorization at all, and it renders on every panel page, so any authenticated panel user could enumerate the whole media library and upload files. `open()`, `toggleSelection()`, `confirm()` and the detail lookup now require `viewAny` on `Media`, and `uploadFiles()` requires `create`. Rendering degrades to an empty list instead of a 403 so an unauthorised user does not take the surrounding page down.
+
+- **The admin terminal runs an allowlist** — the parser accepted any `php artisan` or `composer` sub-command, so `artisan tinker --execute` turned a stolen Super Admin session into a shell. Sub-commands are matched against `mksine.console_terminal.allowed_commands`; `tinker`, `db:seed`, `serve`, `env`, `composer exec`, `composer run-script` and `mksine:fresh-super-admin` are not on the default list. Set a runner to `['*']` to restore the old behaviour.
+
+- **The Super Admin role can no longer be self-granted** — the user form listed every role, so any role holding `Update:User` could tick super admin on its own account, or reset an existing Super Admin's password. Protected roles are hidden from the options (and therefore from Filament's derived `in` rule), and editing, deleting, restoring or force-deleting a Super Admin is reserved for Super Admins.
+
+### Fixed
+
+- **Plugin screenshot path check** — `PluginManifest::screenshotAbsolutePath()` used the same prefix comparison without a trailing separator, so a sibling of the plugin directory counted as inside it. It now uses `FilesystemPath::isWithin()`, as does the theme screenshot route.
+
+- **Plugin and theme delete path checks** — the containment check compared without a trailing separator, so a sibling directory such as `plugins-backup` passed as "inside `plugins`". Both now use `FilesystemPath::isWithin()`.
 
 ## 1.11.1 - 2026-09-20
 

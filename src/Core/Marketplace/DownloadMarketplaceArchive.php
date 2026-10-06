@@ -35,12 +35,18 @@ final class DownloadMarketplaceArchive
                 ->retry(2, 250, throw: false)
                 ->withUserAgent(Marketplace::userAgent())
                 ->withOptions(['sink' => $tempPath])
-                ->get($listing->downloadUrl)
-                ->throw();
+                ->withoutRedirecting()
+                ->get($listing->downloadUrl);
         } catch (ConnectionException|RequestException|Throwable) {
             @unlink($tempPath);
 
             throw new MarketplaceException(__('mksine::marketplace.download_failed'));
+        }
+
+        if ($response->redirect()) {
+            @unlink($tempPath);
+
+            throw new MarketplaceException(__('mksine::marketplace.download_redirected'));
         }
 
         if (! $response->successful()) {
@@ -61,6 +67,20 @@ final class DownloadMarketplaceArchive
             @unlink($tempPath);
 
             throw new MarketplaceException(__('mksine::marketplace.checksum_mismatch'));
+        }
+
+        try {
+            MarketplaceReleaseTrust::assertValid(
+                $listing->kind->value,
+                $listing->packageId,
+                $listing->version,
+                $hash,
+                $listing->archiveSignature,
+            );
+        } catch (MarketplaceException $exception) {
+            @unlink($tempPath);
+
+            throw $exception;
         }
 
         return $tempPath;

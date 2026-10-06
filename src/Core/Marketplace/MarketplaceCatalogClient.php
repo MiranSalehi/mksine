@@ -8,6 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Support\Marketplace;
 use Throwable;
 
@@ -43,7 +44,9 @@ final class MarketplaceCatalogClient
         }
 
         if (! is_array($cached)) {
-            return MarketplaceCatalogResult::failed(__('mksine::marketplace.unreachable'));
+            $this->forgetIndex($kind, $search, $page);
+
+            return $this->fetchIndex($kind, $search, $page);
         }
 
         return MarketplaceCatalogResult::fromSnapshot($cached, $kind);
@@ -79,17 +82,10 @@ final class MarketplaceCatalogClient
             return MarketplaceCatalogResult::failed($e->getMessage());
         }
 
-        $items = [];
-        foreach ($payload['data'] ?? [] as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
+        [$items, $signatureFailures] = MarketplacePackage::collectFromApi($payload['data'] ?? [], $kind);
 
-            try {
-                $items[] = MarketplacePackage::fromApi($row, $kind);
-            } catch (MarketplaceException) {
-                continue;
-            }
+        if ($items === [] && $signatureFailures > 0 && MarketplaceReleaseTrust::isRequired()) {
+            return MarketplaceCatalogResult::failed(__('mksine::marketplace.signature_invalid'));
         }
 
         $meta = is_array($payload['meta'] ?? null) ? $payload['meta'] : [];
@@ -119,18 +115,40 @@ final class MarketplaceCatalogClient
         try {
             $response = $this->http()
                 ->acceptJson()
-                ->get(Marketplace::apiUrl().$path, $query)
-                ->throw();
-        } catch (ConnectionException) {
-            throw new MarketplaceException(__('mksine::marketplace.unreachable'));
-        } catch (RequestException $e) {
-            if ($e->response->notFound()) {
-                throw new MarketplaceException(__('mksine::marketplace.listing_unavailable'));
+                ->get(Marketplace::apiUrl().$path, $query);
+
+            if ($response->redirect()) {
+                throw new MarketplaceException(__('mksine::marketplace.unreachable'));
             }
 
-            throw new MarketplaceException(__('mksine::marketplace.unreachable'));
-        } catch (Throwable) {
-            throw new MarketplaceException(__('mksine::marketplace.unreachable'));
+            $response->throw();
+        } catch (MarketplaceException $e) {
+            throw $e;
+        } catch (ConnectionException $e) {
+            Log::warning('Marketplace catalog connection failed.', [
+                'url' => Marketplace::apiUrl().$path,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new MarketplaceException(__('mksine::marketplace.unreachable'), previous: $e);
+        } catch (RequestException $e) {
+            if ($e->response->notFound()) {
+                throw new MarketplaceException(__('mksine::marketplace.listing_unavailable'), previous: $e);
+            }
+
+            Log::warning('Marketplace catalog request failed.', [
+                'url' => Marketplace::apiUrl().$path,
+                'status' => $e->response->status(),
+            ]);
+
+            throw new MarketplaceException(__('mksine::marketplace.unreachable'), previous: $e);
+        } catch (Throwable $e) {
+            Log::warning('Marketplace catalog request failed.', [
+                'url' => Marketplace::apiUrl().$path,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new MarketplaceException(__('mksine::marketplace.unreachable'), previous: $e);
         }
 
         $json = $response->json();
@@ -153,6 +171,7 @@ final class MarketplaceCatalogClient
                 throw: false,
             )
             ->withUserAgent(Marketplace::userAgent())
-            ->withHeaders(['Accept' => 'application/json']);
+            ->withHeaders(['Accept' => 'application/json'])
+            ->withoutRedirecting();
     }
 }

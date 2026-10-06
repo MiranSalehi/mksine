@@ -77,9 +77,11 @@ See [Lifecycle](../guides/plugins/lifecycle.md) for the detailed contract and th
 - Registering hook listeners (runtime ones; discovery listeners self-register via the DB).
 - Registering page builder blocks, menu item sources, menu locations, settings tabs.
 - Setting config overrides (e.g. `mksine.user_model` for a plugin that ships a user subclass).
-- Registering Filament panel plugins via `RegistersFilamentPlugins`.
+- Registering Filament panel plugins via `RegistersFilamentPlugins` on a panel that already exists.
 
 What `boot()` should not do:
+
+- Register a new Filament panel. Filament builds panel routes from `PanelRegistry` in its own boot, which is earlier than plugin `boot()`. Declare `filament_panel_provider` in `plugin.php` instead. That provider is registered for every discovered plugin during package `register()`, and this layer does not remove it when the plugin is inactive.
 
 - Heavy I/O or DB queries (this runs on every request).
 - Filesystem writes.

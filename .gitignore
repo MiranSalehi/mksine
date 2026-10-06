@@ -12,3 +12,4 @@ phpstan.neon
 testbench.yaml
 vendor
 *.zip
+resources/keys/*.sec

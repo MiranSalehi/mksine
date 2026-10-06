@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Livewire;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Support\MediaMime;
 use Miran\Mksine\Support\MediaStoragePath;
+use Miran\Mksine\Support\SvgSafety;
 use Miran\Mksine\Support\UploadLimits;
 
 class MediaPickerModal extends Component
@@ -41,9 +45,58 @@ class MediaPickerModal extends Component
 
     public ?int $detailMediaId = null;
 
+    /**
+     * Whether the current user may browse the media library.
+     *
+     * The picker is rendered on every panel page, so an unauthorised user must get an
+     * inert modal rather than a 403 that takes the whole page down. Action methods
+     * authorise strictly; {@see render()} only consults this.
+     */
+    public function canBrowseMedia(): bool
+    {
+        return $this->allowsMediaAbility('viewAny');
+    }
+
+    protected function authorizeMediaAbility(string $ability): void
+    {
+        if (! $this->allowsMediaAbility($ability)) {
+            throw new AuthorizationException;
+        }
+    }
+
+    /**
+     * Installs that have not published a Media policy have no permission model to consult;
+     * falling back to deny would break the picker for every non-super-admin. In that case
+     * reaching a panel page remains the only available gate, which is the pre-existing
+     * behaviour — with a policy present the policy decides.
+     */
+    protected function allowsMediaAbility(string $ability): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        // Shield's super-admin `Gate::before` is registered by the panel plugin, so it is
+        // absent outside a panel request. Check the role directly instead of locking a
+        // Super Admin out of the picker.
+        if (SuperAdminGate::check($user)) {
+            return true;
+        }
+
+        if (Gate::getPolicyFor(Media::class) === null) {
+            return true;
+        }
+
+        return Gate::forUser($user)->allows($ability, Media::class);
+    }
+
     #[On('openMediaPicker')]
     public function open(string $statePath, bool $multiple = false, array $acceptedFileTypes = ['image/*'], array $currentSelection = []): void
     {
+        $this->authorizeMediaAbility('viewAny');
+
         $this->statePath = $statePath;
         $this->multiple = $multiple;
         $this->acceptedFileTypes = $acceptedFileTypes;
@@ -64,6 +117,8 @@ class MediaPickerModal extends Component
 
     public function toggleSelection(int $mediaId): void
     {
+        $this->authorizeMediaAbility('viewAny');
+
         $this->detailMediaId = $mediaId;
 
         if ($this->multiple) {
@@ -84,7 +139,7 @@ class MediaPickerModal extends Component
 
     public function getDetailMediaProperty(): ?Media
     {
-        if ($this->detailMediaId === null) {
+        if ($this->detailMediaId === null || ! $this->canBrowseMedia()) {
             return null;
         }
 
@@ -93,6 +148,8 @@ class MediaPickerModal extends Component
 
     public function confirm(): void
     {
+        $this->authorizeMediaAbility('viewAny');
+
         // Get full media data for selected IDs
         $selectedMedia = Media::whereIn('id', $this->selectedIds)->get()->toArray();
 
@@ -108,6 +165,8 @@ class MediaPickerModal extends Component
 
     public function uploadFiles(): void
     {
+        $this->authorizeMediaAbility('create');
+
         if (empty($this->uploadedFiles)) {
             return;
         }
@@ -127,9 +186,16 @@ class MediaPickerModal extends Component
 
         foreach ($this->uploadedFiles as $index => $file) {
             $mime = $file->getMimeType() ?: $file->getClientMimeType();
+
             if (! MediaMime::matches($mime, $uploadable)) {
                 throw ValidationException::withMessages([
                     "uploadedFiles.{$index}" => __('mksine::media_picker.invalid_type'),
+                ]);
+            }
+
+            if (SvgSafety::isSvgUpload($mime, $file->getClientOriginalName()) && ! SvgSafety::fileIsSafe((string) $file->getRealPath())) {
+                throw ValidationException::withMessages([
+                    "uploadedFiles.{$index}" => __('mksine::media_picker.unsafe_svg'),
                 ]);
             }
         }
@@ -272,7 +338,7 @@ class MediaPickerModal extends Component
 
     public function render(): View
     {
-        $mediaItems = $this->isOpen
+        $mediaItems = $this->isOpen && $this->canBrowseMedia()
             ? $this->mediaQuery()->paginate(24)
             : $this->emptyMediaPaginator();
 

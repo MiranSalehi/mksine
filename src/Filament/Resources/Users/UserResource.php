@@ -2,26 +2,29 @@
 
 namespace Miran\Mksine\Filament\Resources\Users;
 
+use App\Models\User;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Illuminate\Database\Eloquent\Model;
 use Miran\Mksine\Filament\Resources\Users\Pages\CreateUser;
 use Miran\Mksine\Filament\Resources\Users\Pages\EditUser;
 use Miran\Mksine\Filament\Resources\Users\Pages\ListUsers;
 use Miran\Mksine\Filament\Resources\Users\Schemas\UserForm;
 use Miran\Mksine\Filament\Resources\Users\Tables\UserTable;
+use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Support\Access\RoleEscalationGuard;
 
 class UserResource extends Resource
 {
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static ?int $navigationSort = 10;
 
     public static function getModel(): string
     {
-        /** @var class-string<\Illuminate\Database\Eloquent\Model> */
-        return config('mksine.user_model', \App\Models\User::class);
+        /** @var class-string<Model> */
+        return config('mksine.user_model', User::class);
     }
 
     public static function getNavigationLabel(): string
@@ -65,5 +68,29 @@ class UserResource extends Resource
             'create' => CreateUser::route('/create'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * A Super Admin's account is a Super Admin credential: anyone able to edit it can
+     * reset its password and sign in as it, so editing is reserved for Super Admins.
+     */
+    public static function canEdit(Model $record): bool
+    {
+        return parent::canEdit($record) && RoleEscalationGuard::canManageUser($record);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return parent::canDelete($record) && RoleEscalationGuard::canManageUser($record);
+    }
+
+    public static function canForceDelete(Model $record): bool
+    {
+        return parent::canForceDelete($record) && RoleEscalationGuard::canManageUser($record);
+    }
+
+    public static function canRestore(Model $record): bool
+    {
+        return parent::canRestore($record) && RoleEscalationGuard::canManageUser($record);
     }
 }

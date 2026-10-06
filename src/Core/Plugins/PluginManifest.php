@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Plugins;
 
 use InvalidArgumentException;
+use Miran\Mksine\Support\FilesystemPath;
 
 /**
  * Represents the parsed manifest (plugin.php) of a plugin.
@@ -154,12 +155,11 @@ final class PluginManifest
             return null;
         }
 
-        $realFile = realpath($path);
-        $realBase = realpath($this->basePath);
-        if (! $realFile || ! $realBase || ! str_starts_with($realFile, $realBase)) {
+        if (! FilesystemPath::isWithin($this->basePath, $path)) {
             return null;
         }
 
+        $realFile = realpath($path);
         $extension = strtolower(pathinfo($realFile, PATHINFO_EXTENSION));
         if (! in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], true)) {
             return null;
@@ -231,6 +231,39 @@ final class PluginManifest
     public function pluginClass(): ?string
     {
         return $this->data['plugin_class'] ?? null;
+    }
+
+    /**
+     * Optional Filament panel provider class from `plugin.php` (`filament_panel_provider`).
+     *
+     * The class must be a subclass of {@see \Filament\PanelProvider}. Panel ids must be
+     * unique: Filament's panel registry stores panels by id and overwrites the previous
+     * panel when another provider registers the same id (the last resolving callback wins).
+     */
+    public function filamentPanelProvider(): ?string
+    {
+        $class = $this->data['filament_panel_provider'] ?? null;
+
+        if (! is_string($class)) {
+            return null;
+        }
+
+        $class = trim($class);
+
+        return $class === '' ? null : $class;
+    }
+
+    /**
+     * Class-based hook listeners shipped with the plugin.
+     *
+     * Absent directory means the plugin has no discovery listeners; callers skip it
+     * without a warning. `mks:discover` is what syncs these classes to the database.
+     */
+    public function hookListenersPath(): ?string
+    {
+        $path = $this->basePath.'/src/Hooks/Listeners';
+
+        return is_dir($path) ? $path : null;
     }
 
     /**
@@ -612,6 +645,7 @@ final class PluginManifest
                 'private' => $this->privateHooks(),
             ],
             'plugin_class' => $this->pluginClass(),
+            'filament_panel_provider' => $this->filamentPanelProvider(),
             'namespace' => $this->namespace(),
             'autoload' => $this->autoload(),
             'screenshot' => $this->screenshot(),

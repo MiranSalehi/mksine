@@ -167,8 +167,8 @@
                 >
                     <p class="sr-only">{{ __('mksine::marketplace.loading') }}</p>
                     @if ($isPlugins)
-                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            @foreach (range(1, 4) as $slot)
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            @foreach (range(1, 6) as $slot)
                                 <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/20">
                                     <div class="aspect-16/10 animate-pulse bg-gray-100 dark:bg-gray-800"></div>
                                     <div class="space-y-2 p-4">
@@ -214,7 +214,7 @@
                     </p>
                 </div>
             @elseif ($isPlugins)
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     @foreach ($listings->items as $listing)
                         @include('mksine::filament.partials.marketplace-plugin-card', [
                             'listing' => $listing,

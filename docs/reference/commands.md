@@ -379,7 +379,7 @@ mks:discover
 
 Source: [`DiscoverHooksCommand`](../../src/Console/Commands/DiscoverHooksCommand.php).
 
-Scans the configured `mksine.hooks.discovery_paths` for classes implementing the listener interfaces and reconciles them with `mks_hooks`. New listeners are inserted; missing classes can be marked `is_orphaned = true` (depending on your configuration). System listeners (`is_system`) are never disabled.
+Scans the package `Core/Listeners` tree, each discovered plugin’s `src/Hooks/Listeners` when that directory exists, and `mksine.hooks.discovery_paths` for classes implementing the listener interfaces, then reconciles them with `mks_hooks`. New listeners are inserted; missing classes can be marked `is_orphaned = true` (depending on your configuration). System listeners (`is_system`) are never disabled. Listeners are not registered on every request; this command is the sync.
 
 Re-run after:
 

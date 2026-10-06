@@ -12,8 +12,9 @@ title: Discovery paths
 
 1. The package’s own `Core/Listeners` directory (resolved from inside the vendored package via `realpath(__DIR__.'/../../Core/Listeners')`). This is **always** scanned.
 2. Every entry in `config('mksine.hooks.discovery_paths')` that exists on disk. Missing entries are skipped with a `warn()`.
+3. `{plugin base path}/src/Hooks/Listeners` for every discovered plugin, when that directory exists. A plugin with no such directory is skipped with **no** warning. Listeners are not registered on each request; `mks:discover` is still what syncs them into `mks_hooks`.
 
-That’s it. The scanner does not crawl `app/`, `plugins/`, or anywhere else by default. If your plugin lives under a directory not listed in `discovery_paths`, **its listener classes will not be indexed**, even if they implement the right interfaces.
+The scanner does not crawl `app/` or a plugin’s whole `src/`. Form and table listeners that live outside `src/Hooks/Listeners` still need `discovery_paths`. A class under `src/Hooks/Listeners` does not.
 
 ## How paths are resolved
 
@@ -47,7 +48,7 @@ Keep the listener tree narrow:
 {plugin_root}/my-plugin/src/Hooks/Tables/
 ```
 
-Then list **only those three directories** in `discovery_paths`. Pointing the scanner at the whole `src/` makes every PHP file get reflected, even helpers and value objects, which is wasteful and noisy in error reports.
+`src/Hooks/Listeners` is scanned for every discovered plugin. List **only** the form and table directories (and any application path) in `discovery_paths`. Pointing the scanner at the whole `src/` makes every PHP file get reflected, even helpers and value objects, which is wasteful and noisy in error reports.
 
 ## Re-running
 

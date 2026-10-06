@@ -6,6 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Models\Theme;
+use Miran\Mksine\Support\PackageIdentifier;
 
 class ThemeManager
 {
@@ -441,7 +442,7 @@ class ThemeManager
             throw new \InvalidArgumentException('Type must be "css" or "js".');
         }
 
-        return $this->getCustomStorageDir().'/'.$identifier.'.'.$type;
+        return $this->getCustomStorageDir().'/'.PackageIdentifier::assertSafeSegment($identifier).'.'.$type;
     }
 
     /**
@@ -496,7 +497,7 @@ class ThemeManager
      */
     public function getExtraAssetsStoragePath(string $identifier): string
     {
-        return $this->getCustomStorageDir().'/'.$identifier.'-extra-assets.json';
+        return $this->getCustomStorageDir().'/'.PackageIdentifier::assertSafeSegment($identifier).'-extra-assets.json';
     }
 
     /**

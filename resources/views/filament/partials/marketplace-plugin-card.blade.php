@@ -25,21 +25,21 @@
         'is-update border-amber-300 dark:border-amber-500/40' => $state === 'update',
     ])
 >
-    <div class="mksine-marketplace-plugin-card-media relative aspect-16/10 overflow-hidden bg-gradient-to-br from-violet-500/15 via-gray-50 to-gray-100 dark:from-violet-500/20 dark:via-gray-900 dark:to-gray-950">
+    <div class="mksine-marketplace-plugin-card-media relative bg-gradient-to-br from-violet-500/15 via-gray-50 to-gray-100 dark:from-violet-500/20 dark:via-gray-900 dark:to-gray-950">
         @if ($listing->imageUrl)
             @if ($listing->url !== '')
-                <a href="{{ $listing->url }}" target="_blank" rel="noopener noreferrer" class="absolute inset-0">
+                <a href="{{ $listing->url }}" target="_blank" rel="noopener noreferrer" class="block">
                     <img
                         src="{{ $listing->imageUrl }}"
                         alt="{{ $listing->name }}"
-                        class="h-full w-full object-cover"
+                        class="block h-auto w-full"
                     />
                 </a>
             @else
                 <img
                     src="{{ $listing->imageUrl }}"
                     alt="{{ $listing->name }}"
-                    class="h-full w-full object-cover"
+                    class="block h-auto w-full"
                 />
             @endif
         @else

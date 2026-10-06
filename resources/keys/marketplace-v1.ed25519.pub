@@ -1,0 +1,4 @@
+# MKSine marketplace release key v1 (Ed25519 public, hex).
+# Message: mksine-marketplace-v1, kind, package_id, version, sha256.
+# The matching secret stays offline and must never be committed.
+86d0bcaeb5b4a085ac933890ea015c6ad3a3f4215fdc4b949f5cf1f80e584636

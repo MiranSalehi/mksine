@@ -6,6 +6,7 @@ namespace Miran\Mksine\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
+use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Services\DiscoveryService;
 
 /**
@@ -139,6 +140,26 @@ class DiscoverHooksCommand extends Command
             if ($real === false || ! is_dir($real)) {
                 $this->warn("Skipping missing or invalid discovery path: {$rawPath}");
 
+                continue;
+            }
+
+            $paths[] = $real;
+        }
+
+        // Each discovered plugin may ship class listeners at src/Hooks/Listeners.
+        // A plugin without that directory is skipped with no warning. Listeners are
+        // not registered on every request; this command remains the sync into mks_hooks.
+        // config('mksine.hooks.discovery_paths') above is unchanged.
+        foreach (app(PluginManager::class)->discoveredManifests() as $manifest) {
+            $listeners = $manifest->hookListenersPath();
+
+            if ($listeners === null) {
+                continue;
+            }
+
+            $real = realpath($listeners);
+
+            if ($real === false || ! is_dir($real)) {
                 continue;
             }
 

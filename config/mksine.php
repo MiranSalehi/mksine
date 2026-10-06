@@ -203,11 +203,24 @@ return [
         'url' => env('MKS_MARKETPLACE_URL', 'https://mksine.com'),
         'directory_url' => env('MKS_MARKETPLACE_DIRECTORY_URL', 'https://mksine.com/marketplace'),
         'api_url' => env('MKS_MARKETPLACE_API_URL', ''),
-        'timeout' => (int) env('MKS_MARKETPLACE_TIMEOUT', 6),
-        'connect_timeout' => (int) env('MKS_MARKETPLACE_CONNECT_TIMEOUT', 2),
+        'timeout' => (int) env('MKS_MARKETPLACE_TIMEOUT', 15),
+        'connect_timeout' => (int) env('MKS_MARKETPLACE_CONNECT_TIMEOUT', 5),
         'download_timeout' => (int) env('MKS_MARKETPLACE_DOWNLOAD_TIMEOUT', 60),
         'cache_seconds' => (int) env('MKS_MARKETPLACE_CACHE_SECONDS', 120),
         'cache_stale_seconds' => (int) env('MKS_MARKETPLACE_CACHE_STALE_SECONDS', 600),
+        // SHA-256 from the catalog only proves the ZIP matches the JSON. A
+        // compromised mksine.com can publish both. When a listing includes
+        // archive_signature, Ed25519 over (kind, package_id, version, sha256)
+        // is verified against public keys that ship in this package
+        // (resources/keys/*.ed25519.pub) plus any extras below. A bad signature
+        // is always rejected. Requiring a signature is off until the catalog
+        // API sends archive_signature; an omitted signature would otherwise
+        // hide every official listing. Set true once the API signs.
+        'require_release_signature' => env('MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE', false),
+        'signing_public_keys' => array_values(array_filter(array_map(
+            static fn (string $key): string => strtolower(trim($key)),
+            explode(',', (string) env('MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS', '')),
+        ))),
     ],
 
     /*
@@ -261,13 +274,19 @@ return [
         // Maximum file size in KB (default: 100 MB — see uploads.max_size_mb).
         'max_size' => (int) env('MKS_CMS_MEDIA_MAX_SIZE', (int) env('MKS_CMS_MAX_UPLOAD_MB', 100) * 1024),
 
-        // Allowed mime types
+        /*
+         * Allowed mime types.
+         *
+         * `image/svg+xml` is deliberately absent. Media is served from the same origin as
+         * the site, so an SVG carrying a `<script>` is stored XSS for everyone who opens
+         * it. Re-add it only if you accept that risk; uploads are still checked by
+         * Miran\Mksine\Support\SvgSafety, which rejects scriptable documents outright.
+         */
         'allowed_types' => [
             'image/jpeg',
             'image/png',
             'image/gif',
             'image/webp',
-            'image/svg+xml',
             'video/mp4',
             'video/webm',
             'video/ogg',
@@ -339,9 +358,12 @@ return [
         | Extra hook listener discovery paths
         |--------------------------------------------------------------------------
         |
-        | php artisan mks:discover always scans the package Core/Listeners tree first.
-        | Add absolute paths (e.g. app_path('Hooks/Listeners')) for app or plugin
-        | listener classes. Missing directories are skipped with a warning.
+        | php artisan mks:discover always scans the package Core/Listeners tree first,
+        | then each discovered plugin's src/Hooks/Listeners when that directory
+        | exists (a missing plugin directory is skipped with no warning).
+        | Add absolute paths (e.g. app_path('Hooks/Listeners')) for application
+        | listeners or plugin directories outside that convention.
+        | Missing configured directories are skipped with a warning.
         |
         */
         'discovery_paths' => [
@@ -639,12 +661,19 @@ return [
     |--------------------------------------------------------------------------
     |
     | Models listed here appear in the Filament comment form and may receive
-    | public comments via Livewire. Plugins (e.g. ecom) can merge Product into
-    | this list at boot.
+    | public comments via Livewire. A class must also implement
+    | Miran\Mksine\Contracts\AllowsPublicComments. Plugins (e.g. ecom) merge
+    | Product into this list at boot. Types that are only Eloquent models are
+    | rejected — the previous check was is_subclass_of(Model), which accepted User.
     |
     */
     'commentable_types' => [
         Post::class,
+    ],
+
+    'comments' => [
+        'max_per_minute' => (int) env('MKS_CMS_COMMENTS_MAX_PER_MINUTE', 5),
+        'decay_seconds' => (int) env('MKS_CMS_COMMENTS_DECAY_SECONDS', 60),
     ],
 
     /*
@@ -696,6 +725,64 @@ return [
         'default_output_height_px' => (int) env('MKS_CONSOLE_TERMINAL_HEIGHT', 500),
         'max_output_height_px' => (int) env('MKS_CONSOLE_TERMINAL_MAX_HEIGHT', 900),
         'status_poll_interval_ms' => (int) env('MKS_CONSOLE_TERMINAL_POLL_MS', 2000),
+
+        /*
+         * Sub-commands the admin terminal may run, matched against the first non-option
+         * token. A trailing `*` matches a prefix. Restricting the terminal to an allowlist
+         * keeps a stolen Super Admin session from becoming a shell — `tinker --execute`
+         * and `db:seed --class` evaluate arbitrary PHP and are deliberately absent.
+         *
+         * Set a runner to `['*']` to allow everything (the pre-1.12 behaviour).
+         */
+        'allowed_commands' => [
+            'artisan' => [
+                'about',
+                'cache:clear',
+                'config:cache',
+                'config:clear',
+                'event:cache',
+                'event:clear',
+                'filament:*',
+                'migrate',
+                'migrate:install',
+                'migrate:rollback',
+                'migrate:smart',
+                'migrate:status',
+                'mks-plugin:*',
+                'mks:*',
+                // `mksine:*` is deliberately not a wildcard: `mksine:fresh-super-admin`
+                // drops every table and must not be reachable from the browser.
+                'mksine:create-super-admin',
+                'mksine:update',
+                'optimize',
+                'optimize:clear',
+                'queue:*',
+                'route:cache',
+                'route:clear',
+                'route:list',
+                'schedule:*',
+                'shield:*',
+                'storage:link',
+                'view:cache',
+                'view:clear',
+            ],
+            'composer' => [
+                'clear-cache',
+                'dump-autoload',
+                'dumpautoload',
+                'install',
+                'licenses',
+                'outdated',
+                'remove',
+                'require',
+                'show',
+                'update',
+                'validate',
+                'why',
+                'why-not',
+            ],
+        ],
+
         'daemon_presets' => [
             ['label' => 'queue:work', 'command' => 'php artisan queue:work --tries=3'],
             ['label' => 'schedule:work', 'command' => 'php artisan schedule:work'],

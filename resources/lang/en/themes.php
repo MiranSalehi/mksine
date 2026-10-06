@@ -50,6 +50,7 @@ return [
     'zip_open_failed' => 'Failed to open ZIP file. Error code: :code',
     'invalid_theme_no_json' => 'Invalid theme: theme.json not found in the ZIP file.',
     'invalid_theme_missing_name' => 'Invalid theme.json: missing theme name.',
+    'invalid_theme_identifier' => 'Invalid theme: the folder name and theme name cannot be turned into a safe identifier (lowercase letters, digits, hyphens and underscores only).',
     'theme_already_exists' => 'Theme ":id" already exists. Please delete it first.',
     'custom_css_js_modal_description' => 'These files are loaded on the frontend after the theme assets. Use them for custom styles and scripts without editing theme files.',
     'missing_dependencies_badge' => 'Missing plugins:',

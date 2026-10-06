@@ -24,4 +24,5 @@
 /psalm.xml.dist         export-ignore
 /tailwind.config.js     export-ignore
 /testbench.yaml         export-ignore
+/resources/keys/*.sec   export-ignore
 /UPGRADING.md           export-ignore

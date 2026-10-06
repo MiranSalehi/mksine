@@ -15,20 +15,23 @@ use Filament\Pages\Page;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Miran\Mksine\Core\Marketplace\MarketplaceKind;
 use Miran\Mksine\Core\Plugins\PluginDiscovery;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
-use Miran\Mksine\Core\Marketplace\MarketplaceKind;
+use Miran\Mksine\Core\Plugins\PluginManifestSource;
 use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
+use Miran\Mksine\Core\Updater\ArchiveExtractor;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
 use Miran\Mksine\Core\Updater\Updaters\PluginUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Filament\Pages\Concerns\InteractsWithMarketplaceCatalog;
+use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\PackageIdentifier;
 use Miran\Mksine\Support\UploadLimits;
-use ZipArchive;
 
 class ManagePlugins extends Page
 {
@@ -377,10 +380,22 @@ class ManagePlugins extends Page
         return null;
     }
 
+    /**
+     * Install a plugin from an uploaded ZIP.
+     *
+     * The archive is untrusted until it lands on disk, so nothing inside it is executed
+     * here: the manifest is read statically, the id is validated against
+     * {@see PackageIdentifier::PATTERN} before it is used as a directory name, and the
+     * files are unpacked through {@see ArchiveExtractor} into a staging directory that
+     * rejects traversal entries, symlinks and zip bombs.
+     */
     protected function processPluginUpload(string $tempPath, bool $redirect = true): void
     {
+        SuperAdminGate::authorize();
+
         $pluginsPath = PluginDiscovery::defaultPluginsPath();
         $tempDir = storage_path('app/plugin-temp');
+        $stagingPath = null;
 
         // Ensure directories exist
         if (! File::isDirectory($pluginsPath)) {
@@ -396,86 +411,34 @@ class ManagePlugins extends Page
                 throw new \RuntimeException(__('mksine::plugins.uploaded_file_not_found'));
             }
 
-            $zip = new ZipArchive;
-            $openResult = $zip->open($tempPath);
+            $manifestSource = ArchiveExtractor::readFirstMatching(
+                $tempPath,
+                static fn (string $entry): bool => $entry === 'plugin.php'
+                    || preg_match('#^[^/]+/plugin\.php$#', $entry) === 1,
+            );
 
-            if ($openResult !== true) {
-                throw new \RuntimeException(__('mksine::plugins.zip_open_failed', ['code' => $openResult]));
-            }
-
-            // Find the root folder in ZIP (the plugin folder)
-            $rootFolder = null;
-            $hasPluginPhp = false;
-
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = $zip->getNameIndex($i);
-
-                // Check for plugin.php in root or first-level folder
-                if ($name === 'plugin.php') {
-                    $rootFolder = '';
-                    $hasPluginPhp = true;
-
-                    break;
-                }
-
-                if (preg_match('#^([^/]+)/plugin\.php$#', $name, $matches)) {
-                    $rootFolder = $matches[1];
-                    $hasPluginPhp = true;
-
-                    break;
-                }
-            }
-
-            if (! $hasPluginPhp) {
-                $zip->close();
-
+            if ($manifestSource === null) {
                 throw new \RuntimeException(__('mksine::plugins.invalid_plugin_no_manifest'));
             }
 
-            // Determine plugin ID from manifest
-            $manifestContent = $rootFolder === ''
-                ? $zip->getFromName('plugin.php')
-                : $zip->getFromName($rootFolder.'/plugin.php');
+            $manifest = PluginManifestSource::scan($manifestSource);
+            $pluginId = $manifest['id'];
 
-            // Parse plugin.php to get ID
-            $tempManifestPath = $tempDir.'/temp-manifest-'.uniqid().'.php';
-            File::put($tempManifestPath, $manifestContent);
-            $manifest = require $tempManifestPath;
-            File::delete($tempManifestPath);
-
-            if (! is_array($manifest) || empty($manifest['id'])) {
-                $zip->close();
-
+            if (! PackageIdentifier::isValid($pluginId)) {
                 throw new \RuntimeException(__('mksine::plugins.invalid_plugin_missing_id'));
             }
 
-            $pluginId = $manifest['id'];
             $targetPath = $pluginsPath.'/'.$pluginId;
 
             // Check if plugin already exists
             if (File::isDirectory($targetPath)) {
-                $zip->close();
-
                 throw new \RuntimeException(__('mksine::plugins.plugin_already_exists', ['id' => $pluginId]));
             }
 
-            // Extract to plugins directory
-            if ($rootFolder === '') {
-                // Plugin files are at root of ZIP
-                File::makeDirectory($targetPath, 0755, true);
-                $zip->extractTo($targetPath);
-                $zip->close();
-            } else {
-                // Plugin files are in a subfolder
-                $tempExtractPath = $tempDir.'/extract-'.uniqid();
-                File::makeDirectory($tempExtractPath, 0755, true);
-                $zip->extractTo($tempExtractPath);
-                $zip->close();
+            $stagingPath = $tempDir.'/staging-'.bin2hex(random_bytes(8));
+            $contentRoot = ArchiveExtractor::extract($tempPath, $stagingPath);
 
-                // Move the plugin folder to plugins directory
-                File::moveDirectory($tempExtractPath.'/'.$rootFolder, $targetPath);
-                File::deleteDirectory($tempExtractPath);
-            }
+            File::moveDirectory($contentRoot, $targetPath);
 
             Notification::make()
                 ->title(__('mksine::plugins.plugin_uploaded'))
@@ -498,11 +461,17 @@ class ManagePlugins extends Page
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        } finally {
+            if ($stagingPath !== null && File::isDirectory($stagingPath)) {
+                ArchiveExtractor::deleteDirectory($stagingPath);
+            }
         }
     }
 
     public function installPlugin(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         try {
             $pluginManager = app(PluginManager::class);
             $pluginManager->install($pluginId);
@@ -524,6 +493,8 @@ class ManagePlugins extends Page
 
     public function activatePlugin(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         try {
             $pluginManager = app(PluginManager::class);
             $pluginManager->activate($pluginId);
@@ -551,6 +522,8 @@ class ManagePlugins extends Page
 
     public function deactivatePlugin(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         try {
             $dependencyChecker = app(ThemeDependencyChecker::class);
             $activeThemeRequiresPlugin = $dependencyChecker->activeThemeRequiresPlugin($pluginId);
@@ -586,6 +559,8 @@ class ManagePlugins extends Page
 
     public function uninstallPlugin(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         try {
             $pluginManager = app(PluginManager::class);
             $pluginManager->uninstall($pluginId, false);
@@ -607,6 +582,8 @@ class ManagePlugins extends Page
 
     public function deletePlugin(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         try {
             $pluginManager = app(PluginManager::class);
 
@@ -633,11 +610,7 @@ class ManagePlugins extends Page
             }
 
             // Safety check: ensure path is within plugins directory
-            $pluginsDir = PluginDiscovery::defaultPluginsPath();
-            $realPluginPath = realpath($pluginPath);
-            $realPluginsDir = realpath($pluginsDir);
-
-            if (! $realPluginPath || ! $realPluginsDir || ! str_starts_with($realPluginPath, $realPluginsDir)) {
+            if (! FilesystemPath::isWithin(PluginDiscovery::defaultPluginsPath(), $pluginPath)) {
                 throw new \RuntimeException(__('mksine::plugins.cannot_delete_outside_plugins_dir'));
             }
 

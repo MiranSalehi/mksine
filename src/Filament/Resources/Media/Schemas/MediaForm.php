@@ -10,6 +10,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Miran\Mksine\Core\Hooks\FormHookManager;
+use Miran\Mksine\Rules\SafeSvgUpload;
 use Miran\Mksine\Support\MediaMime;
 use Miran\Mksine\Support\MediaStoragePath;
 use Miran\Mksine\Support\UploadLimits;
@@ -46,6 +47,7 @@ class MediaForm
                             ->acceptedFileTypes(fn (): array => MediaMime::allowedTypes() !== []
                                 ? MediaMime::allowedTypes()
                                 : ['image/*', 'video/*', 'audio/*'])
+                            ->rules([new SafeSvgUpload])
                             ->maxSize(UploadLimits::mediaMaxKb())
                             ->disk(fn ($get) => $get('disk') ?? 'public')
                             ->directory(fn (): string => MediaStoragePath::datedDirectory())
@@ -141,43 +143,42 @@ class MediaForm
                         TextInput::make('file_name')
                             ->label(__('mksine::media.file_name'))
                             ->disabled()
+                            ->dehydrated(false)
                             ->columnSpanFull()
-                            ->dehydrated()
                             ->visibleOn('edit'),
                         TextInput::make('mime_type')
                             ->label(__('mksine::media.mime_type'))
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(false)
                             ->visibleOn('edit'),
                         TextInput::make('size')
                             ->label(__('mksine::media.size_bytes'))
                             ->numeric()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(false)
                             ->visibleOn('edit'),
                         TextInput::make('width')
                             ->label(__('mksine::media.width'))
                             ->numeric()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(false)
                             ->visibleOn('edit'),
                         TextInput::make('height')
                             ->label(__('mksine::media.height'))
                             ->numeric()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(false)
                             ->visibleOn('edit'),
                         TextInput::make('path')
                             ->label(__('mksine::media.path'))
                             ->disabled()
-                            ->dehydrated()
-                            ->required()
+                            ->dehydrated(false)
                             ->columnSpanFull()
                             ->visibleOn('edit'),
                         TextInput::make('url')
                             ->label(__('mksine::media.url'))
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(false)
                             ->columnSpanFull()
                             ->visibleOn('edit'),
                     ])

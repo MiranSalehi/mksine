@@ -37,6 +37,7 @@ return [
     'pagination_label' => 'لاپەڕەسازی میدیا',
     'pagination_summary' => 'نیشاندانی :from تا :to لە :total',
     'invalid_type' => 'ئەم جۆرە فایلە ڕێگەپێدراو نییە.',
+    'unsafe_svg' => 'ئەم SVG ـە سکریپتی تێدایە و ڕەت کرایەوە.',
     'reorder_handle' => 'بۆ گۆڕینی ڕیز بکێشە',
     'move_earlier' => 'بۆ پێشتر بگوازەوە',
     'move_later' => 'بۆ دواتر بگوازەوە',

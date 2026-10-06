@@ -76,8 +76,14 @@ return [
         ],
         'directory' => null,
         'middleware' => null,
+        /*
+         * `svg` is deliberately absent: the preview route streams the *temporary* file
+         * back on this origin with its own content type, before any validation rule has
+         * run, so listing it here hands out a signed same-origin XSS URL for any SVG that
+         * reaches the upload endpoint. SVG uploads simply lose their inline preview.
+         */
         'preview_mimes' => [
-            'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
+            'png', 'gif', 'bmp', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',
             'jpg', 'jpeg', 'mpga', 'webp', 'wma',
             'zip', 'x-zip-compressed',

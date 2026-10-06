@@ -173,7 +173,7 @@ php -i | grep -E "upload_max_filesize|post_max_size"      # Linux/macOS
 **Symptom.** A class implementing `MksineListenerInterface` exists, but nothing happens when the event fires.
 
 **Diagnose.**
-- Confirm the class lives under a path scanned by `mks:discover`: package's `Core/Listeners` **or** any path in `config('mksine.hooks.discovery_paths')`.
+- Confirm the class lives under a path scanned by `mks:discover`: package `Core/Listeners`, the plugin’s `src/Hooks/Listeners`, **or** any path in `config('mksine.hooks.discovery_paths')`.
 - Run `php artisan mks:discover` after **every** code change that adds, removes, or renames a listener.
 - `select * from mks_hooks where listener_class = '...'` — confirm the row exists and `is_enabled = 1`. System hooks always run regardless of `is_enabled`.
 

@@ -29,6 +29,77 @@ When adding an entry, copy this skeleton:
 
 ---
 
+## Unreleased
+
+### Breaking
+
+- **Plugin and theme management is Super Admin only.** Uploading, installing, activating, deactivating, uninstalling and deleting plugins, activating and deleting themes, and editing a theme's Custom CSS/JS now require the Shield super admin role (`config('filament-shield.super_admin.name')`). Page-level Shield permissions are no longer sufficient, because every one of these actions puts executable code on disk or into the page. Migration: assign the super admin role to whoever performs these operations, or perform them from the CLI (`php artisan mks:plugin:*`).
+
+- **Uploaded archives must carry a safe identifier.** A plugin's manifest `id` must match `/^[a-z0-9][a-z0-9_-]{0,63}$/`, and a theme's folder name or `theme.json` `name` must reduce to the same shape. Archives whose identifier cannot be validated are rejected instead of being written to a computed path. Migration: rename the plugin `id` / theme folder before packaging. Already-installed packages are unaffected — validation only runs on upload.
+
+- **Plugin manifests are read without being executed.** `plugin.php` is parsed by a tokeniser during upload, so only literal string values for `id`, `name` and `version` in the outermost `return [...]` array are recognised. A manifest that computes its `id` (concatenation, constants, function calls) is rejected as missing an id. Migration: use a plain string literal for `id`.
+
+- **Theme custom asset helpers validate their identifier.** `ThemeManager::getCustomStoragePath()`, `getCustomContent()`, `hasCustomAsset()`, `getExtraAssets()` and `getExtraAssetsStoragePath()` throw `InvalidArgumentException` for identifiers containing a path separator, a leading dot, or a NUL byte. Callers passing a discovered theme's identifier are unaffected.
+
+- **The admin terminal only runs allowlisted sub-commands.** `mksine.console_terminal.allowed_commands` gates both runners; anything outside it is rejected with a message naming the config key. The default list covers cache/optimize, `migrate`, `migrate:smart`, `queue:*`, `schedule:*`, `filament:*`, `shield:*`, `mks:*`, `mks-plugin:*`, `mksine:update`, `mksine:create-super-admin`, and the common Composer sub-commands. Migration: publish the config and extend the list, or set `'artisan' => ['*']` to restore the previous unrestricted behaviour.
+
+- **The media picker requires media permissions.** Users without `viewAny` on `Miran\Mksine\Models\Media` see an empty picker and cannot open it; uploading additionally requires `create`. Super Admins always pass. Installs with no registered `Media` policy keep the previous behaviour, since there is no permission model to consult. Migration: grant `ViewAny:Media` / `Create:Media` to roles that attach images.
+
+- **Protected roles are hidden from the user form.** Users who are not Super Admins no longer see the super admin role in the roles checkbox list, and cannot edit, delete, restore or force-delete an account that holds it. Migration: none, unless a non-super-admin role was relied upon to manage Super Admin accounts.
+
+- **SVG uploads are off by default and validated when on.** `image/svg+xml` has been removed from `mksine.media.allowed_types`, so SVG uploads are rejected as a disallowed type. If you re-add it, uploads still have to clear `Miran\Mksine\Support\SvgSafety`, which rejects a document containing `<script>`, any `on*` attribute, `<foreignObject>`, `<animate>` / `<set>`, an `<iframe>` / `<embed>` / `<object>`, a `javascript:` / `data:text/html` URI, a `<use>` pointing anywhere but a same-document fragment, an `@import` in CSS, or an internal DTD subset — and rejects anything over 2 MB or not well-formed XML. The check is keyed off the filename extension as well as the detected mime. Migration: if your site relies on SVG logos or icons, add `'image/svg+xml'` back to the published config and re-test those assets; plain exported icons pass, but an SVG with embedded interactivity does not.
+
+- **Livewire no longer previews SVG uploads.** `svg` is out of `livewire.temporary_file_upload.preview_mimes`. The preview route serves the temporary file on this origin with its own content type *before* validation runs, so leaving it in meant an SVG was executable at upload time regardless of the media allowlist. Migration: if you published `config/livewire.php`, remove `'svg'` from `preview_mimes` there too.
+
+- **Theme and plugin screenshots are refused if they are scriptable SVGs.** Both routes now 404 an SVG that fails the check, and send `X-Content-Type-Options: nosniff` plus a `default-src 'none'; … sandbox` CSP on every screenshot. Migration: ship a PNG screenshot, or strip scripting from the SVG.
+
+- **Media file metadata is read from disk, not from the edit form.** `file_name`, `mime_type`, `size`, `width`, `height`, `path` and `url` are display-only (`dehydrated(false)`). Saving a media record re-detects those attributes from the stored file. Migration: none for legitimate edits. If you had been patching `mime_type` by posting the disabled field, that write is ignored; fix the file instead. Saving a record whose mime was previously spoofed repairs it from the bytes on disk.
+
+- **Public comments require a registered commentable type.** `PostComments` no longer accepts every Eloquent model. The class must be listed in `mksine.commentable_types` and implement `Miran\Mksine\Contracts\AllowsPublicComments`, and `allowsPublicComments()` must return true. Guest submissions are limited to `mksine.comments.max_per_minute` (default 5) per IP per `mksine.comments.decay_seconds` (default 60). Migration: core `Post` is already listed. Plugins that render `@livewire('mksine::frontend.post-comments', ['commentableType' => SomeModel::class, ...])` must merge `SomeModel::class` into the config (as ecom already does for Product) and implement the interface. Types that only exist as Eloquent models are rejected.
+
+- **Marketplace listings must be signed.** `archive_sha256` is no longer treated as proof of origin. Each catalog row needs `archive_signature` — Ed25519 over this canonical message (`kind` is `plugin` or `theme`):
+
+  ```
+  mksine-marketplace-v1
+  {kind}
+  {package_id}
+  {version}
+  {sha256}
+  ```
+
+  The matching public key ships in the package; extra keys go in `mksine.marketplace.signing_public_keys` / `MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS`. Catalog and download HTTP do not follow redirects. A signature that is present is always verified. `require_release_signature` defaults to false because the public catalog does not send `archive_signature` yet; requiring it hides every listing. Turn `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE=true` on after the API signs (`php artisan mksine:sign-marketplace-release plugin {package_id} {version} {sha256} --secret=/offline/key.sec`). Do not add `mksine:sign-marketplace-release` to the admin terminal allowlist, and never commit a `.sec` file.
+
+### Known limitation
+
+- Installing a plugin still means running its code: plugin discovery `require`s `plugin.php` for every directory under `plugins/`. What changed is that upload validation no longer executes anything, and only Super Admins can put an archive there in the first place.
+
+- SVG hardening only covers new uploads and the screenshot routes. Files already on the public disk are served directly by the web server, which Laravel cannot put headers on — see migration step 2. The durable fix is serving user uploads from a separate origin.
+
+- The ecom plugin's JSON product-comment endpoint is a separate public writer and is not covered by this Livewire rate limiter.
+
+- Marketplace signatures authenticate the ZIP identity (kind, package_id, version, hash). They do not review the code inside the archive. A valid signature means MKSine published that exact file, not that the file is safe.
+
+### Migration
+
+1. Confirm the accounts that manage plugins and themes hold the super admin role: `php artisan tinker --execute 'App\Models\User::role(config("filament-shield.super_admin.name"))->pluck("email");'`
+2. **Audit the SVGs you already have.** Nothing in this release touches files uploaded before the upgrade, and they are still served from the site's own origin:
+
+   ```bash
+   php artisan tinker --execute '
+   Miran\Mksine\Models\Media::where("mime_type", "like", "%svg%")
+       ->orWhere("file_name", "like", "%.svg")
+       ->get()
+       ->each(function ($media) {
+           $path = Illuminate\Support\Facades\Storage::disk($media->disk)->path($media->path);
+           $status = Miran\Mksine\Support\SvgSafety::fileIsSafe($path) ? "ok    " : "UNSAFE";
+           echo "{$status} #{$media->id} {$media->path}\n";
+       });'
+   ```
+
+   Treat every `UNSAFE` line as a live XSS payload, not a formatting warning: delete or replace the file.
+3. If you published `config/mksine.php`, merge `marketplace.require_release_signature` and `marketplace.signing_public_keys`. See [Configuration](../reference/configuration.md).
+4. After upgrade: `php artisan optimize:clear`. If Add from MKSine is empty or shows a signature error, the catalog is not signing yet — either start signing on mksine.com or set `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE=false` until it does.
+
 ## 1.11.1 (2026-09-20)
 
 ### Behavior changes (non-breaking, but visible)

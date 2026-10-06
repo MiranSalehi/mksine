@@ -71,6 +71,8 @@ PHP;
         expect($manifest->description())->toBeNull();
         expect($manifest->author())->toBeNull();
         expect($manifest->namespace())->toBeNull();
+        expect($manifest->filamentPanelProvider())->toBeNull();
+        expect($manifest->hookListenersPath())->toBeNull();
         expect($manifest->screenshot())->toBeNull();
         expect($manifest->screenshotAbsolutePath())->toBeNull();
     });

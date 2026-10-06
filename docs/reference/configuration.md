@@ -127,11 +127,15 @@ Public catalog used by Theme Manager and Plugins (`Add from MKSine`). The panel 
 | `url` | `MKS_MARKETPLACE_URL` | `https://mksine.com` |
 | `directory_url` | `MKS_MARKETPLACE_DIRECTORY_URL` | `https://mksine.com/marketplace` |
 | `api_url` | `MKS_MARKETPLACE_API_URL` | `{url}/api/marketplace/v1` when empty |
-| `timeout` | `MKS_MARKETPLACE_TIMEOUT` | `6` |
-| `connect_timeout` | `MKS_MARKETPLACE_CONNECT_TIMEOUT` | `2` |
+| `timeout` | `MKS_MARKETPLACE_TIMEOUT` | `15` |
+| `connect_timeout` | `MKS_MARKETPLACE_CONNECT_TIMEOUT` | `5` |
 | `download_timeout` | `MKS_MARKETPLACE_DOWNLOAD_TIMEOUT` | `60` |
 | `cache_seconds` | `MKS_MARKETPLACE_CACHE_SECONDS` | `120` (set `0` to disable) |
 | `cache_stale_seconds` | `MKS_MARKETPLACE_CACHE_STALE_SECONDS` | `600` |
+| `require_release_signature` | `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE` | `false` |
+| `signing_public_keys` | `MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS` | empty (comma-separated extra Ed25519 public keys, hex). Bundled `resources/keys/*.ed25519.pub` are always trusted. |
+
+Catalog JSON must include `archive_sha256` (64-char hex). `archive_signature` (128-char hex Ed25519 over `mksine-marketplace-v1`, kind, package_id, version, sha256) is checked whenever it is present; a bad signature is rejected. It is not required until `require_release_signature` is true, because the public catalog does not send it yet. Download and catalog HTTP do not follow redirects. Sign releases with `php artisan mksine:sign-marketplace-release` and an offline secret; never put that secret in this config.
 
 ## `plugins.boot_guard_ttl`
 
@@ -197,7 +201,7 @@ The hook system and its async dispatcher.
 
 | Key | Env | Default | Notes |
 |-----|-----|---------|-------|
-| `discovery_paths` | _none_ | `[]` | Extra **absolute** directories scanned by `mks:discover`. The package always scans `Core/Listeners` first; missing paths are skipped with a warning. |
+| `discovery_paths` | _none_ | `[]` | Extra directories scanned by `mks:discover`, after `Core/Listeners` and each discovered plugin’s `src/Hooks/Listeners` (that plugin directory is skipped with no warning when it is absent). Missing configured paths are skipped with a warning. |
 | `log_slow_hooks` | `MKS_CMS_LOG_SLOW_HOOKS` | `true` | Writes a `warning` log when a single listener exceeds `slow_hook_threshold`. |
 | `slow_hook_threshold` | `MKS_CMS_SLOW_HOOK_THRESHOLD` | `100` (ms) | Threshold for the slow-hook log. |
 | `cache_discovery` | `MKS_CMS_CACHE_HOOK_DISCOVERY` | `true` | When `true`, discovery results are cached using the `cache.*` settings. Always `false` in tests. |

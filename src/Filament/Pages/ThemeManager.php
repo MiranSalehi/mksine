@@ -21,6 +21,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Miran\Mksine\Core\Marketplace\MarketplaceKind;
 use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager as ThemeManagerService;
+use Miran\Mksine\Core\Updater\ArchiveExtractor;
 use Miran\Mksine\Core\Updater\RollbackManager;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Core\Updater\UpdateResult;
@@ -28,9 +29,10 @@ use Miran\Mksine\Core\Updater\Updaters\ThemeUpdater;
 use Miran\Mksine\Core\Updater\UpdateRunner;
 use Miran\Mksine\Filament\Pages\Concerns\InteractsWithMarketplaceCatalog;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
+use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\PackageIdentifier;
 use Miran\Mksine\Support\UploadLimits;
-use ZipArchive;
 
 class ThemeManager extends Page
 {
@@ -348,10 +350,22 @@ class ThemeManager extends Page
     /**
      * Process theme ZIP upload.
      */
+    /**
+     * Install a theme from an uploaded ZIP.
+     *
+     * The identifier is validated against {@see PackageIdentifier::PATTERN} before it is
+     * used as a directory name — both the archive's root folder and the `name` field are
+     * attacker-controlled and could otherwise escape `resources/views/themes`. Files are
+     * unpacked through {@see ArchiveExtractor}, which rejects traversal entries, symlinks
+     * and zip bombs.
+     */
     protected function processThemeUpload(string $tempPath, bool $redirect = true): void
     {
+        SuperAdminGate::authorize();
+
         $themesPath = resource_path('views/themes');
         $tempDir = storage_path('app/theme-temp');
+        $stagingPath = null;
 
         // Ensure directories exist
         if (! File::isDirectory($themesPath)) {
@@ -366,86 +380,71 @@ class ThemeManager extends Page
                 throw new \RuntimeException(__('mksine::themes.uploaded_file_not_found'));
             }
 
-            $zip = new ZipArchive;
-            $openResult = $zip->open($tempPath);
-
-            if ($openResult !== true) {
-                throw new \RuntimeException(__('mksine::themes.zip_open_failed', ['code' => $openResult]));
-            }
-
-            // Find the root folder in ZIP (the theme folder)
             $rootFolder = null;
-            $hasThemeJson = false;
 
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = $zip->getNameIndex($i);
+            $themeJsonContent = ArchiveExtractor::readFirstMatching(
+                $tempPath,
+                function (string $entry) use (&$rootFolder): bool {
+                    if ($entry === 'theme.json') {
+                        $rootFolder = '';
 
-                // Check for theme.json in root or first-level folder
-                if ($name === 'theme.json') {
-                    $rootFolder = '';
-                    $hasThemeJson = true;
+                        return true;
+                    }
 
-                    break;
-                }
+                    if (preg_match('#^([^/]+)/theme\.json$#', $entry, $matches) === 1) {
+                        $rootFolder = $matches[1];
 
-                if (preg_match('#^([^/]+)/theme\.json$#', $name, $matches)) {
-                    $rootFolder = $matches[1];
-                    $hasThemeJson = true;
+                        return true;
+                    }
 
-                    break;
-                }
-            }
+                    return false;
+                },
+            );
 
-            if (! $hasThemeJson) {
-                $zip->close();
-
+            if ($themeJsonContent === null) {
                 throw new \RuntimeException(__('mksine::themes.invalid_theme_no_json'));
             }
 
-            // Get theme.json content
-            $themeJsonContent = $rootFolder === ''
-                ? $zip->getFromName('theme.json')
-                : $zip->getFromName($rootFolder.'/theme.json');
-
             $themeJson = json_decode($themeJsonContent, true);
 
-            if (! is_array($themeJson) || empty($themeJson['name'])) {
-                $zip->close();
-
+            if (! is_array($themeJson) || empty($themeJson['name']) || ! is_string($themeJson['name'])) {
                 throw new \RuntimeException(__('mksine::themes.invalid_theme_missing_name'));
             }
 
             // Determine theme identifier
-            $themeIdentifier = $rootFolder ?: strtolower(str_replace(' ', '-', $themeJson['name']));
+            $themeIdentifier = $rootFolder !== '' && PackageIdentifier::isValid($rootFolder)
+                ? $rootFolder
+                : PackageIdentifier::fromName($themeJson['name']);
+
+            if ($themeIdentifier === null) {
+                throw new \RuntimeException(__('mksine::themes.invalid_theme_identifier'));
+            }
+
             $targetPath = $themesPath.'/'.$themeIdentifier;
 
             // Check if theme already exists
             if (File::isDirectory($targetPath)) {
-                $zip->close();
-
                 throw new \RuntimeException(__('mksine::themes.theme_already_exists', ['id' => $themeIdentifier]));
             }
 
-            // Extract to themes directory
-            if ($rootFolder === '') {
-                File::makeDirectory($targetPath, 0755, true);
-                $zip->extractTo($targetPath);
-                $zip->close();
-            } else {
-                $tempExtractPath = $tempDir.'/extract-'.uniqid();
-                File::makeDirectory($tempExtractPath, 0755, true);
-                $zip->extractTo($tempExtractPath);
-                $zip->close();
+            $stagingPath = $tempDir.'/staging-'.bin2hex(random_bytes(8));
+            ArchiveExtractor::extract($tempPath, $stagingPath);
 
-                File::moveDirectory($tempExtractPath.'/'.$rootFolder, $targetPath);
-                File::deleteDirectory($tempExtractPath);
+            // The archive may carry siblings next to the theme folder, so move the folder
+            // that actually holds theme.json rather than whatever the extractor considers root.
+            $sourcePath = $rootFolder === '' ? $stagingPath : $stagingPath.'/'.$rootFolder;
+
+            if ($rootFolder !== '' && ! FilesystemPath::isWithin($stagingPath, $sourcePath)) {
+                throw new \RuntimeException(__('mksine::themes.invalid_theme_identifier'));
             }
 
+            File::moveDirectory($sourcePath, $targetPath);
+
             // Clear theme cache
-            app(ThemeManagerService::class)->clearCache();
+            $themeManager = app(ThemeManagerService::class);
+            $themeManager->clearCache();
 
             // Publish assets if available
-            $themeManager = app(ThemeManagerService::class);
             $themeManager->publishAssets($themeIdentifier);
 
             Notification::make()
@@ -467,6 +466,10 @@ class ThemeManager extends Page
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+        } finally {
+            if ($stagingPath !== null && File::isDirectory($stagingPath)) {
+                ArchiveExtractor::deleteDirectory($stagingPath);
+            }
         }
     }
 
@@ -475,6 +478,8 @@ class ThemeManager extends Page
      */
     public function activateTheme(string $identifier): void
     {
+        SuperAdminGate::authorize();
+
         $themeManager = app(ThemeManagerService::class);
         $theme = $themeManager->get($identifier);
 
@@ -526,6 +531,8 @@ class ThemeManager extends Page
      */
     public function deleteTheme(string $identifier): void
     {
+        SuperAdminGate::authorize();
+
         $themeManager = app(ThemeManagerService::class);
         $theme = $themeManager->get($identifier);
 
@@ -562,11 +569,7 @@ class ThemeManager extends Page
 
         try {
             // Safety check: ensure path is within themes directory
-            $themesDir = resource_path('views/themes');
-            $realThemePath = realpath($theme->path);
-            $realThemesDir = realpath($themesDir);
-
-            if (! $realThemePath || ! $realThemesDir || ! str_starts_with($realThemePath, $realThemesDir)) {
+            if (! FilesystemPath::isWithin(resource_path('views/themes'), $theme->path)) {
                 throw new \RuntimeException(__('mksine::themes.cannot_delete_outside_themes'));
             }
 
@@ -575,7 +578,7 @@ class ThemeManager extends Page
 
             // Delete published assets
             $publicAssetsPath = public_path("themes/{$identifier}");
-            if (File::isDirectory($publicAssetsPath)) {
+            if (PackageIdentifier::isValid($identifier) && File::isDirectory($publicAssetsPath)) {
                 File::deleteDirectory($publicAssetsPath);
             }
 
@@ -610,6 +613,26 @@ class ThemeManager extends Page
     }
 
     /**
+     * Resolve the theme identifier carried by a modal action's arguments.
+     *
+     * The arguments arrive from the browser, and the identifier is interpolated into the
+     * custom CSS/JS storage paths, so only identifiers belonging to a discovered theme
+     * are accepted.
+     *
+     * @param  array<string, mixed>  $arguments
+     */
+    private function resolveEditableThemeIdentifier(array $arguments): ?string
+    {
+        $identifier = $arguments['themeIdentifier'] ?? null;
+
+        if (! is_string($identifier) || $identifier === '') {
+            return null;
+        }
+
+        return app(ThemeManagerService::class)->get($identifier)?->identifier;
+    }
+
+    /**
      * Custom CSS/JS editor action – opens Filament modal with form.
      */
     public function customCssJsAction(): Action
@@ -620,9 +643,15 @@ class ThemeManager extends Page
             ->modalHeading(fn (array $arguments) => __('mksine::themes.custom_css_js').' – '.(app(ThemeManagerService::class)->get($arguments['themeIdentifier'] ?? '')?->name ?? ($arguments['themeIdentifier'] ?? '')))
             ->modalDescription(__('mksine::themes.custom_css_js_modal_description'))
             ->modalWidth('4xl')
+            ->authorize(fn (): bool => SuperAdminGate::check())
             ->fillForm(function (array $arguments): array {
-                $id = $arguments['themeIdentifier'] ?? '';
                 $manager = app(ThemeManagerService::class);
+                $id = $this->resolveEditableThemeIdentifier($arguments);
+
+                if ($id === null) {
+                    return ['custom_css' => '', 'custom_js' => '', 'extra_css_files' => '', 'extra_js_files' => ''];
+                }
+
                 $extra = $manager->getExtraAssets($id);
 
                 return [
@@ -655,10 +684,19 @@ class ThemeManager extends Page
                     ->columnSpanFull(),
             ])
             ->action(function (array $data, array $arguments): void {
-                $id = $arguments['themeIdentifier'] ?? '';
-                if ($id === '') {
+                SuperAdminGate::authorize();
+
+                $id = $this->resolveEditableThemeIdentifier($arguments);
+
+                if ($id === null) {
+                    Notification::make()
+                        ->title(__('mksine::themes.theme_not_found'))
+                        ->danger()
+                        ->send();
+
                     return;
                 }
+
                 $manager = app(ThemeManagerService::class);
                 $manager->putCustomContent($id, 'css', $data['custom_css'] ?? '');
                 $manager->putCustomContent($id, 'js', $data['custom_js'] ?? '');

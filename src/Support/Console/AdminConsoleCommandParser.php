@@ -11,6 +11,11 @@ use InvalidArgumentException;
  *
  * Only {@code artisan} / {@code php artisan} and {@code composer} prefixes are allowed.
  * Shell metacharacters are rejected so operators cannot chain arbitrary commands.
+ *
+ * The prefix check alone is not a boundary: `artisan tinker --execute '…'` evaluates
+ * arbitrary PHP, which turns a stolen Super Admin session into a shell. Sub-commands are
+ * therefore matched against an allowlist (`mksine.console_terminal.allowed_commands`);
+ * set a runner's list to `['*']` to restore the unrestricted behaviour.
  */
 final class AdminConsoleCommandParser
 {
@@ -42,9 +47,12 @@ final class AdminConsoleCommandParser
                 throw new InvalidArgumentException('Artisan sub-command is required.');
             }
 
+            $tokens = self::tokenize($tail);
+            self::assertAllowed('artisan', $tokens);
+
             $argv = array_merge(
                 [AdminConsolePhpBinary::path(), self::artisanPath($projectRoot)],
-                self::tokenize($tail),
+                $tokens,
             );
 
             return [
@@ -60,9 +68,12 @@ final class AdminConsoleCommandParser
                 throw new InvalidArgumentException('Composer sub-command is required.');
             }
 
+            $tokens = self::tokenize($tail);
+            self::assertAllowed('composer', $tokens);
+
             $argv = array_merge(
                 self::composerPrefix($projectRoot),
-                self::tokenize($tail),
+                $tokens,
             );
 
             return [
@@ -73,6 +84,76 @@ final class AdminConsoleCommandParser
         }
 
         throw new InvalidArgumentException('Only "php artisan …" and "composer …" commands are allowed.');
+    }
+
+    /**
+     * @param  list<string>  $tokens
+     */
+    private static function assertAllowed(string $runner, array $tokens): void
+    {
+        $patterns = self::allowlistFor($runner);
+
+        if (in_array('*', $patterns, true)) {
+            return;
+        }
+
+        $name = self::subCommandName($tokens);
+
+        if ($name === null) {
+            throw new InvalidArgumentException(
+                sprintf('A %s sub-command is required; bare options are not allowed.', $runner)
+            );
+        }
+
+        foreach ($patterns as $pattern) {
+            if ($pattern === $name) {
+                return;
+            }
+
+            if (str_ends_with($pattern, '*') && str_starts_with($name, substr($pattern, 0, -1))) {
+                return;
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            '"%s %s" is not allowed. Add it to config("mksine.console_terminal.allowed_commands.%s") to permit it.',
+            $runner,
+            $name,
+            $runner,
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function allowlistFor(string $runner): array
+    {
+        $configured = config("mksine.console_terminal.allowed_commands.{$runner}");
+
+        if (! is_array($configured)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (mixed $value): string => trim((string) $value), $configured),
+            static fn (string $value): bool => $value !== '',
+        ));
+    }
+
+    /**
+     * The first non-option token, which is the command both Artisan and Composer dispatch on.
+     *
+     * @param  list<string>  $tokens
+     */
+    private static function subCommandName(array $tokens): ?string
+    {
+        foreach ($tokens as $token) {
+            if (! str_starts_with($token, '-')) {
+                return strtolower($token);
+            }
+        }
+
+        return null;
     }
 
     private static function artisanPath(string $projectRoot): string

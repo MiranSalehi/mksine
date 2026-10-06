@@ -6,7 +6,8 @@ namespace Miran\Mksine\Contracts;
 
 /**
  * Models that can be the target of public {@see \Miran\Mksine\Models\Comment} threads
- * may implement this contract so the storefront can gate submission (e.g. per-product toggle).
+ * must implement this contract *and* be listed in {@see config('mksine.commentable_types')}.
+ * The storefront fails closed: a model that is only an Eloquent class is not commentable.
  */
 interface AllowsPublicComments
 {
