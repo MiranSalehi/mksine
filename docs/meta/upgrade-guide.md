@@ -31,6 +31,10 @@ When adding an entry, copy this skeleton:
 
 ## Unreleased
 
+- (none)
+
+## 1.12.0 (2026-10-06)
+
 ### Breaking
 
 - **Plugin and theme management is Super Admin only.** Uploading, installing, activating, deactivating, uninstalling and deleting plugins, activating and deleting themes, and editing a theme's Custom CSS/JS now require the Shield super admin role (`config('filament-shield.super_admin.name')`). Page-level Shield permissions are no longer sufficient, because every one of these actions puts executable code on disk or into the page. Migration: assign the super admin role to whoever performs these operations, or perform them from the CLI (`php artisan mks:plugin:*`).
@@ -67,7 +71,13 @@ When adding an entry, copy this skeleton:
   {sha256}
   ```
 
-  The matching public key ships in the package; extra keys go in `mksine.marketplace.signing_public_keys` / `MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS`. Catalog and download HTTP do not follow redirects. A signature that is present is always verified. `require_release_signature` defaults to false because the public catalog does not send `archive_signature` yet; requiring it hides every listing. Turn `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE=true` on after the API signs (`php artisan mksine:sign-marketplace-release plugin {package_id} {version} {sha256} --secret=/offline/key.sec`). Do not add `mksine:sign-marketplace-release` to the admin terminal allowlist, and never commit a `.sec` file.
+  The matching public key ships in the package; extra keys go in `mksine.marketplace.signing_public_keys` / `MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS`. Catalog and download HTTP do not follow redirects. A signature that is present is always verified. `require_release_signature` defaults to false because the public catalog does not send `archive_signature` yet; requiring it hides every listing. Turn `MKS_MARKETPLACE_REQUIRE_RELEASE_SIGNATURE=true` on after the API signs (`php artisan mksine:sign-marketplace-release plugin {package_id} {version} {sha256} --secret=/offline/key.sec`).   Do not add `mksine:sign-marketplace-release` to the admin terminal allowlist, and never commit a `.sec` file.
+
+### Behavior changes (non-breaking, but visible)
+
+- **Plugins can register a Filament panel from `plugin.php`.** Optional `filament_panel_provider` is registered during package `register()` for every discovered plugin, before Filament builds panel routes. Deactivating a plugin does not remove that panel. Panel access for a plugin-owned panel is the `mksine.user.can_access_panel` filter on `InteractsWithMksine::canAccessPanel()`; a listener must return a bool only for its own panel.
+- **`mks:discover` scans `{plugin}/src/Hooks/Listeners`.** A missing directory is skipped with no warning. `hooks.discovery_paths` is unchanged. Re-run `php artisan mks:discover` after upgrade so existing plugin listeners are synced.
+- **Marketplace catalog cards.** Three plugin cards per row on large screens. Screenshots keep their own aspect ratio. HTTP browse timeouts default to 15s / 5s.
 
 ### Known limitation
 

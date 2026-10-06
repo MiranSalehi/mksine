@@ -6,6 +6,10 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
+- (none)
+
+## 1.12.0 - 2026-10-06
+
 ### Added
 
 - **Plugins can register their own Filament panel, panel access, and hook listeners without host hardcoding.** Optional `filament_panel_provider` in `plugin.php` is registered during package `register()` for every discovered plugin (active state is not consulted; hiding the panel when a plugin is inactive is not this layer’s job). `InteractsWithMksine::canAccessPanel()` asks the `mksine.user.can_access_panel` filter first and keeps the existing Shield checks unless a listener returns a bool. `mks:discover` also scans each plugin’s `src/Hooks/Listeners` when that directory exists. `hooks.discovery_paths` is unchanged.
@@ -37,6 +41,10 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 - **The admin terminal runs an allowlist** — the parser accepted any `php artisan` or `composer` sub-command, so `artisan tinker --execute` turned a stolen Super Admin session into a shell. Sub-commands are matched against `mksine.console_terminal.allowed_commands`; `tinker`, `db:seed`, `serve`, `env`, `composer exec`, `composer run-script` and `mksine:fresh-super-admin` are not on the default list. Set a runner to `['*']` to restore the old behaviour.
 
 - **The Super Admin role can no longer be self-granted** — the user form listed every role, so any role holding `Update:User` could tick super admin on its own account, or reset an existing Super Admin's password. Protected roles are hidden from the options (and therefore from Filament's derived `in` rule), and editing, deleting, restoring or force-deleting a Super Admin is reserved for Super Admins.
+
+### Changed
+
+- **Marketplace catalog cards** — Add from MKSine shows three plugin cards per row on large screens, and the screenshot uses its own aspect ratio instead of a cropped 16:10 cover. Browse timeouts default to 15s / 5s.
 
 ### Fixed
 
