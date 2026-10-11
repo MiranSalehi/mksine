@@ -8,11 +8,12 @@
 >
     <div class="mx-auto w-[90%] max-w-[87.5rem]">
         <div class="mb-6 flex flex-col items-center justify-center gap-4 md:flex-row md:items-baseline md:justify-between">
-            <h2 id="home-featured-domains-heading" class="text-center text-xl font-bold tracking-tight text-gray-900 md:text-left md:text-2xl dark:text-gray-50">
+            <h2 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('title', (bool) ($preview ?? false)) !!} id="home-featured-domains-heading" class="text-center text-xl font-bold tracking-tight text-gray-900 md:text-left md:text-2xl dark:text-gray-50">
                 {{ $d['title'] ?? '' }}
             </h2>
             <a
-                href="{{ $d['view_all_url'] ?? '#' }}"
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('view_all', (bool) ($preview ?? false)) !!}
+                href="{{ \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($d['view_all_url'] ?? '#') }}"
                 class="hidden font-semibold text-violet-600 transition hover:text-violet-800 md:inline-flex md:items-center dark:text-violet-400 dark:hover:text-violet-300"
             >
                 {{ $d['view_all_label'] ?? '' }}
@@ -20,14 +21,15 @@
             </a>
         </div>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-5 lg:grid-cols-6 lg:gap-6">
-            @foreach ($items as $row)
+            @foreach ($items as $index => $row)
                 @php
                     $slug = $row['slug'] ?? 'com';
                     $logoUrl = mksine_pb_media_url($row['logo'] ?? null, 'images/home-featured-tld-'.$slug.'.png');
                     $disc = $row['discount_percent'] ?? null;
                 @endphp
                 <a
-                    href="{{ $row['href'] ?? '#' }}"
+                    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('items', (bool) ($preview ?? false), $index) !!}
+                    href="{{ \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($row['href'] ?? '#') }}"
                     title="{{ $row['tld'] ?? '' }}"
                     class="home-featured-domains__card group relative flex flex-col items-center overflow-hidden rounded-xl border border-violet-100 bg-white p-4 text-center shadow-md shadow-violet-900/10 transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-900/15 dark:border-violet-900/60 dark:bg-slate-900 dark:shadow-black/25 dark:hover:border-violet-600"
                 >
@@ -64,7 +66,7 @@
             @endforeach
         </div>
         <div class="mt-6 text-center md:hidden">
-            <a href="{{ $d['view_all_url'] ?? '#' }}" class="inline-flex items-center font-semibold text-violet-600 dark:text-violet-400">
+            <a {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('view_all', (bool) ($preview ?? false)) !!} href="{{ \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($d['view_all_url'] ?? '#') }}" class="inline-flex items-center font-semibold text-violet-600 dark:text-violet-400">
                 {{ $d['view_all_label'] ?? '' }}
                 <span class="ms-1" aria-hidden="true">→</span>
             </a>

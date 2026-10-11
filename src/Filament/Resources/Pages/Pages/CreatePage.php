@@ -5,11 +5,19 @@ namespace Miran\Mksine\Filament\Resources\Pages\Pages;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 use Miran\Mksine\Core\Hooks\ContentFormHooks;
+use Miran\Mksine\Core\PageBuilder\PageBuilderRevisionStore;
 use Miran\Mksine\Filament\Resources\Pages\PageResource;
+use Miran\Mksine\Filament\Resources\Pages\Schemas\PageForm;
+use Miran\Mksine\Models\Page;
 
 class CreatePage extends CreateRecord
 {
     protected static string $resource = PageResource::class;
+
+    public function dehydrate(): void
+    {
+        PageForm::ensureBuilderStatePresent($this);
+    }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -26,5 +34,10 @@ class CreatePage extends CreateRecord
     protected function afterCreate(): void
     {
         ContentFormHooks::saved($this->record, 'page');
+
+        $record = $this->getRecord();
+        if ($record instanceof Page) {
+            app(PageBuilderRevisionStore::class)->record($record, Auth::id());
+        }
     }
 }

@@ -1,12 +1,23 @@
 <div class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/80 bg-white/95 px-5 py-3 backdrop-blur-md dark:border-white/[0.06] dark:bg-zinc-950/95">
-    <div class="flex items-center justify-between gap-3">
+    <div class="items-center gap-3" :class="fullScreen ? '' : 'flex justify-between'" :style="fullScreen ? 'display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center' : ''">
 
-        {{-- Left: identity + template --}}
+        {{-- Left: exit + identity --}}
         <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-violet-600 text-white shadow-[0_2px_8px_0_rgb(124_58_237/0.35)]">
+            <button
+                type="button"
+                x-show="fullScreen"
+                x-cloak
+                @click="fullScreen = false"
+                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.07]"
+                title="{{ __('mksine::page_builder.exit_full_screen') }}"
+                aria-label="{{ __('mksine::page_builder.exit_full_screen') }}"
+            >
+                <x-heroicon-o-arrows-pointing-in class="h-3.5 w-3.5" />
+            </button>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-violet-600 text-white shadow-[0_2px_8px_0_rgb(124_58_237/0.35)]" x-show="!fullScreen">
                 <x-heroicon-o-squares-2x2 class="h-4.5 w-4.5" />
             </div>
-            <div class="min-w-0">
+            <div class="min-w-0" x-show="!fullScreen">
                 <p class="truncate text-[13px] font-semibold leading-tight text-zinc-900 dark:text-white">
                     {{ __('mksine::page_builder.title') }}
                 </p>
@@ -14,6 +25,28 @@
                     {{ count($blocks) }}&thinsp;{{ __('mksine::page_builder.components_count') }}
                 </p>
             </div>
+            <p
+                x-show="fullScreen"
+                x-cloak
+                class="truncate text-sm font-semibold text-zinc-900 dark:text-white"
+                x-text="window.__mksineBuilderPageName ? window.__mksineBuilderPageName($root) : ''"
+            ></p>
+        </div>
+
+            <div class="flex items-center gap-1" x-show="fullScreen" x-cloak>
+            @foreach (['desktop' => __('mksine::page_builder.viewport_desktop'), 'tablet' => __('mksine::page_builder.viewport_tablet'), 'mobile' => __('mksine::page_builder.viewport_mobile')] as $viewport => $label)
+                <button
+                    type="button"
+                    @click="viewport = '{{ $viewport }}'"
+                    :aria-pressed="viewport === '{{ $viewport }}'"
+                    :class="viewport === '{{ $viewport }}' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-white/10'"
+                    class="rounded-md px-2.5 py-1 text-xs font-medium"
+                >{{ $label }}</button>
+            @endforeach
+        </div>
+
+        {{-- Right: actions --}}
+        <div class="flex shrink-0 items-center justify-end gap-2">
 
             @if(!$showComponentPanel)
                 <button
@@ -40,10 +73,6 @@
                     {{ __('mksine::page_builder.use_template') }}
                 </button>
             @endif
-        </div>
-
-        {{-- Right: actions --}}
-        <div class="flex shrink-0 items-center gap-2">
 
             {{-- Undo / Redo --}}
             <div class="flex items-center rounded-lg border border-zinc-200 bg-white dark:border-white/[0.08] dark:bg-white/[0.04]">
@@ -103,6 +132,7 @@
                 type="button"
                 @click="fullScreen = !fullScreen"
                 class="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400 dark:hover:border-white/[0.12] dark:hover:bg-white/[0.07] dark:hover:text-zinc-200"
+                x-show="!fullScreen"
                 :title="fullScreen ? '{{ __('mksine::page_builder.exit_full_screen') }}' : '{{ __('mksine::page_builder.full_screen') }}'"
                 :aria-label="fullScreen ? '{{ __('mksine::page_builder.exit_full_screen') }}' : '{{ __('mksine::page_builder.full_screen') }}'"
             >
@@ -121,6 +151,7 @@
                     {{ $showComponentPanel
                         ? 'bg-violet-700 text-white shadow-[0_2px_8px_0_rgb(109_40_217/0.4)] dark:bg-violet-500 dark:shadow-[0_2px_8px_0_rgb(139_92_246/0.35)]'
                         : 'bg-violet-600 text-white shadow-[0_2px_8px_0_rgb(124_58_237/0.3)] hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500' }}"
+                title="{{ __('mksine::page_builder.add_component') }}"
                 aria-label="{{ __('mksine::page_builder.add_component') }}"
             >
                 <span class="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">

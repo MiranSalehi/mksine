@@ -77,6 +77,7 @@ sidebar:
   - section: Page builder guides
     items:
       - { title: Concepts and feature flag, path: guides/page-builder/concepts-and-feature-flag.md }
+      - { title: Editor, path: guides/page-builder/editor.md }
       - { title: Creating a block, path: guides/page-builder/creating-a-block.md }
       - { title: Nesting, path: guides/page-builder/nesting.md }
       - { title: Validation, path: guides/page-builder/validation.md }

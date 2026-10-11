@@ -37,4 +37,7 @@ return [
     'duplicate_modal_heading' => 'دووبارەکردنەوەی پەڕە',
     'duplicate_modal_description' => 'ڕەشنووسێکی نوێ بە هەمان ناوەڕۆک و سلەگێکی تایبەت دروست دەکرێت. پێش بڵاوکردنەوە دەتوانیت دەستکاری بکەیت.',
     'duplicate_success' => 'پەڕە کۆپی کرا',
+    'revisions' => 'وەشانەکان',
+    'revision_choose' => 'وەشانی پاشەکەوتکراو',
+    'revision_restored' => 'دروستکەری پەڕە لەو وەشانە گەڕایەوە',
 ];

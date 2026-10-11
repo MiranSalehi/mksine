@@ -6,8 +6,9 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Miran\Mksine\Filament\Forms\Components\MediaPicker;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
+use Miran\Mksine\Filament\Forms\Components\MediaPicker;
 
 class SliderComponent extends BaseBuilderComponent
 {
@@ -130,5 +131,20 @@ class SliderComponent extends BaseBuilderComponent
             'effect' => 'slide',
             'slides' => [],
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $slides = is_array($data['slides'] ?? null) ? $data['slides'] : [];
+        foreach ($slides as $index => $slide) {
+            if (! is_array($slide)) {
+                continue;
+            }
+            $slide['button_url'] = BuilderUrl::href($slide['button_url'] ?? '');
+            $slides[$index] = $slide;
+        }
+        $data['slides'] = $slides;
+
+        return $data;
     }
 }

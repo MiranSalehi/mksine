@@ -1,8 +1,7 @@
 {{--
     Tailwind v4 content scanner safelist — DO NOT REMOVE.
-    Responsive col-span classes below are produced via runtime string concat (e.g. 'sm:'.$colSpanClass(...)),
-    which Tailwind cannot detect as candidates. Keeping each variant as a literal token in this blade source
-    forces them into the generated stylesheet. When adding new breakpoints update this list too.
+    The package stylesheet resources/dist/blocks.css is built by scanning this file.
+    Responsive col-span classes below are produced via runtime string concat, which Tailwind cannot detect.
 
     sm:col-span-1 sm:col-span-2 sm:col-span-3 sm:col-span-4 sm:col-span-5 sm:col-span-6
     sm:col-span-7 sm:col-span-8 sm:col-span-9 sm:col-span-10 sm:col-span-11 sm:col-span-12
@@ -150,16 +149,17 @@
     }
 @endphp
 
-<div class="grid {{ $twelveGridColsClass }} {{ $gapClass }} {{ $alignmentClass }}">
+<div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('layout', (bool) ($preview ?? false)) !!} class="grid {{ $twelveGridColsClass }} {{ $gapClass }} {{ $alignmentClass }}">
     @foreach ($childBuckets as $colIndex => $column)
-        <div class="{{ $cellSpanClasses[$colIndex] ?? 'min-w-0' }}">
-            @if (!empty($column['items']))
-                @foreach ($column['items'] as $item)
-                    @include('mksine::page-builder.render.block', ['block' => $item])
-                @endforeach
-            @else
-                <div class="min-h-[50px]"></div>
-            @endif
+        <div class="{{ $cellSpanClasses[$colIndex] ?? 'min-w-0' }} mksine-region-cell">
+            @include('mksine::page-builder.render.region-items', [
+                'items' => is_array($column['items'] ?? null) ? $column['items'] : [],
+                'preview' => $preview ?? false,
+                'canvas' => $canvas ?? false,
+                'visited' => $visited ?? [],
+                'parentId' => $blockId ?? null,
+                'columnIndex' => $colIndex,
+            ])
         </div>
     @endforeach
 </div>

@@ -37,4 +37,7 @@ return array (
   'duplicate_modal_heading' => 'کپی کردن صفحه',
   'duplicate_modal_description' => 'یک پیش‌نویس جدید با همان محتوا و اسلاگ یکتا ساخته می‌شود. پیش از انتشار می‌توانید ویرایش کنید.',
   'duplicate_success' => 'صفحه کپی شد',
+  'revisions' => 'نسخه‌ها',
+  'revision_choose' => 'نسخه ذخیره‌شده',
+  'revision_restored' => 'صفحه ساز از آن نسخه برگردانده شد',
 );

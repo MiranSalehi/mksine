@@ -79,7 +79,7 @@ class MksineHeroDomainComponent extends BaseBuilderComponent
                 ->columnSpanFull(),
             TextInput::make('background_color')
                 ->label(__('mksine::page_builder.mksine_fields.hero_domain_background_color'))
-                ->placeholder('#FFD180')
+                ->placeholder('#efeaff')
                 ->maxLength(7)
                 ->dehydrateStateUsing(fn (?string $state): ?string => ($state === null || trim($state) === '') ? null : trim($state))
                 ->rules(['nullable', 'string', 'max:7', 'regex:/^$|^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'])

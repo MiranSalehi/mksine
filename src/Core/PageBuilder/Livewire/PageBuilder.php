@@ -2,12 +2,17 @@
 
 namespace Miran\Mksine\Core\PageBuilder\Livewire;
 
+use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
-use Miran\Mksine\Core\PageBuilder\Support\TwelveColumnSpanNormalizer;
+use Miran\Mksine\Core\PageBuilder\BlockPresentation;
+use Miran\Mksine\Core\PageBuilder\BlockRegion;
+use Miran\Mksine\Core\PageBuilder\PageBuilderPreviewStore;
+use Miran\Mksine\Core\PageBuilder\PayloadNormalizer;
 use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
+use Miran\Mksine\Models\PageBuilderSection;
 
 class PageBuilder extends Component
 {
@@ -54,6 +59,17 @@ class PageBuilder extends Component
      * Paste modal: insert position (null = append).
      */
     public ?int $pastePosition = null;
+
+    /**
+     * Signed iframe URL for the unsaved payload. Viewport is not part of the URL.
+     */
+    public ?string $previewUrl = null;
+
+    public string $previewViewport = 'desktop';
+
+    public ?string $selectedBlockId = null;
+
+    public string $previewHash = '';
 
     /**
      * Target position for new component.
@@ -116,6 +132,7 @@ class PageBuilder extends Component
         $this->blocks = $value;
         $this->saveHistory();
         $this->mountedAt = microtime(true);
+        $this->syncPreview();
     }
 
     public function hydrate(): void
@@ -484,24 +501,18 @@ class PageBuilder extends Component
      */
     public function pasteBlock(string $clipboardData, ?int $position = null): void
     {
-        $this->saveHistory();
-
         try {
             $decoded = json_decode($clipboardData, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
                 throw new \Exception('Invalid JSON');
             }
-            $block = is_array($decoded) ? $decoded : [];
 
-            if (empty($block['type']) || ! is_string($block['type'])) {
+            $block = app(PayloadNormalizer::class)->normalizeBlock($decoded, true);
+            if ($block === null) {
                 throw new \Exception('Invalid clipboard data');
             }
 
-            $block['id'] = uniqid('block_');
-
-            if (! empty($block['children'])) {
-                $block['children'] = $this->regenerateColumnIds($block['children']);
-            }
+            $this->saveHistory();
 
             if ($position !== null && $position >= 0) {
                 array_splice($this->blocks, $position, 0, [$block]);
@@ -515,29 +526,6 @@ class PageBuilder extends Component
         } catch (\Exception $e) {
             $this->dispatch('paste-error', ['message' => __('mksine::page_builder.invalid_clipboard_data')]);
         }
-    }
-
-    /**
-     * Regenerate IDs for columns and nested items.
-     */
-    protected function regenerateColumnIds(array $children): array
-    {
-        $result = [];
-        foreach ($children as $column) {
-            $newCol = $column;
-            $newCol['id'] = uniqid('col_');
-            if (! empty($newCol['items'])) {
-                $newCol['items'] = array_map(function ($item) {
-                    $item['id'] = uniqid('block_');
-                    if (! empty($item['children'])) {
-                        $item['children'] = $this->regenerateColumnIds($item['children']);
-                    }
-                    return $item;
-                }, $newCol['items']);
-            }
-            $result[] = $newCol;
-        }
-        return $result;
     }
 
     /**
@@ -616,7 +604,7 @@ class PageBuilder extends Component
     /**
      * Open editor for a block (modal only in DOM when editingBlockId is set).
      */
-    public function editBlock(string $blockId, ?string $parentId = null, ?int $columnIndex = null): void
+    public function editBlock(string $blockId, ?string $parentId = null, ?int $columnIndex = null, ?string $region = null, int|string|null $regionIndex = null): void
     {
         $block = $this->findBlock($blockId, $parentId, $columnIndex);
 
@@ -624,52 +612,96 @@ class PageBuilder extends Component
             return;
         }
 
+        $type = (string) ($block['type'] ?? '');
+        $formData = BlockRegion::authorData($type, is_array($block['data'] ?? null) ? $block['data'] : []);
+        $block['data'] = $formData;
+
+        $regions = BlockRegion::forType($type);
+        $index = is_numeric($regionIndex) ? (int) $regionIndex : null;
+        if (! is_string($region) || $region === '' || ! isset($regions[$region])) {
+            $region = null;
+            $index = null;
+        } elseif (! isset($regions[$region]['repeater'])) {
+            $index = null;
+        }
+
         $this->editingBlockId = $blockId;
+        $this->selectedBlockId = $blockId;
         $this->editingBlockData = [
             'block' => $block,
             'parentId' => $parentId,
             'columnIndex' => $columnIndex,
+            'region' => $region,
+            'regionIndex' => $index,
+            'formData' => $formData,
         ];
-
-        $this->dispatch('open-modal', id: 'block-editor-modal');
     }
 
     /**
      * Handle save block data from editor component.
      */
     #[On('saveBlockData')]
-    public function handleSaveBlockData(string $blockId, array $data, ?string $parentId = null, ?int $columnIndex = null): void
+    public function handleSaveBlockData(string $blockId, array $data, ?string $parentId = null, ?int $columnIndex = null, array $presentation = []): void
     {
+        $region = $this->editingBlockData['region'] ?? null;
+        $regionIndex = $this->editingBlockData['regionIndex'] ?? null;
+        $formData = $this->editingBlockData['formData'] ?? null;
+
         $this->editingBlockId = $blockId;
         $this->editingBlockData = [
             'parentId' => $parentId,
             'columnIndex' => $columnIndex,
+            'region' => is_string($region) ? $region : null,
+            'regionIndex' => is_int($regionIndex) ? $regionIndex : null,
+            'formData' => is_array($formData) ? $formData : null,
         ];
-        $this->saveBlock($data);
+        $this->saveBlock($data, $presentation);
     }
 
     /**
      * Save edited block.
      */
-    public function saveBlock(array $data): void
+    public function saveBlock(array $data, array $presentation = []): void
     {
         if (! $this->editingBlockId || ! $this->editingBlockData) {
             return;
         }
+
+        if (isset($data['presentation']) && is_array($data['presentation'])) {
+            $presentation = array_merge($presentation, $data['presentation']);
+            unset($data['presentation']);
+        }
+
+        $presentation = BlockPresentation::normalize($presentation);
 
         $this->saveHistory();
 
         $parentId = $this->editingBlockData['parentId'] ?? null;
         $columnIndex = $this->editingBlockData['columnIndex'] ?? null;
 
-        $registry = app(ComponentRegistry::class);
+        $normalizer = app(PayloadNormalizer::class);
+        $resolveData = function (string $type) use ($data): array {
+            $region = $this->editingBlockData['region'] ?? null;
+            if (! is_string($region) || $region === '') {
+                return $data;
+            }
+
+            return BlockRegion::apply(
+                $type,
+                is_array($this->editingBlockData['formData'] ?? null) ? $this->editingBlockData['formData'] : [],
+                $data,
+                $region,
+                is_int($this->editingBlockData['regionIndex'] ?? null) ? $this->editingBlockData['regionIndex'] : null,
+            );
+        };
 
         if ($parentId !== null && $columnIndex !== null) {
-            $this->mutateColumnItemsByParent($this->blocks, $parentId, (int) $columnIndex, function (array &$items) use ($data, $registry): void {
+            $this->mutateColumnItemsByParent($this->blocks, $parentId, (int) $columnIndex, function (array &$items) use ($resolveData, $normalizer, $presentation): void {
                 foreach ($items as &$item) {
                     if (($item['id'] ?? '') === $this->editingBlockId) {
-                        $validated = $registry->validateComponent((string) ($item['type'] ?? ''), $data);
+                        $validated = $normalizer->normalizeData((string) ($item['type'] ?? ''), $resolveData((string) ($item['type'] ?? '')));
                         $item['data'] = $validated;
+                        $item['presentation'] = $presentation;
                         if ((($item['type'] ?? '') === 'columns' && isset($validated['columns']))
                             || (($item['type'] ?? '') === 'grid_layout' && isset($validated['column_spans']))) {
                             $this->adjustColumns(
@@ -687,8 +719,9 @@ class PageBuilder extends Component
             // Update in root
             foreach ($this->blocks as &$block) {
                 if ($block['id'] === $this->editingBlockId) {
-                    $validated = $registry->validateComponent((string) ($block['type'] ?? ''), $data);
+                    $validated = $normalizer->normalizeData((string) ($block['type'] ?? ''), $resolveData((string) ($block['type'] ?? '')));
                     $block['data'] = $validated;
+                    $block['presentation'] = $presentation;
 
                     // Handle column count changes for Columns component
                     if (($block['type'] === 'columns' && isset($validated['columns']))
@@ -765,7 +798,8 @@ class PageBuilder extends Component
     {
         $this->editingBlockId = null;
         $this->editingBlockData = [];
-        $this->dispatch('close-modal', id: 'block-editor-modal');
+        $this->selectedBlockId = null;
+        $this->dispatch('builder-editor-closed');
     }
 
     /**
@@ -779,7 +813,7 @@ class PageBuilder extends Component
         $this->saveHistory();
 
         $registry = app(TemplateRegistry::class);
-        $blocks = $registry->getBlocks($templateKey);
+        $blocks = app(PayloadNormalizer::class)->normalize($registry->getBlocks($templateKey));
 
         $this->blocks = $blocks;
         $this->closeTemplatePanel();
@@ -815,9 +849,9 @@ class PageBuilder extends Component
     /**
      * Add block at specific position (opens component panel).
      */
-    public function addBlockAtPosition(int $position): void
+    public function addBlockAtPosition(int $position, ?string $parentId = null, ?int $columnIndex = null): void
     {
-        $this->openComponentPanel($position);
+        $this->openComponentPanel($position, $parentId, $columnIndex);
     }
 
     public function openComponentPanel(?int $position = null, ?string $parentId = null, ?int $columnIndex = null): void
@@ -875,6 +909,44 @@ class PageBuilder extends Component
     }
 
     /**
+     * Apply a client order without dropping blocks the client omitted.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, mixed>  $order
+     * @return list<array<string, mixed>>
+     */
+    protected function mergePreservedOrder(array $items, array $order): array
+    {
+        $byId = [];
+        foreach ($items as $item) {
+            $id = $item['id'] ?? null;
+            if (is_string($id) && $id !== '') {
+                $byId[$id] = $item;
+            }
+        }
+
+        $reordered = [];
+        $seen = [];
+        foreach ($order as $id) {
+            if (! is_string($id) || ! isset($byId[$id]) || isset($seen[$id])) {
+                continue;
+            }
+            $reordered[] = $byId[$id];
+            $seen[$id] = true;
+        }
+
+        foreach ($items as $item) {
+            $id = $item['id'] ?? null;
+            if (is_string($id) && $id !== '' && isset($seen[$id])) {
+                continue;
+            }
+            $reordered[] = $item;
+        }
+
+        return $reordered;
+    }
+
+    /**
      * Reorder blocks at root level.
      */
     #[On('builder:reorder')]
@@ -882,19 +954,7 @@ class PageBuilder extends Component
     {
         $this->saveHistory();
 
-        $reordered = [];
-
-        foreach ($order as $id) {
-            foreach ($this->blocks as $block) {
-                if ($block['id'] === $id) {
-                    $reordered[] = $block;
-
-                    break;
-                }
-            }
-        }
-
-        $this->blocks = $reordered;
+        $this->blocks = $this->mergePreservedOrder($this->blocks, $order);
         $this->emitValue();
     }
 
@@ -985,19 +1045,7 @@ class PageBuilder extends Component
         foreach ($blockList as &$block) {
             if (($block['id'] ?? '') === $parentId && isset($block['children'][$columnIndex]['items']) && is_array($block['children'][$columnIndex]['items'])) {
                 $items = $block['children'][$columnIndex]['items'];
-                $reordered = [];
-
-                foreach ($order as $id) {
-                    foreach ($items as $item) {
-                        if (($item['id'] ?? '') === $id) {
-                            $reordered[] = $item;
-
-                            break;
-                        }
-                    }
-                }
-
-                $block['children'][$columnIndex]['items'] = $reordered;
+                $block['children'][$columnIndex]['items'] = $this->mergePreservedOrder($items, $order);
 
                 unset($block);
 
@@ -1079,6 +1127,41 @@ class PageBuilder extends Component
     }
 
     /**
+     * The drop index counts siblings with the dragged block removed.
+     * Same-list drags use that index, so an unchanged order must not be recorded.
+     */
+    private function sameListDropChangesOrder(string $blockId, ?string $parentId, ?int $columnIndex, int $newIndex): bool
+    {
+        $items = $parentId === null
+            ? $this->blocks
+            : ($this->findColumnItemsList($this->blocks, $parentId, (int) $columnIndex) ?? []);
+
+        $ids = [];
+        $current = null;
+        foreach ($items as $index => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $id = (string) ($item['id'] ?? '');
+            $ids[] = $id;
+            if ($id === $blockId) {
+                $current = $index;
+            }
+        }
+
+        if ($current === null) {
+            return false;
+        }
+
+        $without = $ids;
+        array_splice($without, $current, 1);
+        $newIndex = max(0, min($newIndex, count($without)));
+        array_splice($without, $newIndex, 0, [$blockId]);
+
+        return $without !== $ids;
+    }
+
+    /**
      * Move a block between the root list and a nested column (or between columns / parents) after a Sortable drag.
      */
     public function moveBlockAfterDrag(
@@ -1094,7 +1177,7 @@ class PageBuilder extends Component
         $fromColumnIndex = ($fromColumnIndex === null || $fromColumnIndex === '') ? null : (int) $fromColumnIndex;
         $toColumnIndex = ($toColumnIndex === null || $toColumnIndex === '') ? null : (int) $toColumnIndex;
 
-        if ($fromParentId === $toParentId && $fromColumnIndex === $toColumnIndex) {
+        if ($fromParentId === $toParentId && $fromColumnIndex === $toColumnIndex && ! $this->sameListDropChangesOrder($blockId, $fromParentId, $fromColumnIndex, $newIndex)) {
             return;
         }
 
@@ -1325,6 +1408,184 @@ class PageBuilder extends Component
     protected function emitValue(): void
     {
         $this->dispatch('builder-value-changed', blocks: $this->blocks);
+        $this->syncPreview();
+    }
+
+    public function setPreviewViewport(string $viewport): void
+    {
+        $this->previewViewport = in_array($viewport, ['desktop', 'tablet', 'mobile'], true) ? $viewport : 'desktop';
+    }
+
+    public function selectBlock(string $blockId): void
+    {
+        $this->selectedBlockId = $blockId;
+    }
+
+    public function syncPreview(): void
+    {
+        $userId = auth()->id();
+
+        if (! is_int($userId) && ! (is_string($userId) && ctype_digit((string) $userId))) {
+            $this->previewUrl = null;
+
+            return;
+        }
+
+        $payload = app(PayloadNormalizer::class)->normalize($this->blocks);
+        $hash = md5(json_encode($payload) ?: '[]');
+
+        if ($this->previewHash === $hash && is_string($this->previewUrl) && $this->previewUrl !== '') {
+            return;
+        }
+
+        $token = app(PageBuilderPreviewStore::class)->put((int) $userId, $payload);
+        $this->previewHash = $hash;
+        $this->previewUrl = URL::temporarySignedRoute(
+            'mksine.page-builder.preview',
+            now()->addMinutes(10),
+            ['token' => $token],
+        );
+    }
+
+    public function reorderNavigator(array $order, ?string $parentId = null, ?int $columnIndex = null): void
+    {
+        if ($parentId === null || $columnIndex === null) {
+            $this->reorderBlocks($order);
+
+            return;
+        }
+
+        $this->reorderColumnBlocks($parentId, $columnIndex, $order);
+    }
+
+    public function moveNavigatorBlock(string $blockId, string $direction, ?string $parentId = null, ?int $columnIndex = null): void
+    {
+        $items = ($parentId === null || $columnIndex === null)
+            ? $this->blocks
+            : $this->findColumnItemsList($this->blocks, $parentId, $columnIndex);
+
+        if (! is_array($items)) {
+            return;
+        }
+
+        $ids = [];
+        foreach ($items as $item) {
+            if (is_array($item) && is_string($item['id'] ?? null)) {
+                $ids[] = $item['id'];
+            }
+        }
+
+        $index = array_search($blockId, $ids, true);
+        if ($index === false) {
+            return;
+        }
+
+        $swapWith = $direction === 'up' ? $index - 1 : $index + 1;
+        if (! isset($ids[$swapWith])) {
+            return;
+        }
+
+        [$ids[$index], $ids[$swapWith]] = [$ids[$swapWith], $ids[$index]];
+        $this->reorderNavigator($ids, $parentId, $columnIndex);
+    }
+
+    public function insertSection(int $sectionId, ?int $position = null): void
+    {
+        $this->addBlock('section_ref', $position);
+
+        $index = $position ?? array_key_last($this->blocks);
+        if (! is_int($index) || ! isset($this->blocks[$index]) || ($this->blocks[$index]['type'] ?? '') !== 'section_ref') {
+            return;
+        }
+
+        $this->blocks[$index]['data']['section_id'] = $sectionId;
+        $normalized = app(PayloadNormalizer::class)->normalizeBlock($this->blocks[$index]);
+        if ($normalized !== null) {
+            $this->blocks[$index] = $normalized;
+        }
+
+        $this->emitValue();
+    }
+
+    public function unlinkSection(string $blockId): void
+    {
+        $snapshot = $this->findBlockSnapshot($blockId);
+        if ($snapshot === null || ($snapshot['type'] ?? '') !== 'section_ref') {
+            return;
+        }
+
+        $section = PageBuilderSection::query()->find((int) ($snapshot['data']['section_id'] ?? 0));
+        if (! $section instanceof PageBuilderSection || ! is_array($section->builder_payload)) {
+            return;
+        }
+
+        $copies = app(PayloadNormalizer::class)->normalize($section->builder_payload, true);
+        $this->saveHistory();
+        $this->replaceBlock($this->blocks, $blockId, $copies);
+        $this->dispatch('builder:updated');
+        $this->emitValue();
+    }
+
+    public function updateHeadingText(string $blockId, string $text): void
+    {
+        $snapshot = $this->findBlockSnapshot($blockId);
+        if ($snapshot === null || ($snapshot['type'] ?? '') !== 'heading') {
+            return;
+        }
+
+        $plain = trim(preg_replace('/\s+/u', ' ', strip_tags($text)) ?? '');
+        $plain = mb_substr($plain, 0, 255);
+        $data = is_array($snapshot['data'] ?? null) ? $snapshot['data'] : [];
+
+        if (($data['text'] ?? '') === $plain) {
+            return;
+        }
+
+        $data['text'] = $plain;
+        $snapshot['data'] = app(PayloadNormalizer::class)->normalizeData('heading', $data);
+        $this->saveHistory();
+        $this->replaceBlock($this->blocks, $blockId, [$snapshot]);
+        $this->dispatch('builder:updated');
+        $this->emitValue();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $nodes
+     * @param  list<array<string, mixed>>  $replacement
+     */
+    protected function replaceBlock(array &$nodes, string $blockId, array $replacement): bool
+    {
+        foreach ($nodes as $index => $node) {
+            if (! is_array($node)) {
+                continue;
+            }
+
+            if (($node['id'] ?? '') === $blockId) {
+                array_splice($nodes, $index, 1, $replacement);
+
+                return true;
+            }
+        }
+
+        foreach ($nodes as &$node) {
+            if (! is_array($node) || empty($node['children']) || ! is_array($node['children'])) {
+                continue;
+            }
+
+            foreach ($node['children'] as &$column) {
+                if (! isset($column['items']) || ! is_array($column['items'])) {
+                    continue;
+                }
+
+                if ($this->replaceBlock($column['items'], $blockId, $replacement)) {
+                    return true;
+                }
+            }
+        }
+
+        unset($node, $column);
+
+        return false;
     }
 
     /**

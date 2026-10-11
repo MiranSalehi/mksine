@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Http\Controllers\AdminStylesController;
+use Miran\Mksine\Http\Controllers\PageBuilderPreviewController;
 use Miran\Mksine\Http\Middleware\EnsureActiveThemeDependencies;
 use Miran\Mksine\Http\Responses\ScreenshotResponse;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
@@ -12,6 +13,10 @@ use Miran\Mksine\Support\FilesystemPath;
 
 Route::get('/mksine/admin-styles.css', AdminStylesController::class)
     ->name('mksine.admin-styles');
+
+Route::get('/mksine/page-builder/preview/{token}', PageBuilderPreviewController::class)
+    ->middleware(['web', 'auth', 'signed', EnsureActiveThemeDependencies::class])
+    ->name('mksine.page-builder.preview');
 
 Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function () {
     // Load active theme's theme.php (overrides + route callbacks)

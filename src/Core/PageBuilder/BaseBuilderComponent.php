@@ -100,6 +100,27 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
     }
 
     /**
+     * Preview regions for this component. Empty means the canvas click opens the whole form.
+     *
+     * @return array<string, array{fields?: list<string>, repeater?: string}>
+     */
+    public static function regions(): array
+    {
+        return BlockRegion::forType(static::getType());
+    }
+
+    /**
+     * Theme and plugin components override this. The base method must stay here so
+     * {@see BlockRegion::forType()} can tell a real map from the default lookup.
+     *
+     * @return array<string, array{fields?: list<string>, repeater?: string}>
+     */
+    public static function regionDefinitions(): array
+    {
+        return [];
+    }
+
+    /**
      * Validate the component data.
      */
     public static function validate(array $data): array
@@ -134,6 +155,7 @@ abstract class BaseBuilderComponent implements BuilderComponentInterface
             'type' => static::getType(),
             'data' => static::getDefaultData(),
             'children' => static::supportsChildren() ? [] : null,
+            'presentation' => BlockPresentation::defaults(),
         ];
     }
 

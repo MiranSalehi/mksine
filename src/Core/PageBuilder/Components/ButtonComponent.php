@@ -6,6 +6,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
 
 class ButtonComponent extends BaseBuilderComponent
 {
@@ -95,5 +96,12 @@ class ButtonComponent extends BaseBuilderComponent
             'new_tab' => false,
             'full_width' => false,
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $data['url'] = BuilderUrl::href($data['url'] ?? '');
+
+        return $data;
     }
 }

@@ -5,6 +5,7 @@ namespace Miran\Mksine\Core\PageBuilder\Components;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
 
 class HeadingComponent extends BaseBuilderComponent
 {
@@ -73,5 +74,12 @@ class HeadingComponent extends BaseBuilderComponent
             'level' => 'h2',
             'alignment' => 'left',
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $data['level'] = BuilderUrl::headingLevel($data['level'] ?? 'h2');
+
+        return $data;
     }
 }

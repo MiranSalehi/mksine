@@ -8,6 +8,30 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.13.0 - 2026-10-12
+
+### Added
+
+- **Page builder canvas, signed preview, and slide-over settings.** Authors edit on the canvas. The preview is a signed iframe of the unsaved tree (`mksine.page-builder.preview`, auth, 10-minute cache). Block settings open in a slide-over. The component library can be filtered in the browser. Desktop, tablet, and mobile only change the frame width. An empty page is one add row and does not mount the iframe. Nested insert, move, duplicate, and remove pass the parent block and region index.
+
+- **Shared block appearance and a package stylesheet.** Every block can store alignment, colors, border, padding, and spacing beside its data (`BlockPresentation`). Default blocks render with `mksine-blocks.css`, scoped to `.mksine-block`, so they do not depend on the active theme's Tailwind build. Rebuild that file with the Tailwind CLI and `php bin/scope-blocks-css.php`.
+
+- **Card block.** `card` is a layout block with header, body, and footer drop zones. Header and footer can be hidden without deleting the blocks inside them. Colors, border, radius, shadow, alignment, and padding are an allowlist.
+
+- **Saved sections and builder revisions.** `page_builder_sections` stores a reusable payload, placed with the `section_ref` block. `page_builder_revisions` stores a payload snapshot per page. Session undo and redo are not those rows.
+
+- **Named edit regions and inline headings.** A region save merges into the block and leaves the other fields in place. Heading text can be edited on the canvas.
+
+- **Payload checks before preview and save.** `PayloadNormalizer` drops unregistered block types, checks the stored shape, and allowlists heading tags and link protocols. Media used by a render is loaded with one `whereIn`.
+
+### Changed
+
+- **The page builder no longer uses a structure list or a left navigator.** The canvas is the editor. `show_page_header` and `builder_content_width` are editable on builder pages. Switching a new page to `builder` seeds an empty payload, a hidden page header when that flag is null, and full content width when the width is blank.
+
+### Fixed
+
+- **Dragging a block no longer opens its editor.** A move message identifies the block being dragged separately from an edit. Reordering inside the same list, and editing a block nested in columns, grid, or an inset, keeps the parent and region index.
+
 ## 1.12.0 - 2026-10-06
 
 ### Added

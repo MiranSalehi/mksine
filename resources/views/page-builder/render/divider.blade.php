@@ -24,4 +24,4 @@
     };
 @endphp
 
-<hr class="border-t border-gray-300 dark:border-gray-600 {{ $styleClass }} {{ $widthClass }} {{ $alignmentClass }} my-6">
+<hr {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('divider', (bool) ($preview ?? false)) !!} class="border-t border-gray-300 dark:border-gray-600 {{ $styleClass }} {{ $widthClass }} {{ $alignmentClass }} my-6">

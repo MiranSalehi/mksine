@@ -19,6 +19,7 @@
 
 @if (count($slides) > 0)
 <section
+    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('settings', (bool) ($preview ?? false)) !!}
     class="relative mb-10 overflow-hidden rounded-2xl ring-1 ring-slate-900/10 dark:ring-white/10 {{ $height !== 'auto' ? $heightClass : '' }}"
     x-data="{
         currentSlide: 0,
@@ -70,17 +71,18 @@
                 $title = $slide['title'] ?? '';
                 $subtitle = $slide['subtitle'] ?? '';
                 $buttonText = $slide['button_text'] ?? '';
-                $buttonUrl = $slide['button_url'] ?? '';
+                $buttonUrl = \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($slide['button_url'] ?? '');
                 $alt = $slide['alt'] ?? $title;
 
                 $imageUrl = null;
                 if ($imageId) {
-                    $media = \Miran\Mksine\Models\Media::find($imageId);
+                    $media = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find($imageId);
                     $imageUrl = $media?->url;
                 }
             @endphp
 
             <div
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('slides', (bool) ($preview ?? false), $index) !!}
                 x-show="currentSlide === {{ $index }}"
                 x-transition:enter="{{ $effect === 'fade' ? 'transition-opacity duration-500' : 'transition-transform duration-500' }}"
                 x-transition:enter-start="{{ $effect === 'fade' ? 'opacity-0' : 'translate-x-full' }}"

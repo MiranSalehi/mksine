@@ -5,6 +5,7 @@
     $dir = $td === 'rtl' || ($td === 'auto' && in_array(app()->getLocale(), ['fa', 'ar'], true)) ? 'rtl' : 'ltr';
 @endphp
 <section
+    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('direction', (bool) ($preview ?? false)) !!}
     class="home-clinic-features relative overflow-hidden bg-stone-50 py-10 sm:py-12 dark:bg-slate-950"
     dir="{{ $dir }}"
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
@@ -13,11 +14,13 @@
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <header class="mb-12 text-center lg:mb-16">
             <div
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('badge', (bool) ($preview ?? false)) !!}
                 class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/60 px-4 py-2 text-sm font-medium text-indigo-700 shadow-lg backdrop-blur-xl lg:mb-8 lg:px-5 lg:py-2.5 dark:border-slate-600/50 dark:bg-slate-800/80 dark:text-indigo-300 dark:shadow-black/25"
             >
                 {{ $d['badge'] ?? '' }}
             </div>
             <h2
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('heading', (bool) ($preview ?? false)) !!}
                 id="home-clinic-features-heading"
                 class="mb-6 text-3xl leading-tight font-bold text-gray-900 sm:text-4xl lg:mb-8 lg:text-5xl xl:text-6xl dark:text-gray-50"
             >
@@ -26,6 +29,7 @@
                 >{{ $d['heading_accent'] ?? '' }}</span>
             </h2>
             <p
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('subheading', (bool) ($preview ?? false)) !!}
                 class="mx-auto max-w-3xl text-pretty text-lg leading-relaxed text-gray-600 lg:text-xl dark:text-gray-400"
             >
                 {{ $d['subheading'] ?? '' }}
@@ -34,10 +38,7 @@
         <div class="grid grid-cols-2 gap-6 lg:grid-cols-3 xl:grid-cols-5">
             @foreach ($cards as $index => $card)
                 @php
-                    $cardLink = trim((string) ($card['link_url'] ?? ''));
-                    if ($cardLink !== '' && preg_match('/^\s*javascript:/i', $cardLink)) {
-                        $cardLink = '';
-                    }
+                    $cardLink = \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($card['link_url'] ?? '');
                     $cardNewTab = (bool) ($card['link_new_tab'] ?? false);
                     $cardIsLink = $cardLink !== '';
                     $cardShellClass =
@@ -46,6 +47,7 @@
                 @endphp
                 @if ($cardIsLink)
                     <a
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('cards', (bool) ($preview ?? false), $index) !!}
                         href="{{ $cardLink }}"
                         @if ($cardNewTab) target="_blank" rel="noopener noreferrer" @endif
                         class="{{ $cardShellClass }} block text-inherit no-underline"
@@ -53,6 +55,7 @@
                     >
                 @else
                     <article
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('cards', (bool) ($preview ?? false), $index) !!}
                         class="{{ $cardShellClass }}"
                         style="animation-delay: {{ $index * 100 }}ms"
                     >

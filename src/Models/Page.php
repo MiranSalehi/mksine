@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Miran\Mksine\Core\PageBuilder\PayloadNormalizer;
 use Miran\Mksine\Database\Factories\PageFactory;
 use Miran\Mksine\Observers\ContentSlugObserver;
 use Miran\Mksine\Traits\HasTags;
@@ -55,6 +57,14 @@ class Page extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(config('auth.providers.users.model'), 'updated_by');
+    }
+
+    /**
+     * @return HasMany<PageBuilderRevision, $this>
+     */
+    public function builderRevisions(): HasMany
+    {
+        return $this->hasMany(PageBuilderRevision::class);
     }
 
     /**
@@ -126,7 +136,7 @@ class Page extends Model
 
         $payload = $this->builder_payload;
         if (is_array($payload)) {
-            $payload = json_decode(json_encode($payload), true);
+            $payload = app(PayloadNormalizer::class)->normalize($payload);
         }
 
         return static::query()->create([

@@ -8,6 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Miran\Mksine\Filament\Forms\Components\MediaPicker;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
 
 class HeroComponent extends BaseBuilderComponent
 {
@@ -143,5 +144,13 @@ class HeroComponent extends BaseBuilderComponent
             'secondary_button_text' => '',
             'secondary_button_url' => '',
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $data['button_url'] = BuilderUrl::href($data['button_url'] ?? '');
+        $data['secondary_button_url'] = BuilderUrl::href($data['secondary_button_url'] ?? '');
+
+        return $data;
     }
 }

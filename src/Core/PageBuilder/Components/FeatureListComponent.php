@@ -7,6 +7,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
 
 class FeatureListComponent extends BaseBuilderComponent
 {
@@ -119,5 +120,20 @@ class FeatureListComponent extends BaseBuilderComponent
                 ['icon' => 'heroicon-o-heart', 'title' => 'Reliable', 'description' => '', 'link' => ''],
             ],
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $features = is_array($data['features'] ?? null) ? $data['features'] : [];
+        foreach ($features as $index => $feature) {
+            if (! is_array($feature)) {
+                continue;
+            }
+            $feature['link'] = BuilderUrl::href($feature['link'] ?? '');
+            $features[$index] = $feature;
+        }
+        $data['features'] = $features;
+
+        return $data;
     }
 }

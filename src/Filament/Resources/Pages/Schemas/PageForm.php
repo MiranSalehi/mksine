@@ -18,6 +18,44 @@ use Miran\Mksine\Models\Page;
 
 class PageForm
 {
+    public static function seedBuilderFields(?string $state, callable $set, callable $get): void
+    {
+        if ($state !== 'builder') {
+            return;
+        }
+
+        if (blank($get('builder_content_width'))) {
+            $set('builder_content_width', 'full');
+        }
+
+        if (! is_array($get('builder_payload'))) {
+            $set('builder_payload', []);
+        }
+
+        if ($get('show_page_header') === null) {
+            $set('show_page_header', false);
+        }
+    }
+
+    public static function ensureBuilderStatePresent(object $livewire): void
+    {
+        if (! isset($livewire->data) || ! is_array($livewire->data)) {
+            return;
+        }
+
+        if (($livewire->data['type'] ?? null) !== 'builder') {
+            return;
+        }
+
+        if (! array_key_exists('show_page_header', $livewire->data) || $livewire->data['show_page_header'] === null) {
+            $livewire->data['show_page_header'] = false;
+        }
+
+        if (! is_array($livewire->data['builder_payload'] ?? null)) {
+            $livewire->data['builder_payload'] = [];
+        }
+    }
+
     public static function configure(Schema $schema): Schema
     {
         $formHookManager = app(FormHookManager::class);
@@ -60,14 +98,10 @@ class PageForm
                             ->native(false)
                             ->live()
                             ->afterStateHydrated(function (?string $state, callable $set, callable $get): void {
-                                if ($state === 'builder' && blank($get('builder_content_width'))) {
-                                    $set('builder_content_width', 'full');
-                                }
+                                static::seedBuilderFields($state, $set, $get);
                             })
                             ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
-                                if ($state === 'builder' && blank($get('builder_content_width'))) {
-                                    $set('builder_content_width', 'full');
-                                }
+                                static::seedBuilderFields($state, $set, $get);
                             }),
                         Select::make('status')
                             ->label(__('mksine::pages.status'))
@@ -132,6 +166,7 @@ class PageForm
                     ->visible(fn (callable $get, ?Page $record): bool => static::showsBuilderSections($get, $record)),
                 Section::make(__('mksine::common.seo'))
                     ->key('seo')
+                    ->columnSpanFull()
                     ->schema([
                         TextInput::make('focus_keyphrase')
                             ->label(__('mksine::seo.focus_keyphrase'))

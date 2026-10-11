@@ -87,6 +87,8 @@ The package registers a fixed set of blocks in `MksineServiceProvider::register(
 - **Interactive**: `button`, `call_to_action`, `testimonial`
 - **Sections** (theme-shipped marketing blocks): `mksine_post_comments_feed`, `mksine_testimonials_grid`, `mksine_clinic_features_grid`, `mksine_featured_domains`, `mksine_services_trio`, `mksine_finance_showcase`, `mksine_hero_domain`
 
+The content, media, layout, and interactive blocks are registered in `MksineServiceProvider`. The section blocks are not. `themes/mksine/theme.php` registers them through `RegisterMksineThemeBlocks` when the MKSine theme boots. The normalizer drops unregistered types from the editor preview, so a host running another theme must register those sections itself if saved pages still contain them. This application does that in `App\Providers\AppServiceProvider`.
+
 You can register more from a plugin without modifying the package.
 
 ## Hooking new blocks from a plugin
@@ -113,13 +115,14 @@ The page builder is **opinionated and limited** by design:
 - Blocks are configured via a Filament form returned from `getSchema()`. You get whatever Filament can render — no custom JS UI per block.
 - Storage is JSON inside one column. There is no normalised block table; you cannot SQL-query "all pages with a heading containing X" without a JSONB scan.
 - There is no per-block ACL. If a user can edit a builder page, they can edit any block on it.
-- There is no separate builder preview route; use the live themed page to verify layout.
+- The editor has a signed preview iframe of the unsaved payload (`mksine.page-builder.preview`). It is not a substitute for the storefront: theme wrappers and theme actions still only run on the live page. See [Editor](editor.md).
 - There is no draft/publish per block; the whole page is one record.
 
 If you need a richer authoring tool, this is not the right primitive. For typical content sites it is fine.
 
 ## See also
 
+- [Editor](editor.md)
 - [Creating a block](creating-a-block.md)
 - [Nesting](nesting.md)
 - [Validation](validation.md)

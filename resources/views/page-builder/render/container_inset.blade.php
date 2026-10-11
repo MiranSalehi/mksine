@@ -32,18 +32,28 @@
   $bgStyle = $bgStyleParts === [] ? null : implode('; ', $bgStyleParts) . ';';
 @endphp
 @if ($fullBleed && $bgStyle !== null)
-  <div class="w-full mksine-container-inset--bleed" style="{{ e($bgStyle) }}">
+  <div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('frame', (bool) ($preview ?? false)) !!} class="w-full mksine-container-inset--bleed" style="{{ e($bgStyle) }}">
     <div class="mksine-container-inset {{ $innerPadding }} {{ $widthClass }}">
-      @foreach ($items as $item)
-        @include('mksine::page-builder.render.block', ['block' => $item])
-      @endforeach
+      @include('mksine::page-builder.render.region-items', [
+        'items' => $items,
+        'preview' => $preview ?? false,
+        'canvas' => $canvas ?? false,
+        'visited' => $visited ?? [],
+        'parentId' => $blockId ?? null,
+        'columnIndex' => 0,
+      ])
     </div>
   </div>
 @else
-  <div class="mksine-container-inset {{ $innerPadding }} {{ $widthClass }}" @if ($bgStyle !== null)
+  <div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('frame', (bool) ($preview ?? false)) !!} class="mksine-container-inset {{ $innerPadding }} {{ $widthClass }}" @if ($bgStyle !== null)
   style="{{ e($bgStyle) }}" @endif>
-    @foreach ($items as $item)
-      @include('mksine::page-builder.render.block', ['block' => $item])
-    @endforeach
+    @include('mksine::page-builder.render.region-items', [
+      'items' => $items,
+      'preview' => $preview ?? false,
+      'canvas' => $canvas ?? false,
+      'visited' => $visited ?? [],
+      'parentId' => $blockId ?? null,
+      'columnIndex' => 0,
+    ])
   </div>
 @endif

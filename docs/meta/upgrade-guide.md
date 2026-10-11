@@ -33,6 +33,15 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.13.0 (2026-10-12)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Run the new page-builder migrations.** `page_builder_revisions` and `page_builder_sections` are created by the package migrations dated `2026_10_10_030300` and `2026_10_10_031700`. Migration: `php artisan migrate`.
+- **Unregistered block types are removed when a payload is normalized.** Preview, paste, save, duplicate, and template load drop a block whose `type` is not in `ComponentRegistry`. A page that stores a theme or plugin block will lose that block in the editor if the block is not registered on that boot. Migration: register those classes from the theme `theme.php` or the plugin `boot()` before editing builder pages.
+- **Default blocks load `mksine-blocks.css`.** The shared renderer emits a package stylesheet scoped to `.mksine-block`. It does not use the active theme's Tailwind build or its dark-mode variant. Migration: none for theme templates that already include `mksine::page-builder.render.block`. Do not copy block utilities into the theme stylesheet to restyle the same elements.
+- **The builder editor is the canvas.** There is no structure list and no left navigator. Settings open in a slide-over. Empty pages do not mount the preview iframe. Session undo is not a `page_builder_revisions` row. Migration: none.
+
 ## 1.12.0 (2026-10-06)
 
 ### Breaking
@@ -327,6 +336,7 @@ When adding an entry, copy this skeleton:
 - `TableHookManager` `extend*` methods accept and return the full `Table` object (not arrays of components). Older docstrings implied otherwise; the implementation has always taken `Table`. Inline PHPDoc was updated for clarity.
 - `TableHookManager::apply()` does **not** catch exceptions raised by registered callbacks (unlike `FormHookManager::apply()`, which logs and continues). This asymmetry is intentional but now explicitly documented.
 - The `ComponentRegistry::validateComponent()` is invoked automatically when editors save block settings via **`PageBuilder::saveBlock`**. Imports, programmatic `builder_payload` writes, and integrations that bypass the modal must still recurse `validateComponent()` themselves. See [Validation](../guides/page-builder/validation.md).
+- The page builder editor is the canvas, not a structure list or left navigator. Empty pages show one add row instead of the preview iframe. Named regions merge on save. `show_page_header` and `builder_content_width` are editable on builder pages. See [Editor](../guides/page-builder/editor.md).
 - `MenuLocationManager::syncToDatabase()` only inserts new locations; it never updates `label` on existing rows or deletes removed locations. Document this whenever you change a location’s label in code.
 - Page builder docs introduce the `{plugin_root}/{plugin_id}` convention for examples and stop referencing client-specific plugin IDs.
 

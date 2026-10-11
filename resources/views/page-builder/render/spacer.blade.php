@@ -12,4 +12,4 @@
     };
 @endphp
 
-<div class="{{ $heightClass }}"></div>
+<div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('spacer', (bool) ($preview ?? false)) !!} class="{{ $heightClass }}"></div>

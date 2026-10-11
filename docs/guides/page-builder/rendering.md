@@ -96,11 +96,13 @@ If you ship a theme, copy this pattern into your `page.blade.php`:
 @endif
 ```
 
-The `Page` model still carries `show_page_header` and `builder_content_width` for themes that read them (defaults: header on, `contained` width). Those columns are **not** editable in Filament anymore — adjust behaviour in your theme template or via database/programmatic updates if you need different defaults.
+The `Page` model carries `show_page_header` and `builder_content_width`. The page form edits both when the type is `builder`. A new page switched to `builder` seeds the header flag to `false` when it is still null, and the width to `full` when it is blank. Database defaults on older rows can still be header on and `contained`. Read the columns in the theme; do not hard-code the editor seeds.
 
-## Live render only
+## Preview and the live page
 
-There is **no** separate admin “preview” window. Blocks render through the same dispatcher as the public page (`mksine::page-builder.render.block` inside your theme). Validate layout by opening the page on the storefront (or a local route that uses the theme layout).
+The editor canvas is a signed iframe of the unsaved payload. It includes `mksine::page-builder.render.block` inside `page-builder/preview/document.blade.php` and loads the active theme's assets. An empty page does not use that iframe. See [Editor](editor.md).
+
+The iframe is not the storefront. Validate the published layout on the themed page.
 
 If a block looks wrong on the site but seemed fine while editing, the difference is almost always:
 
@@ -138,6 +140,7 @@ If you genuinely need a "filter every block on render" extension point, open an 
 ## See also
 
 - [Concepts and feature flag](concepts-and-feature-flag.md)
+- [Editor](editor.md)
 - [Creating a block](creating-a-block.md)
 - [Nesting](nesting.md)
 - [Validation](validation.md)

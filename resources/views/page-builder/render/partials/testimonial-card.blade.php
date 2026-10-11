@@ -7,14 +7,14 @@
 
     $authorImageUrl = null;
     if ($authorImageId) {
-        $media = \Miran\Mksine\Models\Media::find($authorImageId);
+        $media = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find($authorImageId);
         $authorImageUrl = $media?->url;
     }
 @endphp
 
 <div class="{{ $cardClasses }}">
     @if ($style === 'quote')
-        <svg class="mb-4 h-8 w-8 text-amber-500/35 dark:text-amber-400/30" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
+        <svg class="mb-4 h-8 w-8 text-violet-600/90 dark:text-violet-300" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
             <path d="M10 8c-3.3 0-6 2.7-6 6v10h10V14H6c0-2.2 1.8-4 4-4V8zm14 0c-3.3 0-6 2.7-6 6v10h10V14h-8c0-2.2 1.8-4 4-4V8z"/>
         </svg>
     @endif
@@ -39,7 +39,7 @@
         @if ($authorImageUrl)
             <img src="{{ asset($authorImageUrl) }}" alt="{{ $authorName }}" class="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow-sm dark:ring-slate-800">
         @else
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-sm font-bold text-white shadow-md">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-violet-700 text-sm font-bold text-white">
                 {{ strtoupper(substr($authorName, 0, 1)) }}
             </div>
         @endif

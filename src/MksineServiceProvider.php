@@ -86,10 +86,12 @@ use Miran\Mksine\Core\MenuItemSources\CustomLinkMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PageMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PostMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\TagMenuItemSource;
+use Miran\Mksine\Core\PageBuilder\BuilderMediaIndex;
 use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\AudioComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
+use Miran\Mksine\Core\PageBuilder\Components\CardComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent;
@@ -99,13 +101,7 @@ use Miran\Mksine\Core\PageBuilder\Components\GridLayoutComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeadingComponent;
 use Miran\Mksine\Core\PageBuilder\Components\HeroComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ImageComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineClinicFeaturesGridComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineFeaturedDomainsComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineFinanceShowcaseComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineHeroDomainComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksinePostCommentsFeedComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineServicesTrioComponent;
-use Miran\Mksine\Core\PageBuilder\Components\MksineTestimonialsGridComponent;
+use Miran\Mksine\Core\PageBuilder\Components\SectionRefComponent;
 use Miran\Mksine\Core\PageBuilder\Components\SliderComponent;
 use Miran\Mksine\Core\PageBuilder\Components\SpacerComponent;
 use Miran\Mksine\Core\PageBuilder\Components\TabsComponent;
@@ -118,7 +114,6 @@ use Miran\Mksine\Core\PageBuilder\Templates\AboutPageTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\BlankTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\ContactPageTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\LandingPageTemplate;
-use Miran\Mksine\Core\PageBuilder\Templates\MksineDefaultHomeTemplate;
 use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
@@ -159,6 +154,8 @@ use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Entry;
 use Miran\Mksine\Models\Page;
+use Miran\Mksine\Models\PageBuilderSection;
+use Miran\Mksine\Policies\PageBuilderSectionPolicy;
 use Miran\Mksine\Models\Post;
 use Miran\Mksine\Models\Tag;
 use Miran\Mksine\Services\Geo\GeoResolver;
@@ -396,6 +393,8 @@ class MksineServiceProvider extends PackageServiceProvider
             );
         });
 
+        $this->app->scoped(BuilderMediaIndex::class);
+
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {
             $registry = new ComponentRegistry;
@@ -419,6 +418,8 @@ class MksineServiceProvider extends PackageServiceProvider
                 ColumnsComponent::class,
                 GridLayoutComponent::class,
                 ContainerInsetComponent::class,
+                CardComponent::class,
+                SectionRefComponent::class,
                 HeroComponent::class,
                 TabsComponent::class,
 
@@ -426,15 +427,6 @@ class MksineServiceProvider extends PackageServiceProvider
                 ButtonComponent::class,
                 CallToActionComponent::class,
                 AccordionComponent::class,
-
-                // MKSine theme landing sections
-                MksineFinanceShowcaseComponent::class,
-                MksineHeroDomainComponent::class,
-                MksineServicesTrioComponent::class,
-                MksineFeaturedDomainsComponent::class,
-                MksineClinicFeaturesGridComponent::class,
-                MksineTestimonialsGridComponent::class,
-                MksinePostCommentsFeedComponent::class,
             ]);
 
             return $registry;
@@ -449,7 +441,6 @@ class MksineServiceProvider extends PackageServiceProvider
             $registry->register('contact', ContactPageTemplate::config());
             $registry->register('services', ServicesPageTemplate::config());
             $registry->register('blank', BlankTemplate::config());
-            $registry->register('mksine-default-home', MksineDefaultHomeTemplate::config());
 
             return $registry;
         });
@@ -619,6 +610,7 @@ class MksineServiceProvider extends PackageServiceProvider
             Menu::class => MenuPolicy::class,
             MenuLocation::class => MenuLocationPolicy::class,
             Page::class => PagePolicy::class,
+            PageBuilderSection::class => PageBuilderSectionPolicy::class,
             Post::class => PostPolicy::class,
             Entry::class => EntryPolicy::class,
             Role::class => RolePolicy::class,

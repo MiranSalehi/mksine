@@ -35,7 +35,7 @@
     $uniqueId = 'tabs-' . uniqid();
 @endphp
 
-<section class="mb-8" x-data="{ activeTab: 0 }">
+<section {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('settings', (bool) ($preview ?? false)) !!} class="mb-8" x-data="{ activeTab: 0 }">
     @if(count($tabs) > 0)
         <div class="{{ $orientation === 'vertical' ? 'flex flex-col sm:flex-row gap-4 sm:gap-8' : '' }}">
             {{-- Tab Headers --}}
@@ -51,6 +51,7 @@
                         @endphp
 
                         <button
+                            {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('tabs', (bool) ($preview ?? false), $index) !!}
                             type="button"
                             @click="activeTab = {{ $index }}"
                             :class="activeTab === {{ $index }} ? '{{ $activeClasses }}' : '{{ $inactiveClasses }}'"
@@ -71,6 +72,7 @@
             <div class="{{ $orientation === 'vertical' ? 'flex-1' : 'mt-6' }}">
                 @foreach($tabs as $index => $tab)
                     <div
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('tabs', (bool) ($preview ?? false), $index) !!}
                         x-show="activeTab === {{ $index }}"
                         x-cloak
                         x-transition:enter="transition ease-out duration-200"

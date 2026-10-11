@@ -20,23 +20,23 @@
     };
 
     $iconBgClasses = match ($iconStyle) {
-        'circle' => 'mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/15 ring-1 ring-amber-500/20 dark:from-amber-400/10 dark:to-orange-500/10 dark:ring-amber-400/25',
-        'square' => 'mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400/20 to-orange-500/15 ring-1 ring-amber-500/20 dark:from-amber-400/10 dark:to-orange-500/10 dark:ring-amber-400/25',
+        'circle' => 'mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:ring-violet-500/20',
+        'square' => 'mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:ring-violet-500/20',
         default => '',
     };
 @endphp
 
-<section class="mb-10 md:mb-14">
+<section {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('frame', (bool) ($preview ?? false)) !!} class="mb-10 md:mb-14">
     @if ($heading || $subheading)
         <div class="mb-10 text-center sm:mb-12">
             @if ($heading)
-                <h2 class="mb-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-slate-50">
+                <h2 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('heading', (bool) ($preview ?? false)) !!} class="mb-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-slate-50">
                     {{ $heading }}
                 </h2>
             @endif
 
             @if ($subheading)
-                <p class="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+                <p {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('subheading', (bool) ($preview ?? false)) !!} class="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
                     {{ $subheading }}
                 </p>
             @endif
@@ -45,25 +45,25 @@
 
     @if (count($features) > 0)
         <div class="grid grid-cols-1 gap-6 sm:gap-8 {{ $gridCols }}">
-            @foreach ($features as $feature)
+            @foreach ($features as $index => $feature)
                 @php
                     $icon = $feature['icon'] ?? 'heroicon-o-star';
                     $title = $feature['title'] ?? '';
                     $description = $feature['description'] ?? '';
-                    $link = $feature['link'] ?? '';
+                    $link = \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($feature['link'] ?? '');
                 @endphp
 
-                <div class="{{ $cardClasses }} transition-colors duration-200 hover:border-amber-200/60 dark:hover:border-amber-500/20">
+                <div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('features', (bool) ($preview ?? false), $index) !!} class="{{ $cardClasses }} transition-colors duration-200 hover:border-violet-200 dark:hover:border-violet-500/30">
                     @if ($icon && $iconStyle !== 'none')
                         <div class="{{ $iconBgClasses }}">
-                            <x-dynamic-component :component="$icon" class="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                            <x-dynamic-component :component="$icon" class="h-6 w-6 text-violet-700 dark:text-violet-300" />
                         </div>
                     @endif
 
                     @if ($title)
                         @if ($link)
                             <a href="{{ $link }}" class="group/block">
-                                <h3 class="mb-2 text-lg font-semibold tracking-tight text-slate-900 transition-colors group-hover/block:text-amber-600 dark:text-slate-50 dark:group-hover/block:text-amber-400">
+                                <h3 class="mb-2 text-lg font-semibold tracking-tight text-slate-900 transition-colors group-hover/block:text-violet-700 dark:text-slate-50 dark:group-hover/block:text-violet-300">
                                     {{ $title }}
                                 </h3>
                             </a>

@@ -63,7 +63,7 @@ if (! function_exists('mksine_pb_media_url')) {
     function mksine_pb_media_url(mixed $mediaId, string $fallbackThemeAssetPath): string
     {
         if (is_numeric($mediaId) && (int) $mediaId > 0) {
-            $media = \Miran\Mksine\Models\Media::query()->find((int) $mediaId);
+            $media = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find((int) $mediaId);
 
             if ($media !== null && $media->full_url !== null && $media->full_url !== '') {
                 return $media->full_url;

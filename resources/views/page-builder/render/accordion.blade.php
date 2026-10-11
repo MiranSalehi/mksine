@@ -19,9 +19,9 @@
     };
 @endphp
 
-<section class="mb-10 md:mb-14">
+<section {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('settings', (bool) ($preview ?? false)) !!} class="mb-10 md:mb-14">
     @if ($heading)
-        <h2 class="mb-8 text-3xl font-bold tracking-tight text-slate-900 sm:mb-10 sm:text-4xl dark:text-slate-50">
+        <h2 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('heading', (bool) ($preview ?? false)) !!} class="mb-8 text-3xl font-bold tracking-tight text-slate-900 sm:mb-10 sm:text-4xl dark:text-slate-50">
             {{ $heading }}
         </h2>
     @endif
@@ -50,7 +50,7 @@
                     $answer = $item['answer'] ?? '';
                 @endphp
 
-                <div class="{{ $itemClasses }}">
+                <div {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('items', (bool) ($preview ?? false), $index) !!} class="{{ $itemClasses }}">
                     <button
                         type="button"
                         @click="toggle({{ $index }})"

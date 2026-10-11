@@ -38,9 +38,7 @@
             @if($isBuilder)
                 {{-- Builder pages: optional full-width (landing) --}}
                 <div class="builder-content space-y-0">
-                    @foreach($page->builder_payload as $block)
-                        @include('mksine::page-builder.render.block', ['block' => $block])
-                    @endforeach
+                    @include('mksine::page-builder.render.payload', ['payload' => $page->builder_payload])
                 </div>
             @else
                 {{-- Regular pages: prose formatting --}}

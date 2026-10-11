@@ -72,7 +72,7 @@ The registry exposes a wrapper:
     }
 ```
 
-The Livewire **`PageBuilder::saveBlock`** path invokes **`validateComponent()`** immediately before resizing **`columns` / `grid_layout`** children — so payloads edited in the block modal stay normalised inside the builder.
+The Livewire **`PageBuilder::saveBlock`** path runs **`PayloadNormalizer::normalizeData()`**, which calls **`validateComponent()`**, immediately before resizing **`columns` / `grid_layout`** children. Paste, template load, and page duplicate use the same normalizer.
 
 Programmatic imports, seeders, and any path that skips the modal still need you to recurse `builder_payload` yourself (below).
 

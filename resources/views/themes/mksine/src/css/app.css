@@ -54,15 +54,12 @@
 
 /* CSS Variables */
 :root {
-    --color-primary: #f59e0b;
-    /* amber-500 — default theme accent (buttons / general) */
-    --header-accent: #f97316;
-    /* orange-500 — MrDomain-style header brand + nav hover */
-    --color-secondary: #4f46e5;
-    /* Tailwind indigo-600 */
+    --color-primary: #6d28d9;
+    --header-accent: #6d28d9;
+    --color-secondary: #14151a;
     --bg-primary: #ffffff;
-    --bg-secondary: #f8f9fa;
-    --text-primary: #212529;
+    --bg-secondary: #f4f5f7;
+    --text-primary: #14151a;
     --text-secondary: #6c757d;
     --border-color: #e9ecef;
 }
@@ -115,8 +112,7 @@ html.dark {
     }
 
     .btn-primary:hover {
-        background-color: #d97706;
-        /* amber-600 */
+        background-color: #5b21b6;
     }
 
     .btn-secondary {
@@ -260,7 +256,7 @@ html.dark .border-gray-200 {
 }
 
 .site-header-icon-btn:hover {
-    @apply border-amber-200 bg-amber-50 text-amber-700;
+    @apply border-violet-200 bg-violet-50 text-violet-700;
 }
 
 .dark .site-header-icon-btn {
@@ -268,16 +264,15 @@ html.dark .border-gray-200 {
 }
 
 .dark .site-header-icon-btn:hover {
-    @apply border-amber-600/50 bg-gray-700 text-amber-400;
+    @apply border-violet-400/40 bg-gray-700 text-violet-300;
 }
 
 .dark .site-header-bar {
     @apply border-gray-700 bg-gray-900;
 }
 
-/* Logo mark + brand accent (orange block + split word) */
 .site-header-logo-mark {
-    border-radius: 0.2rem;
+    border-radius: 0.7rem;
     background-color: var(--header-accent);
 }
 
@@ -286,8 +281,7 @@ html.dark .border-gray-200 {
 }
 
 .site-header-brand:hover .site-header-brand-accent {
-    color: #ea580c;
- /* orange-600 */
+    color: #5b21b6;
 }
 
 /* =========================================================================
@@ -575,7 +569,7 @@ ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-m
 ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] a:hover,
 ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger:hover {
     color: var(--header-accent) !important;
-    background-color: rgba(249, 115, 22, 0.08) !important;
+    background-color: rgba(109, 40, 217, 0.08) !important;
 }
 
 .dark ul.mksine-menu-header_primary > li > a,
@@ -585,8 +579,7 @@ ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] .mksine-m
 
 .dark ul.mksine-menu-header_primary > li > a:hover,
 .dark ul.mksine-menu-header_primary > li > .mksine-menu-parent-trigger:hover {
-    color: #fb923c !important;
-    /* orange-400 */
+    color: #c4b5fd !important;
 }
 
 .dark ul.mksine-menu-header_primary [class*='mksine-submenu-header_primary'] {
@@ -685,7 +678,7 @@ ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked [class*='mksin
 }
 
 .site-mobile-menu-trigger:hover {
-    @apply border-orange-200 bg-orange-50 text-orange-700;
+    @apply border-violet-200 bg-violet-50 text-violet-700;
 }
 
 .dark .site-mobile-menu-trigger {
@@ -693,7 +686,7 @@ ul.mksine-menu-header_primary.mksine-menu-header_primary--stacked [class*='mksin
 }
 
 .dark .site-mobile-menu-trigger:hover {
-    @apply border-orange-500/40 bg-gray-800 text-orange-400;
+    @apply border-violet-400/40 bg-gray-800 text-violet-300;
 }
 
 /* =========================================================================
@@ -826,7 +819,7 @@ body.site-mobile-drawer-open {
 }
 
 .dark .site-mobile-drawer__header {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, #0f172a 60%);
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.18) 0%, #0f172a 60%);
     border-bottom-color: #334155;
 }
 
@@ -873,8 +866,8 @@ ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li,
 
 ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li:hover,
 .mksine-menu-header_primary--drawer.mksine-menu-header_primary > li:hover {
-    border-color: rgba(249, 115, 22, 0.35);
-    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.08);
+    border-color: rgba(109, 40, 217, 0.35);
+    box-shadow: 0 4px 14px rgba(109, 40, 217, 0.08);
 }
 
 ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li > a,
@@ -945,7 +938,7 @@ ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer [class*='mksine
 .mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] a:hover,
 .mksine-menu-header_primary--drawer [class*='mksine-submenu-header_primary'] .mksine-menu-parent-trigger:hover {
     color: var(--header-accent) !important;
-    background-color: rgba(249, 115, 22, 0.08) !important;
+    background-color: rgba(109, 40, 217, 0.08) !important;
 }
 
 .dark ul.mksine-menu-header_primary.mksine-menu-header_primary--drawer > li,

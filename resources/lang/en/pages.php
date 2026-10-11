@@ -37,4 +37,7 @@ return [
     'duplicate_modal_heading' => 'Duplicate page',
     'duplicate_modal_description' => 'A new draft will be created with the same content and a unique slug. You can edit it before publishing.',
     'duplicate_success' => 'Page duplicated',
+    'revisions' => 'Revisions',
+    'revision_choose' => 'Saved version',
+    'revision_restored' => 'Builder restored from that version',
 ];

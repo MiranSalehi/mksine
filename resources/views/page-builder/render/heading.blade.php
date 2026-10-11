@@ -1,6 +1,6 @@
 @php
     $text = $data['text'] ?? '';
-    $level = $data['level'] ?? 'h2';
+    $level = \Miran\Mksine\Core\PageBuilder\BuilderUrl::headingLevel($data['level'] ?? 'h2');
     $alignment = $data['alignment'] ?? 'left';
 
     $alignmentClasses = match ($alignment) {
@@ -20,6 +20,9 @@
     };
 @endphp
 
-<{{ $level }} class="{{ $levelClasses }} {{ $alignmentClasses }} text-balance text-slate-900 dark:text-slate-50 mb-6 md:mb-8">
+<{{ $level }}
+    class="{{ $levelClasses }} {{ $alignmentClasses }} text-balance text-slate-900 dark:text-slate-50 mb-6 md:mb-8"
+    @if (! empty($preview)) contenteditable="true" data-mksine-inline="heading" spellcheck="false" @endif
+>
     {{ $text }}
 </{{ $level }}>

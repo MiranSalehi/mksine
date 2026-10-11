@@ -490,6 +490,9 @@ BLADE;
             </header>
 
             @if($page->usesBuilder() && !empty($page->builder_payload))
+                @php
+                    app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->warm($page->builder_payload);
+                @endphp
                 <div class="builder-content space-y-0">
                     @foreach($page->builder_payload as $block)
                         @include('mksine::page-builder.render.block', ['block' => $block])

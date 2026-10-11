@@ -17,6 +17,8 @@ A block is:
 
 The framework keeps a `ComponentRegistry` (in-memory, populated each boot from the package and any plugin/theme `register()` calls). Editors pick blocks from the picker; the picker shows everything in the registry, grouped by category.
 
+The bundled MKSine landing blocks (`mksine_*`) and the `mksine-default-home` template are not in that core list. `MksineServiceProvider` does not register them. `themes/mksine/theme.php` calls `RegisterMksineThemeBlocks` when that theme boots. `PayloadNormalizer` drops any type that is not registered, including from the editor preview. A host that keeps those sections while another theme is active must call `RegisterMksineThemeBlocks::register()` on its own boot. This application does that from `App\Providers\AppServiceProvider`.
+
 A page's blocks are persisted as a tree of:
 
 ```json
@@ -36,10 +38,8 @@ Some MKSine installations don't want a block editor. The feature flag keeps the 
 
 The page builder is intentionally minimal:
 
-- No drag-and-drop in the front-end (it's only an editor convenience).
-- No live preview by default (a separate preview route exists).
-- No per-block ACL.
-- No live Filament-ish UI per block — block configuration is a Filament form returned from `getSchema()`.
+- The editor canvas is a signed iframe of the unsaved payload. It uses the same `render.block` loop as the theme page. Guests cannot open that URL. An empty page does not mount the iframe; it shows one add row. There is no structure list and no left navigator. Insert, move, and remove live on the canvas. See [Editor](../guides/page-builder/editor.md).
+- Block configuration is a Filament form returned from `getSchema()`.
 - Storage is a single JSON column. Page-level full-text search across blocks requires JSONB scans or denormalisation.
 
 If you need a more sophisticated authoring tool, this is not the right primitive. If you need a flexible-but-bounded way to compose marketing pages, it works well.
@@ -49,11 +49,16 @@ If you need a more sophisticated authoring tool, this is not the right primitive
 - **Type strings are persistent identifiers.** Don't rename them across versions. Namespace with your plugin id (e.g. `acme_pricing_table`) to avoid collisions.
 - **Blocks must default missing keys** in their render view. Pages persisted with v1 schemas will be read with v2 code.
 - **Containers come in two shapes**: simple children arrays vs. column buckets (used by `ColumnsComponent`). Pick one per block and document it.
-- **Validation is opt-in.** `BuilderComponentInterface::validate()` exists but is **not called automatically**. Wire it from your save observer if you care.
+- **Validation runs on the editor save path.** `PayloadNormalizer` calls `validate()` for paste, the block modal, template load, and page duplicate. Imports that write `builder_payload` directly still have to call the normalizer themselves. Front-end render also allowlists heading tags and link protocols, so an old payload cannot choose a tag name or a `javascript:` URL.
+- **Blocks can carry a shared `presentation` object** (`anchor`, `spacing`, `visibility`, `padding`, `background`, `align`, `width`). Values outside the allowlist are dropped. It is not part of each component's `getSchema()`. The renderer wraps every block with it. Old payloads without the newer keys render with no extra classes.
+- **A `section_ref` block stores a section id, not a copy of the section tree.** `page_builder_sections` is the record. Rendering reads it at request time. A section cannot contain a reference to itself. Detach is the only deep copy.
+- **Heading text can be edited from the canvas preview.** The rich-text block stays in the modal.
+- **Builder saves keep up to 20 `page_builder_revisions` rows.** A row is written when the saved `builder_payload` changes, including the payload that was on the page before the first change. Editor undo stays in the session and is not a revision.
 
 ## Where to read next
 
 - [Concepts and feature flag](../guides/page-builder/concepts-and-feature-flag.md)
+- [Editor](../guides/page-builder/editor.md)
 - [Creating a block](../guides/page-builder/creating-a-block.md)
 - [Nesting](../guides/page-builder/nesting.md)
 - [Validation](../guides/page-builder/validation.md)

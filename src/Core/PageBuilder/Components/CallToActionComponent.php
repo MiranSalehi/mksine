@@ -7,6 +7,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Miran\Mksine\Core\PageBuilder\BaseBuilderComponent;
+use Miran\Mksine\Core\PageBuilder\BuilderUrl;
 
 class CallToActionComponent extends BaseBuilderComponent
 {
@@ -107,5 +108,13 @@ class CallToActionComponent extends BaseBuilderComponent
             'secondary_button_text' => '',
             'secondary_button_url' => '',
         ];
+    }
+
+    public static function validate(array $data): array
+    {
+        $data['button_url'] = BuilderUrl::href($data['button_url'] ?? '');
+        $data['secondary_button_url'] = BuilderUrl::href($data['secondary_button_url'] ?? '');
+
+        return $data;
     }
 }

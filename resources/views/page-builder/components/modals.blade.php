@@ -1,17 +1,3 @@
-@if($editingBlockId)
-    <x-filament::modal id="block-editor-modal" :heading="$editorHeading" width="2xl" role="dialog" aria-modal="true" :aria-labelledby="'block-editor-modal-title'">
-        <div class="relative" wire:key="block-editor-wrap-{{ $editingBlockId }}">
-            @livewire('mksine::component-editor', [
-                'blockId' => $editingBlockId,
-                'blockType' => $editingBlockData['block']['type'] ?? '',
-                'blockData' => $editingBlockData['block']['data'] ?? [],
-                'parentId' => $editingBlockData['parentId'] ?? null,
-                'columnIndex' => $editingBlockData['columnIndex'] ?? null,
-            ], 'block-editor-'.$editingBlockId)
-        </div>
-    </x-filament::modal>
-@endif
-
 @if($showTemplatePanel)
     <x-filament::modal id="template-picker-modal" :heading="__('mksine::page_builder.choose_template')" width="4xl" role="dialog" aria-modal="true">
         <div class="relative">
@@ -34,7 +20,19 @@
         role="dialog"
         aria-modal="true"
     >
-        <div class="relative space-y-4">
+        <div class="relative space-y-4" x-data="{ q: '' }">
+            <div>
+                <label for="mksine-component-search" class="sr-only">{{ __('mksine::page_builder.search_components') }}</label>
+                <input
+                    id="mksine-component-search"
+                    type="search"
+                    x-model="q"
+                    autofocus
+                    placeholder="{{ __('mksine::page_builder.search_components') }}"
+                    @keydown.enter.prevent
+                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+            </div>
             {{-- Category tabs --}}
             <div
                 class="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60"
@@ -56,7 +54,7 @@
                             wire:key="component-picker-tabbtn-{{ $category }}"
                             aria-label="{{ $meta['name'] ?? $category }}"
                             @if($componentPickerTab === $category) aria-selected="true" @else aria-selected="false" @endif
-                            class="relative inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold outline-none transition-all duration-200 active:scale-[0.98] motion-reduce:active:scale-100
+                            class="relative inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.98] motion-reduce:active:scale-100
                                 {{ $componentPickerTab === $category
                                     ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-50'
                                     : 'text-zinc-500 hover:bg-white/60 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700/60 dark:hover:text-zinc-200' }}"
@@ -87,28 +85,35 @@
             <div
                 wire:key="component-picker-panel-{{ $componentPickerTab }}"
                 class="mksine-component-picker-panel min-h-[12rem] rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 dark:border-white/[0.06] dark:bg-zinc-900/30"
+                :class="q.trim() === '' ? '' : 'is-searching'"
                 role="tabpanel"
                 tabindex="0"
                 aria-labelledby="component-tab-{{ $componentPickerTab }}"
             >
                 @if(empty($pickerItems))
-                    <div class="flex flex-col items-center justify-center gap-2 py-16 text-center">
+                    <div class="flex flex-col items-center justify-center gap-2 py-16 text-center" :hidden="q.trim() !== ''">
                         <x-heroicon-o-squares-2x2 class="h-9 w-9 text-zinc-300 dark:text-zinc-600" aria-hidden="true" />
                         <p class="text-sm text-zinc-400 dark:text-zinc-500">{{ __('mksine::page_builder.no_components_in_category') }}</p>
                     </div>
-                @else
-                    <div class="max-h-[min(28rem,calc(100vh-14rem))] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]">
-                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            @foreach($pickerItems as $info)
+                @endif
+                <p class="mksine-picker-miss py-16 text-center text-sm text-zinc-400 dark:text-zinc-500">{{ __('mksine::page_builder.no_components_match') }}</p>
+                <div class="max-h-[min(28rem,calc(100vh-14rem))] overflow-y-auto overflow-x-hidden pr-1 [scrollbar-gutter:stable]">
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach($this->components as $category => $categoryItems)
+                            @foreach($categoryItems as $info)
                                 @php
                                     $addBlockTarget = "addBlock('{$info['type']}', ".($insertAtPosition ?? 'null').', '.($insertInParent ? "'{$insertInParent}'" : 'null').', '.($insertInColumn !== null ? $insertInColumn : 'null').')';
+                                    $haystack = mb_strtolower(trim(($info['name'] ?? '').' '.($info['description'] ?? '').' '.($info['type'] ?? '')));
                                 @endphp
                                 <button
                                     type="button"
+                                    data-mksine-picker-card
                                     wire:click="{{ $addBlockTarget }}"
                                     wire:loading.attr="disabled"
                                     wire:target="{{ $addBlockTarget }}"
-                                    wire:key="component-picker-card-{{ $componentPickerTab }}-{{ $info['type'] }}"
+                                    wire:key="component-picker-card-{{ $category }}-{{ $info['type'] }}"
+                                    @if($category !== $componentPickerTab) hidden @endif
+                                    :hidden="(q.trim() === '' && @js($category) !== @js($componentPickerTab)) || (q.trim() !== '' && !@js($haystack).includes(q.trim().toLowerCase()))"
                                     class="group relative flex min-w-0 items-start gap-3 rounded-xl border border-zinc-200/80 bg-white p-3.5 text-start shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] transition-all duration-150 hover:border-violet-200 hover:shadow-[0_4px_12px_0_rgb(124_58_237/0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.07] dark:bg-zinc-900 dark:shadow-none dark:hover:border-violet-500/30 dark:focus-visible:ring-violet-400"
                                 >
                                     <div class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-violet-50 group-hover:text-violet-600 dark:bg-white/[0.06] dark:text-zinc-400 dark:group-hover:bg-violet-500/10 dark:group-hover:text-violet-400">
@@ -131,9 +136,9 @@
                                     </div>
                                 </button>
                             @endforeach
-                        </div>
+                        @endforeach
                     </div>
-                @endif
+                </div>
             </div>
         </div>
         <x-slot:footer>

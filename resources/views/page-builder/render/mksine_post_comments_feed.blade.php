@@ -77,6 +77,7 @@
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         @if ($postMissing)
             <div
+                {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('source', (bool) ($preview ?? false)) !!}
                 class="rounded-2xl border border-amber-200 bg-amber-50/90 p-6 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
                 role="status"
             >
@@ -87,12 +88,14 @@
                 <div class="max-w-2xl text-center lg:text-start">
                     @if (! empty($d['badge']))
                         <div
+                            {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('badge', (bool) ($preview ?? false)) !!}
                             class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/60 px-4 py-2 text-sm font-medium text-violet-700 shadow-lg backdrop-blur-xl dark:border-slate-600/50 dark:bg-slate-800/80 dark:text-violet-300 dark:shadow-black/25"
                         >
                             {{ $d['badge'] }}
                         </div>
                     @endif
                     <h2
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('heading', (bool) ($preview ?? false)) !!}
                         id="mksine-post-comments-feed-heading"
                         class="text-3xl leading-tight font-bold text-gray-900 sm:text-4xl lg:text-5xl dark:text-gray-50"
                     >
@@ -102,12 +105,13 @@
                     </h2>
                     @if (! empty($d['subheading']))
                         <p
+                            {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('subheading', (bool) ($preview ?? false)) !!}
                             class="mt-4 max-w-xl text-pretty text-base leading-relaxed text-gray-600 sm:text-lg dark:text-gray-400"
                         >
                             {{ $d['subheading'] }}
                         </p>
                     @endif
-                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-500">
+                    <p {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('source', (bool) ($preview ?? false)) !!} class="mt-4 text-sm text-gray-500 dark:text-gray-500">
                         @if ($post)
                             <a
                                 href="{{ route('posts.show', $post->slug) }}#comments-section"
@@ -123,6 +127,7 @@
                 </div>
                 @if (! empty($d['aside']))
                     <p
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('aside', (bool) ($preview ?? false)) !!}
                         class="hidden max-w-xs text-sm leading-relaxed text-gray-500 lg:block dark:text-gray-500"
                     >
                         {{ $d['aside'] }}

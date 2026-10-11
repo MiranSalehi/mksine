@@ -1,22 +1,24 @@
 @php
     $d = $data ?? [];
     $imgUrl = mksine_pb_media_url($d['illustration'] ?? null, 'images/home-hero-domain.png');
-    $position = in_array($d['illustration_position'] ?? 'right', ['left', 'right'], true) ? $d['illustration_position'] : 'right';
+    $position = $d['illustration_position'] ?? 'right';
+    $position = in_array($position, ['left', 'right'], true) ? $position : 'right';
 
     $bgImageUrl = null;
     if (is_numeric($d['background_image'] ?? null) && (int) $d['background_image'] > 0) {
-        $bgMedia = \Miran\Mksine\Models\Media::query()->find((int) $d['background_image']);
+        $bgMedia = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find((int) $d['background_image']);
         $bgImageUrl = $bgMedia?->full_url;
     }
 
     $bgColorRaw = $d['background_color'] ?? null;
     $bgColor = is_string($bgColorRaw) && preg_match('/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/', trim($bgColorRaw)) ? trim($bgColorRaw) : null;
-    $solidLight = $bgColor ?? '#FFD180';
+    $solidLight = $bgColor ?? '#efeaff';
     $hasBgImage = (bool) $bgImageUrl;
 
     $headingId = 'home-hero-domain-heading-'.preg_replace('/[^a-zA-Z0-9_-]/', '-', (string) ($blockId ?? 'block'));
 @endphp
 <section
+    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('background', (bool) ($preview ?? false)) !!}
     class="home-hero-domain relative overflow-hidden text-gray-900 dark:bg-slate-900 dark:text-gray-100"
     aria-labelledby="{{ $headingId }}"
 >
@@ -49,6 +51,7 @@
                 >
                     <div class="relative mx-auto flex max-w-sm justify-center md:max-w-full">
                         <img
+                            {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('illustration', (bool) ($preview ?? false)) !!}
                             src="{{ $imgUrl }}"
                             alt="{{ $d['illustration_alt'] ?? '' }}"
                             class="h-auto w-full max-w-md object-contain drop-shadow-md md:max-w-lg"
@@ -63,7 +66,7 @@
                 <div
                     class="w-full max-w-[min(100%,91.666667%)] md:max-w-full lg:col-span-3 {{ $position === 'left' ? 'md:order-2' : 'md:order-1' }}"
                 >
-                    <h1 id="{{ $headingId }}" class="mb-4 font-extrabold tracking-tight text-gray-900 lg:mb-8 dark:text-gray-50">
+                    <h1 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('heading', (bool) ($preview ?? false)) !!} id="{{ $headingId }}" class="mb-4 font-extrabold tracking-tight text-gray-900 lg:mb-8 dark:text-gray-50">
                         <div class="text-4xl leading-[1.08] md:text-5xl xl:text-6xl [&_span.home-hero-heading-accent]:text-violet-600 [&_span.home-hero-heading-accent]:dark:text-violet-400">
                             @if (trim((string) ($d['heading_line1'] ?? '')) !== '')
                                 <span class="block">{{ $d['heading_line1'] }}</span>
@@ -79,11 +82,12 @@
                             </span>
                         </div>
                     </h1>
-                    <p class="mb-6 text-balance text-base text-gray-900 md:text-lg lg:mb-10 xl:text-2xl xl:font-light dark:text-gray-100">
+                    <p {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('subheading', (bool) ($preview ?? false)) !!} class="mb-6 text-balance text-base text-gray-900 md:text-lg lg:mb-10 xl:text-2xl xl:font-light dark:text-gray-100">
                         {{ $d['subheading'] ?? '' }}
                     </p>
                     <a
-                        href="{{ $d['cta_url'] ?? '#' }}"
+                        {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('cta', (bool) ($preview ?? false)) !!}
+                        href="{{ \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($d['cta_url'] ?? '#') }}"
                         class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-6 py-4 font-semibold whitespace-nowrap text-white transition hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
                     >
                         <span>{{ $d['cta_label'] ?? '' }}</span>

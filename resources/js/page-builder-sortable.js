@@ -12,10 +12,7 @@ const BUILDER_GROUP = {
 };
 
 function getLivewireId() {
-  const list = document.getElementById('blocks-list');
-  if (!list) return null;
-  const root = list.closest('[wire\\:id]');
-  return root ? root.getAttribute('wire:id') : null;
+  return document.getElementById('mksine-page-builder-root')?.getAttribute('wire:id') ?? null;
 }
 
 function destroySortables() {

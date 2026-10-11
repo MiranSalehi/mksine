@@ -5,7 +5,7 @@
 @endphp
 <section class="home-services-trio bg-violet-50 py-10 md:py-14 lg:py-16 xl:py-20 dark:bg-violet-950/40" aria-labelledby="home-services-trio-heading">
     <div class="mx-auto w-[90%] max-w-[87.5rem]">
-        <h2 id="home-services-trio-heading" class="mx-auto mb-10 max-w-4xl text-balance text-center text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:mb-14 dark:text-gray-50">
+        <h2 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('title', (bool) ($preview ?? false)) !!} id="home-services-trio-heading" class="mx-auto mb-10 max-w-4xl text-balance text-center text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:mb-14 dark:text-gray-50">
             {{ $d['section_title'] ?? '' }}
         </h2>
         <div class="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3 lg:gap-10 xl:mt-8">
@@ -15,8 +15,9 @@
                     $src = mksine_pb_media_url($card['image'] ?? null, $fb);
                 @endphp
                 <a
-                    href="{{ $card['url'] ?? '#' }}"
-                    class="group flex flex-col items-center gap-6 rounded-none bg-white p-8 text-center shadow-lg shadow-violet-900/10 transition duration-200 ease-out hover:-translate-y-2 hover:shadow-xl dark:bg-slate-800 dark:shadow-black/20"
+                    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('cards', (bool) ($preview ?? false), $idx) !!}
+                    href="{{ \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($card['url'] ?? '#') }}"
+                    class="group flex flex-col items-center gap-6 rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-zinc-200/80 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-900 dark:ring-white/10 dark:shadow-none"
                 >
                     <img
                         src="{{ $src }}"

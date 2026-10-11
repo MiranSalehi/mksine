@@ -1,0 +1,12 @@
+/*
+ * Default page-builder blocks. Compiled into resources/dist/blocks.css and
+ * loaded with every block, so a theme does not have to scan these views or
+ * share this package's dark-mode setting.
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "../views/page-builder/render";
+
+/* Never follow the operating system color scheme. Themes opt in with their own CSS. */
+@custom-variant dark (&:where(.mksine-force-dark, .mksine-force-dark *));

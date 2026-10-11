@@ -4,6 +4,7 @@ namespace Miran\Mksine\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Miran\Mksine\Core\Hooks\MenuLocationManager;
+use Miran\Mksine\Core\PageBuilder\RegisterMksineThemeBlocks;
 use Miran\Mksine\Core\PageBuilder\TemplateRegistry;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
@@ -176,6 +177,7 @@ class MksineSeeder extends Seeder
         $useBuilderHome = filter_var(env('MKSINE_SEED_BUILDER_HOME', false), FILTER_VALIDATE_BOOLEAN);
 
         if ($useBuilderHome && config('mksine.features.page_builder', false)) {
+            RegisterMksineThemeBlocks::register();
             $registry = app(TemplateRegistry::class);
             $blocks = $registry->getBlocks('mksine-default-home');
 

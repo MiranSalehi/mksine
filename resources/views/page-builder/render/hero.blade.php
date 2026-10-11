@@ -7,16 +7,16 @@
     $textAlignment = $data['text_alignment'] ?? 'center';
     $textColor = $data['text_color'] ?? 'white';
     $buttonText = $data['button_text'] ?? '';
-    $buttonUrl = $data['button_url'] ?? '';
+    $buttonUrl = \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($data['button_url'] ?? '');
     $buttonStyle = $data['button_style'] ?? 'primary';
     $showSecondary = $data['show_secondary_button'] ?? false;
     $secondaryText = $data['secondary_button_text'] ?? '';
-    $secondaryUrl = $data['secondary_button_url'] ?? '';
+    $secondaryUrl = \Miran\Mksine\Core\PageBuilder\BuilderUrl::href($data['secondary_button_url'] ?? '');
 
     // Get background image URL
     $backgroundUrl = null;
     if ($backgroundImageId) {
-        $media = \Miran\Mksine\Models\Media::find($backgroundImageId);
+        $media = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find($backgroundImageId);
         $backgroundUrl = $media?->url;
     }
 
@@ -43,15 +43,20 @@
         default => '',
     };
 
+    $surfaceClass = $backgroundUrl
+        ? ''
+        : ($textColor === 'dark' ? 'bg-zinc-50 dark:bg-zinc-950' : 'bg-zinc-900');
+
     $buttonClasses = match($buttonStyle) {
-        'secondary' => 'bg-white text-gray-900 hover:bg-gray-100 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200',
-        'outline' => 'bg-transparent border-2 border-white text-white hover:bg-white hover:text-gray-900 dark:border-gray-300 dark:hover:bg-white/90',
-        default => 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 dark:from-pink-600 dark:to-purple-700',
+        'secondary' => 'bg-white text-zinc-900 hover:bg-zinc-100',
+        'outline' => 'bg-transparent border-2 border-white text-white hover:bg-white hover:text-zinc-900',
+        default => 'bg-white text-zinc-900 hover:bg-zinc-100',
     };
 @endphp
 
 <section
-    class="relative {{ $heightClass }} flex items-center justify-center mb-8 rounded-lg overflow-hidden"
+    {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('frame', (bool) ($preview ?? false)) !!}
+    class="relative {{ $heightClass }} {{ $surfaceClass }} flex items-center justify-center overflow-hidden"
     @if($backgroundUrl) style="background-image: url('{{ asset($backgroundUrl) }}'); background-size: cover; background-position: center;" @endif
 >
     {{-- Overlay --}}
@@ -62,13 +67,13 @@
     {{-- Content --}}
     <div class="relative z-10 container mx-auto px-4 flex flex-col {{ $alignmentClass }} max-w-4xl">
         @if($title)
-            <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold {{ $textColorClass }} mb-4 leading-tight">
+            <h1 {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('title', (bool) ($preview ?? false)) !!} class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold {{ $textColorClass }} mb-4 leading-tight">
                 {{ $title }}
             </h1>
         @endif
 
         @if($subtitle)
-            <p class="text-lg sm:text-xl md:text-2xl {{ $textColorClass }} opacity-90 mb-8 max-w-2xl">
+            <p {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('subtitle', (bool) ($preview ?? false)) !!} class="text-lg sm:text-xl md:text-2xl {{ $textColorClass }} opacity-90 mb-8 max-w-2xl">
                 {{ $subtitle }}
             </p>
         @endif
@@ -76,13 +81,13 @@
         @if($buttonText || ($showSecondary && $secondaryText))
             <div class="flex flex-wrap gap-4 {{ $textAlignment === 'center' ? 'justify-center' : ($textAlignment === 'right' ? 'justify-end' : 'justify-start') }}">
                 @if($buttonText && $buttonUrl)
-                    <a href="{{ $buttonUrl }}" class="inline-flex items-center px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl {{ $buttonClasses }}">
+                    <a {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('button', (bool) ($preview ?? false)) !!} href="{{ $buttonUrl }}" class="inline-flex items-center px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl {{ $buttonClasses }}">
                         {{ $buttonText }}
                     </a>
                 @endif
 
                 @if($showSecondary && $secondaryText && $secondaryUrl)
-                    <a href="{{ $secondaryUrl }}" class="inline-flex items-center px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-lg transition-all bg-transparent border-2 border-white/80 {{ $textColorClass }} hover:bg-white/10 dark:border-gray-400 dark:hover:bg-white/10">
+                    <a {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('secondary', (bool) ($preview ?? false)) !!} href="{{ $secondaryUrl }}" class="inline-flex items-center px-6 py-3 sm:px-8 sm:py-4 font-semibold rounded-lg transition-all bg-transparent border-2 border-white/80 {{ $textColorClass }} hover:bg-white/10 dark:border-gray-400 dark:hover:bg-white/10">
                         {{ $secondaryText }}
                     </a>
                 @endif
