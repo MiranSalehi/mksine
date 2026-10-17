@@ -82,6 +82,7 @@ sidebar:
       - { title: Nesting, path: guides/page-builder/nesting.md }
       - { title: Validation, path: guides/page-builder/validation.md }
       - { title: Rendering, path: guides/page-builder/rendering.md }
+      - { title: Headless page document, path: guides/page-builder/headless.md }
 
   - section: Menu guides
     items:

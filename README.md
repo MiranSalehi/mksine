@@ -56,7 +56,7 @@ Opt-in visual block editor for marketing pages. Compose typed blocks (hero, colu
 
 ![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/NhYtXa5MAwrZ5vHdXpK9Jsk6DqQZt7qv9qB79ThB.gif)
 
-📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/page-builder.md) · [Creating a block](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/creating-a-block.md) · [Rendering](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/rendering.md)
+📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/page-builder.md) · [Creating a block](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/creating-a-block.md) · [Rendering](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/rendering.md) · [Headless JSON](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/headless.md)
 
 ---
 

@@ -496,6 +496,11 @@ class MksineServiceProvider extends PackageServiceProvider
             require $geoRoutes;
         }
 
+        $pageDocumentRoutes = __DIR__.'/../routes/page-document.php';
+        if (file_exists($pageDocumentRoutes)) {
+            require $pageDocumentRoutes;
+        }
+
         // Asset Registration
         FilamentAsset::register(
             $this->getAssets(),

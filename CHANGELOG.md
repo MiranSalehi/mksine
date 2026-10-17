@@ -8,6 +8,17 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.14.0 - 2026-10-17
+
+### Added
+
+- **Public page document for headless frontends.** `GET /api/mksine/pages`, `GET /api/mksine/pages/blocks`, and `GET /api/mksine/pages/{slug}` return schema version 1. A React, Vue, Angular, or Next.js app renders `page.blocks` itself. Blade themes are unchanged. See [Headless page document](docs/guides/page-builder/headless.md).
+
+### Changed
+
+- **Block appearance is its own editor tab.** The component editor opens on Content and Block appearance. A region edit still hides appearance. Saved block JSON is unchanged.
+- **Package dev dependencies target the current test stack.** `require-dev` is Pest 4, Testbench 10, Collision 8, and Larastan 3. Production `require` is unchanged, including `php: ^8.2`.
+
 ## 1.13.0 - 2026-10-12
 
 ### Added

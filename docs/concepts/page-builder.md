@@ -63,3 +63,4 @@ If you need a more sophisticated authoring tool, this is not the right primitive
 - [Nesting](../guides/page-builder/nesting.md)
 - [Validation](../guides/page-builder/validation.md)
 - [Rendering](../guides/page-builder/rendering.md)
+- [Headless page document](../guides/page-builder/headless.md) — JSON read API for React, Vue, Angular, and Next.js

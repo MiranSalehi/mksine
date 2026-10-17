@@ -127,4 +127,5 @@ If you need a richer authoring tool, this is not the right primitive. For typica
 - [Nesting](nesting.md)
 - [Validation](validation.md)
 - [Rendering](rendering.md)
+- [Headless page document](headless.md)
 - Reference: [`BuilderComponentInterface`](../../reference/contracts.md#buildercomponentinterface), [`ComponentRegistry`](../../reference/facades-and-managers.md#componentregistry)

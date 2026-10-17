@@ -144,4 +144,5 @@ If you genuinely need a "filter every block on render" extension point, open an 
 - [Creating a block](creating-a-block.md)
 - [Nesting](nesting.md)
 - [Validation](validation.md)
+- [Headless page document](headless.md) — the same pages as JSON for a non-Blade frontend
 - Reference: [`ComponentRegistry`](../../reference/facades-and-managers.md#componentregistry)

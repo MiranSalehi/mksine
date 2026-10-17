@@ -6,7 +6,8 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -94,10 +95,17 @@ class ComponentEditor extends Component implements HasActions, HasForms
         $schema = $this->schemaForRegion($registry->getSchema($this->blockType));
 
         if ($this->region === null) {
-            $schema[] = Section::make(__('mksine::page_builder.presentation_section'))
-                ->schema(BlockPresentation::fields())
-                ->columns(2)
-                ->columnSpanFull();
+            $schema = [
+                Tabs::make('block-editor')
+                    ->tabs([
+                        Tab::make(__('mksine::page_builder.component_labels.content'))
+                            ->schema($schema),
+                        Tab::make(__('mksine::page_builder.presentation_section'))
+                            ->schema(BlockPresentation::fields())
+                            ->columns(2),
+                    ])
+                    ->columnSpanFull(),
+            ];
         }
 
         return $form

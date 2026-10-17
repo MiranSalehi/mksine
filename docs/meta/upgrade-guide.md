@@ -33,6 +33,13 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.14.0 (2026-10-17)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Headless clients read published pages as JSON.** `GET /api/mksine/pages/{slug}` returns schema version 1. Drafts and scheduled pages are `404`. `section_ref` is expanded on the server. An unregistered block type is omitted. Migration: none for Blade themes. A separate frontend should follow [Headless page document](../guides/page-builder/headless.md). Custom blocks still have to be registered on every boot or they disappear from this response.
+- **Block appearance is a second tab in the component editor.** Migration: none. Existing `presentation` values are still saved beside `data`.
+
 ## 1.13.0 (2026-10-12)
 
 ### Behavior changes (non-breaking, but visible)
