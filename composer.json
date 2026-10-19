@@ -26,7 +26,7 @@
         "filament/filament": "^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.15.0",
         "bezhansalleh/filament-shield": "^4.1.0",
-        "bezhansalleh/filament-language-switch": "^4.0",
+        "bezhansalleh/filament-language-switch": "^5.0",
         "codewithdennis/filament-select-tree": "^4.0"
     },
     "require-dev": {
