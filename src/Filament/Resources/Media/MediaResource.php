@@ -48,6 +48,7 @@ class MediaResource extends Resource
 
         $items = [
             NavigationItem::make(fn (): string => __('mksine::media.navigation_library'))
+                ->key(static::class)
                 ->group(static::getNavigationGroup())
                 ->icon(static::getNavigationIcon())
                 ->isActiveWhen(fn (): bool => original_request()->routeIs(static::getRouteBaseName().'.index')
@@ -58,6 +59,7 @@ class MediaResource extends Resource
 
         if (static::hasPage('create') && static::can('create')) {
             $items[] = NavigationItem::make(fn (): string => __('mksine::media.navigation_create'))
+                ->key(static::class . '@create')
                 ->group(static::getNavigationGroup())
                 ->icon(Heroicon::OutlinedPlusCircle)
                 ->isActiveWhen(fn (): bool => original_request()->routeIs(static::getRouteBaseName().'.create'))

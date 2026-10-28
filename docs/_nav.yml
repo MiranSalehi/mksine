@@ -98,6 +98,7 @@ sidebar:
     items:
       - { title: Media library, path: guides/media/library.md }
       - { title: Adding settings tabs, path: guides/settings/adding-tabs.md }
+      - { title: Admin menu editor, path: guides/settings/admin-menu.md }
       - { title: Translations workflow, path: guides/localization/translations.md }
       - { title: User subclass, path: guides/auth/user-subclass.md }
       - { title: Shield and policies, path: guides/auth/shield-and-policies.md }

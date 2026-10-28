@@ -188,15 +188,24 @@ final class AdminSidebarNavigation
 
         foreach (self::orderedCases() as $case) {
             // Key by enum name so Filament matches UnitEnum navigation groups.
-            // Label must be a Closure: register() may freeze strings before Language Switch
-            // sets the request locale, which mixed Persian parents with English children.
-            $groups[$case->name] = NavigationGroup::make()
-                ->label(fn (): string => $case->getLabel())
-                ->icon($case->getIcon())
-                ->collapsed()
-                ->collapsible();
+            $groups[$case->name] = self::makeGroup($case);
         }
 
         return $groups;
+    }
+
+    /**
+     * Sidebar parent row for one group case (also used when the admin menu editor moves
+     * an item into a group that is not registered for the current sidebar layout).
+     */
+    public static function makeGroup(AdminNavigationGroup $case): NavigationGroup
+    {
+        // Label must be a Closure: register() may freeze strings before Language Switch
+        // sets the request locale, which mixed Persian parents with English children.
+        return NavigationGroup::make()
+            ->label(fn (): string => $case->getLabel())
+            ->icon($case->getIcon())
+            ->collapsed()
+            ->collapsible();
     }
 }

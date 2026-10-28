@@ -8,6 +8,19 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.15.0 - 2026-10-28
+
+### Added
+
+- **Admin menu editor.** **Settings → Admin menu** lets a Super Admin hide sidebar items, move them to another group or into the Settings sub-navigation, change the order and name of items and groups, and hide whole groups. Changes are stored as JSON in the `mksine_admin_menu` setting. With no setting, the menu is unchanged. **Reset to default** deletes the setting. Hidden and moved items keep their URL and `canAccess()`. See [Admin menu editor](docs/guides/settings/admin-menu.md).
+- **`mksine.admin.navigation.groups` filter.** Plugins receive `list<NavigationGroup>` and the panel, and return the groups. It runs after Filament builds the navigation and before the super-admin overrides, only on panels that use `MksinePlugin`.
+
+### Changed
+
+- **MKSine binds Filament's `NavigationManager`.** `MksinePlugin` registers `MksineNavigationManager`. Panels without the plugin get Filament's navigation unchanged.
+- **Media sidebar items have stable keys.** The library item is keyed `MediaResource::class` and the upload item `MediaResource::class . '@create'`, instead of their translated labels. The sidebar looks the same.
+- **Keyless sidebar items are keyed by URL.** On panels that use `MksinePlugin`, a `NavigationItem` without `->key(...)` gets `url:{path}` as its key instead of Filament's translated-label fallback, so menu overrides survive a locale change.
+
 ## 1.14.0 - 2026-10-17
 
 ### Added

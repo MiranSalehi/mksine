@@ -15,10 +15,12 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
 use Miran\Mksine\Filament\Clusters\SettingsCluster;
+use Miran\Mksine\Filament\Pages\Settings\Concerns\HasAdminMenuSettingsLinks;
 use Miran\Mksine\Filament\Pages\Settings\Concerns\InteractsWithStoredSettings;
 
 abstract class MksSettingsPage extends Page implements HasActions, HasSchemas
 {
+    use HasAdminMenuSettingsLinks;
     use HasPageShield;
     use InteractsWithActions;
     use InteractsWithSchemas;

@@ -4,6 +4,7 @@ namespace Miran\Mksine;
 
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Contracts\Plugin;
+use Filament\Navigation\NavigationManager;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
+use Miran\Mksine\Filament\Support\AdminMenu\MksineNavigationManager;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
 use Miran\Mksine\Filament\Support\MksinePanelStyles;
@@ -86,6 +88,18 @@ class MksinePlugin implements Plugin
 
         // Register early so group icons exist before navigation is first resolved.
         $panel->navigationGroups(AdminSidebarNavigation::panelGroups());
+
+        $this->registerNavigationManager();
+    }
+
+    /**
+     * MKSine owns the NavigationManager binding (plugin filter + super-admin menu overrides).
+     * It only changes panels that use this plugin; plugins extend it via
+     * {@see MksineNavigationManager::GROUPS_FILTER} instead of binding their own manager.
+     */
+    protected function registerNavigationManager(): void
+    {
+        app()->scoped(NavigationManager::class, fn (): NavigationManager => new MksineNavigationManager);
     }
 
     public function boot(Panel $panel): void

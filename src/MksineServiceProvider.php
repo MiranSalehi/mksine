@@ -129,6 +129,7 @@ use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
 use Miran\Mksine\Core\Translation\MksineFileLoader;
 use Miran\Mksine\Core\Translation\TranslationFileManager;
+use Miran\Mksine\Filament\Support\AdminMenu\AdminMenuOverrides;
 use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Filament\Support\MksFilamentDateMacros;
 use Miran\Mksine\Livewire\Frontend\CategoryList;
@@ -394,6 +395,9 @@ class MksineServiceProvider extends PackageServiceProvider
         });
 
         $this->app->scoped(BuilderMediaIndex::class);
+
+        // Admin menu overrides: the setting is read at most once per request.
+        $this->app->scoped(AdminMenuOverrides::class);
 
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {

@@ -33,6 +33,14 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.15.0 (2026-10-28)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Plugins that bind `NavigationManager` must move to the `mksine.admin.navigation.groups` filter.** MKSine now owns the `Filament\Navigation\NavigationManager` binding. A plugin that calls `app()->scoped(NavigationManager::class, ...)` with its own subclass replaces MKSine's manager, or is replaced by it, depending on boot order. Either the plugin's sidebar changes or the admin menu editor stop working. Migration: delete the binding and the manager subclass, and put the same logic in `Hooks::addFilter('mksine.admin.navigation.groups', fn (array $groups, Panel $panel): array => ...)`. See [Admin menu editor](../guides/settings/admin-menu.md#plugin-hook-mksineadminnavigationgroups).
+- **Hand-made `NavigationItem`s should set a key.** The editor stores overrides by `NavigationItem::getKey()`. On the admin panel, an item without `->key(...)` is keyed by its URL path (`url:/admin/...`) instead of Filament's translated-label fallback, so overrides work in every locale but are lost if the URL changes. Migration: add `->key(static::class)` (or `static::class . '@{name}'` for extra items) where a resource builds its own items. A plugin filter that matched such an item by its label-based `getKey()` must match the new `url:` key or set an explicit key.
+- **New settings page.** **Settings → Admin menu** is visible to the Super Admin role only. Migration: none. No migration or published file is needed; the setting row is created on the first save.
+
 ## 1.14.0 (2026-10-17)
 
 ### Behavior changes (non-breaking, but visible)
