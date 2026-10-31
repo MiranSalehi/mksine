@@ -33,6 +33,13 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.16.0 (2026-10-31)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Failing theme actions now reach the log.** `ThemeActionManager::doAction()` passes a thrown exception to `report()`. Rendering is unchanged, but errors that were silent in production now appear in the log and in any error tracker. That includes callbacks whose parameter names do not match the hook's argument keys. Migration: fix the callback, or accept extra keys with a variadic, as in `function (int $variantId, mixed ...$context)`. See [Argument names](../guides/themes/views-and-layouts.md#argument-names).
+- **New optional parameter on hook registration.** `Hooks::addFilter()`, `HookFilterRegistry::add()`, `ThemeActionManager::addAction()`, and `theme_add_action()` take a last `?string $id`. Migration: none for callers. A subclass of `ThemeActionManager` that overrides `addAction()` should add the parameter to its signature, or PHP will reject the override as incompatible.
+
 ## 1.15.0 (2026-10-28)
 
 ### Behavior changes (non-breaking, but visible)

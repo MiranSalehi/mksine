@@ -109,7 +109,32 @@ theme_add_action('home.before_hero', function () {
 }, priority: 10);
 ```
 
-Callbacks may `echo` or `return` an HTML string; both are concatenated. Lower priority runs first. Exceptions are swallowed: the manager logs a comment in HTML when `app.debug` is true (`<!-- Theme hook error […]: … -->`), nothing in production. This is intentional — a misbehaving plugin shouldn’t blank out the homepage — but it also means **silent failures**. Add an integration test that asserts your hook output is present.
+Callbacks may `echo` or `return` an HTML string; both are concatenated. Lower priority runs first.
+
+A callback that throws does not stop the page. Its partial output is dropped, the remaining callbacks run, and the exception goes to Laravel’s `report()`, so it reaches the log in production. When `app.debug` is true the manager also adds an HTML comment (`<!-- Theme hook error […]: … -->`). This is intentional — a misbehaving plugin shouldn’t blank out the homepage — but the visitor sees only a missing section. Add an integration test that asserts your hook output is present. [Filters](../hooks/runtime-registration.md#runtime-filters) are different: an exception in a filter propagates.
+
+Pass a fourth argument to name the callback, so another plugin can remove it with `theme_remove_action()`. See [Removing hooks](../hooks/runtime-registration.md#removing-hooks).
+
+### Argument names
+
+`theme_do_action()` spreads `$args` as **named arguments**, so the keys must match the callback’s parameter names:
+
+```php
+theme_do_action('product.after_price', ['variantId' => 7, 'quantity' => 2]);
+
+// Throws: there is no $variantId or $quantity parameter
+theme_add_action('product.after_price', fn (int $id) => '…');
+
+// Throws: the hook passes a key this callback does not declare
+theme_add_action('product.after_price', fn (int $variantId) => '…');
+
+// Safe
+theme_add_action('product.after_price', function (int $variantId, mixed ...$context) {
+    return '…';
+});
+```
+
+A mismatch throws an `Error`, which is handled like any other failed callback: reported and skipped. Declare the keys you use and collect the rest in a variadic. A hook can then gain a new key without breaking your callback.
 
 ## Pagination view
 

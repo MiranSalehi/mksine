@@ -289,13 +289,32 @@ if (! function_exists('theme_add_action')) {
     /**
      * Add a callback to a theme template hook (WordPress-style). Fired when @themeDoAction($hook) runs.
      *
+     * The hook's arguments are spread as named arguments, so parameter names must match the keys
+     * passed to theme_do_action(). A mismatch throws, and the callback is reported and skipped.
+     * Accept extra keys with a variadic: function (int $variantId, mixed ...$context)
+     *
      * @param  string  $hook  e.g. 'home.before_hero', 'home.after_section_latest'
      * @param  callable  $callback  Function that may return HTML string or echo
      * @param  int  $priority  Lower runs first (default 10)
+     * @param  string|null  $id  Name for theme_remove_action(); adding the same id replaces the entry
      */
-    function theme_add_action(string $hook, callable $callback, int $priority = 10): void
+    function theme_add_action(string $hook, callable $callback, int $priority = 10, ?string $id = null): void
     {
-        app(\Miran\Mksine\Core\Theme\ThemeActionManager::class)->addAction($hook, $callback, $priority);
+        app(\Miran\Mksine\Core\Theme\ThemeActionManager::class)->addAction($hook, $callback, $priority, $id);
+    }
+}
+
+if (! function_exists('theme_remove_action')) {
+    /**
+     * Remove a callback from a theme template hook by id, string callable, or callable reference.
+     * A string is remembered as a removed id, so a later theme_add_action() with that id is ignored.
+     *
+     * @param  string  $hook  Hook name
+     * @param  string|callable  $handler  Handler id, string callable, or the registered callable
+     */
+    function theme_remove_action(string $hook, string | callable $handler): void
+    {
+        app(\Miran\Mksine\Core\Theme\ThemeActionManager::class)->removeAction($hook, $handler);
     }
 }
 

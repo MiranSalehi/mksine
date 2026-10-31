@@ -29,6 +29,10 @@ namespace Miran\Mksine\Core\Hooks;
  * });
  * $keys = Hooks::filter('ecom.checkout.available_payment_methods', $keys, $cart);
  *
+ * // Named filter: another plugin can remove it by id, in any boot order
+ * Hooks::addFilter('ecom.checkout.available_payment_methods', $callback, 10, 'acme.hide_cod');
+ * Hooks::removeFilter('ecom.checkout.available_payment_methods', 'acme.hide_cod');
+ *
  * // Register a storefront shortcode
  * Hooks::addShortcode('gallery', GalleryShortcode::class, 10);
  */
@@ -282,10 +286,28 @@ class Hooks
 
     /**
      * Register a filter callback. Lower {@code $priority} runs first (default 10).
+     * An {@code $id} makes it removable by name; adding the same id again replaces the entry.
      */
-    public static function addFilter(string $name, callable $callback, int $priority = 10): void
+    public static function addFilter(string $name, callable $callback, int $priority = 10, ?string $id = null): void
     {
-        app(HookFilterRegistry::class)->add($name, $callback, $priority);
+        app(HookFilterRegistry::class)->add($name, $callback, $priority, $id);
+    }
+
+    /**
+     * Remove a filter by id, string callable, or callable reference. A string is remembered as a
+     * removed id, so a plugin that boots later cannot add that id back to this hook.
+     */
+    public static function removeFilter(string $name, string | callable $handler): void
+    {
+        app(HookFilterRegistry::class)->remove($name, $handler);
+    }
+
+    /**
+     * Whether any filter is registered for {@code $name}.
+     */
+    public static function hasFilter(string $name): bool
+    {
+        return app(HookFilterRegistry::class)->has($name);
     }
 
     /**

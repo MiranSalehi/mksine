@@ -53,7 +53,7 @@ Implementations of these interfaces are how third-party code extends MKSine.
 | `Miran\Mksine\Core\Hooks\TableHookManager` | container singleton | Filament table hook dispatch |
 | `Miran\Mksine\Core\Hooks\ResourceHookManager` | container singleton | Relations and widgets per Filament resource |
 | `Miran\Mksine\Core\Hooks\PageHookManager` | container singleton | Page header actions |
-| `Miran\Mksine\Core\Hooks\HookFilterRegistry` | container singleton | Runtime filter chains (`Hooks::addFilter`, `Hooks::filter`) |
+| `Miran\Mksine\Core\Hooks\HookFilterRegistry` | container singleton | Runtime filter chains (`Hooks::addFilter`, `Hooks::removeFilter`, `Hooks::hasFilter`, `Hooks::filter`) |
 | `Miran\Mksine\Core\Hooks\MenuLocationManager` | container singleton | Register named menu locations |
 | `Miran\Mksine\Core\Hooks\MenuItemSourceManager` | container singleton | Register `MenuItemSourceInterface` implementations |
 | `Miran\Mksine\Core\Hooks\SettingsTabManager` | container singleton | Add tabs on the Settings page |

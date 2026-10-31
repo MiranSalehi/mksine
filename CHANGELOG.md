@@ -8,6 +8,22 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.16.0 - 2026-10-31
+
+### Added
+
+- **Named hook handlers.** `Hooks::addFilter()`, `HookFilterRegistry::add()`, `ThemeActionManager::addAction()`, and `theme_add_action()` take an optional last `?string $id`. Adding an id that already exists on the hook replaces that entry, so a double boot does not run a handler twice. Without an id, nothing changes.
+- **Hook removal.** `Hooks::removeFilter()`, `HookFilterRegistry::remove()`, `ThemeActionManager::removeAction()`, and `theme_remove_action()` remove a handler by id, string callable, or callable reference. Removing by id also blocks a later add with that id on that hook, so removal does not depend on plugin boot order. Removing something that does not exist does nothing. See [Removing hooks](docs/guides/hooks/runtime-registration.md#removing-hooks).
+- **`Hooks::hasFilter()` and `HookFilterRegistry::has()`.** They report whether a filter hook has any handler.
+
+### Changed
+
+- **Theme action errors are reported.** When a callback throws in `ThemeActionManager::doAction()`, the exception now goes to Laravel's `report()` as well. The page still renders, the callback's partial output is still dropped, and the `app.debug` comment is unchanged. A failure while reporting is ignored. Filters are unchanged: an exception in a filter still propagates.
+
+### Documentation
+
+- **Theme action argument names.** `theme_do_action()` spreads `$args` as named arguments, so a callback must declare matching parameter names or a variadic. This is existing behaviour, now documented in the `theme_add_action()` docblock and in [Views and layouts](docs/guides/themes/views-and-layouts.md#argument-names).
+
 ## 1.15.0 - 2026-10-28
 
 ### Added

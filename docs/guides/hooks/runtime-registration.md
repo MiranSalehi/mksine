@@ -28,6 +28,8 @@ If you want an admin toggle, a DB row, or a priority override surface, use a [di
 | `Hooks::extendPageHeaderActions($name, fn ($actions))`          | `PageHookManager`      | Closure that returns a modified actions array |
 | `Hooks::addFilter($name, fn ($value, ...$args) => $value)`      | `HookFilterRegistry`   | Priority-ordered mutable filter chain         |
 | `Hooks::filter($name, $value, ...$args)`                         | `HookFilterRegistry`   | Apply all filters registered for `$name`      |
+| `Hooks::removeFilter($name, $handler)`                          | `HookFilterRegistry`   | Remove a filter by id or callable             |
+| `Hooks::hasFilter($name)`                                       | `HookFilterRegistry`   | Whether `$name` has any filter                |
 | `Hooks::addShortcode($tag, $handler, $priority, $catalog)`      | `ShortcodeRegistry`    | Register a storefront content shortcode       |
 | `Hooks::addLivewireShortcode($tag, $componentClass, ...)`        | `ShortcodeRegistry`    | Register a Livewire-backed interactive shortcode |
 
@@ -47,6 +49,42 @@ $items = Hooks::filter('frontend_admin_bar.items', [], $context, $panel);
 ```
 
 Filters are runtime-only (no `mks_hooks` row, no admin toggle). See [Frontend admin bar](../storefront/frontend-admin-bar.md) for the full item/dropdown contract.
+
+An exception in a filter propagates to the caller. Filters guard values such as prices and payment methods, so a failure there must not pass silently. Theme actions behave differently: see [Action hooks for templates](../themes/views-and-layouts.md#action-hooks-for-templates-themedoaction).
+
+### Removing hooks
+
+Filters and theme actions can be removed. Most handlers are closures, and another plugin never holds that closure, so give a handler a name with the last parameter:
+
+```php
+Hooks::addFilter('ecom.checkout.available_payment_methods', $callback, 10, 'acme.hide_cod');
+theme_add_action('home.before_hero', $callback, 10, 'acme.promo_banner');
+
+// In another plugin
+Hooks::removeFilter('ecom.checkout.available_payment_methods', 'acme.hide_cod');
+theme_remove_action('home.before_hero', 'acme.promo_banner');
+```
+
+Prefix ids with your plugin name. An id only has to be unique on its hook.
+
+**Adding an id twice** replaces the first entry. The new callback takes the old one's place among handlers of the same priority, and uses the new priority if it differs.
+
+**Removal does not depend on boot order.** Removing by id also remembers that id on that hook, and a later add with the same id is ignored. A plugin that boots first can still remove a handler from one that boots later. The block lasts for the life of the registry. To replace another plugin's handler, remove its id and add yours under a different id.
+
+`removeFilter()` and `theme_remove_action()` match like this:
+
+| `$handler`      | Matches                                                                  |
+| --------------- | ------------------------------------------------------------------------ |
+| A string        | Handlers with that id. If there are none, string callables with that name. |
+| Any other callable | The same callable by strict identity (`===`). All matches are removed. |
+
+- A string is always remembered as a removed id, even when it matched a string callable.
+- Only ids are blocked. A handler added without an id is never ignored, so removing a closure or a string callable affects only what is registered at that moment.
+- `strlen(...)` and `$this->handle(...)` create a new closure each time, so they do not match an earlier registration. Keep the reference or use an id.
+- Removing something that does not exist does nothing.
+- Removal inside a running hook takes effect on the next run. The current run finishes with the handlers it started with.
+
+Use `Hooks::hasFilter($name)` or `ThemeActionManager::hasAction($hook)` to check whether a hook has any handler left.
 
 ### Shortcodes
 
@@ -131,6 +169,8 @@ Hooks::extendForm('post.form', new AppendUtmField);
 ## Idempotency and double-registration
 
 Every call to `Hooks::register()` or `Hooks::extend*()` **appends** to the in-memory list. There is no de-duplication. If a plugin’s `boot()` runs twice in the same request (it shouldn’t, but if you misuse `app()->make()` somewhere it can), the listener fires twice.
+
+Filters and theme actions behave the same way without an id. With an id, a second add replaces the first, so the handler runs once. See [Removing hooks](#removing-hooks).
 
 Defensive pattern when you cannot fully trust the boot path:
 
