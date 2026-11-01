@@ -812,6 +812,11 @@ class MksineServiceProvider extends PackageServiceProvider
             $assets[] = Js::make('mksine-console-terminal', $consoleTerminalJs);
         }
 
+        $jalaliDateTimePickerCss = __DIR__.'/../resources/css/jalali-date-time-picker.css';
+        if (file_exists($jalaliDateTimePickerCss)) {
+            $assets[] = Css::make('mks-jalali-date-time-picker', $jalaliDateTimePickerCss);
+        }
+
         $jalaliDateTimePickerJs = __DIR__.'/../resources/dist/jalali-date-time-picker.js';
         if (file_exists($jalaliDateTimePickerJs)) {
             $assets[] = AlpineComponent::make('jalali-date-time-picker', $jalaliDateTimePickerJs);

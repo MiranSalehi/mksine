@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.17.1 - 2026-11-01
+
+### Fixed
+
+- **Jalali picker on newer Filament 5 releases.** The picker failed with `handleFocusOut is not defined` and `this.$refs.panel.toggle is not a function` on Filament versions that changed their date picker. It now has its own Blade view, CSS, and panel positioning, so it no longer depends on Filament's picker internals. Run `php artisan filament:assets` after updating.
+
 ## 1.17.0 - 2026-11-01
 
 ### Added

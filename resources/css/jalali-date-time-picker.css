@@ -1,0 +1,171 @@
+/* Self-contained so the Jalali picker keeps working when Filament changes its own picker markup. */
+.mks-jalali-picker-input {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+    cursor: pointer;
+}
+
+.mks-jalali-picker-input:focus {
+    box-shadow: none;
+}
+
+.mks-jalali-picker-input::placeholder {
+    color: var(--gray-400, #9ca3af);
+}
+
+.mks-jalali-picker-input:disabled {
+    color: var(--gray-500, #6b7280);
+    cursor: not-allowed;
+}
+
+.mks-jalali-picker-panel {
+    display: none;
+    position: fixed;
+    z-index: 60;
+    width: 18rem;
+    max-width: calc(100vw - 1rem);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1),
+        0 0 0 1px rgb(3 7 18 / 0.05);
+    color: var(--gray-950, #030712);
+    font-size: 0.875rem;
+}
+
+.mks-jalali-picker-panel-open {
+    display: block;
+}
+
+.mks-jalali-picker-panel select,
+.mks-jalali-picker-panel input {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font-size: 0.875rem;
+}
+
+.mks-jalali-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.mks-jalali-picker-month {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 0;
+    padding-inline-end: 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.mks-jalali-picker-year {
+    width: 4rem;
+    padding: 0;
+    text-align: end;
+}
+
+.mks-jalali-picker-weekdays,
+.mks-jalali-picker-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.25rem;
+}
+
+.mks-jalali-picker-weekdays {
+    margin-bottom: 0.25rem;
+    color: var(--gray-500, #6b7280);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.mks-jalali-picker-days button {
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 75ms;
+}
+
+.mks-jalali-picker-days button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.mks-jalali-picker-days .mks-jalali-picker-today {
+    color: var(--primary-600, #d97706);
+    font-weight: 600;
+}
+
+.mks-jalali-picker-days .mks-jalali-picker-focused:not(:disabled) {
+    background: var(--gray-100, #f3f4f6);
+}
+
+.mks-jalali-picker-days .mks-jalali-picker-selected:not(:disabled) {
+    background: var(--primary-600, #d97706);
+    color: #fff;
+    font-weight: 600;
+}
+
+.mks-jalali-picker-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+}
+
+.mks-jalali-picker-time input {
+    width: 2.5rem;
+    padding: 0;
+    text-align: center;
+    appearance: textfield;
+}
+
+.mks-jalali-picker-time input::-webkit-inner-spin-button,
+.mks-jalali-picker-time input::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+.dark .mks-jalali-picker-panel {
+    background: var(--gray-900, #111827);
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.4),
+        0 0 0 1px rgb(255 255 255 / 0.1);
+    color: #fff;
+}
+
+.dark .mks-jalali-picker-panel select option {
+    background: var(--gray-900, #111827);
+}
+
+.dark .mks-jalali-picker-days .mks-jalali-picker-today {
+    color: var(--primary-400, #fbbf24);
+}
+
+.dark .mks-jalali-picker-days .mks-jalali-picker-focused:not(:disabled) {
+    background: rgb(255 255 255 / 0.1);
+}
+
+.dark .mks-jalali-picker-days .mks-jalali-picker-selected:not(:disabled) {
+    background: var(--primary-500, #f59e0b);
+    color: var(--gray-950, #030712);
+}

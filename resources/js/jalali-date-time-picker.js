@@ -1,6 +1,6 @@
 /**
- * Jalali drop-in for Filament's date-time picker Alpine component, enabled by `DateTimePicker::jalali()`.
- * It drives Filament's own panel markup and keeps `state` as a Gregorian `YYYY-MM-DD HH:mm:ss` string.
+ * Alpine component behind `DateTimePicker::jalali()`, rendered by core's own Blade view so it does not
+ * depend on the markup or JavaScript of Filament's picker. `state` stays a Gregorian `YYYY-MM-DD HH:mm:ss` string.
  *
  * Derived from Filament's date-time-picker.js (MIT, Copyright (c) Filament Group) and
  * mokhosh/filament-jalali (MIT, Copyright (c) mokhosh <mskhoshnazar@gmail.com>).
@@ -247,9 +247,12 @@ export default function mksJalaliDateTimePicker({
     defaultFocusedDate,
     firstDayOfWeek,
     isAutofocused,
+    isInteractive,
     shouldCloseOnDateSelection,
     state,
 }) {
+    const panelGap = 8
+
     return {
         daysInFocusedMonth: [],
 
@@ -268,6 +271,10 @@ export default function mksJalaliDateTimePicker({
         hour: null,
 
         isClearingState: false,
+
+        isPanelOpen: false,
+
+        stopTrackingPanelPosition: null,
 
         minute: null,
 
@@ -479,6 +486,10 @@ export default function mksJalaliDateTimePicker({
         },
 
         clearState() {
+            if (!isInteractive) {
+                return
+            }
+
             this.isClearingState = true
 
             this.setState(null)
@@ -518,6 +529,10 @@ export default function mksJalaliDateTimePicker({
             return false
         },
 
+        destroy() {
+            this.stopTrackingPanelPosition?.()
+        },
+
         dayIsDisabled(day) {
             this.focusedDate ??= JalaliDate.now()
 
@@ -555,32 +570,34 @@ export default function mksJalaliDateTimePicker({
             return getComputedStyle(this.$el).direction === 'rtl'
         },
 
-        focusPreviousDay() {
-            this.focusedDate ??= JalaliDate.now()
+        moveFocusedDate(days) {
+            if (!isInteractive) {
+                return
+            }
 
-            this.focusedDate = this.focusedDate.addDays(
-                this.isRightToLeft() ? 1 : -1,
-            )
+            if (!this.isOpen()) {
+                this.togglePanelVisibility()
+
+                return
+            }
+
+            this.focusedDate = this.focusedDate.addDays(days)
+        },
+
+        focusPreviousDay() {
+            this.moveFocusedDate(this.isRightToLeft() ? 1 : -1)
         },
 
         focusPreviousWeek() {
-            this.focusedDate ??= JalaliDate.now()
-
-            this.focusedDate = this.focusedDate.addDays(-7)
+            this.moveFocusedDate(-7)
         },
 
         focusNextDay() {
-            this.focusedDate ??= JalaliDate.now()
-
-            this.focusedDate = this.focusedDate.addDays(
-                this.isRightToLeft() ? -1 : 1,
-            )
+            this.moveFocusedDate(this.isRightToLeft() ? -1 : 1)
         },
 
         focusNextWeek() {
-            this.focusedDate ??= JalaliDate.now()
-
-            this.focusedDate = this.focusedDate.addDays(7)
+            this.moveFocusedDate(7)
         },
 
         getDayLabels() {
@@ -607,17 +624,90 @@ export default function mksJalaliDateTimePicker({
         },
 
         togglePanelVisibility() {
-            if (!this.isOpen()) {
-                this.focusedDate =
-                    this.getSelectedDate() ??
-                    this.focusedDate ??
-                    this.getMinDate() ??
-                    JalaliDate.now()
-
-                this.setupDaysGrid()
+            if (!isInteractive) {
+                return
             }
 
-            this.$refs.panel.toggle(this.$refs.button)
+            if (this.isOpen()) {
+                this.closePanel()
+
+                return
+            }
+
+            this.focusedDate =
+                this.getSelectedDate() ??
+                this.focusedDate ??
+                this.getMinDate() ??
+                JalaliDate.now()
+
+            this.setupDaysGrid()
+
+            this.isPanelOpen = true
+
+            this.$nextTick(() => {
+                this.positionPanel()
+
+                const reposition = () => this.positionPanel()
+
+                window.addEventListener('resize', reposition)
+                window.addEventListener('scroll', reposition, true)
+
+                this.stopTrackingPanelPosition = () => {
+                    window.removeEventListener('resize', reposition)
+                    window.removeEventListener('scroll', reposition, true)
+                    this.stopTrackingPanelPosition = null
+                }
+            })
+        },
+
+        closePanel(shouldRestoreFocus = false) {
+            if (!this.isOpen()) {
+                return
+            }
+
+            this.isPanelOpen = false
+            this.stopTrackingPanelPosition?.()
+
+            if (shouldRestoreFocus) {
+                this.$refs.button.focus()
+            }
+        },
+
+        positionPanel() {
+            const { panel, button } = this.$refs
+
+            if (!this.isOpen() || !panel || !button) {
+                return
+            }
+
+            panel.style.top = '0px'
+            panel.style.left = '0px'
+
+            // A transformed ancestor, such as a modal, moves the origin of `position: fixed`.
+            const origin = panel.getBoundingClientRect()
+            const trigger = button.getBoundingClientRect()
+
+            const fitsBelow =
+                trigger.bottom + panelGap + origin.height <= window.innerHeight
+            const fitsAbove = trigger.top - panelGap - origin.height >= 0
+            const top =
+                fitsBelow || !fitsAbove
+                    ? trigger.bottom + panelGap
+                    : trigger.top - panelGap - origin.height
+
+            const preferredLeft = this.isRightToLeft()
+                ? trigger.right - origin.width
+                : trigger.left
+            const left = Math.max(
+                panelGap,
+                Math.min(
+                    preferredLeft,
+                    window.innerWidth - origin.width - panelGap,
+                ),
+            )
+
+            panel.style.top = `${top - origin.top}px`
+            panel.style.left = `${left - origin.left}px`
         },
 
         selectDate(day = null) {
@@ -678,6 +768,10 @@ export default function mksJalaliDateTimePicker({
                 return
             }
 
+            if (!isInteractive) {
+                return
+            }
+
             if (this.dateIsDisabled(date)) {
                 return
             }
@@ -712,7 +806,7 @@ export default function mksJalaliDateTimePicker({
         },
 
         isOpen() {
-            return this.$refs.panel?.style.display === 'block'
+            return this.isPanelOpen
         },
     }
 }

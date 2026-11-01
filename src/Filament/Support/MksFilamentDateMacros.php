@@ -8,11 +8,9 @@ use Closure;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TimePicker;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Support\Facades\FilamentAsset;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Js;
 use Miran\Mksine\Support\JalaliCalendar;
 use Miran\Mksine\Support\MksDateFormatter;
 
@@ -200,25 +198,5 @@ final class MksFilamentDateMacros
         return JalaliCalendar::localizeDigits(
             JalaliCalendar::format(Carbon::parse($state)->setTimezone($timezone), $format),
         );
-    }
-
-    /**
-     * Renders Filament's own picker markup, pointed at the Jalali Alpine component.
-     */
-    public static function renderJalaliDateTimePicker(DateTimePicker $picker): string
-    {
-        $locale = $picker->getLocale();
-
-        $calendar = Js::from([
-            'displayFormat' => $picker->getDisplayFormat(),
-            'months' => JalaliCalendar::months($locale),
-            'days' => JalaliCalendar::days($locale),
-            'daysShort' => JalaliCalendar::shortDays($locale),
-        ]);
-
-        return strtr($picker->toEmbeddedHtml(), [
-            e(FilamentAsset::getAlpineComponentSrc('date-time-picker', 'filament/forms')) => e(FilamentAsset::getAlpineComponentSrc('jalali-date-time-picker', 'miran/mksine')),
-            'x-data="dateTimePickerFormComponent({' => "x-data=\"mksJalaliDateTimePicker({ calendar: {$calendar},",
-        ]);
     }
 }
