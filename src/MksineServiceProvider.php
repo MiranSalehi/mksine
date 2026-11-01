@@ -17,6 +17,7 @@ use App\Policies\PostPolicy;
 use App\Policies\RolePolicy;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\PanelRegistry;
+use Filament\Support\Assets\AlpineComponent;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
@@ -809,6 +810,11 @@ class MksineServiceProvider extends PackageServiceProvider
         $consoleTerminalJs = __DIR__.'/../resources/js/admin-console-terminal.js';
         if (file_exists($consoleTerminalJs)) {
             $assets[] = Js::make('mksine-console-terminal', $consoleTerminalJs);
+        }
+
+        $jalaliDateTimePickerJs = __DIR__.'/../resources/dist/jalali-date-time-picker.js';
+        if (file_exists($jalaliDateTimePickerJs)) {
+            $assets[] = AlpineComponent::make('jalali-date-time-picker', $jalaliDateTimePickerJs);
         }
 
         return $assets;

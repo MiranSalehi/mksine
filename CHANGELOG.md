@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.17.0 - 2026-11-01
+
+### Added
+
+- **Jalali (Shamsi) support for Filament in core.** `TextColumn` and `TextEntry` get `jalaliDate()` and `jalaliDateTime()`, and `DateTimePicker` and `DatePicker` get `jalali()`, with no Composer or npm package. When **Settings → General** uses the Shamsi calendar, every `DateTimePicker` and `DatePicker` in the panel uses it automatically. The picker uses Filament's panel markup with an Alpine component from core and still stores Gregorian values. `Miran\Mksine\Support\JalaliCalendar` provides the conversion and formatting. Run `php artisan filament:assets` after updating.
+
 ## 1.16.0 - 2026-10-31
 
 ### Added

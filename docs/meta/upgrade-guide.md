@@ -33,6 +33,12 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.17.0 (2026-11-01)
+
+### Behavior changes (non-breaking, but visible)
+
+- **Date pickers follow the calendar setting.** With the Shamsi calendar selected in **Settings → General**, every `DateTimePicker` and `DatePicker` in the panel shows the Jalali calendar. Stored values stay Gregorian. Run `php artisan filament:assets` after updating.
+
 ## 1.16.0 (2026-10-31)
 
 ### Behavior changes (non-breaking, but visible)

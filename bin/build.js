@@ -49,3 +49,10 @@ compile({
     entryPoints: ['./resources/js/index.js'],
     outfile: './resources/dist/mksine.js',
 })
+
+compile({
+    ...defaultOptions,
+    format: 'esm',
+    entryPoints: ['./resources/js/jalali-date-time-picker.js'],
+    outfile: './resources/dist/jalali-date-time-picker.js',
+})
