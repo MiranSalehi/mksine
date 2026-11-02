@@ -8,6 +8,12 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.18.0 - 2026-11-03
+
+### Fixed
+
+- **Missing user profile columns on new projects.** `Models\User` and the user form use `bio`, `date_of_birth`, `phone_country_code`, and `phone_number`, but no package migration created them, so projects failed with `Unknown column 'phone_number'`. The new migration `2026_11_03_100000_add_profile_columns_to_users_table` adds each column only if it is missing. Existing columns keep their length and data, and rollback removes nothing. Run `php artisan mksine:update`, or publish with `vendor:publish --tag=mksine-migrations` and run `php artisan migrate`.
+
 ## 1.17.1 - 2026-11-01
 
 ### Fixed
