@@ -8,6 +8,13 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.19.1 - 2026-11-03
+
+### Fixed
+
+- **The admin panel ignored `APP_LOCALE`.** Language Switch 5 asks the browser for a language before it reads `app.locale`, and Symfony returns the first available locale (`en`) when the browser sends no language or one the site does not have. A site with `APP_LOCALE=fa` therefore showed English to English and German browsers, and to clients without an `Accept-Language` header. The panel now uses, in order: the language picked in the switcher, the locale saved on the user (`HasLocalePreference`), the switcher's remembered cookie, and then `APP_LOCALE`. The browser language is used only when `APP_LOCALE` is not one of the panel's languages.
+- **Panel Livewire requests use the chosen language.** `SwitchLanguageLocale` ran only on full panel page loads. On `livewire/update` requests (form saves, modals, table filters, notifications), the panel's serving callbacks and middleware ran in `APP_LOCALE` until the component restored its own locale. It is now registered as Livewire persistent middleware, like Filament's own panel middleware.
+
 ## 1.19.0 - 2026-11-03
 
 ### Fixed

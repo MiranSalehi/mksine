@@ -15,6 +15,7 @@ use App\Policies\EntryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\PostPolicy;
 use App\Policies\RolePolicy;
+use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\PanelRegistry;
 use Filament\Support\Assets\AlpineComponent;
@@ -26,6 +27,7 @@ use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -481,12 +483,19 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->ensureDefaultLangInProject();
 
         // Configure Language Switch: locales from TranslationFileManager, render in panel header (topbar).
+        // userPreferredLocale keeps APP_LOCALE ahead of the browser language, and the persistent
+        // middleware applies the chosen locale to the panel's livewire/update requests too.
         if (class_exists(LanguageSwitch::class)) {
             LanguageSwitch::configureUsing(function ($switch) {
                 $switch
                     ->locales(fn () => app(TranslationFileManager::class)->getAvailableLocales())
+                    ->userPreferredLocale(fn (): ?string => $this->resolvePanelFallbackLocale($switch->getLocales()))
                     ->renderHook(PanelsRenderHook::USER_MENU_BEFORE);
             });
+
+            Livewire::addPersistentMiddleware([
+                SwitchLanguageLocale::class,
+            ]);
         }
 
         $this->registerModelPolicies();
@@ -722,6 +731,34 @@ class MksineServiceProvider extends PackageServiceProvider
             'auth.providers.users.model' => $model,
             'filament-shield.auth_provider_model' => $model,
         ]);
+    }
+
+    /**
+     * Panel locale for when the language switch has no pick in the session: the user's saved
+     * locale (HasLocalePreference), then the switcher's remembered cookie, then APP_LOCALE.
+     * Without this the package asks the browser first, and Symfony answers with the first
+     * available locale (en) for any language it does not know, so APP_LOCALE never applies.
+     * Returns null only when none of them is available, so the browser language is used.
+     *
+     * @param  array<int, string>  $locales
+     */
+    protected function resolvePanelFallbackLocale(array $locales): ?string
+    {
+        $user = auth()->user();
+
+        $candidates = [
+            $user instanceof HasLocalePreference ? $user->preferredLocale() : null,
+            request()->cookie('filament_language_switch_locale'),
+            config('app.locale'),
+        ];
+
+        foreach ($candidates as $locale) {
+            if (is_string($locale) && in_array($locale, $locales, true)) {
+                return $locale;
+            }
+        }
+
+        return null;
     }
 
     /**
