@@ -391,9 +391,12 @@ php artisan cache:clear
 
 | Symptom | Diagnose | Fix |
 |---------|----------|-----|
-| Checkout or admin address forms have no states/cities | `geo_states` / `geo_cities` empty for the enabled country | Run `php artisan mks:geo:import`. Cities need the MySQL `locations` database — see [Import and migration](../guides/geo/import-and-migration.md). |
+| Checkout or admin address forms have no states/cities | `geo_states` / `geo_cities` empty for the enabled country | Run `php artisan mks:geo:import --country=XX` — see [Import and migration](../guides/geo/import-and-migration.md). |
 | `mks:geo:import` fails on countries or states | Server has no outbound HTTP to GitHub raw (dr5hn) | Open firewall/proxy; or import countries/states manually then run `--only=cities`. |
-| Cities phase skipped in import output | Log mentions locations DB unreachable | Provision MySQL `locations` with table `csv-cities`, or pass `--locations-database` / `--locations-table`. |
+| `mks:geo:import` says “No states for XX in geo_states” | `--only=cities` ran before states were imported | `php artisan mks:geo:import --only=states --country=XX`, then run cities again. |
+| “Geo import completed with N cities skipped” | dr5hn city rows point at state ids that are not in `states.json` | A warning only. The other cities are imported; the run log lists the missing state ids per country. |
+| “Geo import finished with problems … countries failed” | A country’s city file could not be downloaded, or its states are missing | The command lists each country with its error. Fix it and run `mks:geo:import --country=XX` again. |
+| Queue worker exits with “Memory limit exceeded” during geo import | `queue:work` default `--memory=128` | `php artisan queue:work --memory=1024`, or run `mks:geo:import --country=XX` without the queue. |
 | Legacy address FKs still null after upgrade | `mks_ecom_iran_*` tables still exist | Run `mks:geo:import` first, then `php artisan mks:geo:migrate-legacy-iran`. |
 | Country dropdown shows every country | `geo_enabled_countries` is empty in settings | Intentional (empty = all active countries). Restrict ISO2 codes under **System → Settings → Geo**. |
 

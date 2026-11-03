@@ -88,7 +88,7 @@ Avoid `route:cache` if any plugin or theme registers routes inside a closure (La
 
 ## Geo data on production servers
 
-After `php artisan migrate`, run **`php artisan mks:geo:import`** on the server (or import geo data in CI before shipping a database dump). Countries and states are fetched over **outbound HTTPS** from the dr5hn dataset; **cities** additionally require a MySQL **`locations`** database (default table `csv-cities`). Without that database, only countries and states are populated — checkout may show empty city dropdowns.
+After `php artisan migrate`, run **`php artisan mks:geo:import`** on the server (or import geo data in CI before shipping a database dump). Countries, states, and cities are fetched over **outbound HTTPS** from the dr5hn dataset; no extra database is needed. For one market, `php artisan mks:geo:import --country=IR` runs in the command (no queue worker) and exits with failure if anything was not imported. Without `--country` or `--sync` the import runs on the queue: start `php artisan queue:work --memory=1024`.
 
 Re-import is **idempotent** (upsert by primary key). See [Geo import and legacy migration](../guides/geo/import-and-migration.md).
 

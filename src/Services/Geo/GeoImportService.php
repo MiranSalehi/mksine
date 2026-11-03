@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Services\Geo;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Miran\Mksine\Enums\GeoSource;
@@ -15,18 +16,20 @@ final class GeoImportService
 {
     private const string DR5HN_BASE = 'https://raw.githubusercontent.com/dr5hn/countries-states-cities-database/master/contributions';
 
+    private const int CITY_CHUNK_SIZE = 500;
+
+    /**
+     * @param  string|null  $locationsDatabase  MySQL database to read cities from; null reads the dr5hn per-country JSON files.
+     */
     public function __construct(
-        private readonly string $locationsDatabase = 'locations',
+        private readonly ?string $locationsDatabase = null,
         private readonly string $locationsTable = 'csv-cities',
         private readonly ?GeoImportLogger $logger = null,
     ) {}
 
     public function importCountries(?callable $progress = null): int
     {
-        $payload = $this->fetchJson(self::DR5HN_BASE.'/countries/countries.json');
-        if (! is_array($payload)) {
-            return 0;
-        }
+        $payload = $this->fetchRequiredJson(self::DR5HN_BASE . '/countries/countries.json');
 
         $rows = [];
         foreach ($payload as $country) {
@@ -66,10 +69,7 @@ final class GeoImportService
 
     public function importStates(?string $countryIso2 = null, ?callable $progress = null): int
     {
-        $payload = $this->fetchJson(self::DR5HN_BASE.'/states/states.json');
-        if (! is_array($payload)) {
-            return 0;
-        }
+        $payload = $this->fetchRequiredJson(self::DR5HN_BASE . '/states/states.json');
 
         $filter = $countryIso2 !== null ? strtoupper($countryIso2) : null;
         $rows = [];
@@ -111,99 +111,234 @@ final class GeoImportService
         ], 'states', $progress);
     }
 
-    public function importCities(?string $countryIso2 = null, ?callable $progress = null): int
+    public function usesLocationsDatabase(): bool
     {
-        if (! $this->locationsDatabaseAvailable()) {
-            return 0;
-        }
-
-        $imported = 0;
-
-        foreach ($this->locationCountryCodes($countryIso2) as $code) {
-            $imported += $this->importCitiesForCountry($code, $countryIso2 !== null, $progress, $imported);
-        }
-
-        return $imported;
-    }
-
-    private function importCitiesForCountry(
-        string $countryIso2,
-        bool $explicitCountryFilter,
-        ?callable $progress,
-        int $importedSoFar,
-    ): int {
-        $translationIndex = $this->loadCityTranslationIndexForCountry($countryIso2, $explicitCountryFilter);
-
-        $imported = 0;
-        $buffer = [];
-
-        foreach ($this->cursorLocationRows($countryIso2) as $row) {
-            $iso2 = strtoupper((string) ($row->country_code ?? ''));
-            $cityId = (int) $row->id;
-            $translations = $translationIndex[$cityId] ?? null;
-
-            $buffer[] = [
-                'id' => $cityId,
-                'geo_state_id' => (int) $row->state_id,
-                'geo_country_id' => (int) $row->country_id,
-                'name' => (string) ($row->name ?? ''),
-                'native' => GeoCountryLocaleMap::resolveNativeName(
-                    $iso2,
-                    is_string($row->native ?? null) ? $row->native : null,
-                    is_string($row->name ?? null) ? $row->name : null,
-                    $translations,
-                ),
-                'translations' => $translations !== null ? json_encode($translations, JSON_UNESCAPED_UNICODE) : null,
-                'source' => GeoSource::Seed->value,
-                'is_visible' => true,
-                'latitude' => $row->latitude !== null ? (float) $row->latitude : null,
-                'longitude' => $row->longitude !== null ? (float) $row->longitude : null,
-                'timezone' => filled($row->timezone ?? null) ? (string) $row->timezone : null,
-                'wiki_data_id' => filled($row->wikiDataId ?? null) ? (string) $row->wikiDataId : null,
-                'type' => filled($row->type ?? null) ? (string) $row->type : null,
-                'population' => filled($row->population ?? null) ? (int) $row->population : null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-
-            if (count($buffer) >= 500) {
-                $imported += $this->flushCityBuffer($buffer);
-                $buffer = [];
-                $total = $importedSoFar + $imported;
-                $this->logger?->progress('cities', $total, $countryIso2);
-                $progress && $progress($total);
-            }
-        }
-
-        if ($buffer !== []) {
-            $imported += $this->flushCityBuffer($buffer);
-            $total = $importedSoFar + $imported;
-            $this->logger?->progress('cities', $total, $countryIso2);
-            $progress && $progress($total);
-        }
-
-        unset($translationIndex);
-
-        return $imported;
+        return $this->locationsDatabase !== null;
     }
 
     /**
+     * @throws GeoImportException when --locations-database was given but its table cannot be read
+     */
+    public function assertLocationsDatabaseAvailable(): void
+    {
+        if (! $this->usesLocationsDatabase()) {
+            return;
+        }
+
+        try {
+            DB::select('SELECT 1 FROM ' . $this->qualifiedLocationsTable() . ' LIMIT 1');
+        } catch (\Throwable $exception) {
+            throw GeoImportException::locationsDatabaseUnavailable($this->qualifiedLocationsTable(), $exception->getMessage());
+        }
+    }
+
+    /**
+     * Fail early with an actionable message when cities would have no state to belong to.
+     *
+     * @throws GeoImportException
+     */
+    public function assertStatesImported(?string $countryIso2): void
+    {
+        if ($countryIso2 === null) {
+            if (! GeoState::query()->exists()) {
+                throw GeoImportException::statesMissing(null);
+            }
+
+            return;
+        }
+
+        $iso2 = strtoupper($countryIso2);
+
+        if (! GeoState::query()->where('geo_country_id', $this->countryIdFor($iso2))->exists()) {
+            throw GeoImportException::statesMissing($iso2);
+        }
+    }
+
+    /**
+     * Countries to import cities for: the given one, or every country in geo_countries.
+     *
      * @return list<string>
      */
-    private function locationCountryCodes(?string $countryIso2): array
+    public function countryCodesForImport(?string $countryIso2): array
     {
         if ($countryIso2 !== null) {
             return [strtoupper($countryIso2)];
         }
 
-        $rows = DB::select(
-            'SELECT DISTINCT country_code FROM '.$this->qualifiedLocationsTable().' ORDER BY country_code',
-        );
+        return GeoCountry::query()
+            ->orderBy('iso2')
+            ->pluck('iso2')
+            ->map(static fn (string $iso2): string => strtoupper($iso2))
+            ->values()
+            ->all();
+    }
 
-        return array_values(array_map(
-            static fn (object $row): string => strtoupper((string) ($row->country_code ?? '')),
-            $rows,
-        ));
+    /**
+     * Upsert one country's cities by dr5hn id. Rows whose state_id is not one of the
+     * country's geo_states are skipped and logged instead of failing the whole country.
+     *
+     * @return array{imported: int, skipped: int}
+     *
+     * @throws GeoImportException
+     */
+    public function importCitiesForCountryCode(
+        string $countryIso2,
+        bool $explicitCountryFilter,
+        int $importedSoFar = 0,
+        ?callable $progress = null,
+    ): array {
+        $iso2 = strtoupper($countryIso2);
+        $countryId = $this->countryIdFor($iso2);
+
+        /** @var array<int, true> $stateIds */
+        $stateIds = GeoState::query()
+            ->where('geo_country_id', $countryId)
+            ->pluck('id')
+            ->mapWithKeys(static fn (int | string $id): array => [(int) $id => true])
+            ->all();
+
+        $rows = $this->usesLocationsDatabase()
+            ? $this->locationCityRows($iso2, $explicitCountryFilter)
+            : $this->dr5hnCityRows($iso2);
+
+        $imported = 0;
+        $skipped = 0;
+        $missingStateIds = [];
+        $buffer = [];
+
+        foreach ($rows as $city) {
+            if ($stateIds === []) {
+                throw GeoImportException::statesMissing($iso2);
+            }
+
+            $stateId = (int) ($city['state_id'] ?? 0);
+            if (! isset($stateIds[$stateId])) {
+                $skipped++;
+                $missingStateIds[$stateId] = true;
+
+                continue;
+            }
+
+            $buffer[] = $this->cityRow($city, $iso2, $countryId, $stateId);
+
+            if (count($buffer) >= self::CITY_CHUNK_SIZE) {
+                $imported += $this->flushCityBuffer($buffer);
+                $buffer = [];
+                $this->reportCityProgress($importedSoFar + $imported, $iso2, $progress);
+            }
+        }
+
+        if ($buffer !== []) {
+            $imported += $this->flushCityBuffer($buffer);
+            $this->reportCityProgress($importedSoFar + $imported, $iso2, $progress);
+        }
+
+        if ($skipped > 0) {
+            $ids = array_keys($missingStateIds);
+            $shown = implode(', ', array_slice($ids, 0, 10)) . (count($ids) > 10 ? ', …' : '');
+
+            $this->logger?->warning(
+                "Country {$iso2} — {$skipped} cities skipped: state_id not in geo_states ({$shown})",
+            );
+        }
+
+        return ['imported' => $imported, 'skipped' => $skipped];
+    }
+
+    /**
+     * @return \Generator<int, array<string, mixed>>
+     */
+    private function dr5hnCityRows(string $iso2): \Generator
+    {
+        $url = self::DR5HN_BASE . '/cities/' . $iso2 . '.json';
+        $payload = $this->fetchJson($url);
+
+        if ($payload === null) {
+            $this->logger?->info("Country {$iso2} — no city file in dr5hn ({$url})");
+
+            return;
+        }
+
+        foreach ($payload as $city) {
+            if (is_array($city) && isset($city['id'])) {
+                yield $city;
+            }
+        }
+
+        unset($payload);
+    }
+
+    /**
+     * @return \Generator<int, array<string, mixed>>
+     */
+    private function locationCityRows(string $iso2, bool $explicitCountryFilter): \Generator
+    {
+        $translationIndex = $this->loadCityTranslationIndexForCountry($iso2, $explicitCountryFilter);
+
+        $sql = 'SELECT * FROM ' . $this->qualifiedLocationsTable() . ' WHERE country_code = ? ORDER BY id';
+
+        foreach (DB::cursor($sql, [$iso2]) as $row) {
+            $city = (array) $row;
+            $city['translations'] = $translationIndex[(int) $city['id']] ?? null;
+
+            yield $city;
+        }
+
+        unset($translationIndex);
+    }
+
+    /**
+     * @param  array<string, mixed>  $city
+     * @return array<string, mixed>
+     */
+    private function cityRow(array $city, string $iso2, int $countryId, int $stateId): array
+    {
+        $translations = is_array($city['translations'] ?? null) ? $city['translations'] : null;
+        $name = is_string($city['name'] ?? null) ? $city['name'] : null;
+
+        return [
+            'id' => (int) $city['id'],
+            'geo_state_id' => $stateId,
+            'geo_country_id' => $countryId,
+            'name' => (string) ($name ?? ''),
+            'native' => GeoCountryLocaleMap::resolveNativeName(
+                $iso2,
+                is_string($city['native'] ?? null) ? $city['native'] : null,
+                $name,
+                $translations,
+            ),
+            'translations' => $translations !== null ? json_encode($translations, JSON_UNESCAPED_UNICODE) : null,
+            'source' => GeoSource::Seed->value,
+            'is_visible' => true,
+            'latitude' => filled($city['latitude'] ?? null) ? (float) $city['latitude'] : null,
+            'longitude' => filled($city['longitude'] ?? null) ? (float) $city['longitude'] : null,
+            'timezone' => filled($city['timezone'] ?? null) ? (string) $city['timezone'] : null,
+            'wiki_data_id' => filled($city['wikiDataId'] ?? null) ? (string) $city['wikiDataId'] : null,
+            'type' => filled($city['type'] ?? null) ? (string) $city['type'] : null,
+            'population' => filled($city['population'] ?? null) ? (int) $city['population'] : null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    private function reportCityProgress(int $total, string $iso2, ?callable $progress): void
+    {
+        $this->logger?->progress('cities', $total, $iso2);
+        $progress && $progress($total);
+    }
+
+    /**
+     * @throws GeoImportException
+     */
+    private function countryIdFor(string $iso2): int
+    {
+        $id = GeoCountry::query()->where('iso2', $iso2)->value('id');
+
+        if ($id === null) {
+            throw GeoImportException::countryMissing($iso2);
+        }
+
+        return (int) $id;
     }
 
     /**
@@ -215,42 +350,9 @@ final class GeoImportService
             return [];
         }
 
+        $payload = $this->fetchJson(self::DR5HN_BASE . '/cities/' . $countryIso2 . '.json') ?? [];
+
         $index = [];
-        $this->mergeCityTranslationsForCountry($index, $countryIso2);
-
-        return $index;
-    }
-
-    /**
-     * @return \Generator<object>
-     */
-    private function cursorLocationRows(?string $countryIso2): \Generator
-    {
-        $sql = 'SELECT * FROM '.$this->qualifiedLocationsTable();
-        $bindings = [];
-
-        if ($countryIso2 !== null) {
-            $sql .= ' WHERE country_code = ?';
-            $bindings[] = strtoupper($countryIso2);
-        }
-
-        $sql .= ' ORDER BY id';
-
-        foreach (DB::cursor($sql, $bindings) as $row) {
-            yield $row;
-        }
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $index
-     */
-    private function mergeCityTranslationsForCountry(array &$index, string $iso2): void
-    {
-        $payload = $this->fetchJson(self::DR5HN_BASE.'/cities/'.$iso2.'.json');
-        if (! is_array($payload)) {
-            return;
-        }
-
         foreach ($payload as $city) {
             if (! is_array($city) || ! isset($city['id'])) {
                 continue;
@@ -262,7 +364,7 @@ final class GeoImportService
             }
         }
 
-        unset($payload);
+        return $index;
     }
 
     /**
@@ -302,52 +404,40 @@ final class GeoImportService
         return $imported;
     }
 
-    public function importCitiesForCountryCode(
-        string $countryIso2,
-        bool $explicitCountryFilter,
-        int $importedSoFar = 0,
-        ?callable $progress = null,
-    ): int {
-        return $this->importCitiesForCountry(
-            strtoupper($countryIso2),
-            $explicitCountryFilter,
-            $progress,
-            $importedSoFar,
-        );
-    }
-
-    /**
-     * @return list<string>
-     */
-    public function countryCodesForImport(?string $countryIso2): array
-    {
-        return $this->locationCountryCodes($countryIso2);
-    }
-
-    public function locationsDatabaseAvailable(): bool
-    {
-        try {
-            DB::select('SELECT 1 FROM '.$this->qualifiedLocationsTable().' LIMIT 1');
-
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
     private function qualifiedLocationsTable(): string
     {
-        return '`'.$this->locationsDatabase.'`.`'.$this->locationsTable.'`';
+        return '`' . $this->locationsDatabase . '`.`' . $this->locationsTable . '`';
     }
 
     /**
-     * @return array<mixed>|null
+     * @return array<mixed>
+     *
+     * @throws GeoImportException
+     */
+    private function fetchRequiredJson(string $url): array
+    {
+        return $this->fetchJson($url) ?? throw GeoImportException::datasetMissing($url);
+    }
+
+    /**
+     * @return array<mixed>|null null when the file does not exist (HTTP 404)
+     *
+     * @throws GeoImportException on network errors, other HTTP errors, or invalid JSON
      */
     private function fetchJson(string $url): ?array
     {
-        $response = Http::timeout(120)->get($url);
-        if (! $response->successful()) {
+        try {
+            $response = Http::timeout(120)->get($url);
+        } catch (ConnectionException $exception) {
+            throw GeoImportException::downloadFailed($url, $exception->getMessage());
+        }
+
+        if ($response->status() === 404) {
             return null;
+        }
+
+        if (! $response->successful()) {
+            throw GeoImportException::downloadFailed($url, 'HTTP ' . $response->status());
         }
 
         $body = $response->body();
@@ -356,6 +446,10 @@ final class GeoImportService
         $decoded = json_decode($body, true);
         unset($body);
 
-        return is_array($decoded) ? $decoded : null;
+        if (! is_array($decoded)) {
+            throw GeoImportException::downloadFailed($url, 'response is not a JSON array');
+        }
+
+        return $decoded;
     }
 }

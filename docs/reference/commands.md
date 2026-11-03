@@ -345,15 +345,20 @@ Scaffolds one of three widget shapes inside the plugin:
 mks:geo:import
   [--only=countries|states|cities]
   [--country=IR]
+  [--sync]
   [--locations-database=locations]
   [--locations-table=csv-cities]
 ```
 
 Source: [`GeoImportCommand`](../../src/Console/Commands/GeoImportCommand.php).
 
-Imports or upserts rows into **`geo_countries`**, **`geo_states`**, and **`geo_cities`**. Countries and states are fetched from the dr5hn dataset over HTTP; cities are read from a MySQL **`locations`** database table (defaults: database `locations`, table `csv-cities`).
+Imports or upserts rows into **`geo_countries`**, **`geo_states`**, and **`geo_cities`** from the dr5hn dataset over HTTPS. Cities come from the per-country file `cities/{ISO2}.json`; a MySQL `locations` table is read only when `--locations-database` is given.
 
-Requires geo migrations. Idempotent upsert by primary key.
+- `--country=IR` and `--sync` run in the command and print imported and skipped counts. The exit code is failure when a country failed; skipped cities are reported as a warning.
+- Without either, the import runs on the queue (one job per country for cities). Run `php artisan queue:work --memory=1024`.
+- `--only=cities` needs the country’s states in `geo_states` and stops with a clear message otherwise.
+
+Requires geo migrations. Idempotent upsert by primary key; ids never change.
 
 See [Geo import and legacy migration](../guides/geo/import-and-migration.md).
 

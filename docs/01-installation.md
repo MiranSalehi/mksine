@@ -226,7 +226,7 @@ Equivalent env keys: `MKS_CMS_THEME_MANAGEMENT`, `MKS_CMS_PAGE_BUILDER`. Full ta
 Required when a plugin (for example **ecom**) uses multi-country addresses or checkout geo selects. Pure CMS installs can skip this.
 
 ```bash
-php artisan mks:geo:import          # needs outbound HTTP; cities need a MySQL locations DB
+php artisan mks:geo:import --country=IR   # needs outbound HTTPS to GitHub; runs without the queue
 ```
 
 Then open **System → Settings → Geo** and choose enabled countries and the default country.

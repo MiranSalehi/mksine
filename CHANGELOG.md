@@ -8,6 +8,20 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.19.0 - 2026-11-03
+
+### Fixed
+
+- **`mks:geo:import` imported no cities on servers and still said “completed”.** Cities were read from a private MySQL `locations` database that is not shipped with the package. When it was missing, the import logged a warning and reported success. Cities now come from the dr5hn per-country file `cities/{ISO2}.json`, which the import already downloaded for translations, and the list of countries comes from `geo_countries`. The `locations` table is read only when you pass `--locations-database`; if it cannot be read, the command fails with that error.
+- **Cities with an unknown state no longer break a whole country.** Rows whose `state_id` is not in `geo_states` caused a foreign key error, so no cities were imported for AO, ET, IT, KR, LU, and LV. These rows are now skipped and counted per country in the log, and the rest of the country is imported.
+- **`--only=cities` without states gives a clear message.** It used to fail with a raw SQL error. It now says which country has no states and tells you to run `--only=states` first.
+- **Honest results.** With `--sync` or `--country`, the command prints how many countries, states, and cities were imported and how many cities were skipped. It exits with failure, and does not print “completed”, when a country failed. Skipped cities are a warning: the command prints “completed with N cities skipped” and exits 0. On the queue, the batch’s final log line names the number of failed country jobs and says “completed” only when none failed, followed by the skipped-city count if any. A failed download of `countries.json` or `states.json` now fails the import instead of importing 0 rows.
+
+### Changed
+
+- **`mks:geo:import --country=XX` runs without the queue.** One country takes seconds (Iran about 40 seconds), so it no longer waits for a worker. A global import without `--sync` still uses the queue, and the command now prints `php artisan queue:work --memory=1024` and the `--sync --country=IR` alternative, because the default 128 MB worker limit stops after the first country.
+- **`--locations-database` has no default.** To keep reading cities from MySQL, pass `--locations-database=locations`. Ids are unchanged either way: both sources use dr5hn ids and the import upserts by id, so ecom addresses that reference `geo_states` and `geo_cities` stay valid.
+
 ## 1.18.0 - 2026-11-03
 
 ### Fixed

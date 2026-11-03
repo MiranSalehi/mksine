@@ -83,7 +83,7 @@ See [Deployment and hosting](deployment-hosting.md).
 ## Geo (if checkout/addresses use geo)
 
 - [ ] `php artisan migrate` created `geo_countries`, `geo_states`, `geo_cities`.
-- [ ] `php artisan mks:geo:import` (or `mks:geo:import --country=IR` for staging) completed without errors.
+- [ ] `php artisan mks:geo:import --country=IR` (or `--sync` for all countries) printed “Geo import completed.” and exited 0.
 - [ ] **System → Settings → Geo**: enabled countries and default country configured.
 - [ ] `geo_countries` has at least one row; states and cities exist for the active country.
 - [ ] If legacy Iran tables remain: `php artisan mks:geo:migrate-legacy-iran` ran once after import.

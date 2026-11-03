@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Services\Geo;
 
+use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Miran\Mksine\Jobs\Geo\ImportGeoCitiesCountryJob;
 use Throwable;
 
 final class GeoImportRunner
 {
-    public function run(string $runId, GeoImportOptions $options, GeoImportLogger $logger): void
+    /**
+     * @throws GeoImportException when a phase cannot start (download failed, states missing, locations table unreadable)
+     */
+    public function run(string $runId, GeoImportOptions $options, GeoImportLogger $logger): GeoImportResult
     {
         if (! $options->isValidOnly()) {
             throw new \InvalidArgumentException('Invalid --only value. Use countries, states, or cities.');
@@ -27,53 +32,52 @@ final class GeoImportRunner
             logger: $logger,
         );
 
-        $logger->info('Geo import started'.($options->country !== null ? " (country: {$options->country})" : ''));
+        $result = new GeoImportResult;
+
+        $logger->info('Geo import started' . ($options->country !== null ? " (country: {$options->country})" : ''));
 
         if ($options->shouldImportCountries()) {
             $logger->step('countries', 'Fetching dataset from dr5hn');
-            $count = $service->importCountries();
-            $logger->step('countries', "Completed — {$count} countries upserted");
+            $result->countries = $service->importCountries();
+            $logger->step('countries', "{$result->countries} countries upserted");
         }
 
         if ($options->shouldImportStates()) {
             $logger->step('states', $options->country !== null
                 ? "Fetching dataset for {$options->country}"
                 : 'Fetching global states dataset from dr5hn');
-            $count = $service->importStates($options->country);
-            $logger->step('states', "Completed — {$count} states upserted");
+            $result->states = $service->importStates($options->country);
+            $logger->step('states', "{$result->states} states upserted");
         }
 
         if (! $options->shouldImportCities()) {
-            $logger->info('Geo import completed');
+            $this->logOutcome($logger, $result);
 
-            return;
+            return $result;
         }
 
-        if (! $service->locationsDatabaseAvailable()) {
-            $logger->warning('Locations database unavailable — cities import skipped');
-
-            return;
-        }
+        $service->assertLocationsDatabaseAvailable();
+        $service->assertStatesImported($options->country);
 
         $countryCodes = $service->countryCodesForImport($options->country);
         $totalCountries = count($countryCodes);
+        $source = $options->usesLocationsDatabase()
+            ? "locations table `{$options->locationsDatabase}`.`{$options->locationsTable}`"
+            : 'dr5hn per-country JSON';
 
-        if ($totalCountries === 0) {
-            $logger->warning('No country codes found in locations database — cities import skipped');
-            $logger->info('Geo import completed');
-
-            return;
-        }
-
-        $logger->step('cities', "Preparing import for {$totalCountries} countries");
+        $logger->step('cities', "Preparing import for {$totalCountries} countries from {$source}");
 
         if (! $options->queueCityJobs || $totalCountries === 1) {
-            $this->importCitiesInline($service, $options, $logger, $countryCodes);
+            $this->importCitiesInline($service, $options, $logger, $countryCodes, $result);
+            $this->logOutcome($logger, $result);
 
-            return;
+            return $result;
         }
 
         $this->dispatchCityImportBatch($runId, $options, $logger, $countryCodes);
+        $result->citiesQueued = true;
+
+        return $result;
     }
 
     /**
@@ -84,25 +88,51 @@ final class GeoImportRunner
         GeoImportOptions $options,
         GeoImportLogger $logger,
         array $countryCodes,
+        GeoImportResult $result,
     ): void {
-        $imported = 0;
         $totalCountries = count($countryCodes);
 
         foreach ($countryCodes as $index => $countryCode) {
             $position = $index + 1;
             $logger->step('cities', "Country {$countryCode} ({$position}/{$totalCountries}) — loading rows");
 
-            $countryImported = $service->importCitiesForCountryCode(
-                $countryCode,
-                $options->country !== null,
-                $imported,
-            );
+            try {
+                $counts = $service->importCitiesForCountryCode(
+                    $countryCode,
+                    $options->country !== null,
+                    $result->cities,
+                );
+            } catch (Throwable $exception) {
+                $logger->error("Country {$countryCode} failed: " . $exception->getMessage());
+                $result->recordFailedCountry($countryCode, $exception->getMessage());
 
-            $imported += $countryImported;
-            $logger->step('cities', "Country {$countryCode} — {$countryImported} cities upserted (total: {$imported})");
+                continue;
+            }
+
+            $result->recordCountryCities($counts['imported'], $counts['skipped']);
+            $logger->step(
+                'cities',
+                "Country {$countryCode} — {$counts['imported']} cities upserted, {$counts['skipped']} skipped (total: {$result->cities})",
+            );
         }
 
-        $logger->step('cities', "Completed — {$imported} cities upserted");
+        $logger->step('cities', "{$result->cities} cities upserted, {$result->skippedCities} skipped");
+    }
+
+    private function logOutcome(GeoImportLogger $logger, GeoImportResult $result): void
+    {
+        if ($result->hasFailures()) {
+            $logger->error('Geo import finished with problems — ' . $result->failureSummary());
+
+            return;
+        }
+
+        if ($result->skippedCities > 0) {
+            $logger->warning('Geo import completed — ' . $result->skippedSummary());
+
+            return;
+        }
+
         $logger->info('Geo import completed');
     }
 
@@ -132,11 +162,31 @@ final class GeoImportRunner
         $queue = config('mksine.geo_import.queue_name');
 
         $batch = Bus::batch($jobs)
-            ->name('mksine-geo-import-cities-'.$runId)
+            ->name('mksine-geo-import-cities-' . $runId)
             ->allowFailures()
-            ->finally(function () use ($runId): void {
+            ->finally(function (Batch $batch) use ($runId): void {
                 $batchLogger = GeoImportLogger::resume($runId);
-                $batchLogger->step('cities', 'All queued country jobs finished');
+                $skipped = (int) Cache::pull(ImportGeoCitiesCountryJob::skippedCitiesCacheKey($runId), 0);
+
+                $batchLogger->step(
+                    'cities',
+                    "All queued country jobs finished — {$batch->failedJobs} of {$batch->totalJobs} failed, {$skipped} cities skipped",
+                );
+
+                if ($batch->failedJobs > 0) {
+                    $batchLogger->error(
+                        "Geo import finished with problems — {$batch->failedJobs} failed country jobs, {$skipped} cities skipped",
+                    );
+
+                    return;
+                }
+
+                if ($skipped > 0) {
+                    $batchLogger->warning("Geo import completed — {$skipped} cities skipped (state missing in geo_states)");
+
+                    return;
+                }
+
                 $batchLogger->info('Geo import completed');
             });
 
@@ -151,12 +201,12 @@ final class GeoImportRunner
         try {
             $batch->dispatch();
         } catch (Throwable $exception) {
-            $logger->error('Failed to dispatch city import batch: '.$exception->getMessage());
+            $logger->error('Failed to dispatch city import batch: ' . $exception->getMessage());
 
             throw $exception;
         }
 
-        $logger->step('cities', count($jobs).' country jobs queued — monitor with queue:work');
+        $logger->step('cities', count($jobs) . ' country jobs queued — monitor with queue:work');
         $logger->info('Countries/states finished; cities import continues on the queue');
     }
 }

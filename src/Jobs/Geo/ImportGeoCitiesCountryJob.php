@@ -9,6 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Cache;
 use Miran\Mksine\Services\Geo\GeoImportLogger;
 use Miran\Mksine\Services\Geo\GeoImportService;
 use Throwable;
@@ -30,7 +31,7 @@ final class ImportGeoCitiesCountryJob implements ShouldQueue
         public readonly bool $explicitCountryFilter,
         public readonly int $countryIndex,
         public readonly int $countryTotal,
-        public readonly string $locationsDatabase = 'locations',
+        public readonly ?string $locationsDatabase = null,
         public readonly string $locationsTable = 'csv-cities',
     ) {
         $this->timeout = (int) config('mksine.geo_import.job_timeout', 3600);
@@ -58,26 +59,40 @@ final class ImportGeoCitiesCountryJob implements ShouldQueue
         );
 
         try {
-            $imported = $service->importCitiesForCountryCode(
+            $counts = $service->importCitiesForCountryCode(
                 $this->countryIso2,
                 $this->explicitCountryFilter,
             );
 
             $logger->step(
                 'cities',
-                "Country {$this->countryIso2} — {$imported} cities upserted",
+                "Country {$this->countryIso2} — {$counts['imported']} cities upserted, {$counts['skipped']} skipped",
             );
+
+            if ($counts['skipped'] > 0) {
+                $key = self::skippedCitiesCacheKey($this->runId);
+                Cache::add($key, 0, now()->addDays(2));
+                Cache::increment($key, $counts['skipped']);
+            }
         } catch (Throwable $exception) {
-            $logger->error("Country {$this->countryIso2} failed: ".$exception->getMessage());
+            $logger->error("Country {$this->countryIso2} failed: " . $exception->getMessage());
 
             throw $exception;
         }
     }
 
+    /**
+     * Cache key where country jobs add up skipped cities, read by the batch's finally callback.
+     */
+    public static function skippedCitiesCacheKey(string $runId): string
+    {
+        return 'mksine:geo-import:' . $runId . ':skipped-cities';
+    }
+
     public function failed(?Throwable $exception): void
     {
         GeoImportLogger::resume($this->runId)->error(
-            "City import job for {$this->countryIso2} failed: ".($exception?->getMessage() ?? 'unknown error'),
+            "City import job for {$this->countryIso2} failed: " . ($exception?->getMessage() ?? 'unknown error'),
         );
     }
 

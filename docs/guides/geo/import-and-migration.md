@@ -1,6 +1,6 @@
 ---
 title: Geo import and legacy migration
-description: mks:geo:import, cities locations database, and mks:geo:migrate-legacy-iran for old ecom Iran tables.
+description: mks:geo:import (dr5hn countries, states, and cities) and mks:geo:migrate-legacy-iran for old ecom Iran tables.
 order: 2
 ---
 
@@ -12,7 +12,7 @@ order: 2
 php artisan migrate   # includes packages/mksine geo tables
 ```
 
-Network access is required for **countries** and **states** (HTTP fetch from dr5hn GitHub raw JSON). **Cities** additionally require a local MySQL **`locations`** database — see below.
+Every phase needs outbound HTTPS to `raw.githubusercontent.com` (the dr5hn dataset). No other database is needed.
 
 ## `mks:geo:import`
 
@@ -20,54 +20,81 @@ Network access is required for **countries** and **states** (HTTP fetch from dr5
 mks:geo:import
   [--only=countries|states|cities]
   [--country=IR]
+  [--sync]
   [--locations-database=locations]
   [--locations-table=csv-cities]
 ```
 
-Source: [`GeoImportCommand`](../../../src/Console/Commands/GeoImportCommand.php), [`GeoImportService`](../../../src/Services/Geo/GeoImportService.php).
+Source: [`GeoImportCommand`](../../../src/Console/Commands/GeoImportCommand.php), [`GeoImportRunner`](../../../src/Services/Geo/GeoImportRunner.php), [`GeoImportService`](../../../src/Services/Geo/GeoImportService.php).
 
 ### What each phase imports
 
 | Phase | Source | Notes |
 | --- | --- | --- |
-| **countries** | dr5hn `countries.json` | Upsert into `geo_countries` by `id` |
-| **states** | dr5hn `states.json` | Optional `--country=IR` filter |
-| **cities** | MySQL `` `locations`.`csv-cities` `` | Translations merged from dr5hn per-country city JSON; skipped if locations DB unreachable |
+| **countries** | dr5hn `countries/countries.json` | Upsert into `geo_countries` by `id` |
+| **states** | dr5hn `states/states.json` | Optional `--country=IR` filter |
+| **cities** | dr5hn `cities/{ISO2}.json`, one file per country | Countries come from `geo_countries` (or `--country`). A country with no city file imports 0 cities. |
 
-### Typical first-time run
+All ids are the dr5hn ids, and every phase upserts by primary key. Running the import again updates rows in place and never changes ids, so customer addresses in ecom that point at `geo_states` / `geo_cities` stay valid.
 
-```bash
-php artisan mks:geo:import
-```
-
-Iran-only staging (faster):
+### One country (recommended for staging and most stores)
 
 ```bash
 php artisan mks:geo:import --country=IR
+```
+
+With `--country` the import always runs in the command itself, without the queue. Iran takes about 40 seconds. At the end the command prints how many countries, states, and cities were imported and how many cities were skipped.
+
+To import only cities, the states for that country must already be in `geo_states`:
+
+```bash
+php artisan mks:geo:import --only=states --country=IR
 php artisan mks:geo:import --only=cities --country=IR
 ```
 
-Re-import is **idempotent** (upsert by primary key).
+If the states are missing, `--only=cities` stops with a message telling you to run `--only=states` first.
 
-### Cities: `locations` database
-
-City rows are read with:
-
-```sql
-SELECT * FROM `locations`.`csv-cities` [WHERE country_code = ?] ORDER BY id
-```
-
-Configure the connection via command options if your database or table name differs:
+### All countries
 
 ```bash
-php artisan mks:geo:import --only=cities \
+php artisan mks:geo:import --sync    # in the command, prints totals at the end
+php artisan mks:geo:import           # on the queue: one job per country
+```
+
+Without `--sync` or `--country`, the command dispatches a queue job, prints the run ID and log path, and returns. The cities phase then runs as a batch with one job per country. Run a worker with enough memory, because the default 128 MB limit stops the worker after the first country:
+
+```bash
+php artisan queue:work --memory=1024
+```
+
+Add the connection and `--queue=` if you set `MKS_GEO_IMPORT_QUEUE_CONNECTION` / `MKS_GEO_IMPORT_QUEUE_NAME`. The command prints the exact worker command.
+
+### Results, skipped cities, and exit codes
+
+- Cities whose `state_id` is not in that country’s `geo_states` are skipped. The rest of the country is still imported, and the log lists the count and the missing state ids per country.
+- If a country fails (download error, missing states), the import records it and continues with the next country.
+- With `--sync` or `--country`, the command exits with **failure** and prints “Geo import finished with problems” when any country failed. Skipped cities alone are a warning: the command prints “Geo import completed with N cities skipped” and exits 0.
+- On the queue, the batch’s last log line is “Geo import finished with problems” when a country job failed. Otherwise it is “Geo import completed”, followed by the number of skipped cities if there were any.
+
+Log file per run: `storage/logs/mksine-geo-import/geo-import-{runId}.log` (`tail -f` it while the queue runs).
+
+### Optional: cities from a MySQL `locations` database
+
+Older installs read cities from a private MySQL copy of dr5hn. This is now used only when you pass `--locations-database`:
+
+```bash
+php artisan mks:geo:import --only=cities --country=IR \
   --locations-database=locations \
   --locations-table=csv-cities
 ```
 
-If the table is missing or the connection fails, the cities phase imports **0 rows** without failing the whole command — verify counts after import.
+Rows are read with:
 
-**Operator action:** provision the `locations` database from the dr5hn CSV/SQL distribution (or your organisation’s mirror) before expecting full city coverage.
+```sql
+SELECT * FROM `locations`.`csv-cities` WHERE country_code = ? ORDER BY id
+```
+
+Translations still come from the dr5hn city JSON. If the table cannot be read, the command fails with that error instead of skipping cities.
 
 ## `mks:geo:migrate-legacy-iran`
 
@@ -110,7 +137,9 @@ Ecom: **`plugins/ecom/docs/guides/addresses-and-geo.md`**, Woo import **`plugins
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Cities count = 0 | `locations` DB not provisioned | Import dr5hn cities into `` locations.csv-cities `` or use `--country=` for partial import |
-| States empty | Network blocked to GitHub | Run from CI/staging with egress; or mirror JSON locally (custom ops procedure) |
+| Cities count = 0, “No states for XX” | States not imported for that country | `php artisan mks:geo:import --only=states --country=XX`, then `--only=cities --country=XX` |
+| “N cities skipped” | dr5hn city rows point at a state id missing from `states.json` | Expected for a few countries; the log lists the state ids. Other cities of that country are imported. |
+| Queue worker stops with “Memory limit exceeded” | `queue:work` default `--memory=128` | `php artisan queue:work --memory=1024`, or use `--sync` / `--country=` |
+| States empty, download errors | Network blocked to GitHub | Run from CI/staging with egress; or mirror JSON locally (custom ops procedure) |
 | Legacy migrate maps few cities | Name mismatch (`name` vs `native`) | Align geo row names or fix legacy data; manual FK patch |
 | Admin shows no states | Country not in **enabled countries** | Settings → Geo |

@@ -33,6 +33,14 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.19.0 (2026-11-03)
+
+### Behavior changes (non-breaking, but visible)
+
+- **`mks:geo:import` reads cities from dr5hn JSON.** The MySQL `locations` database is used only with `--locations-database=locations`. Ids do not change, so re-running the import is safe for existing addresses.
+- **`mks:geo:import --country=XX` runs in the command**, not on the queue.
+- **`mks:geo:import` exits with failure** when a country’s cities could not be imported (download error, missing states). Deploy scripts that run it with `--sync` or `--country` will now stop on such a failure. Skipped cities with an unknown state are only a warning.
+
 ## 1.17.0 (2026-11-01)
 
 ### Behavior changes (non-breaking, but visible)
