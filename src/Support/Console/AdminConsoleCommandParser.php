@@ -87,13 +87,41 @@ final class AdminConsoleCommandParser
     }
 
     /**
-     * @param  list<string>  $tokens
+     * Whether a sub-command (e.g. `migrate:status`) is on the runner's allowlist.
      */
-    private static function assertAllowed(string $runner, array $tokens): void
+    public static function isAllowed(string $runner, string $subCommand): bool
     {
         $patterns = self::allowlistFor($runner);
 
         if (in_array('*', $patterns, true)) {
+            return true;
+        }
+
+        $name = strtolower(trim($subCommand));
+
+        if ($name === '') {
+            return false;
+        }
+
+        foreach ($patterns as $pattern) {
+            if ($pattern === $name) {
+                return true;
+            }
+
+            if (str_ends_with($pattern, '*') && str_starts_with($name, substr($pattern, 0, -1))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $tokens
+     */
+    private static function assertAllowed(string $runner, array $tokens): void
+    {
+        if (in_array('*', self::allowlistFor($runner), true)) {
             return;
         }
 
@@ -105,14 +133,8 @@ final class AdminConsoleCommandParser
             );
         }
 
-        foreach ($patterns as $pattern) {
-            if ($pattern === $name) {
-                return;
-            }
-
-            if (str_ends_with($pattern, '*') && str_starts_with($name, substr($pattern, 0, -1))) {
-                return;
-            }
+        if (self::isAllowed($runner, $name)) {
+            return;
         }
 
         throw new InvalidArgumentException(sprintf(

@@ -22,7 +22,7 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.19.1',
+    'version' => '1.20.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -781,6 +781,17 @@ return [
                 'why',
                 'why-not',
             ],
+        ],
+
+        /*
+         * One-click chips above the prompt (they fill the input; Enter runs them).
+         * `daemon_presets` below are appended as long-running chips.
+         */
+        'quick_commands' => [
+            'php artisan optimize:clear',
+            'php artisan migrate:status',
+            'php artisan migrate:smart',
+            'php artisan about',
         ],
 
         'daemon_presets' => [

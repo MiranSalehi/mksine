@@ -31,7 +31,7 @@ final class ConsoleProcessController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return response()->json($this->serializeProcess($process));
+        return response()->json($manager->present($process));
     }
 
     public function stop(ConsoleProcess $process, AdminConsoleProcessManager $manager): JsonResponse
@@ -40,7 +40,7 @@ final class ConsoleProcessController extends Controller
 
         $process = $manager->stop($manager->syncStatus($process));
 
-        return response()->json($this->serializeProcess($process));
+        return response()->json($manager->present($process));
     }
 
     public function status(ConsoleProcess $process, AdminConsoleProcessManager $manager): JsonResponse
@@ -49,7 +49,7 @@ final class ConsoleProcessController extends Controller
 
         $process = $manager->syncStatus($process);
 
-        return response()->json($this->serializeProcess($process));
+        return response()->json($manager->present($process));
     }
 
     public function output(Request $request, ConsoleProcess $process, AdminConsoleProcessManager $manager): JsonResponse
@@ -84,33 +84,8 @@ final class ConsoleProcessController extends Controller
             ->latest('id')
             ->limit(10)
             ->get()
-            ->map(fn (ConsoleProcess $process): array => $this->serializeProcess($manager->syncStatus($process)));
+            ->map(fn (ConsoleProcess $process): array => $manager->present($manager->syncStatus($process)));
 
         return response()->json(['processes' => $processes]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function serializeProcess(ConsoleProcess $process): array
-    {
-        $alive = $process->pid !== null && app(AdminConsoleProcessManager::class)->isPidAlive((int) $process->pid);
-
-        return [
-            'id' => $process->id,
-            'command' => $process->command,
-            'runner' => $process->runner,
-            'status' => $process->status->value,
-            'status_label' => __("mksine::console_terminal.{$process->status->labelKey()}"),
-            'pid' => $process->pid,
-            'alive' => $alive,
-            'exit_code' => $process->exit_code,
-            'started_at' => $process->started_at?->toIso8601String(),
-            'finished_at' => $process->finished_at?->toIso8601String(),
-            'stream_url' => route('mksine.console-process.stream', ['process' => $process->id]),
-            'output_url' => route('mksine.console-process.output', ['process' => $process->id]),
-            'stop_url' => route('mksine.console-process.stop', ['process' => $process->id]),
-            'status_url' => route('mksine.console-process.status', ['process' => $process->id]),
-        ];
     }
 }

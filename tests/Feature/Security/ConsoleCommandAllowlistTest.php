@@ -93,3 +93,12 @@ it('still rejects shell operators and unknown binaries', function (string $input
     'substitution' => 'php artisan optimize:clear $(whoami)',
     'unknown binary' => 'curl https://evil.test',
 ])->throws(InvalidArgumentException::class);
+
+it('answers allowlist checks for individual sub-commands', function (): void {
+    expect(AdminConsoleCommandParser::isAllowed('artisan', 'migrate:status'))->toBeTrue()
+        ->and(AdminConsoleCommandParser::isAllowed('artisan', 'Queue:Work'))->toBeTrue()
+        ->and(AdminConsoleCommandParser::isAllowed('artisan', 'tinker'))->toBeFalse()
+        ->and(AdminConsoleCommandParser::isAllowed('artisan', ''))->toBeFalse()
+        ->and(AdminConsoleCommandParser::isAllowed('composer', 'dump-autoload'))->toBeTrue()
+        ->and(AdminConsoleCommandParser::isAllowed('composer', 'exec'))->toBeFalse();
+});

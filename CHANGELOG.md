@@ -8,6 +8,22 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.20.0 - 2026-11-04
+
+### Added
+
+- **Redesigned admin console.** One **Run** button replaces *Start* and *Run once*: every command runs in the background with live output, and every finished run is saved to the history, including long-running workers. Output keeps its ANSI colors and progress bars. The prompt has autocomplete for allowlisted commands (with descriptions), `↑`/`↓` command history, `Ctrl+C` to stop, `Ctrl+L` to clear, and one-click chips from the new `console_terminal.quick_commands` config key plus `daemon_presets`. The history panel can be filtered, opens a saved run in the terminal, and runs it again. The history list no longer loads every run's full output.
+- **System status panel in the console.** Shows whether the scheduler runs (heartbeat on every `schedule:run`, with the cron line to add when it does not), the scheduled tasks with their next and last run, live `queue:work` workers (heartbeat from queue events), waiting and failed jobs with the age of the oldest waiting job, and background processes started from the console. Actions run in the terminal: run the scheduler, start `schedule:work` or a worker, `queue:restart`, retry or list failed jobs.
+- **Run in background.** A running command can be detached from the terminal and keeps running. You can view or stop it again from the status panel.
+
+### Fixed
+
+- **Background commands never started on macOS.** The runner was launched with `setsid`, which macOS does not have, and with `nohup`, which fails under launchd-managed PHP-FPM (Herd). Processes stayed in *Starting* forever. The runner is now detached with `trap '' HUP` and uses `setsid` only where it exists. Runner errors are written to the process output instead of `/dev/null`.
+- **Starting a worker from the panel blocked the web request.** The whole `cd … && …` list was backgrounded, so a subshell held PHP's output pipe until the command ended. Only the runner is backgrounded now.
+- **Stop now stops the command.** The runner forwards `SIGTERM` to the command, waits for it, and records the run as *Stopped*. Before, the command could keep running after its runner was killed. Stopping a process before its runner started no longer lets it start, and `stop()` reads the current PID instead of the caller's stale copy.
+- **A process that never starts or whose runner dies is shown as failed.** A process still *Starting* after 20 seconds is marked failed with a message, and a running process whose runner died is *Failed* instead of *Completed*.
+- **`AdminConsoleProcessManager` container binding.** The service provider bound the class without importing it, so the binding used a class name that does not exist.
+
 ## 1.19.1 - 2026-11-03
 
 ### Fixed

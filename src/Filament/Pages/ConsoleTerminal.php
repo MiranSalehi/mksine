@@ -10,15 +10,16 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Artisan;
 use InvalidArgumentException;
+use Livewire\Attributes\Renderless;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\ConsoleLog;
-use Miran\Mksine\Support\Console\AdminConsoleCommandRunner;
-use Miran\Mksine\Support\Console\Interactive\AdminInteractiveCommandResolver;
-use Filament\Support\Facades\FilamentAsset;
-use Filament\Support\Assets\Js;
+use Miran\Mksine\Support\Console\AdminConsoleCommandParser;
+use Miran\Mksine\Support\Console\Health\ConsoleHealthReport;
+use Symfony\Component\Console\Command\Command;
+use Throwable;
 
 class ConsoleTerminal extends Page
 {
@@ -32,26 +33,17 @@ class ConsoleTerminal extends Page
 
     protected string $view = 'mksine::filament.pages.console-terminal';
 
-    public string $command = '';
-
-    public string $terminalOutput = '';
-
-    public bool $isRunning = false;
-
-    public ?int $selectedLogId = null;
-
-    public function mount(): void
-    {
-        $consoleJs = dirname(__DIR__, 3).'/resources/js/admin-console-terminal.js';
-        if (file_exists($consoleJs)) {
-            FilamentAsset::register([
-                Js::make('mksine-console-terminal', $consoleJs),
-            ]);
-        }
-
-        $this->terminalOutput = __('mksine::console_terminal.welcome');
-        $this->selectLatestLog();
-    }
+    /**
+     * Commands that are always offered as one-click chips (in addition to `daemon_presets`).
+     *
+     * @var list<string>
+     */
+    private const DEFAULT_QUICK_COMMANDS = [
+        'php artisan optimize:clear',
+        'php artisan migrate:status',
+        'php artisan migrate:smart',
+        'php artisan about',
+    ];
 
     /**
      * @return array<string, mixed>
@@ -63,6 +55,16 @@ class ConsoleTerminal extends Page
             'activeUrl' => route('mksine.console-process.active'),
             'csrf' => csrf_token(),
             'pollIntervalMs' => (int) config('mksine.console_terminal.status_poll_interval_ms', 2000),
+            'quickCommands' => $this->quickCommands(),
+            'healthPollMs' => 10_000,
+            'healthCommands' => [
+                'scheduleRun' => 'php artisan schedule:run',
+                'scheduleWork' => 'php artisan schedule:work',
+                'queueWork' => $this->queueWorkCommand(),
+                'queueRestart' => 'php artisan queue:restart',
+                'queueRetry' => 'php artisan queue:retry all',
+                'queueFailed' => 'php artisan queue:failed',
+            ],
             'interactive' => [
                 'detectUrl' => route('mksine.console-process.interactive.detect'),
                 'logUrl' => route('mksine.console-process.interactive.log'),
@@ -70,26 +72,15 @@ class ConsoleTerminal extends Page
                 'migrateSmartAnalyzeUrl' => route('mksine.console-process.interactive.migrate-smart.analyze'),
                 'migrateSmartExecuteUrl' => route('mksine.console-process.interactive.migrate-smart.execute'),
             ],
-            'labels' => [
-                'idle' => __('mksine::console_terminal.status_idle'),
-                'running' => __('mksine::console_terminal.status_running_short'),
-                'interactiveTitle' => __('mksine::console_terminal.interactive_title'),
-                'interactiveModeAll' => __('mksine::console_terminal.interactive_mode_all'),
-                'interactiveModeSearch' => __('mksine::console_terminal.interactive_mode_search'),
-                'interactiveModeSingle' => __('mksine::console_terminal.interactive_mode_single'),
-                'interactiveSearchPlaceholder' => __('mksine::console_terminal.interactive_search_placeholder'),
-                'interactiveContinue' => __('mksine::console_terminal.interactive_continue'),
-                'interactiveBack' => __('mksine::console_terminal.interactive_back'),
-                'interactiveDryRun' => __('mksine::console_terminal.interactive_dry_run'),
-                'interactiveExecute' => __('mksine::console_terminal.interactive_execute'),
-                'interactiveConfirmProduction' => __('mksine::console_terminal.interactive_confirm_production'),
-                'interactiveCancel' => __('mksine::console_terminal.interactive_cancel'),
-                'interactiveNoMigrations' => __('mksine::console_terminal.interactive_no_migrations'),
-                'interactiveMigrationSummary' => __('mksine::console_terminal.interactive_migration_summary'),
-                'interactiveStatusRan' => __('mksine::console_terminal.interactive_status_ran'),
-                'interactiveStatusPending' => __('mksine::console_terminal.interactive_status_pending'),
-                'interactiveNothingToSync' => __('mksine::console_terminal.interactive_nothing_to_sync'),
-            ],
+            'labels' => collect([
+                'status_idle', 'status_pending', 'status_running', 'status_completed', 'status_stopped', 'status_failed',
+                'copied', 'delete_log_confirm', 'viewing_history', 'exit_code', 'detached_notice', 'stop_process_confirm',
+                'interactive_title', 'interactive_mode_all', 'interactive_mode_search', 'interactive_mode_single',
+                'interactive_search_placeholder', 'interactive_continue', 'interactive_back', 'interactive_dry_run',
+                'interactive_execute', 'interactive_confirm_production', 'interactive_cancel', 'interactive_no_migrations',
+                'interactive_migration_summary', 'interactive_status_ran', 'interactive_status_pending',
+                'interactive_nothing_to_sync',
+            ])->mapWithKeys(fn (string $key): array => [$key => __("mksine::console_terminal.{$key}")])->all(),
         ];
     }
 
@@ -124,105 +115,115 @@ class ConsoleTerminal extends Page
     }
 
     /**
+     * History list (output column excluded — it is loaded on demand by {@see logEntry()}).
+     *
      * @return Collection<int, ConsoleLog>
      */
     public function getLogsProperty(): Collection
     {
         return ConsoleLog::query()
-            ->with('user')
+            ->select(['id', 'user_id', 'runner', 'command', 'exit_code', 'duration_ms', 'created_at'])
+            ->with('user:id,name')
             ->latest('id')
             ->limit(100)
             ->get();
     }
 
-    public function runCommand(): void
+    /**
+     * @return array{id: int, command: string, runner: string, output: string, exit_code: int, duration: string, created_at: string|null, user: string|null}|null
+     */
+    #[Renderless]
+    public function logEntry(int $logId): ?array
     {
         SuperAdminGate::authorize();
 
-        $command = trim($this->command);
-        if ($command === '') {
-            Notification::make()
-                ->title(__('mksine::console_terminal.empty_command'))
-                ->warning()
-                ->send();
+        $log = ConsoleLog::query()->with('user:id,name')->find($logId);
 
-            return;
+        if ($log === null) {
+            return null;
         }
 
-        if (AdminInteractiveCommandResolver::isInteractiveInput($command, base_path())) {
-            Notification::make()
-                ->title(__('mksine::console_terminal.interactive_use_start'))
-                ->body(__('mksine::console_terminal.interactive_use_start_body'))
-                ->info()
-                ->send();
+        return [
+            'id' => (int) $log->id,
+            'command' => (string) $log->command,
+            'runner' => (string) $log->runner,
+            'output' => (string) ($log->output ?? ''),
+            'exit_code' => (int) $log->exit_code,
+            'duration' => self::formatDuration($log->duration_ms),
+            'created_at' => $log->created_at?->format('Y-m-d H:i:s'),
+            'user' => $log->user?->name,
+        ];
+    }
 
-            return;
-        }
+    /**
+     * Autocomplete data for the prompt: allowlisted commands with descriptions, plus recently run commands.
+     *
+     * @return array{commands: list<array{value: string, description: string}>, recent: list<string>}
+     */
+    #[Renderless]
+    public function consoleSuggestions(): array
+    {
+        SuperAdminGate::authorize();
 
-        $this->isRunning = true;
+        $commands = [];
 
         try {
-            $runner = new AdminConsoleCommandRunner(base_path());
-            $result = $runner->run($command);
+            /** @var array<string, Command> $artisanCommands */
+            $artisanCommands = Artisan::all();
+        } catch (Throwable) {
+            $artisanCommands = [];
+        }
 
-            $log = ConsoleLog::query()->create([
-                'user_id' => Auth::id(),
-                'runner' => $result->runner,
-                'command' => $result->displayCommand,
-                'argv' => $result->argv,
-                'output' => $result->output,
-                'exit_code' => $result->exitCode,
-                'duration_ms' => $result->durationMs,
-            ]);
-
-            $this->selectedLogId = (int) $log->id;
-            $this->terminalOutput = $this->formatLogOutput($log);
-            $this->command = '';
-
-            $notification = Notification::make()
-                ->title($result->succeeded()
-                    ? __('mksine::console_terminal.run_success')
-                    : __('mksine::console_terminal.run_failed'));
-            if ($result->succeeded()) {
-                $notification->success();
-            } else {
-                $notification->warning();
+        foreach ($artisanCommands as $name => $command) {
+            if ($command->isHidden() || ! AdminConsoleCommandParser::isAllowed('artisan', (string) $name)) {
+                continue;
             }
-            $notification->send();
-        } catch (InvalidArgumentException $e) {
-            $this->terminalOutput = __('mksine::console_terminal.error_prefix').$e->getMessage();
-            Notification::make()
-                ->title(__('mksine::console_terminal.invalid_command'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        } catch (\Throwable $e) {
-            $this->terminalOutput = __('mksine::console_terminal.error_prefix').$e->getMessage();
-            Notification::make()
-                ->title(__('mksine::console_terminal.run_failed'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        } finally {
-            $this->isRunning = false;
-        }
-    }
 
-    public function runQuick(string $command): void
-    {
-        $this->command = $command;
-        $this->runCommand();
-    }
-
-    public function selectLog(int $logId): void
-    {
-        $log = ConsoleLog::query()->find($logId);
-        if ($log === null) {
-            return;
+            $commands[] = [
+                'value' => 'php artisan '.$name,
+                'description' => (string) $command->getDescription(),
+            ];
         }
 
-        $this->selectedLogId = $logId;
-        $this->terminalOutput = $this->formatLogOutput($log);
+        foreach ((array) config('mksine.console_terminal.allowed_commands.composer', []) as $name) {
+            $name = trim((string) $name);
+
+            if ($name === '' || str_contains($name, '*')) {
+                continue;
+            }
+
+            $commands[] = ['value' => 'composer '.$name, 'description' => ''];
+        }
+
+        usort($commands, fn (array $a, array $b): int => strcmp($a['value'], $b['value']));
+
+        $recent = ConsoleLog::query()
+            ->latest('id')
+            ->limit(300)
+            ->pluck('command')
+            ->map(fn (mixed $command): string => (string) $command)
+            ->unique()
+            ->take(50)
+            ->values()
+            ->all();
+
+        return [
+            'commands' => $commands,
+            'recent' => $recent,
+        ];
+    }
+
+    /**
+     * Scheduler / queue / worker / background-process snapshot for the health panel (polled by the terminal).
+     *
+     * @return array<string, mixed>
+     */
+    #[Renderless]
+    public function consoleHealth(): array
+    {
+        SuperAdminGate::authorize();
+
+        return app(ConsoleHealthReport::class)->build();
     }
 
     public function deleteLog(int $logId): void
@@ -231,9 +232,7 @@ class ConsoleTerminal extends Page
 
         ConsoleLog::query()->whereKey($logId)->delete();
 
-        if ($this->selectedLogId === $logId) {
-            $this->selectLatestLog();
-        }
+        $this->dispatch('mks-console-log-deleted', id: $logId);
 
         Notification::make()
             ->title(__('mksine::console_terminal.log_deleted'))
@@ -246,8 +245,8 @@ class ConsoleTerminal extends Page
         SuperAdminGate::authorize();
 
         ConsoleLog::query()->delete();
-        $this->selectedLogId = null;
-        $this->terminalOutput = __('mksine::console_terminal.welcome');
+
+        $this->dispatch('mks-console-logs-cleared');
 
         Notification::make()
             ->title(__('mksine::console_terminal.logs_cleared'))
@@ -255,43 +254,101 @@ class ConsoleTerminal extends Page
             ->send();
     }
 
+    public static function formatDuration(?int $milliseconds): string
+    {
+        $milliseconds = max(0, (int) $milliseconds);
+
+        if ($milliseconds < 1000) {
+            return $milliseconds.' ms';
+        }
+
+        $seconds = $milliseconds / 1000;
+
+        if ($seconds < 60) {
+            return rtrim(rtrim(number_format($seconds, 1, '.', ''), '0'), '.').' s';
+        }
+
+        $totalSeconds = (int) floor($seconds);
+
+        if ($totalSeconds < 3600) {
+            return sprintf('%dm %02ds', intdiv($totalSeconds, 60), $totalSeconds % 60);
+        }
+
+        return sprintf('%dh %02dm', intdiv($totalSeconds, 3600), intdiv($totalSeconds % 3600, 60));
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Action::make('clear_logs')
                 ->label(__('mksine::console_terminal.clear_all_logs'))
-                ->icon('heroicon-o-trash')
-                ->color('danger')
+                ->icon(Heroicon::OutlinedTrash)
+                ->color('gray')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => SuperAdminGate::check())
+                ->visible(fn (): bool => SuperAdminGate::check() && ConsoleLog::query()->exists())
                 ->action(function (): void {
                     $this->deleteAllLogs();
                 }),
         ];
     }
 
-    private function selectLatestLog(): void
+    private function queueWorkCommand(): string
     {
-        $latest = ConsoleLog::query()->latest('id')->first();
-        if ($latest === null) {
-            return;
+        foreach ((array) config('mksine.console_terminal.daemon_presets', []) as $preset) {
+            $command = is_array($preset) ? (string) ($preset['command'] ?? '') : '';
+
+            if (preg_match('/\bqueue:work\b/', $command) === 1 && ! str_contains($command, '--once')) {
+                return $command;
+            }
         }
 
-        $this->selectedLogId = (int) $latest->id;
-        $this->terminalOutput = $this->formatLogOutput($latest);
+        return 'php artisan queue:work --tries=3';
     }
 
-    private function formatLogOutput(ConsoleLog $log): string
+    /**
+     * One-click chips shown above the prompt; entries the allowlist rejects are dropped.
+     *
+     * @return list<array{label: string, command: string, long_running: bool}>
+     */
+    private function quickCommands(): array
     {
-        $header = sprintf(
-            "[%s] %s (exit %d, %d ms)\n%s\n\n",
-            $log->created_at?->format('Y-m-d H:i:s') ?? '—',
-            $log->command,
-            (int) $log->exit_code,
-            (int) $log->duration_ms,
-            str_repeat('─', 48),
-        );
+        $configured = config('mksine.console_terminal.quick_commands');
+        $quick = is_array($configured) ? $configured : self::DEFAULT_QUICK_COMMANDS;
 
-        return $header.((string) ($log->output ?? ''));
+        $entries = [];
+
+        foreach ($quick as $command) {
+            $entries[] = ['command' => (string) $command, 'long_running' => false];
+        }
+
+        foreach ((array) config('mksine.console_terminal.daemon_presets', []) as $preset) {
+            if (is_array($preset) && isset($preset['command'])) {
+                $entries[] = ['command' => (string) $preset['command'], 'long_running' => true];
+            }
+        }
+
+        $chips = [];
+
+        foreach ($entries as $entry) {
+            $command = trim($entry['command']);
+
+            if ($command === '' || isset($chips[$command])) {
+                continue;
+            }
+
+            try {
+                AdminConsoleCommandParser::parse($command, base_path());
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $chips[$command] = [
+                'label' => (string) preg_replace('/^(?:php\s+)?artisan\s+/i', '', $command),
+                'command' => $command,
+                'long_running' => $entry['long_running'],
+            ];
+        }
+
+        return array_values($chips);
     }
 }

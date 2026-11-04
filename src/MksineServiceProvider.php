@@ -3,18 +3,18 @@
 namespace Miran\Mksine;
 
 use App\Policies\CategoryPolicy;
-use App\Policies\TagPolicy;
 use App\Policies\CommentPolicy;
+use App\Policies\EntryPolicy;
 use App\Policies\GeoCityPolicy;
 use App\Policies\GeoCountryPolicy;
 use App\Policies\GeoStatePolicy;
 use App\Policies\MediaPolicy;
 use App\Policies\MenuLocationPolicy;
 use App\Policies\MenuPolicy;
-use App\Policies\EntryPolicy;
 use App\Policies\PagePolicy;
 use App\Policies\PostPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\TagPolicy;
 use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\PanelRegistry;
@@ -26,10 +26,20 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Console\Events\ScheduledTaskFailed;
+use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Queue\Events\Looping;
+use Illuminate\Queue\Events\WorkerStarting;
+use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -62,17 +72,20 @@ use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
-use Miran\Mksine\Console\Commands\SignMarketplaceReleaseCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
 use Miran\Mksine\Console\Commands\RollbackThemeCommand;
+use Miran\Mksine\Console\Commands\SignMarketplaceReleaseCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
 use Miran\Mksine\Console\Commands\ThemePublishCommand;
 use Miran\Mksine\Console\Commands\ThemePublishLangCommand;
 use Miran\Mksine\Console\Commands\UpdateCoreCommand;
 use Miran\Mksine\Console\Commands\UpdatePluginCommand;
 use Miran\Mksine\Console\Commands\UpdateThemeCommand;
+use Miran\Mksine\Core\Content\ContentTypeRegistry;
+use Miran\Mksine\Core\Content\ContentTypeRoutes;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\FormHookManager;
+use Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface;
 use Miran\Mksine\Core\Hooks\HookAsyncDispatcherInterface;
 use Miran\Mksine\Core\Hooks\HookFilterRegistry;
 use Miran\Mksine\Core\Hooks\HookManager;
@@ -94,8 +107,8 @@ use Miran\Mksine\Core\PageBuilder\ComponentRegistry;
 use Miran\Mksine\Core\PageBuilder\Components\AccordionComponent;
 use Miran\Mksine\Core\PageBuilder\Components\AudioComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ButtonComponent;
-use Miran\Mksine\Core\PageBuilder\Components\CardComponent;
 use Miran\Mksine\Core\PageBuilder\Components\CallToActionComponent;
+use Miran\Mksine\Core\PageBuilder\Components\CardComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ColumnsComponent;
 use Miran\Mksine\Core\PageBuilder\Components\ContainerInsetComponent;
 use Miran\Mksine\Core\PageBuilder\Components\DividerComponent;
@@ -121,12 +134,16 @@ use Miran\Mksine\Core\PageBuilder\Templates\ServicesPageTemplate;
 use Miran\Mksine\Core\Plugins\PluginLogger;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Plugins\PluginManifestTranslator;
+use Miran\Mksine\Core\Shortcodes\ContentRenderer;
+use Miran\Mksine\Core\Shortcodes\RegisterCoreShortcodes;
+use Miran\Mksine\Core\Shortcodes\ShortcodeProcessor;
+use Miran\Mksine\Core\Shortcodes\ShortcodeRegistry;
 use Miran\Mksine\Core\Theme\ThemeActionManager;
 use Miran\Mksine\Core\Theme\ThemeBladeDirectives;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
+use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeEnqueue;
 use Miran\Mksine\Core\Theme\ThemeLivewireMissingComponentResolver;
-use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
@@ -135,10 +152,9 @@ use Miran\Mksine\Core\Translation\TranslationFileManager;
 use Miran\Mksine\Filament\Support\AdminMenu\AdminMenuOverrides;
 use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Filament\Support\MksFilamentDateMacros;
+use Miran\Mksine\Http\StorefrontNotFoundResponder;
 use Miran\Mksine\Livewire\Frontend\CategoryList;
 use Miran\Mksine\Livewire\Frontend\CategoryShow;
-use Miran\Mksine\Livewire\Frontend\TagList;
-use Miran\Mksine\Livewire\Frontend\TagShow;
 use Miran\Mksine\Livewire\Frontend\EntryList;
 use Miran\Mksine\Livewire\Frontend\EntryShow;
 use Miran\Mksine\Livewire\Frontend\FrontendResolver;
@@ -147,33 +163,33 @@ use Miran\Mksine\Livewire\Frontend\PageShow;
 use Miran\Mksine\Livewire\Frontend\PostComments;
 use Miran\Mksine\Livewire\Frontend\PostList;
 use Miran\Mksine\Livewire\Frontend\PostShow;
+use Miran\Mksine\Livewire\Frontend\TagList;
+use Miran\Mksine\Livewire\Frontend\TagShow;
 use Miran\Mksine\Livewire\MediaPickerModal;
 use Miran\Mksine\Models\Category;
 use Miran\Mksine\Models\Comment;
+use Miran\Mksine\Models\Entry;
 use Miran\Mksine\Models\GeoCity;
 use Miran\Mksine\Models\GeoCountry;
 use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\Menu;
 use Miran\Mksine\Models\MenuLocation;
-use Miran\Mksine\Models\Entry;
 use Miran\Mksine\Models\Page;
 use Miran\Mksine\Models\PageBuilderSection;
-use Miran\Mksine\Policies\PageBuilderSectionPolicy;
 use Miran\Mksine\Models\Post;
 use Miran\Mksine\Models\Tag;
+use Miran\Mksine\Policies\PageBuilderSectionPolicy;
 use Miran\Mksine\Services\Geo\GeoResolver;
 use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
+use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
+use Miran\Mksine\Support\Console\Health\QueueWorkerMonitor;
+use Miran\Mksine\Support\Console\Health\SchedulerMonitor;
+use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\Frontend\FrontendAdminBar;
 use Miran\Mksine\Support\Frontend\FrontendAdminBarContextResolver;
 use Miran\Mksine\Support\Frontend\RegisterFrontendAdminBarCoreItems;
-use Miran\Mksine\Core\Shortcodes\ContentRenderer;
-use Miran\Mksine\Core\Shortcodes\RegisterCoreShortcodes;
-use Miran\Mksine\Core\Shortcodes\ShortcodeProcessor;
-use Miran\Mksine\Core\Shortcodes\ShortcodeRegistry;
-use Miran\Mksine\Http\StorefrontNotFoundResponder;
-use Miran\Mksine\Support\FilesystemPath;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Package;
@@ -223,6 +239,8 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->app->singleton(AdminConsoleProcessManager::class, function (): AdminConsoleProcessManager {
             return new AdminConsoleProcessManager(base_path());
         });
+
+        $this->app->singleton(QueueWorkerMonitor::class);
 
         require_once __DIR__.'/Helpers/functions.php';
 
@@ -333,7 +351,7 @@ class MksineServiceProvider extends PackageServiceProvider
             return new MenuItemSourceManager;
         });
 
-        $this->app->singleton(\Miran\Mksine\Core\Content\ContentTypeRegistry::class);
+        $this->app->singleton(ContentTypeRegistry::class);
 
         // Register MenuLocationManager as singleton
         $this->app->singleton(MenuLocationManager::class, function () {
@@ -471,6 +489,8 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         MksFilamentDateMacros::register();
 
+        $this->registerConsoleHealthMonitoring();
+
         $this->syncAuthUserModelWithMksineConfig();
 
         // mksine:: lines: Spatie bootPackageTranslations() registers the package path; MksineFileLoader
@@ -592,7 +612,7 @@ class MksineServiceProvider extends PackageServiceProvider
         $this->initializePluginSystem();
 
         $this->app->booted(function (): void {
-            \Miran\Mksine\Core\Content\ContentTypeRoutes::register();
+            ContentTypeRoutes::register();
         });
 
         // Active theme's theme.php (page-builder blocks, menu locations, route callbacks) normally loads
@@ -643,6 +663,32 @@ class MksineServiceProvider extends PackageServiceProvider
                 Gate::policy($model, $policy);
             }
         }
+    }
+
+    /**
+     * Feeds the admin console health panel: scheduler heartbeat + per-task results, and queue worker heartbeats.
+     */
+    protected function registerConsoleHealthMonitoring(): void
+    {
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if ($event->command === 'schedule:run') {
+                SchedulerMonitor::recordHeartbeat();
+            }
+        });
+
+        Event::listen(ScheduledTaskFinished::class, function (ScheduledTaskFinished $event): void {
+            SchedulerMonitor::recordTaskRun($event->task, in_array($event->task->exitCode, [null, 0], true), $event->runtime);
+        });
+
+        Event::listen(ScheduledTaskFailed::class, function (ScheduledTaskFailed $event): void {
+            SchedulerMonitor::recordTaskRun($event->task, false);
+        });
+
+        Event::listen(WorkerStarting::class, fn (WorkerStarting $event) => app(QueueWorkerMonitor::class)->workerStarting((string) $event->connectionName, (string) $event->queue));
+        Event::listen(Looping::class, fn (Looping $event) => app(QueueWorkerMonitor::class)->looping((string) $event->connectionName, (string) $event->queue));
+        Event::listen(JobProcessing::class, fn (JobProcessing $event) => app(QueueWorkerMonitor::class)->jobProcessing($event->job->resolveName()));
+        Event::listen([JobProcessed::class, JobExceptionOccurred::class], fn () => app(QueueWorkerMonitor::class)->jobFinished());
+        Event::listen(WorkerStopping::class, fn () => app(QueueWorkerMonitor::class)->workerStopping());
     }
 
     /**
@@ -1141,7 +1187,7 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         $listenerClass = $hook->listener_class;
 
-        if (! class_exists($listenerClass) || ! is_subclass_of($listenerClass, \Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+        if (! class_exists($listenerClass) || ! is_subclass_of($listenerClass, FormSlotHookListenerInterface::class)) {
             return;
         }
 
@@ -1243,7 +1289,7 @@ class MksineServiceProvider extends PackageServiceProvider
         // Discover form slot hooks
         $formSlotHooks = $this->discoverFormSlotHooks($listenersPath);
         foreach ($formSlotHooks as $listenerClass) {
-            if (! is_subclass_of($listenerClass, \Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+            if (! is_subclass_of($listenerClass, FormSlotHookListenerInterface::class)) {
                 continue;
             }
 
@@ -1307,7 +1353,7 @@ class MksineServiceProvider extends PackageServiceProvider
     /**
      * Discover form slot hook listeners in the given directory.
      *
-     * @return list<class-string<\Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface>>
+     * @return list<class-string<FormSlotHookListenerInterface>>
      */
     private function discoverFormSlotHooks(string $path): array
     {
@@ -1330,7 +1376,7 @@ class MksineServiceProvider extends PackageServiceProvider
             }
 
             $reflection = new \ReflectionClass($fullClassName);
-            if ($reflection->implementsInterface(\Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface::class)) {
+            if ($reflection->implementsInterface(FormSlotHookListenerInterface::class)) {
                 $hooks[] = $fullClassName;
             }
         }
