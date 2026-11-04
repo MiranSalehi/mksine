@@ -5,12 +5,14 @@ declare(strict_types=1);
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Events\Looping;
 use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Process;
 use Miran\Mksine\Filament\Pages\ConsoleTerminal;
 use Miran\Mksine\Support\Console\Health\ConsoleHealthReport;
 use Miran\Mksine\Support\Console\Health\QueueWorkerMonitor;
@@ -28,6 +30,7 @@ beforeEach(function (): void {
     Cache::forget(SchedulerMonitor::HEARTBEAT_KEY);
     Cache::forget(SchedulerMonitor::TASK_RUNS_KEY);
     Cache::forget(QueueWorkerMonitor::CACHE_KEY);
+    Cache::forget(ConsoleHealthReport::SCHEDULE_CACHE_KEY);
     app()->forgetInstance(QueueWorkerMonitor::class);
 });
 
@@ -57,7 +60,34 @@ test('other artisan commands do not count as a scheduler heartbeat', function ()
     expect(SchedulerMonitor::lastHeartbeat())->toBeNull();
 });
 
-test('scheduled tasks are listed with their next run', function (): void {
+test('scheduled tasks come from the CLI scheduler, including console-only plugin schedules', function (): void {
+    Process::fake([
+        '*schedule:list*' => Process::result(json_encode([
+            ['expression' => '*/5 * * * *', 'command' => 'php artisan plugin:sync', 'description' => 'plugin:sync', 'timezone' => 'UTC'],
+            ['expression' => '0 3 * * *', 'command' => 'php artisan reports:prune', 'description' => null, 'timezone' => 'UTC'],
+        ])),
+    ]);
+
+    $event = app(Schedule::class)->command('reports:prune')->dailyAt('03:00');
+    SchedulerMonitor::recordTaskRun($event, false);
+
+    $tasks = healthReport()['scheduler']['tasks'];
+
+    expect(array_column($tasks, 'name'))->toBe(['plugin:sync', 'php artisan reports:prune'])
+        ->and($tasks[0]['expression'])->toBe('*/5 * * * *')
+        ->and($tasks[0]['next_run_human'])->not->toBeNull()
+        ->and($tasks[1]['last_succeeded'])->toBeFalse()
+        ->and($tasks[1]['last_run_human'])->not->toBeNull();
+
+    Process::assertRanTimes(fn ($process): bool => in_array('schedule:list', (array) $process->command, true), 1);
+
+    healthReport();
+    Process::assertRanTimes(fn ($process): bool => in_array('schedule:list', (array) $process->command, true), 1);
+});
+
+test('scheduled tasks fall back to the in-process schedule when the CLI is unavailable', function (): void {
+    Process::fake(['*' => Process::result(errorOutput: 'boom', exitCode: 1)]);
+
     $tasks = healthReport()['scheduler']['tasks'];
 
     expect($tasks)->not->toBeEmpty()

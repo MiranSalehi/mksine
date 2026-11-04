@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Support\Console\Health;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Console\Scheduling\CallbackEvent;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
@@ -51,16 +52,34 @@ final class SchedulerMonitor
             $runs = Cache::get(self::TASK_RUNS_KEY, []);
             $runs = is_array($runs) ? $runs : [];
 
-            $runs[$task->mutexName()] = [
+            $key = self::taskKey($task);
+
+            $runs[$key] = [
                 'finished_at' => now()->getTimestamp(),
                 'succeeded' => $succeeded,
-                'runtime' => $runtimeSeconds ?? ($runs[$task->mutexName()]['runtime'] ?? null),
+                'runtime' => $runtimeSeconds ?? ($runs[$key]['runtime'] ?? null),
             ];
 
             Cache::forever(self::TASK_RUNS_KEY, $runs);
         } catch (Throwable) {
             // Monitoring must never break the scheduler.
         }
+    }
+
+    /**
+     * Stable task name, identical to what `schedule:list --json` reports (description, else the command).
+     */
+    public static function taskKey(Event $task): string
+    {
+        if (is_string($task->description) && $task->description !== '') {
+            return $task->description;
+        }
+
+        if ($task instanceof CallbackEvent) {
+            return (string) $task->getSummaryForDisplay();
+        }
+
+        return $task->normalizeCommand((string) $task->command);
     }
 
     /**

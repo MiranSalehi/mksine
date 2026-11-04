@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Miran\Mksine\Support\Console\Health;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Console\Scheduling\CallbackEvent;
+use Cron\CronExpression;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
 use Illuminate\Queue\Failed\CountableFailedJobProvider;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Miran\Mksine\Models\ConsoleProcess;
+use Miran\Mksine\Support\Console\AdminConsolePhpBinary;
 use Miran\Mksine\Support\Console\AdminConsoleProcessManager;
 use Miran\Mksine\Support\Console\ConsoleProcessStatus;
 use Throwable;
@@ -70,12 +73,93 @@ final class ConsoleHealthReport
     }
 
     /**
+     * Cache key for the task list read from the CLI scheduler.
+     */
+    public const SCHEDULE_CACHE_KEY = 'mksine:console:schedule-list';
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function scheduledTasks(): array
     {
+        $runs = SchedulerMonitor::taskRuns();
+
+        return array_map(function (array $task) use ($runs): array {
+            $next = $this->nextRunDate($task['expression'], $task['timezone']);
+            $run = $runs[$task['name']] ?? null;
+            $lastRun = is_array($run) ? CarbonImmutable::createFromTimestamp((int) $run['finished_at']) : null;
+
+            return [
+                'name' => $task['name'],
+                'expression' => $task['expression'],
+                'next_run_at' => $next?->toIso8601String(),
+                'next_run_human' => $next?->diffForHumans(),
+                'last_run_human' => $lastRun?->diffForHumans(),
+                'last_succeeded' => is_array($run) ? (bool) $run['succeeded'] : null,
+            ];
+        }, $this->scheduleDefinitions());
+    }
+
+    /**
+     * Scheduled tasks as the CLI scheduler sees them.
+     *
+     * Plugins often register schedules only when `runningInConsole()`, so a web request cannot see
+     * them; the list therefore comes from `schedule:list --json` (cached), with the in-process
+     * schedule as a fallback when the CLI is unavailable.
+     *
+     * @return list<array{name: string, expression: string, timezone: string}>
+     */
+    private function scheduleDefinitions(): array
+    {
+        $listed = Cache::remember(self::SCHEDULE_CACHE_KEY, 600, fn (): ?array => $this->listScheduleViaCli());
+
+        return is_array($listed) ? $listed : $this->listScheduleInProcess();
+    }
+
+    /**
+     * @return list<array{name: string, expression: string, timezone: string}>|null
+     */
+    private function listScheduleViaCli(): ?array
+    {
         try {
-            // Schedules declared in routes/console.php are registered when the console kernel loads its commands.
+            $result = Process::path(base_path())
+                ->timeout(20)
+                ->run([AdminConsolePhpBinary::path(), 'artisan', 'schedule:list', '--json', '--no-ansi']);
+        } catch (Throwable) {
+            return null;
+        }
+
+        $decoded = $result->successful() ? json_decode(trim($result->output()), true) : null;
+
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        $tasks = [];
+
+        foreach ($decoded as $task) {
+            if (! is_array($task) || ! isset($task['expression'])) {
+                continue;
+            }
+
+            $description = is_string($task['description'] ?? null) ? $task['description'] : '';
+
+            $tasks[] = [
+                'name' => $description !== '' ? $description : (string) ($task['command'] ?? ''),
+                'expression' => (string) $task['expression'],
+                'timezone' => (string) ($task['timezone'] ?? config('app.timezone', 'UTC')),
+            ];
+        }
+
+        return $tasks;
+    }
+
+    /**
+     * @return list<array{name: string, expression: string, timezone: string}>
+     */
+    private function listScheduleInProcess(): array
+    {
+        try {
             app(ConsoleKernel::class)->all();
 
             /** @var list<Event> $events */
@@ -84,49 +168,22 @@ final class ConsoleHealthReport
             return [];
         }
 
-        $runs = SchedulerMonitor::taskRuns();
-        $tasks = [];
-
-        foreach ($events as $event) {
-            try {
-                $next = CarbonImmutable::instance($event->nextRunDate());
-            } catch (Throwable) {
-                $next = null;
-            }
-
-            $run = $runs[$event->mutexName()] ?? null;
-            $lastRun = is_array($run) ? CarbonImmutable::createFromTimestamp((int) $run['finished_at']) : null;
-
-            $tasks[] = [
-                'name' => $this->taskName($event),
-                'expression' => $event->expression,
-                'next_run_at' => $next?->toIso8601String(),
-                'next_run_human' => $next?->diffForHumans(),
-                'last_run_human' => $lastRun?->diffForHumans(),
-                'last_succeeded' => is_array($run) ? (bool) $run['succeeded'] : null,
-            ];
-        }
-
-        return $tasks;
+        return array_map(fn (Event $event): array => [
+            'name' => SchedulerMonitor::taskKey($event),
+            'expression' => $event->expression,
+            'timezone' => (string) ($event->timezone ?: config('app.timezone', 'UTC')),
+        ], $events);
     }
 
-    private function taskName(Event $event): string
+    private function nextRunDate(string $expression, string $timezone): ?CarbonImmutable
     {
-        if ($event instanceof CallbackEvent) {
-            return (string) ($event->description ?: 'Closure');
+        try {
+            $next = (new CronExpression($expression))->getNextRunDate(now()->setTimezone($timezone));
+
+            return CarbonImmutable::instance($next)->setTimezone((string) config('app.timezone', 'UTC'));
+        } catch (Throwable) {
+            return null;
         }
-
-        if (is_string($event->description) && $event->description !== '') {
-            return $event->description;
-        }
-
-        $command = (string) $event->command;
-
-        if (preg_match("/artisan'?\s+(.+)$/", $command, $matches) === 1) {
-            return 'php artisan '.trim($matches[1]);
-        }
-
-        return $command;
     }
 
     /**

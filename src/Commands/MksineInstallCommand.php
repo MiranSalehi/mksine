@@ -8,12 +8,18 @@ use BezhanSalleh\FilamentShield\FilamentShieldServiceProvider;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Support\MksineUserModelRequirements;
 use Miran\Mksine\Support\UserModelPatcher;
+use Throwable;
+
+use function Laravel\Prompts\confirm;
 
 class MksineInstallCommand extends Command
 {
+    public const GITHUB_URL = 'https://github.com/miransalehi/mksine';
+
     public $signature = 'mksine:install
                             {--migrate : Run migrations after publishing}
                             {--force : Overwrite existing files}
@@ -80,7 +86,63 @@ class MksineInstallCommand extends Command
         $this->newLine();
         $this->displayNextSteps($migrated);
 
+        $this->askToStarRepository();
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Invites the user to star MKSine on GitHub (interactive installs only; skipped in CI and tests).
+     */
+    protected function askToStarRepository(): void
+    {
+        if (! $this->shouldAskToStar()) {
+            return;
+        }
+
+        $this->newLine();
+
+        if (! $this->confirmStar()) {
+            return;
+        }
+
+        $this->openUrlInBrowser(self::GITHUB_URL);
+    }
+
+    protected function confirmStar(): bool
+    {
+        return confirm(
+            label: '🎉 MKSine is ready! Would you like to support the project by starring it on GitHub?',
+            default: true,
+        );
+    }
+
+    protected function shouldAskToStar(): bool
+    {
+        return $this->input->isInteractive() && ! $this->laravel->runningUnitTests();
+    }
+
+    protected function openUrlInBrowser(string $url): void
+    {
+        $command = match (PHP_OS_FAMILY) {
+            'Darwin' => ['open', $url],
+            'Windows' => ['cmd', '/c', 'start', '', $url],
+            default => ['xdg-open', $url],
+        };
+
+        try {
+            $succeeded = Process::run($command)->successful();
+        } catch (Throwable) {
+            $succeeded = false;
+        }
+
+        if ($succeeded) {
+            $this->info('💜 Thank you!');
+
+            return;
+        }
+
+        $this->line('  Open this link in your browser: <href='.$url.'>'.$url.'</>');
     }
 
     protected function publishConfigurationFiles(): void
@@ -103,7 +165,7 @@ class MksineInstallCommand extends Command
         foreach (['optimize:clear', 'filament:optimize-clear'] as $command) {
             try {
                 $this->call($command);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 $this->warn("   ! {$command} failed: {$exception->getMessage()}");
             }
         }
@@ -129,7 +191,7 @@ class MksineInstallCommand extends Command
 
         try {
             $this->call('filament:assets');
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->warn('   ! filament:assets failed: '.$exception->getMessage());
         }
     }
@@ -140,7 +202,7 @@ class MksineInstallCommand extends Command
 
         try {
             $this->call('mks:theme-publish');
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->warn('   ! mks:theme-publish failed: '.$exception->getMessage());
         }
     }
@@ -174,7 +236,7 @@ class MksineInstallCommand extends Command
             if ($exitCode !== self::SUCCESS) {
                 $this->warn('   ! shield:generate exited with a non-zero status.');
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->warn('   ! shield:generate failed: '.$exception->getMessage());
         }
     }
@@ -193,7 +255,7 @@ class MksineInstallCommand extends Command
             if ($exitCode !== self::SUCCESS) {
                 $this->warn('   ! mks:discover exited with a non-zero status.');
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->warn('   ! mks:discover failed: '.$exception->getMessage());
         }
     }
@@ -245,7 +307,7 @@ class MksineInstallCommand extends Command
             if ($exitCode !== self::SUCCESS) {
                 $this->warn('   ! mksine:create-super-admin exited with a non-zero status.');
             }
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->warn('   ! mksine:create-super-admin failed: '.$exception->getMessage());
         }
     }
@@ -260,7 +322,7 @@ class MksineInstallCommand extends Command
     {
         try {
             return Filament::getPanel('admin')->hasPlugin('mksine');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }
@@ -281,7 +343,7 @@ class MksineInstallCommand extends Command
     {
         try {
             return Schema::hasTable($table);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }

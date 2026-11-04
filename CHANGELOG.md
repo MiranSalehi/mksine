@@ -8,6 +8,20 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.21.0 - 2026-11-04
+
+### Added
+
+- **`mksine:install` asks for a GitHub star.** At the end of an interactive install, the installer asks whether you want to star MKSine on GitHub and opens the repository in your browser if you agree. It does not ask with `--no-interaction`, in CI, or in tests. If the browser cannot be opened, the link is printed instead.
+
+### Fixed
+
+- **The console status panel listed only some scheduled tasks.** Plugins usually register their schedules only when `runningInConsole()`, so a web request could not see them (for example `mks-import-export:run` and `mks-analytics:prune`). The task list now comes from `php artisan schedule:list --json`, cached for 10 minutes, with the in-process schedule as a fallback. Last-run results are matched by task name, so they line up with that list.
+
+### Changed
+
+- **README.** New GIFs and screenshots of the current admin (page builder, menus, console, plugins, themes, settings, admin menu, translations, media) are stored in `docs/assets/readme/` instead of an external host. The feature texts now cover marketplace installs, rollback, SEO analysis, the admin menu editor, the Jalali calendar, and the console status panel.
+
 ## 1.20.0 - 2026-11-04
 
 ### Added

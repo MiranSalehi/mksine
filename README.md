@@ -4,19 +4,13 @@
 
 **The Laravel + Filament 4 / 5 CMS foundation — build content sites, page builders, and plugin ecosystems without fighting your admin panel.**
 
-<!-- ⬇️ PLACEHOLDER: hero GIF — page builder in action (drag block, edit, save, see it live) -->
-<!-- ![MKSine Page Builder Demo](./media/hero-pagebuilder.gif) -->
+![MKSine page builder: preview on tablet and mobile, edit a block, see it live](docs/assets/readme/page-builder.gif)
 
 [![Latest Version](https://img.shields.io/packagist/v/miran/mksine.svg?style=flat-square)](https://packagist.org/packages/miran/mksine)
 [![Total Downloads](https://img.shields.io/packagist/dt/miran/mksine.svg?style=flat-square)](https://packagist.org/packages/miran/mksine)
 [![License](https://img.shields.io/github/license/MiranSalehi/mksine.svg?style=flat-square)](LICENSE)
 
-<!-- Add a GitHub stars badge once you have a few: -->
-<!-- [![Stars](https://img.shields.io/github/stars/MiranSalehi/mksine.svg?style=flat-square)](https://github.com/MiranSalehi/mksine/stargazers) -->
-
 [Quick Install](#quick-install) · [Features](#features) · [Documentation](https://github.com/MiranSalehi/mksine/tree/main/docs)
-
-<!-- · [Live Demo](#) — add once ready -->
 
 </div>
 
@@ -49,12 +43,7 @@ Full installation guide → [docs/01-installation.md](https://github.com/MiranSa
 
 ### 🧱 Page Builder
 
-Opt-in visual block editor for marketing pages. Compose typed blocks (hero, columns, CTA, and more) via drag-and-drop; the tree is stored as JSON and rendered by the active theme.
-
-<!-- ⬇️ PLACEHOLDER: pagebuilder.gif -->
-<!-- ![Page Builder](./media/pagebuilder.gif) -->
-
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/NhYtXa5MAwrZ5vHdXpK9Jsk6DqQZt7qv9qB79ThB.gif)
+Opt-in visual block editor for marketing pages. Compose typed blocks (hero, columns, cards, CTA, theme sections, and more), edit them in a side panel and see the canvas update live, preview on desktop, tablet, and mobile, and start from templates. Undo/redo and page revisions are built in. The tree is stored as JSON, rendered by the active theme, and also available as a JSON document API for headless front ends.
 
 📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/page-builder.md) · [Creating a block](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/creating-a-block.md) · [Rendering](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/rendering.md) · [Headless JSON](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/page-builder/headless.md)
 
@@ -62,43 +51,37 @@ Opt-in visual block editor for marketing pages. Compose typed blocks (hero, colu
 
 ### 🧩 Plugins
 
-Drop-in extensions under `plugins/{id}/` with full lifecycle — install, activate, deactivate — ZIP upload, filesystem discovery, Filament autoloading, migrations, assets, and hook listeners. No forking core to extend the system.
+Drop-in extensions under `plugins/{id}/` with full lifecycle — install, activate, deactivate, roll back — from a ZIP upload, filesystem discovery, or the MKSine marketplace. Filament autoloading, migrations, assets, and hook listeners are handled for you, and every action is logged. No forking core to extend the system.
 
-<!-- ⬇️ PLACEHOLDER: plugins.gif or screenshot — upload ZIP → discover → activate flow -->
-<!-- ![Plugins](./media/plugins.gif) -->
+![Plugin manager](docs/assets/readme/plugins.png)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/JKzegtwi6hfxLBqBOVKk4c0AkUQMXGqG68iMyQlO.png)!
 📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/plugins.md) · [Build a plugin (golden path)](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/plugins/golden-path.md) · [Lifecycle](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/plugins/lifecycle.md)
 
 ---
 
 ### 🎨 Themes
 
-Package themes and project themes (`themes/{id}/`). One active theme controls storefront Blade views and published CSS/JS — upload, discover, activate, and edit custom CSS/JS directly from the panel.
+Package themes and project themes (`themes/{id}/`). One active theme controls storefront Blade views and published CSS/JS — upload, discover, install from the marketplace, activate, roll back, and edit custom CSS/JS directly from the panel.
 
-<!-- ⬇️ PLACEHOLDER: themes.gif or screenshot -->
-<!-- ![Themes](./media/themes.gif) -->
+![Theme manager](docs/assets/readme/themes.png)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/Q2d83kGDJMSHCaCeIH7apsbOVV4n9B81C7SqmjOO.png)
 📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/themes.md) · [Creating a theme](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/themes/creating-a-theme.md)
 
 ---
 
 ### 🧭 Menus
 
-Visual menu builder: drag to reorder, nest items, add from pages, posts, categories, or custom links. Assign menus to theme locations like header and footer.
+Visual menu builder: drag to reorder, drag right to nest, and add pages, posts, categories, tags, or custom links. Assign menus to theme locations like header and footer.
 
-<!-- ⬇️ PLACEHOLDER: menus.gif -->
-<!-- ![Menus](./media/menus.gif) -->
+![Menu builder: drag to reorder and nest](docs/assets/readme/menus.gif)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/BxMUjjwMxXoj3fYQUnpCNO04bbXfiTAtT4oZsKKz.gif)
 📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/menus.md) · [Locations](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/menus/locations.md)
 
 ---
 
 ### 🪝 Hooks
 
-Two families: **discovery hooks** (class listeners synced to DB, toggleable in admin) and **runtime hooks** (closures in `boot()`). Extend forms, tables, events, and Filament resources — without touching core.
+Two families: **discovery hooks** (class listeners synced to DB, toggleable in admin) and **runtime hooks** (closures in `boot()`, with named handlers you can remove). Extend forms, tables, events, storefront content, and Filament resources — without touching core.
 
 📖 [Concepts](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/hooks.md) · [Two families overview](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/hooks/overview-two-families.md)
 
@@ -106,26 +89,25 @@ Two families: **discovery hooks** (class listeners synced to DB, toggleable in a
 
 ### 📁 Content & Media
 
-Manage pages, posts, categories, and moderated comments from the Filament admin. A central media library handles files with image optimization, thumbnails, and a `MediaPicker` for forms — attach files polymorphically to any model.
+Manage pages, posts, categories, tags, and moderated comments from the Filament admin, with an advisory SEO analysis (focus keyphrase, meta title and description) on pages, posts, categories, and tags. A central media library handles files with image optimization, thumbnails, and a `MediaPicker` for forms — with reorderable galleries — and attaches files polymorphically to any model.
 
-<!-- ⬇️ PLACEHOLDER: content.gif or screenshot — content list / editor -->
-<!-- ![Content](./media/content.gif) -->
-<!-- ⬇️ PLACEHOLDER: media-library.gif or screenshot -->
-<!-- ![Media Library](./media/media-library.gif) -->
+![Media library](docs/assets/readme/media-library.png)
 
-📖 [Architecture](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/architecture.md) · [Media library guide](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/media/library.md)
+📖 [Architecture](https://github.com/MiranSalehi/mksine/blob/main/docs/concepts/architecture.md) · [Media library guide](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/media/library.md) · [SEO analysis](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/seo/analysis.md)
 
 ---
 
-### ⚙️ Settings
+### ⚙️ Settings & admin menu
 
-Site-wide settings with core tabs (General, Permalinks, Geo) plus plugin tabs registered dynamically via `SettingsTabManager` — no editing the settings page class required.
+Site-wide settings with core tabs (General, Locations & addresses, Permalinks) plus plugin tabs registered dynamically via `SettingsTabManager` — no editing the settings page class required. Choose the Gregorian or Jalali calendar for every date in the panel.
 
-<!-- ⬇️ PLACEHOLDER: settings.gif or screenshot -->
-<!-- ![Settings](./media/settings.gif) -->
+![Settings](docs/assets/readme/settings.png)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/vxjytqwXflokpvVnujnfIPTcTZsRRW8i9sdRZWcy.png)
-📖 [Adding settings tabs](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/settings/adding-tabs.md)
+The **Admin menu** editor lets a Super Admin hide, move, reorder, and rename sidebar items and groups without touching code.
+
+![Admin menu editor](docs/assets/readme/admin-menu.png)
+
+📖 [Adding settings tabs](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/settings/adding-tabs.md) · [Admin menu](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/settings/admin-menu.md)
 
 ---
 
@@ -133,22 +115,18 @@ Site-wide settings with core tabs (General, Permalinks, Geo) plus plugin tabs re
 
 Edit application, plugin, and theme translation files directly from the admin — pick language, source, and file; saving writes to the source and vendor publish path.
 
-<!-- ⬇️ PLACEHOLDER: translations.gif or screenshot -->
-<!-- ![Translations](./media/translations.gif) -->
+![Translations editor](docs/assets/readme/translations.png)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/ffzAJoUz1fTplBA3HdWYm74PL75S6Xsx8XkJYQzJ.png)
 📖 [Translations workflow](https://github.com/MiranSalehi/mksine/blob/main/docs/guides/localization/translations.md)
 
 ---
 
 ### 💻 Admin Console
 
-Super Admin only. Run allowed `php artisan …` and `composer …` commands from the panel — live output, background workers, and full command history.
+Super Admin only. Run allowlisted `php artisan …` and `composer …` commands from the panel with live, colored output, autocomplete, and keyboard shortcuts. Every run is saved to the history. Long-running workers can keep running in the background, and a status panel shows whether the scheduler and queue workers are alive, how many jobs are waiting or failed, and which scheduled tasks run next.
 
-<!-- ⬇️ PLACEHOLDER: admin-console.gif or screenshot -->
-<!-- ![Admin Console](./media/admin-console.gif) -->
+![Admin console: autocomplete, live output, scheduler and queue status](docs/assets/readme/console.gif)
 
-![](https://fls-a148a526-7ce4-465e-b283-9b405912858a.laravel.cloud/plugins/documentation/images/Qbx9Cmu5x7F1hXp0lu7KcJYHZsunsNBgMJ1qretm.png)
 📖 [Commands reference](https://github.com/MiranSalehi/mksine/blob/main/docs/reference/commands.md)
 
 ---
