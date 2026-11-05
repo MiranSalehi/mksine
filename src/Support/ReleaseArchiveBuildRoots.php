@@ -8,14 +8,14 @@ use Illuminate\Support\Str;
 class ReleaseArchiveBuildRoots
 {
     /**
-     * Build roots for the core application only.
+     * Build roots in build order: the mksine package, then (with $includeExtensions) project
+     * themes and plugins, then the project root (its Vite build runs last).
      *
-     * Theme and plugin sources are installed separately on the server; they are not
-     * packed by {@see shouldIncludeInZip()} and are not built here.
+     * Core-only archives leave theme and plugin sources out; they are installed separately.
      *
      * @return list<string>
      */
-    public static function discover(string $basePath): array
+    public static function discover(string $basePath, bool $includeExtensions = false): array
     {
         $basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
         $roots = [];
@@ -25,12 +25,59 @@ class ReleaseArchiveBuildRoots
             $roots[] = $mksinePackagePath;
         }
 
+        if ($includeExtensions) {
+            $pluginsPath = (string) self::config('mksine.plugins_path', 'plugins');
+            $pluginsPath = self::isAbsolute($pluginsPath) ? $pluginsPath : $basePath.DIRECTORY_SEPARATOR.$pluginsPath;
+
+            foreach ([$basePath.DIRECTORY_SEPARATOR.'resources'.DIRECTORY_SEPARATOR.'views'.DIRECTORY_SEPARATOR.'themes', $pluginsPath] as $parent) {
+                foreach (self::childBuildRoots($parent) as $root) {
+                    $roots[] = $root;
+                }
+            }
+        }
+
         $rootPackage = $basePath.DIRECTORY_SEPARATOR.'package.json';
         if (self::packageHasBuildScript($rootPackage)) {
             $roots[] = $basePath;
         }
 
         return $roots;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function childBuildRoots(string $parent): array
+    {
+        if (! is_dir($parent)) {
+            return [];
+        }
+
+        $roots = [];
+
+        foreach (glob($parent.DIRECTORY_SEPARATOR.'*', GLOB_ONLYDIR) ?: [] as $directory) {
+            if (self::packageHasBuildScript($directory.DIRECTORY_SEPARATOR.'package.json')) {
+                $roots[] = $directory;
+            }
+        }
+
+        sort($roots);
+
+        return $roots;
+    }
+
+    /**
+     * Read config when the application is booted; fall back to the default otherwise
+     * (the zipper also runs from plain scripts and container-less tests).
+     */
+    private static function config(string $key, mixed $default): mixed
+    {
+        return app()->bound('config') ? config($key, $default) : $default;
+    }
+
+    private static function isAbsolute(string $path): bool
+    {
+        return str_starts_with($path, '/') || str_starts_with($path, '\\') || preg_match('#^[A-Za-z]:[\\\\/]#', $path) === 1;
     }
 
     public static function packageHasBuildScript(string $packageJsonPath): bool
@@ -49,8 +96,11 @@ class ReleaseArchiveBuildRoots
 
     /**
      * Whether a path relative to project root should be included in the release zip.
+     *
+     * Core-only archives (updates) leave out plugins and themes; full archives (fresh
+     * installs) ship them.
      */
-    public static function shouldIncludeInZip(string $relativePath): bool
+    public static function shouldIncludeInZip(string $relativePath, bool $includeExtensions = false): bool
     {
         $relativePath = str_replace('\\', '/', $relativePath);
         $relativePath = ltrim($relativePath, '/');
@@ -59,7 +109,11 @@ class ReleaseArchiveBuildRoots
             return false;
         }
 
-        if (self::isExcludedExtensionPackPath($relativePath)) {
+        if (self::isExcludedLocalDataPath($relativePath)) {
+            return false;
+        }
+
+        if (! $includeExtensions && self::isExcludedExtensionPackPath($relativePath)) {
             return false;
         }
 
@@ -79,6 +133,7 @@ class ReleaseArchiveBuildRoots
             return false;
         }
 
+        // The old standalone installer; the web installer now ships inside the package.
         if (Str::startsWith($relativePath, 'mksine-setup/') || $relativePath === 'mksine-setup') {
             return false;
         }
@@ -93,7 +148,7 @@ class ReleaseArchiveBuildRoots
         }
 
         if (Str::startsWith($relativePath, 'public/')) {
-            return self::isPublicPathAllowed($relativePath);
+            return self::isPublicPathAllowed($relativePath, $includeExtensions);
         }
 
         return true;
@@ -109,7 +164,7 @@ class ReleaseArchiveBuildRoots
         $relativePath = str_replace('\\', '/', ltrim($relativePath, '/'));
 
         /** @var list<string> $paths */
-        $paths = config('mksine.release_archive.include_theme_paths', []);
+        $paths = self::config('mksine.release_archive.include_theme_paths', []);
 
         foreach ($paths as $path) {
             $path = str_replace('\\', '/', trim($path, '/'));
@@ -123,6 +178,30 @@ class ReleaseArchiveBuildRoots
         }
 
         return false;
+    }
+
+    /**
+     * Local databases, database exports, installer backups and OS metadata never ship.
+     */
+    public static function isExcludedLocalDataPath(string $relativePath): bool
+    {
+        $relativePath = str_replace('\\', '/', ltrim($relativePath, '/'));
+        $basename = basename($relativePath);
+
+        if (in_array($basename, ['.DS_Store', 'Thumbs.db', 'desktop.ini'], true)) {
+            return true;
+        }
+
+        if (str_contains($basename, '.mksine-backup-')) {
+            return true;
+        }
+
+        if (in_array($relativePath, ['mksine-setup-database.sql', 'mksine-setup-database.sqlite', 'SETUP-TOKEN.txt'], true)) {
+            return true;
+        }
+
+        return Str::startsWith($relativePath, 'database/')
+            && preg_match('/\.(sqlite|sqlite3|db)(-journal|-wal|-shm)?$/', $basename) === 1;
     }
 
     /**
@@ -168,7 +247,8 @@ class ReleaseArchiveBuildRoots
     }
 
     /**
-     * Runtime data under {@code storage/} (logs, sessions, Woo import zips, Livewire temp, etc.).
+     * Everything under {@code storage/} is runtime data of this machine (logs, sessions,
+     * Woo import zips, Livewire temp, the MKSine install lock and progress files, etc.).
      * Only {@code .gitignore} scaffold files are kept so empty dirs exist on deploy.
      */
     public static function isExcludedStorageRuntimePath(string $relativePath): bool
@@ -179,23 +259,7 @@ class ReleaseArchiveBuildRoots
             return false;
         }
 
-        if (basename($relativePath) === '.gitignore') {
-            return false;
-        }
-
-        if ($relativePath === 'storage/logs' || Str::startsWith($relativePath, 'storage/logs/')) {
-            return true;
-        }
-
-        if ($relativePath === 'storage/framework' || Str::startsWith($relativePath, 'storage/framework/')) {
-            return true;
-        }
-
-        if ($relativePath === 'storage/app' || Str::startsWith($relativePath, 'storage/app/')) {
-            return true;
-        }
-
-        return false;
+        return basename($relativePath) !== '.gitignore';
     }
 
     /**
@@ -267,7 +331,7 @@ class ReleaseArchiveBuildRoots
         return Str::startsWith($basename, '.env.');
     }
 
-    private static function isPublicPathAllowed(string $relativePath): bool
+    private static function isPublicPathAllowed(string $relativePath, bool $includeExtensions = false): bool
     {
         $rest = Str::after($relativePath, 'public/');
 
@@ -277,6 +341,7 @@ class ReleaseArchiveBuildRoots
             'css/',
             'js/',
             'fonts/',
+            ...($includeExtensions ? ['themes/', 'plugins/'] : []),
         ];
 
         foreach ($allowedPrefixes as $prefix) {

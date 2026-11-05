@@ -28,60 +28,56 @@ These come from `src/Commands/` and `src/Console/Commands/`, registered on `Mira
 ### `mksine:install`
 
 ```
-mksine:install [--migrate] [--force]
+mksine:install [--migrate] [--force] [--resume]
                [--admin-email=] [--admin-password=] [--admin-name=]
+               [--profile=vps|shared] [--theme=] [--plugins=a,b] [--locale=] [--seed-demo]
+               [--app-url=] [--db-connection=] [--db-host=] [--db-port=] [--db-database=] [--db-username=] [--db-password=]
 ```
 
-Source: [`MksineInstallCommand`](../../src/Commands/MksineInstallCommand.php).
+Source: [`MksineInstallCommand`](../../src/Commands/MksineInstallCommand.php), on top of [`InstallPipeline`](../../src/Core/Install/InstallPipeline.php).
 
-**Prerequisites (before `--migrate`):**
-
-1. A Filament panel with id `admin` — typically `php artisan filament:install --panels`.
-2. `MksinePlugin::make()` registered on that panel in `app/Providers/Filament/AdminPanelProvider.php`.
-
-Without step 2, the installer skips `shield:generate` and prints instructions to register the plugin and re-run generation.
-
-What it does:
-
-1. Copies `Miran\Mksine\Models\User` to `app/Models/User.php` (skips when present unless `--force`). The namespace is rewritten to `App\Models`.
-2. Publishes configuration files: `config/mksine.php` (`mksine-config`), `config/livewire.php` (`mksine-livewire-config`, 100 MB upload default via `MKS_CMS_MAX_UPLOAD_MB`), and `config/filament.php` (`mksine-filament-config`), plus migrations, translations, and fonts (`mksine-migrations`, `mksine-lang`, `mksine-fonts`).
-3. Publishes **Filament Shield** and **Spatie Permission** assets when `bezhansalleh/filament-shield` is installed (same non-interactive steps as `shield:setup`):
-   - `filament-shield-config` → `config/filament-shield.php` (skipped if the file already exists, unless `--force`)
-   - `permission-config` → `config/permission.php` (same skip rule)
-   - `permission-migrations` → `database/migrations/*_create_permission_tables.php` (roles, permissions, pivot tables)
-4. Clears Laravel and Filament caches (`optimize:clear`, `filament:optimize-clear`).
-5. With `--migrate`, runs `php artisan migrate` (MKSine tables **and** permission tables).
-6. Publishes Filament panel assets (`filament:assets`).
-7. When the `admin` panel has `MksinePlugin` registered and `permissions` exists: runs `shield:generate --all --panel=admin`.
-8. When `mks_hooks` exists: runs `mks:discover`.
-9. When `--admin-email` and `--admin-password` are passed with `--migrate`: runs `mksine:create-super-admin`.
-
-Shield does **not** ship its own migrations; it relies on `spatie/laravel-permission`.
-
-Options:
+Runs the install steps in order, stops at the first failure and exits non-zero. Progress is kept in `storage/mksine/install-state.json` (never the admin password or `.env` values), and a finished install writes `storage/mksine/installed.json`. The step list is in [Installation](../01-installation.md#what-mksineinstall---migrate-does-automatically).
 
 | Option | Default | Behaviour |
 |--------|---------|-----------|
-| `--migrate` | off | Run migrations and post-migrate bootstrap (Shield, hooks, optional super admin). |
-| `--force` | off | Pass `--force` to each `vendor:publish` and overwrite the `User` model if present. |
-| `--admin-email` | — | Non-interactive super admin email (requires `--admin-password` and `--migrate`). |
-| `--admin-password` | — | Super admin password (min 8 characters). |
-| `--admin-name` | — | Super admin display name. |
+| `--migrate` | off | Run migrations and every database step; required to finish the install. |
+| `--force` | off | Pass `--force` to each `vendor:publish`. |
+| `--resume` | off | Continue an interrupted install instead of starting over. |
+| `--profile` | detected | `vps` or `shared`. Shared runs migrations one file at a time and uses the `database` queue. Detected as shared when `proc_open` is disabled. |
+| `--theme` | default theme | Theme to activate. |
+| `--plugins` | none | Comma-separated plugin IDs to install and activate. |
+| `--locale` | unchanged | Writes `APP_LOCALE`. |
+| `--seed-demo` | off | Sample pages, posts and menus (needs Faker). |
+| `--admin-email` / `--admin-password` / `--admin-name` | — | Super admin (password min 8 characters). |
+| `--app-url`, `--db-*` | — | Written to `.env` and applied to the running process. |
 
-Use it:
+In an interactive terminal the command asks for whatever the options do not answer.
 
 ```bash
-# Recommended full install (after Filament panel + MksinePlugin are registered)
 php artisan mksine:install --migrate
-php artisan mksine:create-super-admin
-
-# One-shot with super admin
-php artisan mksine:install --migrate \
-  --admin-email=admin@example.com \
-  --admin-password='secret-password'
+php artisan mksine:install --migrate --no-interaction --theme=mksine --plugins=ecom --locale=fa \
+  --admin-email=admin@example.com --admin-password='secret-password'
 ```
 
-See [Installation](../01-installation.md) for the full ordered checklist.
+### `mksine:doctor`
+
+```
+mksine:doctor
+```
+
+Source: [`DoctorCommand`](../../src/Console/Commands/DoctorCommand.php).
+
+Reports PHP version, extensions, writable paths, disabled functions (`exec`, `proc_open`, `symlink`), time and memory limits, the public path, the recommended install profile, the install state and when the scheduler last ran. Exits non-zero when a required feature is missing.
+
+### `mksine:server-config`
+
+```
+mksine:server-config [nginx|apache|supervisor|cron|all] [--domain=] [--php-fpm=] [--user=]
+```
+
+Source: [`ServerConfigCommand`](../../src/Console/Commands/ServerConfigCommand.php).
+
+Prints a ready-to-paste Nginx or Apache virtual host rooted at the current public path, a Supervisor queue worker and the cron line for `schedule:run`.
 
 ### `mksine:info`
 
@@ -448,24 +444,34 @@ Copies a theme’s `resources/lang/` (or `lang/`) into `lang/vendor/theme-{id}/`
 
 ```
 mks:release-archive
-  [--output=]
-  [--skip-build]
-  [--dry-run]
+  [--output=] [--core-only] [--layout=single|split] [--app-dir=mksine] [--public-dir=public_html]
+  [--no-dev] [--skip-build] [--dry-run]
 ```
 
 Source: [`ReleaseArchiveCommand`](../../src/Console/Commands/ReleaseArchiveCommand.php).
 
-Discovers every `package.json` with a `build` script under the project (including `packages/`, `themes/`, `{plugin_root}/*`, and the project root), runs `npm run build` in each, then zips the project.
-
-The archive **excludes** `node_modules`, `.git`, and `.env*` (keeping `.env.example`). Inside `public/`, only an explicit allowlist is included: `build`, `themes`, `vendor/mksine`, `css`, `js`, `fonts`, `plugins`, plus `index.php`, `.htaccess`, `robots.txt`, `favicon*`. Everything else under `public/` is omitted.
+Builds assets (the package, then project themes and plugins for full archives, then the project root), clears the bootstrap cache and zips the project. By default the zip is a **full** archive for fresh installs; `--core-only` leaves plugins and themes out for updates. `--layout=split` produces `mksine/` plus `public_html/` for shared hosting.
 
 | Option | Default | Behaviour |
 |--------|---------|-----------|
-| `--output=` | `mksine-release-{timestamp}.zip` at project root | Absolute or project-relative output path. |
-| `--skip-build` | off | Skip every `npm run build`; just zip what is on disk. |
-| `--dry-run` | off | Print the build roots and resolved output path; no work happens. |
+| `--output=` | `storage/app/mksine-release-{timestamp}.zip` | Absolute or project-relative output path. |
+| `--core-only` | off | Leave out plugins, themes and `mksine-setup/`. |
+| `--layout=` | `single` | `split` = application folder + public folder with a generated `index.php`. |
+| `--no-dev` | off | Install production Composer dependencies in a staging copy before zipping. |
+| `--skip-build` | off | Skip npm; just zip what is on disk. |
+| `--dry-run` | off | Print build roots, output path and archive settings. |
 
-See [Operations → release archive](../operations/deployment-hosting.md) for the deployment flow.
+See [Operations → release archive](../operations/release-archive.md) for the contents, layouts and verification.
+
+### `mks:release-build`
+
+```
+mks:release-build [--output-dir=] [--no-dev] [--skip-build]
+```
+
+Source: [`ReleaseBuildCommand`](../../src/Console/Commands/ReleaseBuildCommand.php).
+
+Runs `mks:release-archive` for both layouts and writes `mksine-{version}-shared-hosting.zip`, `mksine-{version}-server.zip`, `SHA256SUMS` and `release.json` to `storage/app/releases/{version}/` (or `--output-dir`). Use `--no-dev` for public releases. See [Release archive → Publishing a release](../operations/release-archive.md#publishing-a-release).
 
 ## Updater commands
 

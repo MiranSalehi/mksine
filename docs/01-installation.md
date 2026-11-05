@@ -21,12 +21,10 @@ MKSine is a **Filament 4 / 5** CMS package. You need a working Laravel applicati
 |------|------|------------------|
 | 1 | Require the package | `composer require miran/mksine` |
 | 2 | Create the Filament admin panel | `php artisan filament:install --panels` |
-| 3 | Register `MksinePlugin`; **remove** `Dashboard::class` from provider; **remove** Laravel's `/` route from `routes/web.php` | Edit `AdminPanelProvider` and `routes/web.php` (see below) |
-| 4 | Publish configs, migrate, generate permissions | `php artisan mksine:install --migrate` (publishes `config/mksine.php`, `config/livewire.php`, `config/filament.php`) |
-| 5 | Create a super admin | `php artisan mksine:create-super-admin` |
-| 6 | Smoke test | Visit `/admin` and `/` |
+| 3 | Install | `php artisan mksine:install --migrate` (registers `MksinePlugin`, removes the default `/` route, publishes, migrates, activates the theme, creates the admin) |
+| 4 | Smoke test | `php artisan mksine:doctor`, then visit `/admin` and `/` |
 
-> **Why step 3 comes before step 4.** `mksine:install --migrate` runs `shield:generate --all`, which scans the **registered** Filament panel for resources, pages, and widgets. If `MksinePlugin` is not on the panel yet, MKSine permissions and policies are **not** created. You would need to run `php artisan shield:generate --all --panel=admin` again after registering the plugin.
+> **Permissions and the panel provider.** `shield:generate --all` scans the **registered** Filament panel. When the installer adds `MksinePlugin` to `AdminPanelProvider`, the panel in that process was already built without it, so the installer runs `shield:generate` in a fresh PHP process. Where `proc_open` is disabled, that is skipped with a warning; run `php artisan mksine:install --migrate` (or `shield:generate --all --panel=admin`) once more.
 
 ## 1. Install the Composer package
 
@@ -127,15 +125,24 @@ php artisan mksine:install --migrate \
 
 ### What `mksine:install --migrate` does automatically
 
-1. Publishes `app/Models/User.php` (if missing, unless you use `--force`).
-2. Publishes MKSine config, migrations, translations, and fonts.
-3. Publishes **Filament Shield** and **Spatie Permission** config and migrations when Shield is installed.
-4. Clears Laravel and Filament caches (`optimize:clear`, `filament:optimize-clear`).
-5. Runs `php artisan migrate`.
-6. Publishes Filament panel assets (`filament:assets`).
-7. Runs `shield:generate --all --panel=admin` — **only when** the `admin` panel exists and `MksinePlugin` is registered.
-8. Runs `mks:discover` (syncs hook listeners to `mks_hooks`).
-9. Optionally creates a super admin when `--admin-email` and `--admin-password` are passed.
+The installer runs a pipeline of steps ([`InstallPipeline::DEFAULT_STEPS`](../src/Core/Install/InstallPipeline.php)). Each step can safely run twice, and the run stops at the first failure with a non-zero exit code. Continue after fixing the problem with `--resume`.
+
+1. Checks PHP version, extensions and writable paths.
+2. Writes `.env` values passed with `--app-url` / `--db-*` and generates `APP_KEY` when it is empty.
+3. Patches `app/Models/User.php` (or publishes the package model when missing).
+4. Registers `MksinePlugin` on `app/Providers/Filament/AdminPanelProvider.php` and removes Laravel's stock welcome route from `routes/web.php` (both with backups).
+5. Publishes MKSine config, migrations, translations and fonts, plus Filament Shield and Spatie Permission files.
+6. Clears Laravel and Filament caches.
+7. Runs migrations. With `--profile=shared` they run one file at a time.
+8. Publishes Filament panel and theme assets.
+9. Activates `--theme` (or the default theme when none is active) and `--plugins`.
+10. Runs `shield:generate --all --panel=admin` when the panel has `MksinePlugin` (in a fresh process if the plugin was registered during this run), then `mks:discover`.
+11. Creates the super admin from `--admin-email` / `--admin-password`.
+12. Adds sample content with `--seed-demo` (needs Faker).
+13. Sets `--locale`, creates the storage link when symlinks are allowed, sets the queue to `database` on shared hosting, and prints the cron line.
+14. Writes `storage/mksine/installed.json`.
+
+Without `--migrate`, only the file steps run and the installation is not marked finished. In an interactive terminal the command asks for the admin account, theme, plugins, language and sample content; pass `--no-interaction` to skip the questions.
 
 ### Manual publish (equivalent to steps 1–3 and 5 above)
 
@@ -179,6 +186,37 @@ For a full interactive Shield setup (panel plugin registration, optional tenancy
 4. Confirm the navigation contains MKSine sections (for example **Plugins**, **Media**, **Menus**, **Settings**, **Languages**) under appropriate Shield permissions.
 5. Confirm MKSine admin styling loaded (sidebar groups, fonts, spacing). If the panel looks like a bare Filament skeleton, run `php artisan optimize:clear` and confirm `/mksine/admin-styles.css` returns CSS. See [Troubleshooting: Admin styles missing](operations/troubleshooting.md#admin-styles-missing-mksine-css).
 6. Run the [validation checklist](operations/validation-checklist.md) before considering the install complete.
+
+## Shared hosting: the web installer
+
+For hosts without SSH (cPanel, DirectAdmin), ship a prebuilt zip and install from the browser.
+
+1. Build the zip locally: `php artisan mks:release-archive --layout=split` (see [Release archive](operations/release-archive.md)).
+2. Upload and extract it so `mksine/` sits next to `public_html/` (for example `/home/user/mksine` and `/home/user/public_html`).
+3. Create an empty database and user in the hosting panel.
+4. Open the site. Every request goes to **`/install`** until MKSine is installed.
+
+The wizard (Persian or English) walks through:
+
+| Page | What happens |
+|------|--------------|
+| Language | Sets the installer language. |
+| Requirements | PHP version, extensions, writable paths, disabled functions (`proc_open`, `symlink`) and the request time limit. Warns when the application folder is inside the web root. |
+| Database | MySQL, MariaDB, PostgreSQL or SQLite. The connection is tested before `DB_*` is written to `.env`. |
+| Site and admin | Site name and address, site language, admin account, theme, plugins and sample content. Writes `APP_NAME`, `APP_URL`, `APP_ENV=production`, `APP_DEBUG=false` and, when the web root is not `public/`, `MKSINE_PUBLIC_PATH`. |
+| Install | Runs the same steps as `mksine:install`, one per request, so a 30-second time limit is enough. Migrations run one file at a time. A failed step can be retried and continues where it stopped. |
+
+When it finishes, the installer closes itself (`/install` returns 404) and shows the cron line to add in the panel:
+
+```bash
+* * * * * php /home/user/mksine/artisan schedule:run >> /dev/null 2>&1
+```
+
+On shared-hosting installs the scheduler also drains the `database` queue every minute (`mksine:shared-hosting-queue-worker`), so no long-running worker is needed. The admin Console page is hidden when `proc_open` is disabled.
+
+**How it boots before installation.** Until `storage/mksine/installed.json` exists, MKSine generates an `APP_KEY` (saved to `.env`), uses file sessions and cache and the `sync` queue, and pins the session cookie name. Sites installed before the installer existed are detected from their tables and get the lock file written automatically.
+
+**Security.** The first browser that opens `/install` owns the installation; other browsers see a "locked" page until the owner has been idle for `mksine.installer.owner_timeout_minutes` (default 360). To reset it, delete `storage/mksine/installer-owner.json`. The admin password is kept only encrypted in the installer session, never in the progress file or logs. The database test is rate limited. Set `MKSINE_WEB_INSTALLER=false` to turn the web installer off entirely.
 
 ## What just got installed
 

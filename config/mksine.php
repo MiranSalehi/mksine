@@ -22,7 +22,34 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.21.0',
+    'version' => '1.22.0',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public Path
+    |--------------------------------------------------------------------------
+    |
+    | The web-served public directory, absolute or relative to the project root.
+    | Set it on shared hosting when public files live outside the project,
+    | e.g. MKSINE_PUBLIC_PATH=../public_html. Leave empty to use public/.
+    |
+    */
+    'public_path' => env('MKSINE_PUBLIC_PATH'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Web Installer
+    |--------------------------------------------------------------------------
+    |
+    | Until MKSine is installed, every web request is sent to the installer at
+    | /{path}. Only a browser that enters the code from SETUP-TOKEN.txt (written
+    | to the application folder on first visit) can continue past the start.
+    |
+    */
+    'installer' => [
+        'enabled' => env('MKSINE_WEB_INSTALLER', true),
+        'path' => 'install',
+    ],
 
     /*
     |--------------------------------------------------------------------------

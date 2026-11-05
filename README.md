@@ -29,11 +29,10 @@ If you've ever built a "simple site" in Laravel and ended up hand-rolling pages,
 ```bash
 composer require miran/mksine
 php artisan filament:install --panels
-# Register MksinePlugin in AdminPanelProvider (remove default Dashboard page)
-# Remove Route::get('/', …) from routes/web.php (MKSine owns the homepage)
 php artisan mksine:install --migrate
-php artisan mksine:create-super-admin
 ```
+
+`mksine:install` registers `MksinePlugin` on the admin panel, removes Laravel's default `/` route, migrates, activates the default theme and asks for an admin account. Shared hosting without SSH: build a zip with `php artisan mks:release-archive --layout=split`.
 
 Full installation guide → [docs/01-installation.md](https://github.com/MiranSalehi/mksine/blob/main/docs/01-installation.md)
 

@@ -52,6 +52,7 @@ use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\ConsoleRunDetachedCommand;
 use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
+use Miran\Mksine\Console\Commands\DoctorCommand;
 use Miran\Mksine\Console\Commands\FreshSuperAdminCommand;
 use Miran\Mksine\Console\Commands\GeoImportCommand;
 use Miran\Mksine\Console\Commands\GeoMigrateLegacyIranCommand;
@@ -72,8 +73,10 @@ use Miran\Mksine\Console\Commands\PluginPublishCommand;
 use Miran\Mksine\Console\Commands\PluginPublishLangCommand;
 use Miran\Mksine\Console\Commands\PluginUninstallCommand;
 use Miran\Mksine\Console\Commands\ReleaseArchiveCommand;
+use Miran\Mksine\Console\Commands\ReleaseBuildCommand;
 use Miran\Mksine\Console\Commands\RollbackPluginCommand;
 use Miran\Mksine\Console\Commands\RollbackThemeCommand;
+use Miran\Mksine\Console\Commands\ServerConfigCommand;
 use Miran\Mksine\Console\Commands\SignMarketplaceReleaseCommand;
 use Miran\Mksine\Console\Commands\ThemeMakeCommand;
 use Miran\Mksine\Console\Commands\ThemePublishCommand;
@@ -97,6 +100,16 @@ use Miran\Mksine\Core\Hooks\ResourceHookManager;
 use Miran\Mksine\Core\Hooks\SettingsTabManager;
 use Miran\Mksine\Core\Hooks\TableHookListenerInterface;
 use Miran\Mksine\Core\Hooks\TableHookManager;
+use Miran\Mksine\Core\Install\InstallationState;
+use Miran\Mksine\Core\Install\InstallProfile;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Artisan;
+use Miran\Mksine\Http\Controllers\Installer\InstallerRoutes;
+use Miran\Mksine\Http\Middleware\Installer\RedirectToInstaller;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Miran\Mksine\Core\Install\InstallPipeline;
+use Miran\Mksine\Core\Install\InstallProgress;
+use Miran\Mksine\Core\Install\PreInstallBootstrap;
 use Miran\Mksine\Core\MenuItemSources\CategoryMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\CustomLinkMenuItemSource;
 use Miran\Mksine\Core\MenuItemSources\PageMenuItemSource;
@@ -191,6 +204,7 @@ use Miran\Mksine\Support\Frontend\FrontendAdminBar;
 use Miran\Mksine\Support\Frontend\FrontendAdminBarContextResolver;
 use Miran\Mksine\Support\Frontend\RegisterFrontendAdminBarCoreItems;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\PublicPathConfigurator;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -234,7 +248,15 @@ class MksineServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        PublicPathConfigurator::apply($this->app, config('mksine.public_path'));
+
         LivewireUploadConfiguration::apply();
+
+        $this->app->singleton(InstallationState::class);
+        $this->app->singleton(InstallProgress::class);
+        $this->app->bind(InstallPipeline::class, fn ($app): InstallPipeline => InstallPipeline::makeDefault($app));
+
+        PreInstallBootstrap::apply($this->app, $this->app->make(InstallationState::class));
 
         $this->app->singleton(AdminConsoleProcessManager::class, function (): AdminConsoleProcessManager {
             return new AdminConsoleProcessManager(base_path());
@@ -529,6 +551,9 @@ class MksineServiceProvider extends PackageServiceProvider
         if (file_exists($geoRoutes)) {
             require $geoRoutes;
         }
+
+        $this->registerWebInstaller();
+        $this->registerSharedHostingQueueWorker();
 
         $pageDocumentRoutes = __DIR__.'/../routes/page-document.php';
         if (file_exists($pageDocumentRoutes)) {
@@ -909,6 +934,39 @@ class MksineServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * Until MKSine is installed, send every web request to the browser installer.
+     */
+    protected function registerWebInstaller(): void
+    {
+        if (! config('mksine.installer.enabled', true) || $this->app->make(InstallationState::class)->isInstalled()) {
+            return;
+        }
+
+        $this->app->make(HttpKernel::class)->prependMiddleware(RedirectToInstaller::class);
+        InstallerRoutes::register();
+    }
+
+    /**
+     * Shared hosting has no long-running queue worker, so the scheduler (one cron line)
+     * drains the queue every minute. It runs in-process because proc_open may be disabled.
+     */
+    protected function registerSharedHostingQueueWorker(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $metadata = $this->app->make(InstallationState::class)->metadata();
+
+            if (($metadata['profile'] ?? null) !== InstallProfile::Shared->value) {
+                return;
+            }
+
+            $schedule->call(fn (): int => Artisan::call('queue:work', ['--stop-when-empty' => true, '--max-time' => 50, '--tries' => 3]))
+                ->everyMinute()
+                ->name('mksine:shared-hosting-queue-worker')
+                ->withoutOverlapping(5);
+        });
+    }
+
+    /**
      * @return array<class-string>
      */
     protected function getCommands(): array
@@ -917,6 +975,9 @@ class MksineServiceProvider extends PackageServiceProvider
             MksineCommand::class,
             ArtisanCommand::class,
             MksineInstallCommand::class,
+            DoctorCommand::class,
+            ServerConfigCommand::class,
+            ReleaseBuildCommand::class,
             DiscoverHooksCommand::class,
             GeoImportCommand::class,
             GeoMigrateLegacyIranCommand::class,

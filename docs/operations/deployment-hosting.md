@@ -25,11 +25,11 @@ How the **host Laravel application** must be wired for production, and how that 
 
 The HTTP document root must be the directory that contains **`index.php`** and **`.htaccess`** from Laravel (`public/`), not the repository root above it.
 
-On shared hosting (including many **DirectAdmin** setups), the default directory is often `public_html`. Typical fixes:
+On shared hosting (cPanel, DirectAdmin) the web root is usually a fixed `public_html`. Options, best first:
 
-- Ask the host to set the domain’s document root to **`.../public`** (or `public_html/public` if the app lives under `public_html`).
-- Or place **only** the contents of Laravel’s `public` folder into the web root and point Laravel’s paths at the parent (documented Laravel pattern for constrained hosts).
-- Or use an allowed **symlink** from `public_html` to `public` if the provider permits it.
+- Set the domain's document root to the project's **`public/`** (many hosts allow this for addon domains and subdomains).
+- Use the **split layout**: put the application next to `public_html` (e.g. `/home/user/mksine`) and only the contents of `public/` inside `public_html`. Build it with `php artisan mks:release-archive --layout=split`, which generates a `public_html/index.php` that loads `../mksine` and calls `$app->usePublicPath(__DIR__)`. Set **`MKSINE_PUBLIC_PATH=../public_html`** in `.env` so artisan commands (asset publishing, `storage:link`) write there too. MKSine also moves disk roots and `filesystems.links` that were built from the old `public/` path.
+- Do **not** unpack the whole project inside `public_html` and rely on `.htaccess` rewrites: if rewriting ever fails, `.env` becomes downloadable.
 
 If the whole repo is unpacked so that `public` is only a subdirectory and the server does not rewrite to `index.php`, **virtual asset URLs will 404**.
 
@@ -60,18 +60,18 @@ After changing `.env` in production, run `php artisan config:clear` or rebuild c
 
 ## `mks:release-archive` and `public/`
 
-[`mks:release-archive`](../../src/Console/Commands/ReleaseArchiveCommand.php) can run `npm run build` in discovered roots, then zips the project while **excluding most of `public/`** except an allowlist.
+[`mks:release-archive`](../../src/Console/Commands/ReleaseArchiveCommand.php) builds assets and zips the project. By default the zip is a **full** archive (core, plugins, themes) for fresh installs; `--core-only` leaves plugins and themes out for updates.
 
-Allowed under `public/` in the archive (see [`ReleaseArchiveBuildRoots::isPublicPathAllowed`](../../src/Support/ReleaseArchiveBuildRoots.php)):
+Only an allowlist of `public/` ships (see [`ReleaseArchiveBuildRoots::isPublicPathAllowed`](../../src/Support/ReleaseArchiveBuildRoots.php)): `build/`, `vendor/mksine/`, `css/`, `js/`, `fonts/`, plus `themes/` and `plugins/` in full archives, and the root files `index.php`, `.htaccess`, `robots.txt`, `favicon*`. Assets published elsewhere under `public/` (for example `public/vendor/livewire/`) **will not** ship unless you change the allowlist.
 
-- `build/`, `themes/`, `vendor/mksine/`, `css/`, `js/`, `fonts/`, `plugins/` (under `public/`: published plugin assets from `mks-plugin:publish`, **not** the source tree).
-- Root files: `index.php`, `.htaccess`, `robots.txt`, `favicon*`.
+Use `--skip-build` only when `public/build/` and the plugin and theme `dist/` folders are already built and current.
 
-Everything else under `public/` is **omitted** from the zip. If you publish third-party assets to paths such as `public/vendor/livewire/` (outside the allowlist), they **will not** ship in the release archive unless you change packaging policy or commit them through an allowed path.
+For layouts (`single` or `split`), `--no-dev` and the full exclusion list, see [Release archive](release-archive.md).
 
-Use `--skip-build` only when outputs such as `public/build/` are already built and current; otherwise Vite manifests and hashed assets may be missing on deploy.
+## Server configuration helpers
 
-For the deeper command walkthrough, see [Release archive](release-archive.md).
+- `php artisan mksine:doctor` checks PHP version, extensions, writable paths, disabled functions (`exec`, `proc_open`, `symlink`), the public path and when the scheduler last ran.
+- `php artisan mksine:server-config [nginx|apache|supervisor|cron]` prints a ready-to-paste Nginx or Apache virtual host rooted at the current public path, a Supervisor queue worker and the cron line.
 
 ## Caches in production
 

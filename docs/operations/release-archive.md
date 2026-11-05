@@ -4,149 +4,143 @@ title: Release archive (mks:release-archive)
 
 # Release archive (`mks:release-archive`)
 
-`mks:release-archive` produces a deployable `.zip` of the entire project — code, vendored dependencies, compiled assets — minus the things you don't ship to production. It exists because shared hosting, DirectAdmin and cPanel customers can't run `composer install` or `npm run build` on the server, and Git deploy isn't always an option. It is **not** a replacement for proper CI/CD, and it is **not** a core-only `miran/mksine` ZIP — core updates go through Composer. See [ZIP updater](zip-updater.md).
+`mks:release-archive` builds a deployable `.zip` of the whole project: code, `vendor/`, compiled assets and, by default, every plugin and theme. It exists because shared hosting (cPanel, DirectAdmin) has no `composer install` or `npm run build` on the server. It does not replace CI/CD.
 
-This page documents what the command does, why it makes the choices it makes, and what to verify before relying on it for production deploys.
+There are two kinds of archive:
+
+| Kind | Command | Contains | Use it for |
+| ---- | ------- | -------- | ---------- |
+| **Full** (default) | `mks:release-archive` | Core, all plugins, all themes | A fresh install. The built-in web installer (`/install`) asks which plugins to activate. |
+| **Core only** | `mks:release-archive --core-only` | Core application only; plugins and themes are left out | Updating an existing site. Plugins and themes update through the [ZIP updater](zip-updater.md). |
+
+## Publishing a release
+
+For a public download (mksine.com), build both layouts at once:
+
+```bash
+php artisan mks:release-build --no-dev
+```
+
+This writes to `storage/app/releases/{version}/`:
+
+| File | Purpose |
+| ---- | ------- |
+| `mksine-{version}-shared-hosting.zip` | Split layout (`mksine/` + `public_html/`) for cPanel and DirectAdmin |
+| `mksine-{version}-server.zip` | Single layout for a VPS; point the document root at `public/` |
+| `SHA256SUMS` | Checksums; verify with `shasum -a 256 -c SHA256SUMS` |
+| `release.json` | Version, release date, requirements and each file's name, size and SHA-256, for the download page |
+
+`scripts/publish-release.sh` (in the package) runs that build with `--no-dev`, verifies the checksums and attaches the files to the GitHub release for tag `v{version}`, which must already be pushed. It creates the release when it does not exist (`--draft` makes it a draft) and replaces the files when it does. It needs the GitHub CLI (`gh`) logged in. The download page reads the newest manifest from `https://github.com/MiranSalehi/mksine/releases/latest/download/release.json`.
+
+```bash
+git -C packages/mksine tag v1.22.0 && git -C packages/mksine push origin v1.22.0
+packages/mksine/scripts/publish-release.sh
+```
+
+End-user installation is described in [Installing MKSine](../guides/install/install.md) ([فارسی](../guides/install/install.fa.md)).
 
 ## Command surface
 
 ```
 php artisan mks:release-archive
-    [--output=PATH]      # Absolute or project-relative path for the .zip
-    [--skip-build]       # Skip npm run build; only zip
-    [--dry-run]          # Print build roots and output path; do nothing else
+    [--output=PATH]            # Absolute or project-relative path for the .zip
+    [--core-only]              # Leave out plugins and themes
+    [--layout=single|split]    # single (default): document root = public/; split: shared hosting
+    [--app-dir=mksine]         # split layout: folder for the application
+    [--public-dir=public_html] # split layout: folder for the public files
+    [--no-dev]                 # Install production Composer dependencies in a staging copy first
+    [--skip-build]             # Skip npm; only zip
+    [--dry-run]                # Print build roots, output path and archive settings; change nothing
 ```
 
-| Behaviour                | What happens                                                                                       |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| Default                  | Discover build roots, run `npm run build` in each, then create `storage/app/mksine-release-{ts}.zip` |
-| `--output=relative/path` | Resolved relative to the project root                                                              |
-| `--output=/abs/path.zip` | Used verbatim                                                                                      |
-| `--skip-build`           | No `npm` invocation; existing `public/build/`, `public/themes/`, etc. are zipped as-is             |
-| `--dry-run`              | Lists build roots in execution order and the output path; does **not** delete or write anything   |
+The default output is `storage/app/mksine-release-{timestamp}.zip`. If no build roots are found and `--skip-build` is not passed, the command fails rather than produce an under-built archive.
 
-If no build roots are found and you didn't pass `--skip-build`, the command **fails** instead of producing an under-built archive. That's intentional — silent partial builds caused production incidents in earlier iterations.
+## Layouts
 
-## Build root discovery
+**`single`** puts the project at the zip root. Point the web server's document root at `public/` (see `php artisan mksine:server-config`).
 
-Order matters: `ReleaseArchiveBuildRoots::discover()` returns roots in the sequence below, and the command runs `npm run build` in each one before creating the zip. Each root must have a `package.json` with a `scripts.build` entry; otherwise it is skipped silently.
+**`split`** is for shared hosting, where the web root is a fixed folder such as `public_html` and the application must live outside it:
 
-1. `packages/mksine/resources/views/themes/mksine` — the package’s default theme.
-2. `packages/mksine` — the package itself.
-3. `resources/views/themes/{theme}` — every project-level theme that has a `package.json` with `scripts.build` (alphabetical order, the package's default theme is deduplicated).
-4. `plugins/{plugin_id}` — top-level plugin directories with `package.json` and `scripts.build` (alphabetical).
-5. `package.json` at the project root, if it has a `scripts.build`.
+```
+mksine/          ← the application (upload next to public_html, e.g. /home/user/mksine)
+  .htaccess      ← "Require all denied", in case it is ever placed inside a web root
+  .env.example   ← includes MKSINE_PUBLIC_PATH=../public_html
+  vendor/ app/ config/ plugins/ ...
+public_html/     ← the contents of public/
+  index.php      ← generated: loads ../mksine and calls $app->usePublicPath(__DIR__)
+  build/ css/ js/ themes/ plugins/ vendor/mksine/ ...
+```
 
-> Note the path on point 4: discovery is hardcoded to `plugins/`, **not** `config('mksine.plugins_path')`. If your plugins live elsewhere, builds for those plugins will silently be skipped. This is a known limitation; see [Honest limitations](#honest-limitations).
+`MKSINE_PUBLIC_PATH` makes artisan commands (asset publishing, `storage:link`) write to `public_html/` as well, not only web requests. The split layout leaves out `packages/mksine/`: no Composer runs on the server, and autoload already points at `vendor/miran/mksine`, which is packed from the path-repository symlink.
 
-If you need a different order or extra roots, fork the command. There is no extension hook.
+On DirectAdmin the web root is `domains/{domain}/public_html`; upload `mksine/` to `domains/{domain}/mksine` so `../mksine` still resolves.
+
+## Build roots
+
+`ReleaseArchiveBuildRoots::discover()` returns roots in this order. Each needs a `package.json` with `scripts.build`.
+
+1. `packages/mksine`
+2. Full archives only: each `resources/views/themes/{theme}`, alphabetically
+3. Full archives only: each plugin under `config('mksine.plugins_path')` (default `plugins/`), alphabetically
+4. The project root (its Vite build runs last)
+
+When a root has no `node_modules/`, the command runs `npm ci` (with a `package-lock.json`) or `npm install` there first. Package theme assets under `packages/mksine/resources/views/themes/*/dist` are committed and not rebuilt.
 
 ## What ends up in the zip
 
-`ReleaseArchiveBuildRoots::shouldIncludeInZip()` is the source of truth. The list below paraphrases it.
+`ReleaseArchiveBuildRoots::shouldIncludeInZip()` is the source of truth.
 
 **Always excluded:**
 
-- `node_modules/` (anywhere in the tree).
-- `.git/` (anywhere).
-- `mksine-setup/` (the post-install bootstrap directory).
-- `.env` and `.env.*` (anything except `.env.example`, which is included).
+- `.env` and `.env.*` (`.env.example` is kept)
+- `node_modules/` and `.git/` anywhere
+- Local data: `database/*.sqlite` (and journal files), `mksine-setup-database.sql`/`.sqlite`, `*.mksine-backup-*` files, `.DS_Store`, `Thumbs.db`
+- `mksine-setup/` (the retired standalone installer)
+- Any `uploads/` tree, including `public/uploads/`
+- `storage/logs`, `storage/framework`, `storage/app` (only `.gitignore` files are kept, so the directories exist)
+- `bootstrap/cache/*.php` (the command also deletes them before zipping)
 
-**`public/` is allowlisted, not blocklisted.** Inside `public/`, only the following may be packed:
+**Core-only archives also exclude** `plugins/`, `resources/views/themes/` (except paths in `mksine.release_archive.include_theme_paths`), `packages/mksine/resources/views/themes/`, `public/themes/` and `public/plugins/`.
 
-| Path under `public/`               | Why allowed                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------- |
-| `build/`                           | Vite’s compiled bundle.                                                    |
-| `themes/`                          | Published theme assets (`mks:theme-publish`).                              |
-| `vendor/mksine/`                   | Symlinks/published assets from the package itself.                          |
-| `css/`, `js/`, `fonts/`            | Conventional asset roots if your app uses them.                             |
-| `plugins/`                         | Published plugin assets (each plugin's `dist/` copied to `public/plugins/{id}/`). |
-| `index.php`, `.htaccess`           | Apache/PHP front controller.                                                |
-| `robots.txt`, `favicon*`           | Common root-level static files.                                             |
+**`public/` is allowlisted:** `build/`, `vendor/mksine/`, `css/`, `js/`, `fonts/`, plus `themes/` and `plugins/` in full archives, and the root files `index.php`, `.htaccess`, `robots.txt`, `favicon*`. Everything else under `public/` is dropped.
 
-Everything else in `public/` is **dropped**. If you store user uploads in `public/uploads/`, they will not be included in the archive — that is by design (uploads belong on a persistent volume, not in your code release). Migrate your media to `storage/app/public` and use `php artisan storage:link` on the server.
+Before zipping, package migrations are copied into `database/migrations/` so `migrate` on the server finds them.
 
-**Everything outside `public/`** that is not in the always-excluded list is included. That means `vendor/`, `storage/` (including local logs, sessions, and cached views — review and clear before building if needed), `bootstrap/cache/`, plugin source, theme source, and so on.
+## Production dependencies (`--no-dev`)
 
-## How vendor/ symlinks are handled
+Without `--no-dev`, `vendor/` is zipped exactly as installed locally, including dev packages such as Pest and Faker. With `--no-dev`, the command:
 
-`composer.json` uses a `path` repository to map `miran/mksine` to `packages/mksine`. Locally that creates a symlink at `vendor/miran/mksine -> packages/mksine`. The zipper keeps **the symlink path** (`vendor/miran/mksine/...`) rather than resolving it back to the real path. This is critical: Composer's autoloader is configured for the symlink path, and rewriting it would break class resolution on the deployed server.
+1. copies the project, minus `vendor/` and everything the zip would exclude, to a temporary directory (the full `packages/mksine` source is copied because `composer install` links it into `vendor/`);
+2. runs `composer install --no-dev --optimize-autoloader --no-scripts` there;
+3. zips the staging copy and deletes it.
 
-If you build on a machine that resolved symlinks differently (e.g. WSL with weird mount semantics), verify with `unzip -l` that paths under `vendor/miran/mksine/` exist in the archive.
+This needs Composer locally and network access (or a warm Composer cache). Without Faker, the installer's "sample content" step is skipped with a warning.
 
-## Output path resolution
-
-```php
-ReleaseArchiveZipper::resolveOutputPath($basePath, $outputOption);
-```
-
-- `null` or empty → `storage/app/mksine-release-YYYY-MM-DD-HHMMSS.zip`.
-- Absolute (`/...`, `C:\...`, `\\share\...`) → used verbatim.
-- Relative → joined with the project root.
-
-If the zip lives **inside the project tree**, the zipper computes its relative path and excludes it from being packed into itself. Don't write the output to `public/` — the zipper would then try to pack it (since `public/` is allowlisted) and you could end up with a recursive infinite-zip situation; the path-skip prevents that, but you'll still ship the previous archive in the new one. Use `storage/app/` or a path outside the project entirely.
-
-## What to do before shipping
-
-1. **Clean caches.** The zipper packs `bootstrap/cache/*`. Run `php artisan optimize:clear` (or at least `view:clear`, `route:clear`, `config:clear`) so the deployed app re-builds caches against the deployed environment.
-2. **Verify `.env.example`** matches the keys your application reads in production. The deployed server will copy it to `.env` and fill in secrets.
-3. **Double-check `storage/`**. Logs (`storage/logs/laravel.log`), failed jobs, and cached sessions get packed if present. Either rotate them out or delete them before running the command.
-4. **Confirm plugin and theme assets are published** (`php artisan mks-plugin:publish` and `mks:theme-publish` for each). The build phase compiles, but does not publish — `public/plugins/{id}/` and `public/themes/{id}/` are populated by `publish` commands.
-5. **Test the archive** on a staging server matching the production OS, PHP version, and web server. The first time you trust this command in production is too late.
-
-## What the deployed server still needs
-
-The archive is **not** plug-and-play to the extent that:
-
-- `php artisan key:generate` (or copy `APP_KEY` from your secrets store) on first deploy.
-- `php artisan migrate` against the production DB.
-- `php artisan storage:link`.
-- Web server configuration (DocumentRoot pointing at `public/`, `mod_rewrite` / `try_files`, etc.).
-- A `.env` file with real secrets (the archive intentionally omits it).
-- Native dependencies for image optimization, if you enabled them.
-
-These are documented in [Deployment and hosting](deployment-hosting.md).
-
-## Honest limitations
-
-- **Hardcoded `plugins/` path.** Discovery doesn’t honour `config('mksine.plugins_path')`. If you customise the plugin directory location, plugin builds are silently skipped. Either keep plugins at `plugins/` or build them manually before running the archive with `--skip-build`.
-- **No incremental builds.** Every run is a full build; no caching across runs.
-- **No npm version pinning.** The command runs whatever `npm` is on `$PATH`. Use a Node version manager and pin it in CI.
-- **No checksum or signing.** The archive is just a zip. If you care about supply-chain integrity, sign it externally and verify on the server.
-- **No exclusion of `storage/framework/sessions`, `cache`, or `views`.** They get packed if present. Clear them first.
-- **Symlink semantics on Windows are untested.** The zipper assumes POSIX symlink behaviour. On Windows, results may vary.
-- **`public/build/.vite/manifest.json`** is included (under `build/`). Make sure your Vite manifest is up to date — a stale manifest plus new compiled bundles is a confusing class of bug.
-- **Failed builds leave you with no zip and a noisy console.** The command fails fast; nothing is half-written.
-
-## Verifying the archive
-
-Before trusting an archive in production:
+## Verifying an archive
 
 ```bash
-# What's inside?
 unzip -l storage/app/mksine-release-*.zip | head -50
-
-# Spot-check the public allowlist:
-unzip -l storage/app/mksine-release-*.zip | grep ' public/' | head -20
-
-# Confirm plugin builds are present:
-unzip -l storage/app/mksine-release-*.zip | grep ' plugins/' | head -20
-
-# Make sure .env didn't sneak in:
-unzip -l storage/app/mksine-release-*.zip | grep -E '\.env(\s|$)' && echo "STOP" || echo "ok"
+unzip -l storage/app/mksine-release-*.zip | grep -E '\.env(\s|$)|\.sqlite' && echo "STOP" || echo "ok"
 ```
 
-## When not to use it
+For a split archive, the most reliable check is to install it the way a customer would:
 
-- If you have CI/CD with rsync, Deployer, or Forge: use those instead. They handle migrations, atomic releases, and rollback.
-- If your hosting allows `composer install` over SSH: skip the zip entirely.
-- If your project has artifacts the allowlist doesn't anticipate (PWA service workers in `public/sw.js`, custom manifest files, etc.): patch `ReleaseArchiveBuildRoots::isPublicPathAllowed()` first or extend the allowlist via a fork.
+```bash
+unzip -q mksine-release.zip -d /tmp/site && cd /tmp/site/mksine
+cp .env.example .env    # set DB_*, APP_URL
+php artisan mksine:install --migrate --profile=shared --no-interaction
+php -S 127.0.0.1:8000 -t ../public_html ../public_html/index.php
+```
 
-`mks:release-archive` is a pragmatic tool for a constrained deployment story. Treat it accordingly.
+## Limitations
+
+- **No checksum or signing.** Sign the zip externally if you need supply-chain guarantees.
+- **No incremental builds and no npm version pinning.** Pin Node in CI.
+- **Windows symlink behaviour is untested.**
+- **Plugin `vendor/` folders and other files inside plugin sources ship as they are.** Keep plugin trees clean before building.
 
 ## See also
 
-- [`reference/commands.md`](../reference/commands.md) — quick reference for all package commands.
-- [`operations/deployment-hosting.md`](deployment-hosting.md) — server-side configuration and post-deploy steps.
-- [`operations/troubleshooting.md`](troubleshooting.md) — diagnosing problems in deployed installations.
-- Source: [`Miran\Mksine\Console\Commands\ReleaseArchiveCommand`](../../src/Console/Commands/ReleaseArchiveCommand.php), [`Miran\Mksine\Support\ReleaseArchiveBuildRoots`](../../src/Support/ReleaseArchiveBuildRoots.php), [`Miran\Mksine\Support\ReleaseArchiveZipper`](../../src/Support/ReleaseArchiveZipper.php).
+- [Deployment and hosting](deployment-hosting.md)
+- [ZIP updater](zip-updater.md)
+- Source: [`ReleaseArchiveCommand`](../../src/Console/Commands/ReleaseArchiveCommand.php), [`ReleaseArchiveBuildRoots`](../../src/Support/ReleaseArchiveBuildRoots.php), [`ReleaseArchiveOptions`](../../src/Support/ReleaseArchiveOptions.php), [`ReleaseArchiveZipper`](../../src/Support/ReleaseArchiveZipper.php), [`ReleaseArchiveStaging`](../../src/Support/ReleaseArchiveStaging.php)

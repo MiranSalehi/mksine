@@ -17,6 +17,8 @@ sidebar:
     items:
       - { title: Introduction, path: 00-introduction.md }
       - { title: Installation, path: 01-installation.md }
+      - { title: Installing MKSine (download), path: guides/install/install.md }
+      - { title: نصب MKSine (دانلود), path: guides/install/install.fa.md }
       - { title: Quickstart, path: 02-quickstart.md }
 
   - section: Concepts

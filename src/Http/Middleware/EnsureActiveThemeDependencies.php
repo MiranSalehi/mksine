@@ -4,6 +4,7 @@ namespace Miran\Mksine\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Miran\Mksine\Core\Install\InstallationState;
 use Miran\Mksine\Core\Theme\ThemeDependencyChecker;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,10 +18,15 @@ class EnsureActiveThemeDependencies
     public function __construct(
         private ThemeDependencyChecker $dependencies,
         private ThemeManager $themes,
+        private InstallationState $installation,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (! $this->installation->isInstalled()) {
+            return $next($request);
+        }
+
         if ($request->routeIs('mksine.theme.screenshot', 'mksine.theme.custom.asset', 'mksine.plugin.screenshot')) {
             return $next($request);
         }

@@ -4,91 +4,283 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Commands;
 
-use BezhanSalleh\FilamentShield\FilamentShieldServiceProvider;
-use Filament\Facades\Filament;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Schema;
-use Miran\Mksine\Support\MksineUserModelRequirements;
-use Miran\Mksine\Support\UserModelPatcher;
+use Miran\Mksine\Core\Install\Contracts\InstallStep;
+use Miran\Mksine\Core\Install\Environment\EnvironmentProbe;
+use Miran\Mksine\Core\Install\InstallContext;
+use Miran\Mksine\Core\Install\InstallPipeline;
+use Miran\Mksine\Core\Install\InstallProfile;
+use Miran\Mksine\Core\Install\InstallRunResult;
+use Miran\Mksine\Core\Install\InstallStepStatus;
+use Miran\Mksine\Core\Install\StepResult;
+use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Core\Plugins\PluginManifest;
+use Miran\Mksine\Core\Theme\ThemeData;
+use Miran\Mksine\Core\Theme\ThemeManager;
 use Throwable;
 
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\multiselect;
+use function Laravel\Prompts\password;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\text;
 
+/**
+ * Command-line front end for the shared install pipeline (dedicated servers and local development).
+ */
 class MksineInstallCommand extends Command
 {
     public const GITHUB_URL = 'https://github.com/miransalehi/mksine';
 
+    /**
+     * --db-* option => .env key.
+     *
+     * @var array<string, string>
+     */
+    private const ENVIRONMENT_OPTIONS = [
+        'app-url' => 'APP_URL',
+        'db-connection' => 'DB_CONNECTION',
+        'db-host' => 'DB_HOST',
+        'db-port' => 'DB_PORT',
+        'db-database' => 'DB_DATABASE',
+        'db-username' => 'DB_USERNAME',
+        'db-password' => 'DB_PASSWORD',
+    ];
+
     public $signature = 'mksine:install
-                            {--migrate : Run migrations after publishing}
-                            {--force : Overwrite existing files}
+                            {--migrate : Run migrations and finish setup}
+                            {--force : Overwrite existing published files}
                             {--admin-email= : Create a super admin with this email (requires --admin-password and --migrate)}
                             {--admin-password= : Super admin password (min 8 characters)}
-                            {--admin-name= : Super admin display name}';
+                            {--admin-name= : Super admin display name}
+                            {--profile= : vps or shared (detected when omitted)}
+                            {--theme= : Theme to activate (the default theme when omitted)}
+                            {--plugins= : Comma-separated plugin IDs to activate}
+                            {--locale= : Site language, e.g. fa or en}
+                            {--seed-demo : Add sample pages, posts and menus}
+                            {--app-url= : Write APP_URL to .env}
+                            {--db-connection= : Write DB_CONNECTION to .env}
+                            {--db-host= : Write DB_HOST to .env}
+                            {--db-port= : Write DB_PORT to .env}
+                            {--db-database= : Write DB_DATABASE to .env}
+                            {--db-username= : Write DB_USERNAME to .env}
+                            {--db-password= : Write DB_PASSWORD to .env}
+                            {--resume : Continue an interrupted installation instead of starting over}';
 
-    public $description = 'Install MKSine package (publish config, migrations, etc.)';
+    public $description = 'Install MKSine: check requirements, publish files, migrate, activate theme and plugins, create the admin';
 
-    public function handle(): int
+    public function handle(InstallPipeline $pipeline): int
     {
         $this->info('🚀 Installing MKSine...');
         $this->newLine();
 
-        // Copy User model to app/Models (only if missing, or when --force)
-        $this->publishUserModel();
-        $this->validateUserModelForMksine();
+        $context = $this->shouldRunWizard() ? $this->askForContext() : $this->contextFromOptions();
 
-        // Publish config file
-        $this->publishConfigurationFiles();
-
-        // Publish migrations
-        $this->info('📦 Publishing migrations...');
-        $this->call('vendor:publish', [
-            '--provider' => 'Miran\Mksine\MksineServiceProvider',
-            '--tag' => 'mksine-migrations',
-            '--force' => $this->option('force'),
-        ]);
-
-        // Publish translation files to project lang path
-        $this->info('🌐 Publishing translation files...');
-        $this->call('vendor:publish', [
-            '--provider' => 'Miran\Mksine\MksineServiceProvider',
-            '--tag' => 'mksine-lang',
-            '--force' => $this->option('force'),
-        ]);
-
-        // Publish fonts (IranYekan, etc.)
-        $this->info('🔤 Publishing fonts...');
-        $this->call('vendor:publish', [
-            '--provider' => 'Miran\Mksine\MksineServiceProvider',
-            '--tag' => 'mksine-fonts',
-            '--force' => $this->option('force'),
-        ]);
-
-        $this->publishShieldAuthorization();
-        $this->clearInstallationCaches();
-
-        $migrated = false;
-
-        if ($this->option('migrate')) {
-            $this->info('🔄 Running migrations...');
-            $this->call('migrate');
-            $this->info('   ✓ Migrations completed.');
-            $migrated = true;
-        } else {
-            $this->info('💡 Tip: Run <comment>php artisan mksine:install --migrate</comment> to migrate and finish setup automatically.');
+        if (! $this->option('resume')) {
+            $pipeline->progress()->clear();
         }
 
-        $this->finalizeInstallation($migrated);
+        $this->line('  ' . __('mksine::install.profiles.' . $context->profile->value));
+        $this->newLine();
+
+        $result = $pipeline->run($context, fn (InstallStep $step, StepResult $stepResult) => $this->reportStep($step, $stepResult));
 
         $this->newLine();
+
+        if (! $result->succeeded()) {
+            $this->error('✗ MKSine installation stopped at step [' . $result->failedStepKey() . '].');
+            $this->line('  Fix the problem above, then run <comment>php artisan mksine:install --resume' . ($context->migrate ? ' --migrate' : '') . '</comment>.');
+
+            return self::FAILURE;
+        }
+
         $this->info('✅ MKSine installed successfully!');
         $this->newLine();
-        $this->displayNextSteps($migrated);
+        $this->displayNextSteps($context, $result);
 
         $this->askToStarRepository();
 
         return self::SUCCESS;
+    }
+
+    protected function contextFromOptions(): InstallContext
+    {
+        return new InstallContext(
+            profile: $this->resolveProfile(),
+            migrate: (bool) $this->option('migrate'),
+            force: (bool) $this->option('force'),
+            adminName: $this->stringOption('admin-name'),
+            adminEmail: $this->stringOption('admin-email'),
+            adminPassword: $this->stringOption('admin-password'),
+            theme: $this->stringOption('theme'),
+            plugins: $this->pluginOption(),
+            locale: $this->stringOption('locale'),
+            seedSampleContent: (bool) $this->option('seed-demo'),
+            environment: $this->environmentOptions(),
+        );
+    }
+
+    /**
+     * Interactive install: ask for whatever the options did not already answer.
+     */
+    protected function askForContext(): InstallContext
+    {
+        $defaults = $this->contextFromOptions();
+        $migrate = $defaults->migrate || confirm('Run database migrations and finish setup now?', default: true);
+
+        $adminEmail = $defaults->adminEmail;
+        $adminPassword = $defaults->adminPassword;
+        $adminName = $defaults->adminName;
+
+        if ($migrate && $adminEmail === null && confirm('Create a super admin account?', default: true)) {
+            $adminName = text('Admin name', default: 'Admin', required: true);
+            $adminEmail = text('Admin email', required: true, validate: fn (string $value): ?string => filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Enter a valid email address.');
+            $adminPassword = password('Admin password', required: true, validate: fn (string $value): ?string => strlen($value) >= 8 ? null : 'Use at least 8 characters.');
+        }
+
+        return new InstallContext(
+            profile: $defaults->profile,
+            migrate: $migrate,
+            force: $defaults->force,
+            adminName: $adminName,
+            adminEmail: $adminEmail,
+            adminPassword: $adminPassword,
+            theme: $defaults->theme ?? $this->askForTheme(),
+            plugins: $defaults->plugins !== [] ? $defaults->plugins : $this->askForPlugins(),
+            locale: $defaults->locale ?? select('Site language', ['fa' => 'فارسی (fa)', 'en' => 'English (en)'], default: (string) config('app.locale', 'en')),
+            seedSampleContent: $defaults->seedSampleContent || ($migrate && confirm('Add sample pages, posts and menus?', default: false)),
+            environment: $defaults->environment,
+        );
+    }
+
+    protected function shouldRunWizard(): bool
+    {
+        return $this->input->isInteractive() && ! $this->laravel->runningUnitTests();
+    }
+
+    private function askForTheme(): ?string
+    {
+        try {
+            $themes = app(ThemeManager::class)->discover()
+                ->mapWithKeys(fn (ThemeData $theme): array => [$theme->identifier => $theme->name])
+                ->all();
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (count($themes) < 2) {
+            return null;
+        }
+
+        return select('Theme', $themes, default: array_key_exists('mksine', $themes) ? 'mksine' : array_key_first($themes));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function askForPlugins(): array
+    {
+        try {
+            $plugins = collect(app(PluginManager::class)->discover())
+                ->mapWithKeys(fn (PluginManifest $manifest): array => [$manifest->id() => $manifest->name()])
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+
+        if ($plugins === []) {
+            return [];
+        }
+
+        return array_values(array_map('strval', multiselect('Plugins to activate', $plugins, scroll: 12)));
+    }
+
+    private function resolveProfile(): InstallProfile
+    {
+        $option = $this->stringOption('profile');
+
+        if ($option !== null) {
+            return InstallProfile::tryFrom($option) ?? throw new \InvalidArgumentException("Unknown profile [{$option}]. Use vps or shared.");
+        }
+
+        return app(EnvironmentProbe::class)->probe(public_path())->recommendedProfile();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function pluginOption(): array
+    {
+        $plugins = $this->stringOption('plugins');
+
+        return $plugins === null ? [] : array_values(array_filter(array_map('trim', explode(',', $plugins))));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function environmentOptions(): array
+    {
+        $values = [];
+
+        foreach (self::ENVIRONMENT_OPTIONS as $option => $envKey) {
+            $value = $this->option($option);
+
+            if (is_string($value) && $value !== '') {
+                $values[$envKey] = $value;
+            }
+        }
+
+        return $values;
+    }
+
+    private function stringOption(string $name): ?string
+    {
+        $value = $this->option($name);
+
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    private function reportStep(InstallStep $step, StepResult $result): void
+    {
+        match ($result->status) {
+            InstallStepStatus::Completed => $this->line('  <info>✓</info> ' . $step->label()),
+            InstallStepStatus::Skipped => $this->line('  <comment>–</comment> ' . $step->label() . ' <fg=gray>(' . ($result->messages[0] ?? '') . ')</>'),
+            InstallStepStatus::Failed => $this->line('  <error>✗</error> ' . $step->label() . ': ' . $result->error),
+            InstallStepStatus::Incomplete => null,
+        };
+
+        if ($result->status === InstallStepStatus::Completed) {
+            foreach ($result->messages as $message) {
+                $this->line('     <fg=gray>' . $message . '</>');
+            }
+        }
+
+        foreach ($result->warnings as $warning) {
+            $this->warn('     ! ' . $warning);
+        }
+    }
+
+    protected function displayNextSteps(InstallContext $context, InstallRunResult $result): void
+    {
+        $this->line('Next steps:');
+
+        if (! $context->migrate) {
+            $this->line('  1. Finish setup: <comment>php artisan mksine:install --migrate</comment>');
+            $this->line('  2. Check CMS info: <comment>php artisan mksine:info</comment>');
+
+            return;
+        }
+
+        $adminCreated = ($result->results['super-admin'] ?? null)?->status === InstallStepStatus::Completed;
+
+        if (! $adminCreated) {
+            $this->line('  • Create a super admin: <comment>php artisan mksine:create-super-admin</comment>');
+        }
+
+        $this->line('  • Log in at <comment>' . url('/admin') . '</comment>');
+        $this->line('  • Check CMS info: <comment>php artisan mksine:info</comment>');
     }
 
     /**
@@ -142,388 +334,6 @@ class MksineInstallCommand extends Command
             return;
         }
 
-        $this->line('  Open this link in your browser: <href='.$url.'>'.$url.'</>');
-    }
-
-    protected function publishConfigurationFiles(): void
-    {
-        $this->info('📄 Publishing configuration files (mksine, livewire, filament)...');
-
-        foreach (['mksine-config', 'mksine-livewire-config', 'mksine-filament-config'] as $tag) {
-            $this->call('vendor:publish', [
-                '--provider' => 'Miran\Mksine\MksineServiceProvider',
-                '--tag' => $tag,
-                '--force' => $this->option('force'),
-            ]);
-        }
-    }
-
-    protected function clearInstallationCaches(): void
-    {
-        $this->info('🧹 Clearing application caches...');
-
-        foreach (['optimize:clear', 'filament:optimize-clear'] as $command) {
-            try {
-                $this->call($command);
-            } catch (Throwable $exception) {
-                $this->warn("   ! {$command} failed: {$exception->getMessage()}");
-            }
-        }
-    }
-
-    protected function finalizeInstallation(bool $migrated): void
-    {
-        $this->publishFilamentAssets();
-        $this->publishPackageThemeAssets();
-
-        if (! $this->databaseIsReady()) {
-            return;
-        }
-
-        $this->generateShieldPermissions();
-        $this->discoverHooks();
-        $this->createSuperAdminIfRequested($migrated);
-    }
-
-    protected function publishFilamentAssets(): void
-    {
-        $this->info('🎨 Publishing Filament panel assets...');
-
-        try {
-            $this->call('filament:assets');
-        } catch (Throwable $exception) {
-            $this->warn('   ! filament:assets failed: '.$exception->getMessage());
-        }
-    }
-
-    protected function publishPackageThemeAssets(): void
-    {
-        $this->info('🖼 Publishing default theme assets...');
-
-        try {
-            $this->call('mks:theme-publish');
-        } catch (Throwable $exception) {
-            $this->warn('   ! mks:theme-publish failed: '.$exception->getMessage());
-        }
-    }
-
-    protected function generateShieldPermissions(): void
-    {
-        if (! class_exists(FilamentShieldServiceProvider::class)) {
-            return;
-        }
-
-        if (! $this->hasDatabaseTable('permissions')) {
-            return;
-        }
-
-        if (! $this->adminPanelIsReadyForShield()) {
-            $this->warn('   ! Skipping Shield generation — the admin panel is not ready.');
-            $this->displayShieldPrerequisites();
-
-            return;
-        }
-
-        $this->info('🛡 Generating Shield permissions and policies...');
-
-        try {
-            $exitCode = $this->call('shield:generate', [
-                '--all' => true,
-                '--panel' => 'admin',
-                '--no-interaction' => true,
-            ]);
-
-            if ($exitCode !== self::SUCCESS) {
-                $this->warn('   ! shield:generate exited with a non-zero status.');
-            }
-        } catch (Throwable $exception) {
-            $this->warn('   ! shield:generate failed: '.$exception->getMessage());
-        }
-    }
-
-    protected function discoverHooks(): void
-    {
-        if (! $this->hasDatabaseTable('mks_hooks')) {
-            return;
-        }
-
-        $this->info('🔗 Discovering hook listeners...');
-
-        try {
-            $exitCode = $this->call('mks:discover');
-
-            if ($exitCode !== self::SUCCESS) {
-                $this->warn('   ! mks:discover exited with a non-zero status.');
-            }
-        } catch (Throwable $exception) {
-            $this->warn('   ! mks:discover failed: '.$exception->getMessage());
-        }
-    }
-
-    protected function createSuperAdminIfRequested(bool $migrated): void
-    {
-        $email = $this->option('admin-email');
-        $password = $this->option('admin-password');
-        $name = $this->option('admin-name');
-
-        if (! is_string($email) || $email === '') {
-            return;
-        }
-
-        if (! is_string($password) || $password === '') {
-            $this->warn('   ! --admin-email was provided without --admin-password; skipping super admin creation.');
-
-            return;
-        }
-
-        if (! $migrated) {
-            $this->warn('   ! Super admin creation requires --migrate; run <comment>mksine:create-super-admin</comment> manually.');
-
-            return;
-        }
-
-        if (! MksineUserModelRequirements::isSatisfied()) {
-            $this->warn('   ! User model was just updated in this run and cannot be reloaded mid-process.');
-            $this->line('     Create the super admin in a fresh terminal: <comment>php artisan mksine:create-super-admin --email='.$email.' --password=******</comment>');
-
-            return;
-        }
-
-        $this->info('👤 Creating super admin user...');
-
-        $arguments = [
-            '--email' => $email,
-            '--password' => $password,
-            '--no-interaction' => true,
-        ];
-
-        if (is_string($name) && $name !== '') {
-            $arguments['--name'] = $name;
-        }
-
-        try {
-            $exitCode = $this->call('mksine:create-super-admin', $arguments);
-
-            if ($exitCode !== self::SUCCESS) {
-                $this->warn('   ! mksine:create-super-admin exited with a non-zero status.');
-            }
-        } catch (Throwable $exception) {
-            $this->warn('   ! mksine:create-super-admin failed: '.$exception->getMessage());
-        }
-    }
-
-    protected function databaseIsReady(): bool
-    {
-        return $this->hasDatabaseTable('permissions')
-            || $this->hasDatabaseTable('mks_hooks');
-    }
-
-    protected function adminPanelIsReadyForShield(): bool
-    {
-        try {
-            return Filament::getPanel('admin')->hasPlugin('mksine');
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
-    protected function displayShieldPrerequisites(): void
-    {
-        $this->line('     Register MKSine on the Filament panel first, then run:');
-        $this->line('       <comment>php artisan shield:generate --all --panel=admin</comment>');
-        $this->newLine();
-        $this->line('     Prerequisites:');
-        $this->line('       1. <comment>php artisan filament:install --panels</comment> (or <comment>make:filament-panel admin</comment>)');
-        $this->line('       2. Add <comment>MksinePlugin::make()</comment> to <comment>app/Providers/Filament/AdminPanelProvider.php</comment>');
-        $this->line('       3. Remove <comment>Route::get(\'/\', …)</comment> from <comment>routes/web.php</comment> (MKSine registers <comment>home</comment> at <comment>/</comment>)');
-        $this->line('       4. Re-run <comment>php artisan mksine:install --migrate</comment> or run <comment>shield:generate --all</comment> manually');
-    }
-
-    protected function hasDatabaseTable(string $table): bool
-    {
-        try {
-            return Schema::hasTable($table);
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
-    protected function displayNextSteps(bool $migrated): void
-    {
-        $this->line('Next steps:');
-
-        if (! $migrated) {
-            $this->line('  1. Finish setup: <comment>php artisan mksine:install --migrate</comment>');
-            $this->line('  2. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>');
-            $this->line('  3. (Optional) Review <comment>config/mksine.php</comment>.');
-            $this->line('  4. Check CMS info: <comment>php artisan mksine:info</comment>');
-
-            return;
-        }
-
-        $adminEmail = $this->option('admin-email');
-        $adminPassword = $this->option('admin-password');
-        $adminCreated = is_string($adminEmail) && $adminEmail !== ''
-            && is_string($adminPassword) && $adminPassword !== '';
-
-        $step = 1;
-
-        if (! MksineUserModelRequirements::isSatisfied()) {
-            $this->line("  {$step}. Fix user model: <comment>php artisan mksine:install --force</comment> (or add HasRoles + HasPanelShield manually)");
-            $step++;
-        }
-
-        if (! $adminCreated) {
-            if ($migrated && ! $this->adminPanelIsReadyForShield()) {
-                $this->line("  {$step}. Register <comment>MksinePlugin::make()</comment> on the admin panel (see installation docs).");
-                $step++;
-                $this->line("  {$step}. Generate permissions: <comment>php artisan shield:generate --all --panel=admin</comment>");
-                $step++;
-            }
-
-            $this->line("  {$step}. Create a super admin: <comment>php artisan mksine:create-super-admin</comment>");
-            $this->line('     Or pass <comment>--admin-email</comment> and <comment>--admin-password</comment> on install.');
-            $step++;
-            $this->line("  {$step}. (Optional) Review <comment>config/mksine.php</comment> — defaults work without extra .env keys.");
-            $step++;
-            $this->line("  {$step}. Check CMS info: <comment>php artisan mksine:info</comment>");
-
-            return;
-        }
-
-        $this->line('  1. Log in at <comment>/admin</comment> with the super admin you created.');
-        $this->line('  2. (Optional) Review <comment>config/mksine.php</comment>.');
-        $this->line('  3. Check CMS info: <comment>php artisan mksine:info</comment>');
-    }
-
-    /**
-     * Publish Filament Shield and Spatie Permission config + migrations (roles/permissions tables).
-     *
-     * Filament Shield does not ship its own migrations; it relies on spatie/laravel-permission.
-     * Mirrors the non-interactive parts of `php artisan shield:setup`.
-     */
-    protected function publishShieldAuthorization(): void
-    {
-        if (! class_exists(FilamentShieldServiceProvider::class)) {
-            $this->warn('🛡 Filament Shield is not installed; skipping Shield/permission publish.');
-
-            return;
-        }
-
-        $force = (bool) $this->option('force');
-
-        $this->info('🛡 Publishing Filament Shield & permission files...');
-
-        if (! File::exists(config_path('filament-shield.php')) || $force) {
-            $this->call('vendor:publish', [
-                '--tag' => 'filament-shield-config',
-                '--force' => $force,
-            ]);
-        } else {
-            $this->line('   ✓ config/filament-shield.php already exists, skipping.');
-        }
-
-        if (! File::exists(config_path('permission.php')) || $force) {
-            $this->call('vendor:publish', [
-                '--tag' => 'permission-config',
-                '--force' => $force,
-            ]);
-        } else {
-            $this->line('   ✓ config/permission.php already exists, skipping.');
-        }
-
-        $this->call('vendor:publish', [
-            '--tag' => 'permission-migrations',
-            '--force' => $force,
-        ]);
-
-        $this->info('   ✓ Shield authorization migrations published.');
-    }
-
-    /**
-     * Ensure app/Models/User.php satisfies MKSine/Shield requirements.
-     *
-     * Every Laravel app ships an App\Models\User, so we patch it in place (adding the
-     * FilamentUser contract + InteractsWithMksine trait) instead of overwriting it. Only
-     * when no User model exists do we publish the package's own.
-     */
-    protected function publishUserModel(): void
-    {
-        $targetPath = app_path('Models/User.php');
-
-        if (File::exists($targetPath)) {
-            $this->configureExistingUserModel($targetPath);
-
-            return;
-        }
-
-        $this->publishPackageUserModel($targetPath);
-    }
-
-    protected function configureExistingUserModel(string $targetPath): void
-    {
-        $this->info('👤 Configuring app/Models/User.php for MKSine...');
-
-        // Patch via file inspection only — do NOT call class reflection here, otherwise we
-        // would autoload the stale User class before the patch lands in the same process.
-        $result = (new UserModelPatcher($targetPath))->patch();
-
-        match ($result) {
-            UserModelPatcher::RESULT_PATCHED => $this->info('   ✓ Added FilamentUser + InteractsWithMksine to your User model (backup created).'),
-            UserModelPatcher::RESULT_ALREADY => $this->line('   ✓ User model already configured.'),
-            default => $this->warnManualUserModelSteps(),
-        };
-    }
-
-    protected function publishPackageUserModel(string $targetPath): void
-    {
-        $this->info('👤 Publishing User model to app/Models/User.php...');
-
-        $sourcePath = dirname(__DIR__).'/Models/User.php';
-        if (! File::exists($sourcePath)) {
-            $this->warn('   Package User model not found, skipping.');
-
-            return;
-        }
-
-        $targetDir = dirname($targetPath);
-        if (! File::isDirectory($targetDir)) {
-            File::makeDirectory($targetDir, 0755, true);
-        }
-
-        $content = File::get($sourcePath);
-        $content = str_replace('namespace Miran\Mksine\Models;', 'namespace App\Models;', $content);
-
-        File::put($targetPath, $content);
-        $this->info('   ✓ User model published.');
-    }
-
-    protected function warnManualUserModelSteps(): void
-    {
-        $this->newLine();
-        $this->warn('⚠ Could not automatically patch app/Models/User.php.');
-        $this->line('Add these manually so the admin menu (Shield) works:');
-        $this->line('   <comment>use Filament\Models\Contracts\FilamentUser;</comment>');
-        $this->line('   <comment>use Miran\Mksine\Concerns\InteractsWithMksine;</comment>');
-        $this->line('   <comment>class User extends Authenticatable implements FilamentUser { use InteractsWithMksine; }</comment>');
-        $this->line('See <comment>docs/guides/auth/user-subclass.md</comment> in the package.');
-    }
-
-    protected function validateUserModelForMksine(): void
-    {
-        $missing = MksineUserModelRequirements::missingRequirements();
-
-        if ($missing === []) {
-            return;
-        }
-
-        $this->newLine();
-        $this->warn('⚠ Your user model is still missing requirements for Filament Shield navigation:');
-        foreach ($missing as $requirement) {
-            $this->line("   - {$requirement}");
-        }
-        $this->newLine();
-        $this->line('Without these, only the dashboard appears in the admin menu.');
-        $this->warnManualUserModelSteps();
+        $this->line('  Open this link in your browser: <href=' . $url . '>' . $url . '</>');
     }
 }

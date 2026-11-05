@@ -14,6 +14,7 @@ use Miran\Mksine\Filament\Pages\ConsoleTerminal;
 use Miran\Mksine\Filament\Pages\Languages;
 use Miran\Mksine\Filament\Pages\ManagePlugins;
 use Miran\Mksine\Filament\Pages\MksineDashboard;
+use Miran\Mksine\Filament\Pages\SystemHealth;
 use Miran\Mksine\Filament\Pages\SystemUpdate;
 use Miran\Mksine\Filament\Pages\ThemeManager;
 use Miran\Mksine\Filament\Resources\Categories\CategoryResource;
@@ -31,7 +32,7 @@ use Miran\Mksine\Filament\Support\AdminMenu\MksineNavigationManager;
 use Miran\Mksine\Filament\Support\AdminNavigationGroup;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 
-require_once __DIR__ . '/AdminMenuTestHelpers.php';
+require_once __DIR__.'/AdminMenuTestHelpers.php';
 
 uses(RefreshDatabase::class);
 
@@ -100,7 +101,7 @@ test('without overrides the core cms menu keeps its groups, items and order', fu
         ->and($core[''])->toBe([MksineDashboard::class, ManagePlugins::class, SettingsCluster::class])
         ->and($core['media'])->toBe([
             MediaResource::class,
-            MediaResource::class . '@create',
+            MediaResource::class.'@create',
         ])
         ->and($core['content'])->toBe([
             PostResource::class,
@@ -124,7 +125,7 @@ test('without overrides the core cms menu keeps its groups, items and order', fu
             GeoStateResource::class,
             ConsoleTerminal::class,
         ])
-        ->and($core['system'])->toBe([SystemUpdate::class]);
+        ->and($core['system'])->toBe([SystemHealth::class, SystemUpdate::class]);
 });
 
 test('plugins filter navigation groups through the mksine hook', function (): void {
@@ -151,7 +152,7 @@ test('stored overrides run after the plugin filter', function (): void {
     Hooks::addFilter(MksineNavigationManager::GROUPS_FILTER, function (array $groups): array {
         foreach ($groups as $group) {
             foreach (collect($group->getItems())->all() as $item) {
-                $item->label('Filtered ' . $item->getLabel());
+                $item->label('Filtered '.$item->getLabel());
             }
         }
 

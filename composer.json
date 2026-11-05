@@ -23,11 +23,24 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-ctype": "*",
+        "ext-curl": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-pdo": "*",
+        "ext-tokenizer": "*",
+        "ext-xml": "*",
+        "ext-zip": "*",
         "filament/filament": "^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.15.0",
         "bezhansalleh/filament-shield": "^4.1.0",
         "bezhansalleh/filament-language-switch": "^5.0",
         "codewithdennis/filament-select-tree": "^4.0"
+    },
+    "suggest": {
+        "ext-intl": "Locale-aware date and number formatting",
+        "ext-sodium": "Verifying signed marketplace releases"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",

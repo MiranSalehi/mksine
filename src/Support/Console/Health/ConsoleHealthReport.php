@@ -50,14 +50,7 @@ final class ConsoleHealthReport
     private function scheduler(): array
     {
         $lastRun = SchedulerMonitor::lastHeartbeat();
-        $age = $lastRun?->diffInSeconds(now(), true);
-
-        $status = match (true) {
-            $age === null => 'down',
-            $age <= SchedulerMonitor::HEALTHY_WITHIN_SECONDS => 'healthy',
-            $age <= SchedulerMonitor::LATE_WITHIN_SECONDS => 'late',
-            default => 'down',
-        };
+        $status = self::schedulerStatus($lastRun);
 
         $tasks = $this->scheduledTasks();
         $nextTask = collect($tasks)->sortBy('next_run_at')->first();
@@ -70,6 +63,31 @@ final class ConsoleHealthReport
             'next_task' => $nextTask,
             'cron_line' => sprintf('* * * * * cd %s && php artisan schedule:run >> /dev/null 2>&1', base_path()),
         ];
+    }
+
+    /**
+     * healthy, late or down, from the last `schedule:run` heartbeat.
+     */
+    public static function schedulerStatus(?CarbonImmutable $lastRun): string
+    {
+        $age = $lastRun?->diffInSeconds(now(), true);
+
+        return match (true) {
+            $age === null => 'down',
+            $age <= SchedulerMonitor::HEALTHY_WITHIN_SECONDS => 'healthy',
+            $age <= SchedulerMonitor::LATE_WITHIN_SECONDS => 'late',
+            default => 'down',
+        };
+    }
+
+    /**
+     * Queue connection, backlog and failed-job counts, without the slower scheduler and process checks.
+     *
+     * @return array<string, mixed>
+     */
+    public function queueSnapshot(): array
+    {
+        return $this->queue();
     }
 
     /**

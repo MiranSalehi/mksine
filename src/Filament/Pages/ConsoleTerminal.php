@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use InvalidArgumentException;
 use Livewire\Attributes\Renderless;
+use Miran\Mksine\Core\Install\Environment\EnvironmentProbe;
 use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Models\ConsoleLog;
@@ -96,12 +97,16 @@ class ConsoleTerminal extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return SuperAdminGate::check();
+        return static::canAccess();
     }
 
+    /**
+     * The terminal runs commands in child processes, so it is hidden where proc_open is
+     * disabled (typical on shared hosting).
+     */
     public static function canAccess(): bool
     {
-        return SuperAdminGate::check();
+        return SuperAdminGate::check() && app(EnvironmentProbe::class)->functionAvailable('proc_open');
     }
 
     public function getTitle(): string

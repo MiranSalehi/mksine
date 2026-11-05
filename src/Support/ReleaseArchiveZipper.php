@@ -10,12 +10,15 @@ use ZipArchive;
 class ReleaseArchiveZipper
 {
     /**
-     * Create a zip of $projectRoot applying {@see ReleaseArchiveBuildRoots::shouldIncludeInZip}.
+     * Create a zip of $projectRoot applying {@see ReleaseArchiveBuildRoots::shouldIncludeInZip}
+     * and the layout in {@see ReleaseArchiveOptions}.
      *
      * @throws \RuntimeException
      */
-    public static function createArchive(string $projectRoot, string $zipAbsolutePath): void
+    public static function createArchive(string $projectRoot, string $zipAbsolutePath, ?ReleaseArchiveOptions $options = null): void
     {
+        $options ??= new ReleaseArchiveOptions;
+
         $projectRootReal = realpath($projectRoot);
         if ($projectRootReal === false) {
             throw new \RuntimeException("Project root not found: {$projectRoot}");
@@ -68,7 +71,7 @@ class ReleaseArchiveZipper
 
             $relative = substr($normalizedFile, strlen($rootPrefix));
 
-            if (! ReleaseArchiveBuildRoots::shouldIncludeInZip($relative)) {
+            if (! ReleaseArchiveBuildRoots::shouldIncludeInZip($relative, $options->includeExtensions)) {
                 continue;
             }
 
@@ -76,10 +79,28 @@ class ReleaseArchiveZipper
                 continue;
             }
 
-            if (! $zip->addFile($pathname, $relative)) {
+            if (in_array($relative, $options->replacedRelativePaths(), true)) {
+                continue;
+            }
+
+            $entryName = $options->entryName($relative);
+
+            if ($entryName === null) {
+                continue;
+            }
+
+            if (! $zip->addFile($pathname, $entryName)) {
                 $zip->close();
                 unlink($zipAbsolutePath);
                 throw new \RuntimeException("Failed adding file to zip: {$relative}");
+            }
+        }
+
+        foreach ($options->generatedFiles($projectRootReal) as $entryName => $contents) {
+            if (! $zip->addFromString($entryName, $contents)) {
+                $zip->close();
+                unlink($zipAbsolutePath);
+                throw new \RuntimeException("Failed adding file to zip: {$entryName}");
             }
         }
 
