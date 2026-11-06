@@ -14,7 +14,7 @@ use Closure;
  */
 final class RequirementsChecker
 {
-    public const MINIMUM_PHP_VERSION = '8.2.0';
+    public const MINIMUM_PHP_VERSION = '8.4.0';
 
     /** @var list<string> */
     public const REQUIRED_EXTENSIONS = ['ctype', 'curl', 'fileinfo', 'mbstring', 'openssl', 'pdo', 'tokenizer', 'xml', 'zip'];

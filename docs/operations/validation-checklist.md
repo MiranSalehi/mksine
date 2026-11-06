@@ -10,7 +10,7 @@ Use this after [Installation](../01-installation.md), after an upgrade, or when 
 
 ## Environment
 
-- [ ] PHP version matches the package constraint (`^8.2`).
+- [ ] PHP version matches the package constraint (`^8.4`).
 - [ ] Laravel and Filament versions match the host app’s declared constraints.
 - [ ] Database reachable; `php artisan migrate` succeeds for the core app.
 - [ ] `php artisan mksine:info` runs without errors (lists package version and active feature flags).

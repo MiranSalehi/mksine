@@ -37,6 +37,28 @@ final class ReleaseSkeleton
         'routes', 'storage', 'vendor', 'artisan', 'composer.json', '.env.example',
     ];
 
+    /**
+     * Plugins (folder names under plugins_path) packed into public releases: the ones
+     * published on mksine.com/marketplace. A plugin that is not listed never reaches a
+     * download, so a new or private plugin (ecom, mks-booking, mks-notification) cannot leak.
+     * Add a plugin here only when it is published.
+     *
+     * @var list<string>
+     */
+    public const PUBLISHED_PLUGINS = [
+        'mks-ai',
+        'mks-analytics',
+        'mks-automations',
+        'mks-backup',
+        'mks-content-types',
+        'mks-custom-fields',
+        'mks-developer-tools',
+        'mks-import-export',
+        'mks-mail',
+        'mks-membership',
+        'mks-redirects',
+    ];
+
     /** Environment variables kept for child processes; everything else is removed. */
     private const INHERITED_ENVIRONMENT = [
         'PATH', 'HOME', 'USER', 'LOGNAME', 'SHELL', 'TMPDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL',
@@ -46,6 +68,7 @@ final class ReleaseSkeleton
     /**
      * @param  list<string>  $composer  Composer argv prefix ({@see ComposerBinary::argv()}).
      * @param  Closure(string): void  $log
+     * @param  list<string>  $plugins  Plugin folders to pack ({@see self::releasePlugins()}).
      */
     public function __construct(
         private readonly string $packagePath,
@@ -55,7 +78,32 @@ final class ReleaseSkeleton
         private readonly string $version,
         private readonly Closure $log,
         private readonly string $laravelConstraint = self::LARAVEL_CONSTRAINT,
+        private readonly array $plugins = [],
     ) {}
+
+    /**
+     * The plugins to pack, checked to exist in the plugins folder.
+     *
+     * @return list<string>
+     *
+     * @throws RuntimeException When the list is empty, malformed or names a missing plugin.
+     */
+    public static function releasePlugins(string $pluginsPath, mixed $configured = self::PUBLISHED_PLUGINS): array
+    {
+        $plugins = is_array($configured) ? array_values(array_unique(array_filter($configured, 'is_string'))) : [];
+
+        if ($plugins === []) {
+            throw new RuntimeException('No release plugins are listed.');
+        }
+
+        foreach ($plugins as $plugin) {
+            if (preg_match('/^[A-Za-z0-9._-]+$/', $plugin) !== 1 || in_array($plugin, ['.', '..'], true) || ! is_file($pluginsPath . '/' . $plugin . '/plugin.php')) {
+                throw new RuntimeException("Release plugin \"{$plugin}\" was not found in {$pluginsPath}.");
+            }
+        }
+
+        return $plugins;
+    }
 
     public function build(): void
     {
@@ -83,8 +131,14 @@ final class ReleaseSkeleton
         ($this->log)('Running the MKSine file setup…');
         $this->artisan(['mksine:install', '--no-interaction', '--profile=shared']);
 
-        ($this->log)('Adding the official plugins…');
-        self::copyFiltered($this->pluginsPath, $this->stagingPath . '/plugins', self::shouldCopyPluginPath(...));
+        ($this->log)('Adding the published plugins: ' . implode(', ', $this->plugins) . '…');
+        foreach ($this->plugins as $plugin) {
+            self::copyFiltered(
+                $this->pluginsPath . '/' . $plugin,
+                $this->stagingPath . '/plugins/' . $plugin,
+                fn (string $relativePath): bool => self::shouldCopyPluginPath($plugin . '/' . $relativePath),
+            );
+        }
         // Plugin discovery was cached (bootstrap/cache) before the plugins existed.
         $this->artisan(['mks-plugin:discover']);
         $this->artisan(['mks-plugin:publish']);
@@ -222,6 +276,7 @@ final class ReleaseSkeleton
     {
         $composer = $this->readComposerJson();
         $composer['repositories'] = [['type' => 'path', 'url' => './packages/mksine', 'options' => ['symlink' => false, 'versions' => ['miran/mksine' => $this->version]]]];
+        $composer['require']['php'] = '^8.4';
         $composer['require']['miran/mksine'] = $this->version;
         $this->writeComposerJson($composer);
     }

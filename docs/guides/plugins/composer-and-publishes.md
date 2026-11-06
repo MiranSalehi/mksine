@@ -22,7 +22,7 @@ The scaffolded file:
     "type": "mks-plugin",
     "license": "MIT",
     "require": {
-        "php": "^8.2"
+        "php": "^8.4"
     },
     "autoload": {
         "psr-4": {

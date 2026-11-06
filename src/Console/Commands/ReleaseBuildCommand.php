@@ -18,8 +18,8 @@ use Miran\Mksine\Support\ReleaseSkeleton;
 use Throwable;
 
 /**
- * Builds a public release from a clean Laravel application with MKSine and the official
- * plugins — never from the maintainer's own project — and writes the shared-hosting and
+ * Builds a public release from a clean Laravel application with MKSine and the published
+ * plugins ({@see ReleaseSkeleton::PUBLISHED_PLUGINS}) — never from the maintainer's own project — and writes the shared-hosting and
  * server zips, the quick installer (mksine.php), SHA256SUMS and release.json.
  */
 class ReleaseBuildCommand extends Command
@@ -44,8 +44,23 @@ class ReleaseBuildCommand extends Command
             return self::FAILURE;
         }
 
+        $pluginsPath = ReleaseArchiveBuildRoots::pluginsPath($basePath);
+
+        try {
+            $plugins = ReleaseSkeleton::releasePlugins($pluginsPath);
+        } catch (Throwable $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
         if (! $this->option('skip-build')) {
-            $error = ReleaseAssetBuilder::build($basePath, ReleaseArchiveBuildRoots::discoverForRelease($basePath), fn (string $line) => $this->output->write($line));
+            // Only the package and the published plugins are built.
+            $roots = array_values(array_filter(
+                ReleaseArchiveBuildRoots::discoverForRelease($basePath),
+                fn (string $root): bool => dirname($root) !== rtrim($pluginsPath, '/\\') || in_array(basename($root), $plugins, true),
+            ));
+            $error = ReleaseAssetBuilder::build($basePath, $roots, fn (string $line) => $this->output->write($line));
 
             if ($error !== null) {
                 $this->error($error);
@@ -59,12 +74,13 @@ class ReleaseBuildCommand extends Command
         try {
             (new ReleaseSkeleton(
                 packagePath: $basePath . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'mksine',
-                pluginsPath: ReleaseArchiveBuildRoots::pluginsPath($basePath),
+                pluginsPath: $pluginsPath,
                 stagingPath: $stagingPath,
                 composer: $composer,
                 version: $version,
                 log: fn (string $message) => $this->info($message),
                 laravelConstraint: (string) $this->option('laravel'),
+                plugins: $plugins,
             ))->build();
 
             $outputDirectory = $this->outputDirectory($version);

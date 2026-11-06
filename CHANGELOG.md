@@ -8,6 +8,17 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.23.2 - 2026-11-06
+
+### Security
+
+- **Unpublished plugins were in the release zips.** 1.22.0 to 1.23.1 packed every folder under `plugins/`, including the unpublished `ecom`, `mks-booking` and `mks-notification`. `mks:release-build` now packs only the published plugins in `ReleaseSkeleton::PUBLISHED_PLUGINS` and stops if one is missing. Delete the zips of earlier releases from GitHub.
+
+### Changed
+
+- **The web installer no longer offers a theme or plugins.** It activates the default theme; plugins are turned on later in the admin panel.
+- **PHP 8.4 or newer is required** (was 8.2). `composer.json`, the installer's requirement check, the quick installer, `release.json`, new plugin scaffolds and the install guides say 8.4.
+
 ## 1.23.1 - 2026-11-06
 
 ### Changed

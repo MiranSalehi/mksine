@@ -10,7 +10,7 @@ MKSine is a **Filament 4 / 5** CMS package. You need a working Laravel applicati
 
 ## Requirements
 
-- PHP **8.2** or newer (`packages/mksine/composer.json` enforces `^8.2`).
+- PHP **8.4** or newer (`packages/mksine/composer.json` enforces `^8.4`).
 - Laravel **11+** with a relational database (MySQL 5.7+, PostgreSQL 10+, or SQLite 3.8+). For **Filament 5**, Laravel **11.28+**, Livewire **4**, and Tailwind CSS **4**.
 - **Filament 4 or 5** — installed via `miran/mksine` (`filament/filament: ^4.0|^5.0`) and bootstrapped with a panel provider.
 - Node 18+ if you intend to build plugin or theme assets locally (production deploys can ship pre-built assets — see [Operations: Release archive](operations/release-archive.md)).

@@ -10,7 +10,7 @@ There are two kinds of archive:
 
 | Kind | Command | Contains | Use it for |
 | ---- | ------- | -------- | ---------- |
-| **Full** (default) | `mks:release-archive` | Core, all plugins, all themes | A fresh install. The built-in web installer (`/install`) asks which plugins to activate. |
+| **Full** (default) | `mks:release-archive` | Core, all plugins, all themes | A fresh install. Plugins are activated later in the admin panel. |
 | **Core only** | `mks:release-archive --core-only` | Core application only; plugins and themes are left out | Updating an existing site. Plugins and themes update through the [ZIP updater](zip-updater.md). |
 
 ## Publishing a release
@@ -26,7 +26,7 @@ A public release is **not** a zip of your own project. `mks:release-build` build
 1. `composer create-project laravel/laravel` (`--laravel`, default `^12.0`).
 2. A copy of this package without docs, tests, build tooling or theme sources, installed as a path repository with `composer update --no-dev`.
 3. `filament:install --panels` and the file steps of `mksine:install` (user model, `MksinePlugin` on the panel, config, migrations, translations, assets).
-4. The plugins from `config('mksine.plugins_path')`, without `node_modules`, docs, tests, build files or stray archives, and their published assets.
+4. Only the **published** plugins listed in `ReleaseSkeleton::PUBLISHED_PLUGINS` (folders under `config('mksine.plugins_path')`), without `node_modules`, docs, tests, build files or stray archives, and their published assets. A plugin that is not listed never reaches a download; add it to the list only when it is published. The build stops if a listed plugin is missing.
 5. Cleanup: READMEs, changelogs and doc folders are stripped from `vendor/`; `composer.json` points at `https://github.com/MiranSalehi/mksine` with `^{version}` so a server with Composer can update later; `composer.lock` is not shipped.
 
 Only `app`, `bootstrap`, `config`, `database`, `lang`, `plugins`, `public`, `resources`, `routes`, `storage`, `vendor`, `artisan`, `composer.json` and `.env.example` are packed. Your project's own code, themes, `.env`, editor and AI-tool folders never reach a release. Every command in the build runs with a clean environment, so the maintainer's `APP_*` and `DB_*` settings do not leak in. It needs Composer and network access; `--skip-build` skips the npm builds of the package and plugins, and `--keep-staging` keeps the temporary application for inspection.

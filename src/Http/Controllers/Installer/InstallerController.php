@@ -26,10 +26,6 @@ use Miran\Mksine\Core\Install\Steps\ConfigureRuntimeStep;
 use Miran\Mksine\Core\Install\Web\InstallerHandoff;
 use Miran\Mksine\Core\Install\Web\InstallerOwnership;
 use Miran\Mksine\Core\Install\Web\SetupToken;
-use Miran\Mksine\Core\Plugins\PluginManager;
-use Miran\Mksine\Core\Plugins\PluginManifest;
-use Miran\Mksine\Core\Theme\ThemeData;
-use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Http\Middleware\Installer\PrepareInstallerRequest;
 use Throwable;
 
@@ -197,7 +193,11 @@ class InstallerController extends Controller
         return redirect()->route('mksine.installer.site');
     }
 
-    public function site(Request $request, ThemeManager $themes): View | RedirectResponse
+    /**
+     * Site and admin account. The default theme is activated and no plugin is: plugins are
+     * turned on later in the admin panel.
+     */
+    public function site(Request $request): View | RedirectResponse
     {
         if (! $request->session()->get(self::DATABASE_CONFIGURED)) {
             return redirect()->route('mksine.installer.database');
@@ -206,8 +206,6 @@ class InstallerController extends Controller
         $site = (array) $request->session()->get(self::SITE, []);
 
         return view('mksine::installer.site', [
-            'themes' => $this->themeOptions($themes),
-            'plugins' => $this->pluginOptions(),
             // Sample content is generated with Faker, which production (--no-dev) builds leave out.
             'sampleContentAvailable' => class_exists(Factory::class),
             'defaults' => [
@@ -216,14 +214,12 @@ class InstallerController extends Controller
                 'locale' => $site['locale'] ?? app()->getLocale(),
                 'admin_name' => $site['admin_name'] ?? '',
                 'admin_email' => $site['admin_email'] ?? '',
-                'theme' => $site['theme'] ?? ($themes->getDefault()?->identifier),
-                'plugins' => $site['plugins'] ?? [],
                 'sample_content' => $site['sample_content'] ?? false,
             ],
         ]);
     }
 
-    public function storeSite(Request $request, ThemeManager $themes): RedirectResponse
+    public function storeSite(Request $request): RedirectResponse
     {
         if (! $request->session()->get(self::DATABASE_CONFIGURED)) {
             return redirect()->route('mksine.installer.database');
@@ -236,9 +232,6 @@ class InstallerController extends Controller
             'admin_name' => ['required', 'string', 'max:120'],
             'admin_email' => ['required', 'email', 'max:255'],
             'admin_password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
-            'theme' => ['nullable', Rule::in(array_keys($this->themeOptions($themes)))],
-            'plugins' => ['array'],
-            'plugins.*' => [Rule::in(array_keys($this->pluginOptions()))],
             'sample_content' => ['boolean'],
         ]);
 
@@ -267,8 +260,6 @@ class InstallerController extends Controller
             'admin_name' => $validated['admin_name'],
             'admin_email' => $validated['admin_email'],
             'admin_password' => Crypt::encryptString($validated['admin_password']),
-            'theme' => $validated['theme'] ?? null,
-            'plugins' => array_values($validated['plugins'] ?? []),
             'sample_content' => (bool) ($validated['sample_content'] ?? false),
         ]);
 
@@ -347,8 +338,6 @@ class InstallerController extends Controller
             adminName: $site['admin_name'] ?? null,
             adminEmail: $site['admin_email'] ?? null,
             adminPassword: isset($site['admin_password']) ? Crypt::decryptString((string) $site['admin_password']) : null,
-            theme: $site['theme'] ?? null,
-            plugins: $site['plugins'] ?? [],
             locale: $site['locale'] ?? null,
             seedSampleContent: (bool) ($site['sample_content'] ?? false),
         );
@@ -408,38 +397,6 @@ class InstallerController extends Controller
         }
 
         return null;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function themeOptions(ThemeManager $themes): array
-    {
-        try {
-            return $themes->discover()
-                ->mapWithKeys(fn (ThemeData $theme): array => [$theme->identifier => $theme->name])
-                ->all();
-        } catch (Throwable) {
-            return [];
-        }
-    }
-
-    /**
-     * @return array<string, array{name: string, description: string}>
-     */
-    private function pluginOptions(): array
-    {
-        try {
-            return collect(app(PluginManager::class)->discover())
-                ->mapWithKeys(fn (PluginManifest $manifest): array => [$manifest->id() => [
-                    'name' => $manifest->name(),
-                    'description' => (string) $manifest->description(),
-                ]])
-                ->sortBy('name')
-                ->all();
-        } catch (Throwable) {
-            return [];
-        }
     }
 
     private function environment(): EnvironmentFileEditor

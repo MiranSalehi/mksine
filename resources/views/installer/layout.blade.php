@@ -51,9 +51,6 @@
         ul.progress li .detail { color: var(--muted); font-size: 13px; }
         .bar { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; margin: 6px 0 16px; border: 1px solid var(--border); }
         .bar span { display: block; height: 100%; width: 0; background: var(--primary); transition: width .3s; }
-        .plugins { columns: 2; column-gap: 24px; }
-        @media (max-width: 560px) { .plugins { columns: 1; } }
-        .plugins .check { break-inside: avoid; }
     </style>
 </head>
 <body>

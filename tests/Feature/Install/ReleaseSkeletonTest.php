@@ -136,3 +136,29 @@ it('gives child processes a clean environment without the maintainer settings', 
         ->and($environment)->not->toHaveKey('PATH')
         ->and($environment)->not->toHaveKey('HOME');
 });
+
+it('releases only published plugins', function (): void {
+    expect(ReleaseSkeleton::PUBLISHED_PLUGINS)->not->toContain('ecom')
+        ->and(ReleaseSkeleton::PUBLISHED_PLUGINS)->not->toContain('mks-booking')
+        ->and(ReleaseSkeleton::PUBLISHED_PLUGINS)->not->toContain('mks-notification');
+
+    foreach (['mks-redirects', 'ecom'] as $plugin) {
+        (new Filesystem)->ensureDirectoryExists($this->tmp . '/plugins/' . $plugin);
+        file_put_contents($this->tmp . '/plugins/' . $plugin . '/plugin.php', '<?php');
+    }
+
+    expect(ReleaseSkeleton::releasePlugins($this->tmp . '/plugins', ['mks-redirects']))->toBe(['mks-redirects'])
+        ->and(fn () => ReleaseSkeleton::releasePlugins($this->tmp . '/plugins', ['mks-redirects', 'mks-missing']))->toThrow(RuntimeException::class, 'mks-missing')
+        ->and(fn () => ReleaseSkeleton::releasePlugins($this->tmp . '/plugins', ['../plugins/ecom']))->toThrow(RuntimeException::class)
+        ->and(fn () => ReleaseSkeleton::releasePlugins($this->tmp . '/plugins', []))->toThrow(RuntimeException::class);
+});
+
+it('finds every published plugin in this project', function (): void {
+    $pluginsPath = base_path('plugins');
+
+    if (! is_dir($pluginsPath)) {
+        $this->markTestSkipped('No plugins folder in this application.');
+    }
+
+    expect(ReleaseSkeleton::releasePlugins($pluginsPath))->toBe(ReleaseSkeleton::PUBLISHED_PLUGINS);
+});

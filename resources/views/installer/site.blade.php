@@ -46,43 +46,20 @@
             </div>
         </div>
 
-        <div class="card">
-            <h2>{{ __('mksine::install.web.extensions_heading') }}</h2>
-
-            @if ($themes !== [])
-                <label for="theme">{{ __('mksine::install.web.theme') }}</label>
-                <select id="theme" name="theme">
-                    @foreach ($themes as $identifier => $name)
-                        <option value="{{ $identifier }}" @selected(old('theme', $defaults['theme']) === $identifier)>{{ $name }}</option>
-                    @endforeach
-                </select>
-            @endif
-
-            @if ($plugins !== [])
-                <h3>{{ __('mksine::install.web.plugins') }} <span class="hint">{{ __('mksine::install.web.plugins_hint') }}</span></h3>
-                <div class="plugins">
-                    @foreach ($plugins as $id => $plugin)
-                        <label class="check">
-                            <input type="checkbox" name="plugins[]" value="{{ $id }}" @checked(in_array($id, old('plugins', $defaults['plugins']), true))>
-                            <span>{{ $plugin['name'] }} @if ($plugin['description'] !== '')<br><span class="hint">{{ $plugin['description'] }}</span>@endif</span>
-                        </label>
-                    @endforeach
-                </div>
-            @endif
-
-            @if ($sampleContentAvailable)
-                <h3>{{ __('mksine::install.web.sample_content_heading') }}</h3>
+        @if ($sampleContentAvailable)
+            <div class="card">
+                <h2>{{ __('mksine::install.web.sample_content_heading') }}</h2>
                 <input type="hidden" name="sample_content" value="0">
                 <label class="check">
                     <input type="checkbox" name="sample_content" value="1" @checked(old('sample_content', $defaults['sample_content']))>
                     <span>{{ __('mksine::install.web.sample_content') }}</span>
                 </label>
-            @endif
-
-            <div class="actions">
-                <a class="btn secondary" href="{{ route('mksine.installer.database') }}">{{ __('mksine::install.web.back') }}</a>
-                <button type="submit" class="btn">{{ __('mksine::install.web.continue') }}</button>
             </div>
+        @endif
+
+        <div class="actions">
+            <a class="btn secondary" href="{{ route('mksine.installer.database') }}">{{ __('mksine::install.web.back') }}</a>
+            <button type="submit" class="btn">{{ __('mksine::install.web.continue') }}</button>
         </div>
     </form>
 @endsection

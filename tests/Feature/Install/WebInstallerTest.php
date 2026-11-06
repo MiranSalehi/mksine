@@ -105,8 +105,6 @@ function completeInstallerForms(): void
             'admin_name' => 'Owner',
             'admin_email' => 'owner@shop.test',
             'admin_password' => Crypt::encryptString('password123'),
-            'theme' => 'mksine',
-            'plugins' => [],
             'sample_content' => false,
         ],
     ]);
@@ -252,7 +250,11 @@ it('saves the site, writes production settings and never keeps the plain admin p
     becomeInstallerOwner();
     $this->withSession(['mksine_installer.database_configured' => true]);
 
-    $this->get('/install/site')->assertOk()->assertSee('name="admin_email"', escape: false);
+    $this->get('/install/site')
+        ->assertOk()
+        ->assertSee('name="admin_email"', escape: false)
+        ->assertDontSee('name="theme"', escape: false)
+        ->assertDontSee('name="plugins[]"', escape: false);
 
     $this->post('/install/site', [
         'site_name' => 'My Shop',
@@ -262,7 +264,7 @@ it('saves the site, writes production settings and never keeps the plain admin p
         'admin_email' => 'owner@shop.test',
         'admin_password' => 'password123',
         'admin_password_confirmation' => 'password123',
-        'theme' => 'mksine',
+        'plugins' => ['ecom'],
         'sample_content' => '0',
     ])->assertRedirect(route('mksine.installer.run'));
 
@@ -272,13 +274,15 @@ it('saves the site, writes production settings and never keeps the plain admin p
     expect($site['admin_email'])->toBe('owner@shop.test')
         ->and($site['admin_password'])->not->toBe('password123')
         ->and(Crypt::decryptString($site['admin_password']))->toBe('password123')
+        ->and($site)->not->toHaveKey('plugins')
+        ->and($site)->not->toHaveKey('theme')
         ->and($env)->toContain("APP_NAME='My Shop'")
         ->and($env)->toContain('APP_URL=https://shop.test')
         ->and($env)->toContain('APP_ENV=production')
         ->and($env)->toContain('APP_DEBUG=false');
 });
 
-it('rejects a mismatched password confirmation and an unknown plugin', function (): void {
+it('rejects a mismatched password confirmation', function (): void {
     becomeInstallerOwner();
     $this->withSession(['mksine_installer.database_configured' => true]);
 
@@ -290,8 +294,7 @@ it('rejects a mismatched password confirmation and an unknown plugin', function 
         'admin_email' => 'owner@shop.test',
         'admin_password' => 'password123',
         'admin_password_confirmation' => 'different1',
-        'plugins' => ['no-such-plugin'],
-    ])->assertSessionHasErrors(['admin_password', 'plugins.0']);
+    ])->assertSessionHasErrors(['admin_password']);
 });
 
 it('runs one step per request until the installation is finished', function (): void {

@@ -9,7 +9,7 @@ This guide is for site owners installing MKSine from the download on mksine.com.
 
 ## What you need
 
-- **PHP 8.2 or newer** with these extensions: `ctype`, `curl`, `fileinfo`, `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `zip`, and a database driver (`pdo_mysql` for MySQL/MariaDB). `intl`, `sodium` and `gd` are recommended. Most hosts enable all of these; the installer checks them for you.
+- **PHP 8.4 or newer** with these extensions: `ctype`, `curl`, `fileinfo`, `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `zip`, and a database driver (`pdo_mysql` for MySQL/MariaDB). `intl`, `sodium` and `gd` are recommended. Most hosts enable all of these; the installer checks them for you.
 - **An empty database** (MySQL 5.7+, MariaDB 10.3+ or PostgreSQL) and a user with full access to it. SQLite also works for small sites.
 - **Access to your files**: the hosting panel's File Manager, FTP or SSH.
 
@@ -17,7 +17,7 @@ This guide is for site owners installing MKSine from the download on mksine.com.
 
 Instead of uploading the whole zip, upload one small file and let it fetch MKSine for you.
 
-1. Create the database and choose PHP 8.2 or newer (steps 1 and 2 under [Shared hosting](#shared-hosting-cpanel-directadmin)).
+1. Create the database and choose PHP 8.4 or newer (steps 1 and 2 under [Shared hosting](#shared-hosting-cpanel-directadmin)).
 2. Download `mksine.php` from mksine.com and upload it to `public_html` (your domain's web folder).
 3. Open `https://YOURDOMAIN/mksine.php`. It checks PHP, extensions, folder permissions and disk space, and shows where the files will go.
 4. Click **Download and install**. Keep the page open. It downloads the newest release from GitHub in small parts (a slow host does not time out), checks its SHA-256 checksum, extracts it and deletes itself. A host placeholder page such as `index.html` is renamed to `index.html.mksine-old`; your host's lines in `.htaccess` (such as the PHP version) are kept.
@@ -58,7 +58,7 @@ The application lives **next to** `public_html`, not inside it, so files such as
 
 Note the database name, user name and password. On most hosts they start with your account name, for example `myuser_mksine`.
 
-### 2. Choose PHP 8.2 or newer
+### 2. Choose PHP 8.4 or newer
 
 - **cPanel:** *Software → MultiPHP Manager* (or *Select PHP Version*).
 - **DirectAdmin:** *Extra Features → Select PHP Version* (or *Domain Setup → PHP version*).
@@ -82,7 +82,7 @@ Open your domain in the browser. Every page goes to the installer at `/install` 
 1. **Language.** Choose فارسی or English.
 2. **Requirements.** The installer checks PHP, extensions and folder permissions. If something is missing, ask your host to enable it, then click *Check again*.
 3. **Database.** Enter the details from step 1. The host is usually `localhost`. The connection is tested before anything is saved.
-4. **Site and admin.** Site name and address, site language, your admin account, the theme, and which plugins to turn on. You can turn on more plugins later in the admin panel.
+4. **Site and admin.** Site name and address, site language and your admin account. The default theme is activated; plugins are turned on later in the admin panel (**Plugins**).
 5. **Install.** Keep the page open. Each step runs separately so slow hosting does not time out; if a step fails, fix the cause and click *Try again* — it continues where it stopped.
 
 The browser that chose the language runs the installation. If you continue in another browser (or another device), it asks for a code from the file `mksine/SETUP-TOKEN.txt`, so that nobody else who opens your site can take it over. Open that file in the File Manager and enter the code on its first line.
@@ -100,7 +100,7 @@ MKSine needs one cron job that runs every minute for scheduled tasks (backups, r
 - **cPanel:** *Advanced → Cron Jobs*. Choose *Once Per Minute*, paste the command.
 - **DirectAdmin:** *Advanced Features → Cronjobs*. Set every field to `*`, paste the command.
 
-Some hosts need the full PHP path instead of `php`, for example `/usr/local/bin/php` or `/opt/cpanel/ea-php83/root/usr/bin/php`. Your host's documentation or support can tell you which one.
+Some hosts need the full PHP path instead of `php`, for example `/usr/local/bin/php` or `/opt/cpanel/ea-php84/root/usr/bin/php`. Your host's documentation or support can tell you which one.
 
 ### 6. Check that everything works
 
@@ -146,7 +146,7 @@ On shared hosting it is normal that *Background processes* shows *Disabled*; the
 
 | Problem | What to do |
 | ------- | ---------- |
-| A blank page or "500 Server Error" before the installer appears | Check the PHP version (8.2+) and that `mksine/storage` and `mksine/bootstrap/cache` are writable. The error is in `mksine/storage/logs/laravel.log`. |
+| A blank page or "500 Server Error" before the installer appears | Check the PHP version (8.4+) and that `mksine/storage` and `mksine/bootstrap/cache` are writable. The error is in `mksine/storage/logs/laravel.log`. |
 | A "Composer dependencies require a PHP version" message | Your domain uses an older PHP. Change it in the panel (step 2). |
 | The host's placeholder page shows instead of the installer | Delete `index.html` / `default.html` from `public_html`. |
 | `mksine.php` says it could not read the latest release | Your host blocks outgoing downloads. Upload the shared-hosting zip next to `mksine.php` and click *Check again*. |

@@ -219,7 +219,7 @@ it('describes a release with sizes, checksums and requirements', function (): vo
 
     expect($manifest['version'])->toBe('1.22.0')
         ->and($manifest['released_at'])->toBe('2026-11-05T10:00:00+00:00')
-        ->and($manifest['requirements']['php'])->toBe('>=8.2.0')
+        ->and($manifest['requirements']['php'])->toBe('>=8.4.0')
         ->and($manifest['files'][0])->toBe([
             'name' => 'mksine-1.22.0-shared-hosting.zip',
             'layout' => 'split',

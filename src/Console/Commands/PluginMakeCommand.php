@@ -386,7 +386,7 @@ PHP;
         }
     ],
     "require": {
-        "php": "^8.2"
+        "php": "^8.4"
     },
     "autoload": {
         "psr-4": {

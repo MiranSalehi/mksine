@@ -46,7 +46,7 @@ const MKSI_INSTALL_URL = 'install';
 const MKSI_HANDOFF_CLASS = 'vendor/miran/mksine/src/Core/Install/Web/InstallerHandoff.php';
 
 /** Requirements used when release.json cannot be read (a zip uploaded by hand). */
-const MKSI_FALLBACK_PHP = '8.2.0';
+const MKSI_FALLBACK_PHP = '8.4.0';
 
 const MKSI_FALLBACK_EXTENSIONS = ['ctype', 'curl', 'fileinfo', 'mbstring', 'openssl', 'pdo', 'tokenizer', 'xml', 'zip'];
 
