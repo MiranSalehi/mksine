@@ -51,13 +51,24 @@ class InstallerController extends Controller
         return view('mksine::installer.welcome', ['locales' => PrepareInstallerRequest::LOCALES]);
     }
 
-    public function storeLanguage(Request $request): RedirectResponse
+    /**
+     * Store the language. The first browser to get here owns the installation; the setup
+     * code is asked for only when another browser already started it.
+     */
+    public function storeLanguage(Request $request, InstallerOwnership $ownership): RedirectResponse
     {
         $validated = $request->validate(['locale' => ['required', Rule::in(PrepareInstallerRequest::LOCALES)]]);
 
+        if (! $ownership->isOwner($request->session()) && ! $ownership->hasOwner()) {
+            $request->session()->regenerate();
+            $ownership->claim($request->session());
+        }
+
         $request->session()->put(PrepareInstallerRequest::LOCALE_SESSION_KEY, $validated['locale']);
 
-        return redirect()->route('mksine.installer.verify');
+        return $ownership->isOwner($request->session())
+            ? redirect()->route('mksine.installer.requirements')
+            : redirect()->route('mksine.installer.verify');
     }
 
     public function verify(Request $request, SetupToken $token, InstallerOwnership $ownership): View | RedirectResponse

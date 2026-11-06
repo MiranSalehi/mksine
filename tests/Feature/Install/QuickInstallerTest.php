@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use Illuminate\Filesystem\Filesystem;
-use Miran\Mksine\Core\Install\Web\SetupToken;
 use Miran\Mksine\Support\QuickInstaller;
 use Symfony\Component\Process\Process;
 
@@ -119,68 +118,57 @@ function quickInstallerSite(string $tmp, string $manifestUrl): array
     ];
 }
 
-function quickInstallerCsrf(string $html): string
-{
-    preg_match('/name="csrf" value="([a-f0-9]+)"/', $html, $match);
-
-    return $match[1] ?? '';
-}
-
 /**
- * Enter the setup token and start the install; returns the CSRF value.
+ * Open the check page and click "Download and install".
  *
  * @param  array{client: Client, home: string, web: string}  $site
  */
 function quickInstallerStart(array $site): string
 {
-    $site['client']->get('/mksine-installer.php');
-    $token = strtok((string) file_get_contents($site['home'] . '/mksine/SETUP-TOKEN.txt'), "\n");
+    $check = (string) $site['client']->get('/mksine.php')->getBody();
+    $site['client']->post('/mksine.php?action=start');
 
-    $check = (string) $site['client']->post('/mksine-installer.php?action=verify', ['form_params' => ['token' => strtolower(str_replace('-', ' ', (string) $token))]])->getBody();
-    $csrf = quickInstallerCsrf($check);
-
-    expect($check)->toContain('Ready to install MKSine 9.9.9')
-        ->and($check)->not->toContain('disabled>');
-
-    $site['client']->post('/mksine-installer.php?action=start', ['form_params' => ['csrf' => $csrf]]);
-
-    return $csrf;
+    return $check;
 }
 
 /**
  * @param  array{client: Client, home: string, web: string}  $site
  * @return array<string, mixed>
  */
-function quickInstallerRun(array $site, string $csrf): array
+function quickInstallerRun(array $site, ?Client $client = null): array
 {
     for ($request = 0; $request < 30; $request++) {
-        $response = json_decode((string) $site['client']->post('/mksine-installer.php?action=step', ['form_params' => ['csrf' => $csrf]])->getBody(), true);
+        $response = quickInstallerStep($client ?? $site['client']);
 
-        if (! is_array($response) || ! empty($response['done']) || ! empty($response['error'])) {
-            return (array) $response;
+        if (! empty($response['done']) || ! empty($response['error'])) {
+            return $response;
         }
     }
 
     return [];
 }
 
-it('downloads, checks and extracts a release, then hands over to /install', function (): void {
+/**
+ * @return array<string, mixed>
+ */
+function quickInstallerStep(Client $client): array
+{
+    return (array) json_decode((string) $client->post('/mksine.php?action=step', ['headers' => ['X-MKSine-Installer' => '1']])->getBody(), true);
+}
+
+it('downloads, checks and extracts a release without asking for a code, then hands over to /install', function (): void {
     $release = quickInstallerRelease($this->tmp);
     $site = quickInstallerSite($this->tmp, $release['url']);
     file_put_contents($site['web'] . '/index.html', 'Default host page');
     file_put_contents($site['web'] . '/.htaccess', "AddHandler application/x-httpd-ea-php84 .php\n");
 
-    $tokenPage = (string) $site['client']->get('/mksine-installer.php')->getBody();
-    expect($tokenPage)->toContain('Confirm that this is your site')
-        ->and($tokenPage)->toContain('mksine/SETUP-TOKEN.txt');
+    $check = quickInstallerStart($site);
 
-    $code = strtok((string) file_get_contents($site['home'] . '/mksine/SETUP-TOKEN.txt'), "\n");
-    expect((new SetupToken(new Filesystem, $site['home'] . '/mksine'))->verify((string) $code))->toBeTrue();
+    expect($check)->toContain('Ready to install MKSine 9.9.9')
+        ->and($check)->not->toContain('disabled>')
+        ->and($check)->not->toContain('SETUP-TOKEN');
 
-    $wrong = (string) $site['client']->post('/mksine-installer.php?action=verify', ['form_params' => ['token' => 'WRONG']])->getBody();
-    expect($wrong)->toContain('The code is not correct.');
-
-    $result = quickInstallerRun($site, quickInstallerStart($site));
+    $result = quickInstallerRun($site);
 
     expect($result['done'] ?? false)->toBeTrue()
         ->and($result['handoff_url'])->toBe('install/handoff');
@@ -197,22 +185,32 @@ it('downloads, checks and extracts a release, then hands over to /install', func
         ->and(file_get_contents($site['web'] . '/.htaccess'))->toContain('AddHandler application/x-httpd-ea-php84')
         ->and(file_get_contents($site['web'] . '/index.html.mksine-old'))->toBe('Default host page')
         ->and(file_exists($site['web'] . '/index.html'))->toBeFalse()
-        ->and(file_exists($site['web'] . '/mksine-installer.php'))->toBeFalse()
+        ->and(file_exists($site['web'] . '/mksine.php'))->toBeFalse()
         ->and(file_exists($site['home'] . '/mksine/.mksine-download.zip'))->toBeFalse()
         ->and(file_exists($site['home'] . '/mksine/.mksine-installer.json'))->toBeFalse()
-        ->and(file_exists($site['home'] . '/mksine/SETUP-TOKEN.txt'))->toBeTrue();
+        ->and(file_exists($site['home'] . '/mksine/SETUP-TOKEN.txt'))->toBeFalse();
+});
+
+it('writes nothing before the install is started', function (): void {
+    $release = quickInstallerRelease($this->tmp);
+    $site = quickInstallerSite($this->tmp, $release['url']);
+
+    $site['client']->get('/mksine.php');
+
+    expect(is_dir($site['home'] . '/mksine'))->toBeFalse();
 });
 
 it('deletes a download whose checksum does not match', function (): void {
     $release = quickInstallerRelease($this->tmp, str_repeat('0', 64));
     $site = quickInstallerSite($this->tmp, $release['url']);
+    quickInstallerStart($site);
 
-    $result = quickInstallerRun($site, quickInstallerStart($site));
+    $result = quickInstallerRun($site);
 
     expect($result['error'] ?? '')->toContain('checksum mismatch')
         ->and(file_exists($site['home'] . '/mksine/.mksine-download.zip'))->toBeFalse()
         ->and(file_exists($site['home'] . '/mksine/artisan'))->toBeFalse()
-        ->and(file_exists($site['web'] . '/mksine-installer.php'))->toBeTrue();
+        ->and(file_exists($site['web'] . '/mksine.php'))->toBeTrue();
 });
 
 it('uses a release zip uploaded next to it when downloads are blocked', function (): void {
@@ -220,15 +218,12 @@ it('uses a release zip uploaded next to it when downloads are blocked', function
     $site = quickInstallerSite($this->tmp, 'http://127.0.0.1:9/release.json');
     copy($release['zip'], $site['web'] . '/' . basename($release['zip']));
 
-    $site['client']->get('/mksine-installer.php');
-    $token = strtok((string) file_get_contents($site['home'] . '/mksine/SETUP-TOKEN.txt'), "\n");
-    $check = (string) $site['client']->post('/mksine-installer.php?action=verify', ['form_params' => ['token' => (string) $token]])->getBody();
+    $check = quickInstallerStart($site);
 
     expect($check)->toContain('uploaded by you')
         ->and($check)->toContain('cannot be checked');
 
-    $site['client']->post('/mksine-installer.php?action=start', ['form_params' => ['csrf' => quickInstallerCsrf($check)]]);
-    $result = quickInstallerRun($site, quickInstallerCsrf($check));
+    $result = quickInstallerRun($site);
 
     expect($result['done'] ?? false)->toBeTrue()
         ->and(file_exists($site['home'] . '/mksine/artisan'))->toBeTrue()
@@ -244,11 +239,8 @@ it('sends an older release without the handoff route to /install', function (): 
     $site = quickInstallerSite($this->tmp, 'http://127.0.0.1:9/release.json');
     copy($release['zip'], $site['web'] . '/' . basename($release['zip']));
 
-    $site['client']->get('/mksine-installer.php');
-    $token = strtok((string) file_get_contents($site['home'] . '/mksine/SETUP-TOKEN.txt'), "\n");
-    $check = (string) $site['client']->post('/mksine-installer.php?action=verify', ['form_params' => ['token' => (string) $token]])->getBody();
-    $site['client']->post('/mksine-installer.php?action=start', ['form_params' => ['csrf' => quickInstallerCsrf($check)]]);
-    $result = quickInstallerRun($site, quickInstallerCsrf($check));
+    quickInstallerStart($site);
+    $result = quickInstallerRun($site);
 
     expect($result['done'] ?? false)->toBeTrue()
         ->and($result['handoff_url'])->toBeNull()
@@ -261,28 +253,33 @@ it('refuses to start when the application folder already has files', function ()
     $site = quickInstallerSite($this->tmp, $release['url']);
     (new Filesystem)->ensureDirectoryExists($site['home'] . '/mksine/app');
 
-    $site['client']->get('/mksine-installer.php');
-    $token = strtok((string) file_get_contents($site['home'] . '/mksine/SETUP-TOKEN.txt'), "\n");
-    $check = (string) $site['client']->post('/mksine-installer.php?action=verify', ['form_params' => ['token' => (string) $token]])->getBody();
+    $check = quickInstallerStart($site);
 
     expect($check)->toContain('already contains files')
-        ->and($check)->toContain('disabled>');
-
-    $site['client']->post('/mksine-installer.php?action=start', ['form_params' => ['csrf' => quickInstallerCsrf($check)]]);
-
-    expect(json_decode((string) file_get_contents($site['home'] . '/mksine/.mksine-installer.json'), true)['phase'])->toBe('new');
+        ->and($check)->toContain('disabled>')
+        ->and(file_exists($site['home'] . '/mksine/.mksine-installer.json'))->toBeFalse();
 });
 
-it('ignores requests without the setup token', function (): void {
+it('lets only the browser that started the install run it, until it has been idle', function (): void {
     $release = quickInstallerRelease($this->tmp);
     $site = quickInstallerSite($this->tmp, $release['url']);
-    $site['client']->get('/mksine-installer.php');
+    $other = new Client(['base_uri' => (string) $site['client']->getConfig('base_uri'), 'cookies' => true, 'http_errors' => false, 'headers' => ['Accept-Language' => 'en']]);
+    quickInstallerStart($site);
 
-    $step = json_decode((string) $site['client']->post('/mksine-installer.php?action=step', ['form_params' => ['csrf' => 'x']])->getBody(), true);
-    $site['client']->post('/mksine-installer.php?action=start', ['form_params' => ['csrf' => 'x']]);
+    expect((string) $other->get('/mksine.php')->getBody())->toContain('being installed from another browser')
+        ->and(quickInstallerStep($other)['reload'] ?? false)->toBeTrue()
+        ->and(json_decode((string) $site['client']->post('/mksine.php?action=step')->getBody(), true)['reload'] ?? false)->toBeTrue();
 
-    expect($step['reload'])->toBeTrue()
-        ->and(json_decode((string) file_get_contents($site['home'] . '/mksine/.mksine-installer.json'), true)['phase'])->toBe('new');
+    $other->post('/mksine.php?action=takeover');
+    expect(quickInstallerStep($other)['reload'] ?? false)->toBeTrue();
+
+    touch($site['home'] . '/mksine/.mksine-installer.json', time() - 700);
+    expect((string) $other->get('/mksine.php')->getBody())->toContain('Continue here');
+
+    $other->post('/mksine.php?action=takeover');
+
+    expect(quickInstallerRun($site, $other)['done'] ?? false)->toBeTrue()
+        ->and(file_exists($site['home'] . '/mksine/artisan'))->toBeTrue();
 });
 
 it('asks to be moved when it is not in the site root', function (): void {
@@ -291,7 +288,7 @@ it('asks to be moved when it is not in the site root', function (): void {
     QuickInstaller::write($web . '/blog', '9.9.9');
     $client = new Client(['base_uri' => quickInstallerServe($web), 'http_errors' => false, 'headers' => ['Accept-Language' => 'en']]);
 
-    expect((string) $client->get('/blog/mksine-installer.php')->getBody())->toContain('Upload this file to the site')
+    expect((string) $client->get('/blog/mksine.php')->getBody())->toContain('Upload this file to the site')
         ->and(is_dir($web . '/mksine'))->toBeFalse();
 });
 
@@ -337,6 +334,5 @@ it('merges .htaccess, points MKSINE_PUBLIC_PATH at the web root and pins the dow
         ->and(mksi_patch_public_path("A=1\n", 'www'))->toBe("A=1\nMKSINE_PUBLIC_PATH=../www\n")
         ->and(mksi_file_url('https://github.com/MiranSalehi/mksine/releases/latest/download/release.json', '1.22.1', 'mksine-1.22.1-shared-hosting.zip'))
         ->toBe('https://github.com/MiranSalehi/mksine/releases/download/v1.22.1/mksine-1.22.1-shared-hosting.zip')
-        ->and(mksi_file_url('http://127.0.0.1:8000/release.json', '1.0.0', 'a.zip'))->toBe('http://127.0.0.1:8000/a.zip')
-        ->and(mksi_generate_token())->toMatch('/^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/');
+        ->and(mksi_file_url('http://127.0.0.1:8000/release.json', '1.0.0', 'a.zip'))->toBe('http://127.0.0.1:8000/a.zip');
 });

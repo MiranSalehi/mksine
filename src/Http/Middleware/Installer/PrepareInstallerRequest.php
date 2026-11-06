@@ -10,8 +10,8 @@ use Miran\Mksine\Core\Install\Web\InstallerOwnership;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Applies the installer language and keeps every page after the setup-token check
- * closed to sessions that have not entered the token.
+ * Applies the installer language and keeps every page after the language choice closed
+ * to sessions that do not own the installation.
  */
 class PrepareInstallerRequest
 {
@@ -43,6 +43,8 @@ class PrepareInstallerRequest
             return response()->json(['message' => __('mksine::install.web.token_required')], Response::HTTP_FORBIDDEN);
         }
 
-        return redirect()->route('mksine.installer.verify');
+        return $this->ownership->hasOwner()
+            ? redirect()->route('mksine.installer.verify')
+            : redirect()->route('mksine.installer.welcome');
     }
 }

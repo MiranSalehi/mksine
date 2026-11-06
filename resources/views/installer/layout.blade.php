@@ -65,7 +65,7 @@
 
     @isset($currentStep)
         <ol class="steps">
-            @foreach (['language', 'verify', 'requirements', 'database', 'site', 'install'] as $wizardStep)
+            @foreach (['language', 'requirements', 'database', 'site', 'install'] as $wizardStep)
                 <li @class(['current' => $currentStep === $wizardStep])>{{ __('mksine::install.web.wizard.'.$wizardStep) }}</li>
             @endforeach
         </ol>

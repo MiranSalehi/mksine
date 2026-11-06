@@ -20,7 +20,7 @@ use Throwable;
 /**
  * Builds a public release from a clean Laravel application with MKSine and the official
  * plugins — never from the maintainer's own project — and writes the shared-hosting and
- * server zips, the quick installer (mksine-installer.php), SHA256SUMS and release.json.
+ * server zips, the quick installer (mksine.php), SHA256SUMS and release.json.
  */
 class ReleaseBuildCommand extends Command
 {

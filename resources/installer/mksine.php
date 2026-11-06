@@ -3,9 +3,13 @@
 /**
  * MKSine quick installer.
  *
- * Upload this one file to the site's web root (public_html on shared hosting) and open it
- * in a browser. It downloads the latest MKSine release from GitHub, checks its SHA-256
- * checksum, extracts it in the right place and opens the MKSine installer (/install).
+ * Upload this one file to the site's web root (public_html on shared hosting) and open
+ * https://your-domain/mksine.php. It downloads the latest MKSine release from GitHub, checks
+ * its SHA-256 checksum, extracts it in the right place and opens the MKSine installer.
+ *
+ * No code is asked for: the browser that clicks "Install" owns the run (a random secret in
+ * a cookie, its hash in the state file). Another browser can take over only after the run
+ * has been idle for MKSI_TAKEOVER_SECONDS.
  *
  * - Shared hosting: the application goes to ../mksine, the public files to the web root.
  * - Server: when the web root is a folder named "public" with nothing else beside it, the
@@ -24,6 +28,8 @@ const MKSI_APP_DIRECTORY = 'mksine';
 
 const MKSI_TOKEN_FILE = 'SETUP-TOKEN.txt';
 
+const MKSI_TAKEOVER_SECONDS = 600;
+
 const MKSI_STATE_FILE = '.mksine-installer.json';
 
 const MKSI_LOCK_FILE = '.mksine-installer.lock';
@@ -38,8 +44,6 @@ const MKSI_INSTALL_URL = 'install';
 
 /** Releases older than 1.23.0 have no /install/handoff route; their users enter the code again. */
 const MKSI_HANDOFF_CLASS = 'vendor/miran/mksine/src/Core/Install/Web/InstallerHandoff.php';
-
-const MKSI_TOKEN_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 /** Requirements used when release.json cannot be read (a zip uploaded by hand). */
 const MKSI_FALLBACK_PHP = '8.2.0';
@@ -61,14 +65,11 @@ function mksi_strings()
             'wrong_root_heading' => 'Upload this file to the site\'s root folder',
             'wrong_root' => 'This file is in :dir, but the site\'s root folder is :root. Move it there (usually public_html) and open it again.',
             'app_dir_failed' => 'Could not create the folder :path. The folder above the site\'s root must be writable: create the folder in your file manager, or ask your host for help.',
-            'token_heading' => 'Confirm that this is your site',
-            'token_lead' => 'So that nobody else can install on your host, a code was saved in a file only you can open.',
-            'token_step_open' => 'Open your host\'s file manager (cPanel, DirectAdmin) or FTP.',
-            'token_step_file' => 'Open this file:',
-            'token_step_copy' => 'Enter the code from its first line below.',
-            'token_label' => 'Setup code',
-            'token_invalid' => 'The code is not correct.',
-            'continue' => 'Continue',
+            'in_progress_heading' => 'Installation in progress',
+            'in_progress' => 'MKSine is being installed from another browser. Keep using that browser.',
+            'in_progress_takeover' => 'That browser has not continued for a while. You can continue the installation here.',
+            'in_progress_wait' => 'If that browser was closed, you can continue here after :minutes minutes without activity.',
+            'take_over' => 'Continue here',
             'check_heading' => 'Ready to install MKSine :version',
             'check_heading_unknown' => 'Ready to install MKSine',
             'check_lead' => 'This installer downloads MKSine from GitHub, checks it and puts the files in place. Then the MKSine setup opens for the database and the admin account.',
@@ -119,11 +120,11 @@ function mksi_strings()
             'retry' => 'Try again',
             'start_over' => 'Start over',
             'network' => 'The connection to the server was interrupted.',
-            'session_lost' => 'Your session ended. Reload the page and enter the setup code again.',
+            'session_lost' => 'This installation is now running in another browser. Reload the page.',
             'busy' => 'Another browser tab is running this installer.',
-            'fallback' => 'If the setup does not open, go to :url and enter the code from :file.',
-            'delete_self' => 'Delete mksine-installer.php from the site root.',
-            'already_installed' => 'MKSine is already installed here. Delete mksine-installer.php from the site root.',
+            'fallback' => 'If the setup does not open, go to :url.',
+            'delete_self' => 'Delete :file from the site root.',
+            'already_installed' => 'MKSine is already installed here. Delete :file from the site root.',
         ],
         'fa' => [
             'title' => 'نصب سریع MKSine',
@@ -131,14 +132,11 @@ function mksi_strings()
             'wrong_root_heading' => 'این فایل را در پوشهٔ اصلی سایت آپلود کنید',
             'wrong_root' => 'این فایل در :dir است، ولی پوشهٔ اصلی سایت :root است. آن را به همان پوشه (معمولاً public_html) منتقل کنید و دوباره باز کنید.',
             'app_dir_failed' => 'پوشهٔ :path ساخته نشد. پوشهٔ بالای ریشهٔ سایت باید قابل نوشتن باشد. این پوشه را خودتان در File Manager بسازید یا از پشتیبانی هاست کمک بگیرید.',
-            'token_heading' => 'تأیید مالکیت سایت',
-            'token_lead' => 'برای اینکه کس دیگری نتواند روی هاست شما نصب کند، یک کد در فایلی ذخیره شد که فقط خودتان به آن دسترسی دارید.',
-            'token_step_open' => 'File Manager هاست (cPanel یا DirectAdmin) یا FTP را باز کنید.',
-            'token_step_file' => 'این فایل را باز کنید:',
-            'token_step_copy' => 'کد خط اول آن را اینجا وارد کنید.',
-            'token_label' => 'کد امنیتی',
-            'token_invalid' => 'کد درست نیست.',
-            'continue' => 'ادامه',
+            'in_progress_heading' => 'نصب در حال انجام است',
+            'in_progress' => 'MKSine در مرورگر دیگری در حال نصب است. نصب را در همان مرورگر ادامه دهید.',
+            'in_progress_takeover' => 'آن مرورگر مدتی است کاری انجام نداده. می‌توانید نصب را اینجا ادامه دهید.',
+            'in_progress_wait' => 'اگر آن مرورگر بسته شده، بعد از :minutes دقیقه بدون فعالیت می‌توانید نصب را اینجا ادامه دهید.',
+            'take_over' => 'ادامه در اینجا',
             'check_heading' => 'آمادهٔ نصب MKSine نسخهٔ :version',
             'check_heading_unknown' => 'آمادهٔ نصب MKSine',
             'check_lead' => 'این نصب‌کننده MKSine را از GitHub دانلود و بررسی می‌کند و فایل‌ها را سر جایشان می‌گذارد. بعد، نصب‌کنندهٔ MKSine برای تنظیم دیتابیس و حساب مدیر باز می‌شود.',
@@ -189,11 +187,11 @@ function mksi_strings()
             'retry' => 'تلاش دوباره',
             'start_over' => 'شروع دوباره',
             'network' => 'ارتباط با سرور قطع شد.',
-            'session_lost' => 'نشست شما تمام شد. صفحه را دوباره باز کنید و کد امنیتی را وارد کنید.',
+            'session_lost' => 'این نصب حالا در مرورگر دیگری ادامه پیدا کرده است. صفحه را دوباره باز کنید.',
             'busy' => 'این نصب‌کننده در زبانهٔ دیگری از مرورگر در حال اجراست.',
-            'fallback' => 'اگر نصب‌کننده باز نشد، به :url بروید و کد فایل :file را وارد کنید.',
-            'delete_self' => 'فایل mksine-installer.php را از ریشهٔ سایت حذف کنید.',
-            'already_installed' => 'MKSine از قبل اینجا نصب شده است. فایل mksine-installer.php را از ریشهٔ سایت حذف کنید.',
+            'fallback' => 'اگر نصب‌کننده باز نشد، به :url بروید.',
+            'delete_self' => 'فایل :file را از ریشهٔ سایت حذف کنید.',
+            'already_installed' => 'MKSine از قبل اینجا نصب شده است. فایل :file را از ریشهٔ سایت حذف کنید.',
         ],
     ];
 }
@@ -471,72 +469,34 @@ function mksi_manifest_url()
 }
 
 /* ------------------------------------------------------------------------------------
- | Setup token (same file and format as the MKSine installer, so one code is enough)
+ | Who runs the install: the browser that started it
  * ------------------------------------------------------------------------------------ */
 
-function mksi_normalize_token($value)
+function mksi_is_owner($state)
 {
-    return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', (string) $value));
+    return is_array($state) && isset($state['owner_hash'], $_COOKIE['mksi_owner']) && is_string($_COOKIE['mksi_owner'])
+        && hash_equals((string) $state['owner_hash'], hash('sha256', $_COOKIE['mksi_owner']));
 }
 
-function mksi_read_token($app)
+/**
+ * Make this browser the owner: a random secret in a cookie, only its hash on disk.
+ *
+ * @param  array<string, mixed>  $state
+ */
+function mksi_claim(&$state)
 {
-    $path = mksi_join($app, MKSI_TOKEN_FILE);
-
-    if (! is_file($path)) {
-        return null;
-    }
-
-    $lines = explode("\n", (string) @file_get_contents($path));
-    $token = mksi_normalize_token($lines[0]);
-
-    return $token !== '' ? $token : null;
+    $secret = bin2hex(random_bytes(32));
+    $state['owner_hash'] = hash('sha256', $secret);
+    $_COOKIE['mksi_owner'] = $secret;
+    mksi_set_cookie('mksi_owner', $secret, 86400, 'Strict');
 }
 
-function mksi_generate_token()
+function mksi_idle_seconds($target)
 {
-    $characters = '';
+    clearstatcache(true, mksi_state_path($target));
+    $modified = @filemtime(mksi_state_path($target));
 
-    for ($i = 0; $i < 12; $i++) {
-        $characters .= MKSI_TOKEN_ALPHABET[random_int(0, strlen(MKSI_TOKEN_ALPHABET) - 1)];
-    }
-
-    return implode('-', str_split($characters, 4));
-}
-
-function mksi_ensure_token($app)
-{
-    if (mksi_read_token($app) !== null) {
-        return true;
-    }
-
-    $contents = mksi_generate_token() . "\n\n"
-        . "MKSine setup token. Enter the code above in the installer.\n"
-        . "کد بالا را در نصب‌کنندهٔ MKSine وارد کنید.\n"
-        . "This file is deleted when installation finishes.\n";
-
-    return @file_put_contents(mksi_join($app, MKSI_TOKEN_FILE), $contents) !== false;
-}
-
-function mksi_signature($purpose, $target)
-{
-    $token = mksi_read_token($target['app']);
-
-    return $token === null ? null : hash_hmac('sha256', 'mksine-installer|' . $purpose . '|' . $target['app'], $token);
-}
-
-function mksi_is_authenticated($target)
-{
-    $expected = mksi_signature('auth', $target);
-
-    return $expected !== null && isset($_COOKIE['mksi_auth']) && is_string($_COOKIE['mksi_auth']) && hash_equals($expected, $_COOKIE['mksi_auth']);
-}
-
-function mksi_csrf_is_valid($target)
-{
-    $expected = mksi_signature('csrf', $target);
-
-    return $expected !== null && isset($_POST['csrf']) && is_string($_POST['csrf']) && hash_equals($expected, $_POST['csrf']);
+    return $modified === false ? PHP_INT_MAX : time() - $modified;
 }
 
 /* ------------------------------------------------------------------------------------
@@ -855,7 +815,7 @@ function mksi_preflight($target)
         $checks[] = ['label' => mksi_t('req_download'), 'passed' => mksi_can_download()];
     }
 
-    $checks[] = ['label' => mksi_t('req_writable', ['path' => $target['app']]), 'passed' => is_dir($target['app']) && is_writable($target['app'])];
+    $checks[] = ['label' => mksi_t('req_writable', ['path' => $target['app']]), 'passed' => is_dir($target['app']) ? is_writable($target['app']) : is_writable(dirname($target['app']))];
     $checks[] = ['label' => mksi_t('req_writable', ['path' => $target['public']]), 'passed' => is_writable($target['public'])];
 
     if ($source !== null) {
@@ -1320,7 +1280,7 @@ function mksi_handle_step($target)
             'done' => true,
             'percent' => 100,
             'label' => mksi_t('phase_done'),
-            'detail' => $state['self_deleted'] ? '' : mksi_t('delete_self'),
+            'detail' => $state['self_deleted'] ? '' : mksi_t('delete_self', ['file' => mksi_script_name()]),
             'handoff' => $state['handoff'],
             'handoff_url' => $state['handoff'] !== null ? MKSI_HANDOFF_URL : null,
             'install_url' => MKSI_INSTALL_URL,
@@ -1331,7 +1291,14 @@ function mksi_handle_step($target)
     }
 
     $state['error'] = $error;
-    mksi_write_json(mksi_state_path($target), $state);
+
+    if ($state['phase'] === 'new') {
+        // An uploaded zip failed its checksum and was deleted: back to the check page.
+        @unlink(mksi_state_path($target));
+    } else {
+        mksi_write_json(mksi_state_path($target), $state);
+    }
+
     flock($lock, LOCK_UN);
     fclose($lock);
 
@@ -1363,104 +1330,95 @@ function mksi_main()
     $target = mksi_target($docroot);
 
     if (is_file(mksi_join($target['app'], 'storage/mksine/installed.json'))) {
-        mksi_page(mksi_t('title'), '<div class="alert warn">' . mksi_e(mksi_t('already_installed')) . '</div>');
-
-        return;
-    }
-
-    if ((! is_dir($target['app']) && ! @mkdir($target['app'], 0755, true)) || ! mksi_ensure_token($target['app'])) {
-        mksi_page(mksi_t('title'), '<div class="alert error">' . mksi_e(mksi_t('app_dir_failed', ['path' => $target['app']])) . '</div>');
+        mksi_page(mksi_t('title'), '<div class="alert warn">' . mksi_e(mksi_t('already_installed', ['file' => mksi_script_name()])) . '</div>');
 
         return;
     }
 
     $statePath = mksi_state_path($target);
     $state = mksi_read_json($statePath);
-
-    if (! is_array($state)) {
-        $state = ['layout' => $target['layout'], 'phase' => 'new'];
-        mksi_write_json($statePath, $state);
-    }
-
+    $running = is_array($state) && isset($state['source']);
     $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
     $isPost = isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';
 
-    if ($isPost && $action === 'verify') {
-        $given = mksi_normalize_token(isset($_POST['token']) ? $_POST['token'] : '');
-        $expected = mksi_read_token($target['app']);
+    if ($isPost && $action === 'start' && ! $running) {
+        $preflight = mksi_preflight($target);
 
-        if ($expected !== null && $given !== '' && hash_equals($expected, $given)) {
-            mksi_set_cookie('mksi_auth', (string) mksi_signature('auth', $target), 86400, 'Strict');
+        if (! $preflight['passes']) {
             mksi_redirect();
 
             return;
         }
 
-        sleep(1);
-        mksi_token_page($target, mksi_t('token_invalid'));
-
-        return;
-    }
-
-    if (! mksi_is_authenticated($target)) {
-        if ($isPost && $action === 'step') {
-            mksi_json(['error' => mksi_t('session_lost'), 'reload' => true]);
+        if (! is_dir($target['app']) && ! @mkdir($target['app'], 0755, true)) {
+            mksi_check_page($target, $preflight, mksi_t('app_dir_failed', ['path' => $target['app']]));
 
             return;
         }
 
-        mksi_token_page($target, null);
+        $source = $preflight['source'];
 
-        return;
-    }
+        if ($source['type'] === 'local') {
+            if (! @rename($source['path'], mksi_zip_path($target)) && ! @copy($source['path'], mksi_zip_path($target))) {
+                mksi_check_page($target, $preflight, mksi_t('write_failed', ['path' => mksi_zip_path($target)]));
 
-    if ($isPost && ! mksi_csrf_is_valid($target)) {
-        $action === 'step' ? mksi_json(['error' => mksi_t('session_lost'), 'reload' => true]) : mksi_redirect();
-
-        return;
-    }
-
-    if ($isPost && $action === 'start' && $state['phase'] === 'new') {
-        $preflight = mksi_preflight($target);
-
-        if ($preflight['passes']) {
-            $source = $preflight['source'];
-
-            if ($source['type'] === 'local') {
-                if (! @rename($source['path'], mksi_zip_path($target)) && ! @copy($source['path'], mksi_zip_path($target))) {
-                    mksi_redirect();
-
-                    return;
-                }
-
-                unset($source['path']);
+                return;
             }
 
-            $state = ['layout' => $target['layout'], 'phase' => $source['type'] === 'local' ? 'verify' : 'download', 'source' => $source, 'cursor' => 0, 'total' => 0, 'error' => null];
-            mksi_write_json($statePath, $state);
+            unset($source['path']);
         }
 
+        $state = ['layout' => $target['layout'], 'phase' => $source['type'] === 'local' ? 'verify' : 'download', 'source' => $source, 'cursor' => 0, 'total' => 0, 'error' => null];
+        mksi_claim($state);
+        mksi_write_json($statePath, $state);
         mksi_redirect();
 
         return;
     }
 
-    if ($isPost && $action === 'reset') {
+    if ($isPost && $action === 'takeover' && $running && ! mksi_is_owner($state) && mksi_idle_seconds($target) >= MKSI_TAKEOVER_SECONDS) {
+        mksi_claim($state);
+        mksi_write_json($statePath, $state);
+        mksi_redirect();
+
+        return;
+    }
+
+    if ($isPost && $action === 'reset' && $running && mksi_is_owner($state)) {
         @unlink(mksi_zip_path($target));
-        mksi_write_json($statePath, ['layout' => $target['layout'], 'phase' => 'new']);
+        @unlink($statePath);
         mksi_redirect();
 
         return;
     }
 
     if ($isPost && $action === 'step') {
+        // The custom header keeps other sites from driving the install with a plain form post.
+        if (! $running || ! mksi_is_owner($state) || ! isset($_SERVER['HTTP_X_MKSINE_INSTALLER'])) {
+            mksi_json(['error' => mksi_t('session_lost'), 'reload' => true]);
+
+            return;
+        }
+
         mksi_handle_step($target);
 
         return;
     }
 
-    if ($state['phase'] === 'new') {
-        mksi_check_page($target, mksi_preflight($target));
+    if ($isPost) {
+        mksi_redirect();
+
+        return;
+    }
+
+    if (! $running) {
+        mksi_check_page($target, mksi_preflight($target), null);
+
+        return;
+    }
+
+    if (! mksi_is_owner($state)) {
+        mksi_busy_page($target);
 
         return;
     }
@@ -1505,37 +1463,34 @@ function mksi_page($heading, $body, $script = '')
         . '</style></head><body><div class="wrap"><header><h1>' . mksi_e(mksi_t('title')) . '</h1>'
         . '<a href="?lang=' . $other . '">' . mksi_e(mksi_t('switch_language')) . '</a></header>'
         . '<div class="card"><h2>' . mksi_e($heading) . '</h2>' . $body . '</div>'
-        . '<p class="hint">mksine-installer.php ' . mksi_e(MKSI_BUILD) . '</p>'
+        . '<p class="hint">' . mksi_e(mksi_script_name() . ' ' . MKSI_BUILD) . '</p>'
         . '</div>' . $script . '</body></html>';
 }
 
-function mksi_display_path($path, $target)
+function mksi_busy_page($target)
 {
-    $root = dirname($target['app']);
+    $canTakeOver = mksi_idle_seconds($target) >= MKSI_TAKEOVER_SECONDS;
+    $body = '<p class="lead">' . mksi_e(mksi_t('in_progress')) . '</p>';
 
-    return strpos($path, $root . '/') === 0 ? substr($path, strlen($root) + 1) : $path;
+    if ($canTakeOver) {
+        $body .= '<div class="alert warn">' . mksi_e(mksi_t('in_progress_takeover')) . '</div>'
+            . '<form method="post" action="?action=takeover"><div class="actions"><button type="submit" class="btn">' . mksi_e(mksi_t('take_over')) . '</button></div></form>';
+    } else {
+        $body .= '<p class="hint">' . mksi_e(mksi_t('in_progress_wait', ['minutes' => (int) (MKSI_TAKEOVER_SECONDS / 60)])) . '</p>'
+            . '<div class="actions"><a class="btn secondary" href="' . mksi_e(mksi_script_name()) . '">' . mksi_e(mksi_t('check_again')) . '</a></div>';
+    }
+
+    mksi_page(mksi_t('in_progress_heading'), $body);
 }
 
-function mksi_token_page($target, $error)
-{
-    $body = '<p class="lead">' . mksi_e(mksi_t('token_lead')) . '</p>'
-        . ($error !== null ? '<div class="alert error">' . mksi_e($error) . '</div>' : '')
-        . '<ol><li>' . mksi_e(mksi_t('token_step_open')) . '</li>'
-        . '<li>' . mksi_e(mksi_t('token_step_file')) . ' <code>' . mksi_e(mksi_display_path(mksi_join($target['app'], MKSI_TOKEN_FILE), $target)) . '</code></li>'
-        . '<li>' . mksi_e(mksi_t('token_step_copy')) . '</li></ol>'
-        . '<form method="post" action="?action=verify">'
-        . '<label for="token">' . mksi_e(mksi_t('token_label')) . '</label>'
-        . '<input id="token" name="token" type="text" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX" required autofocus>'
-        . '<div class="actions"><button type="submit" class="btn">' . mksi_e(mksi_t('continue')) . '</button></div></form>';
-
-    mksi_page(mksi_t('token_heading'), $body);
-}
-
-function mksi_check_page($target, $preflight)
+function mksi_check_page($target, $preflight, $error)
 {
     $source = $preflight['source'];
-    $csrf = (string) mksi_signature('csrf', $target);
     $body = '<p class="lead">' . mksi_e(mksi_t('check_lead')) . '</p>';
+
+    if ($error !== null) {
+        $body .= '<div class="alert error">' . mksi_e($error) . '</div>';
+    }
 
     foreach ($preflight['errors'] as $error) {
         $body .= '<div class="alert error">' . mksi_e($error) . '</div>';
@@ -1584,7 +1539,7 @@ function mksi_check_page($target, $preflight)
         $body .= '<p class="hint">' . mksi_e($hint) . '</p>';
     }
 
-    $body .= '<form method="post" action="?action=start"><input type="hidden" name="csrf" value="' . mksi_e($csrf) . '">'
+    $body .= '<form method="post" action="?action=start">'
         . '<div class="actions"><a class="btn secondary" href="' . mksi_e(mksi_script_name()) . '">' . mksi_e(mksi_t('check_again')) . '</a>'
         . '<button type="submit" class="btn"' . ($preflight['passes'] ? '' : ' disabled') . '>' . mksi_e(mksi_t('install')) . '</button></div></form>';
 
@@ -1595,15 +1550,14 @@ function mksi_check_page($target, $preflight)
 
 function mksi_run_page($target, $state)
 {
-    $csrf = (string) mksi_signature('csrf', $target);
     $progress = mksi_progress($state, $target);
     $body = '<p class="lead">' . mksi_e(mksi_t('run_lead')) . '</p>'
         . '<div><strong data-label>' . mksi_e($progress['label']) . '</strong> <span class="hint" data-detail>' . mksi_e($progress['detail']) . '</span></div>'
         . '<div class="bar" aria-hidden="true"><span data-bar style="width:' . (int) $progress['percent'] . '%"></span></div>'
         . '<div class="alert error" data-error hidden></div>'
-        . '<p class="hint">' . mksi_e(mksi_t('fallback', ['url' => '/install', 'file' => mksi_display_path(mksi_join($target['app'], MKSI_TOKEN_FILE), $target)])) . '</p>'
+        . '<p class="hint">' . mksi_e(mksi_t('fallback', ['url' => '/' . MKSI_INSTALL_URL])) . '</p>'
         . '<div class="actions" data-actions hidden>'
-        . '<form method="post" action="?action=reset"><input type="hidden" name="csrf" value="' . mksi_e($csrf) . '"><button type="submit" class="btn secondary">' . mksi_e(mksi_t('start_over')) . '</button></form>'
+        . '<form method="post" action="?action=reset"><button type="submit" class="btn secondary">' . mksi_e(mksi_t('start_over')) . '</button></form>'
         . '<button type="button" class="btn" data-retry>' . mksi_e(mksi_t('retry')) . '</button></div>';
 
     $text = json_encode([
@@ -1611,7 +1565,7 @@ function mksi_run_page($target, $state)
     ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
     $script = '<script>(function(){'
-        . 'var csrf=' . json_encode($csrf) . ',text=' . $text . ',failures=0;'
+        . 'var text=' . $text . ',failures=0;'
         . 'var bar=document.querySelector("[data-bar]"),label=document.querySelector("[data-label]"),detail=document.querySelector("[data-detail]"),'
         . 'errorBox=document.querySelector("[data-error]"),actions=document.querySelector("[data-actions]");'
         . 'function show(d){if(d.percent!==undefined){bar.style.width=d.percent+"%";}if(d.label){label.textContent=d.label;}detail.textContent=d.detail||"";}'
@@ -1619,7 +1573,7 @@ function mksi_run_page($target, $state)
         . 'function handoff(d){if(!d.handoff_url){location.href=d.install_url;return;}var f=document.createElement("form");f.method="post";f.action=d.handoff_url;'
         . '[["handoff",d.handoff],["locale",d.locale]].forEach(function(p){var i=document.createElement("input");i.type="hidden";i.name=p[0];i.value=p[1];f.appendChild(i);});'
         . 'document.body.appendChild(f);f.submit();}'
-        . 'function step(){fetch("?action=step",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:"csrf="+encodeURIComponent(csrf)})'
+        . 'function step(){fetch("?action=step",{method:"POST",credentials:"same-origin",headers:{"Accept":"application/json","X-MKSine-Installer":"1"}})'
         . '.then(function(r){return r.json();}).then(function(d){failures=0;show(d);'
         . 'if(d.reload&&!d.error){location.reload();return;}'
         . 'if(d.error){fail(d.error);return;}'

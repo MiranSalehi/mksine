@@ -12,6 +12,6 @@
         }
     },
     "notPath": [
-        "resources/installer/mksine-installer.php"
+        "resources/installer/mksine.php"
     ]
 }

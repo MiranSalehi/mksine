@@ -25,7 +25,7 @@ final class InstallerRoutes
                 Route::post('/language', 'storeLanguage')->name('language');
                 Route::get('/verify', 'verify')->name('verify');
                 Route::post('/verify', 'storeVerify')->middleware('throttle:10,1')->name('verify.store');
-                // Posted by mksine-installer.php; the one-time handoff code replaces the CSRF token.
+                // Posted by mksine.php; the one-time handoff code replaces the CSRF token.
                 Route::post('/handoff', 'handoff')->middleware('throttle:10,1')->withoutMiddleware(ValidateCsrfToken::class)->name('handoff');
                 Route::get('/requirements', 'requirements')->name('requirements');
                 Route::get('/database', 'database')->name('database');

@@ -7,13 +7,14 @@ namespace Miran\Mksine\Support;
 use RuntimeException;
 
 /**
- * The single-file quick installer (resources/installer/mksine-installer.php) that is
- * published next to each release. Users upload it to their web root; it downloads the
- * newest release from GitHub, checks the checksum and opens /install.
+ * The single-file quick installer (resources/installer/mksine.php) that is
+ * published next to each release. Users upload it to their web root and open
+ * /mksine.php; it downloads the newest release from GitHub, checks the checksum and opens
+ * /install.
  */
 final class QuickInstaller
 {
-    public const FILE_NAME = 'mksine-installer.php';
+    public const FILE_NAME = 'mksine.php';
 
     private const BUILD_MARKER = "const MKSI_BUILD = 'dev';";
 

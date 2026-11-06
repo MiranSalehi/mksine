@@ -7,9 +7,9 @@ namespace Miran\Mksine\Core\Install\Web;
 use Illuminate\Filesystem\Filesystem;
 
 /**
- * A one-time code left by the quick installer (mksine-installer.php) after it has put the
- * files in place. The visitor already entered the setup token there, so posting this code
- * to /install/handoff opens the installer without asking for the token again.
+ * A one-time code left by the quick installer (mksine.php) after it has put the
+ * files in place. Posting this code to /install/handoff makes the browser that ran the
+ * quick installer the owner of /install.
  *
  * The file holds only a SHA-256 hash and an expiry time; it is deleted on first use.
  */

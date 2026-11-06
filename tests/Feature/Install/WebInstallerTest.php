@@ -124,9 +124,7 @@ it('sends web requests to the installer until MKSine is installed', function ():
 it('shows the language choice and stores the chosen language', function (): void {
     $this->get('/install')->assertOk()->assertSee('فارسی')->assertSee('English');
 
-    $this->post('/install/language', ['locale' => 'fa'])->assertRedirect(route('mksine.installer.verify'));
-
-    becomeInstallerOwner();
+    $this->post('/install/language', ['locale' => 'fa'])->assertRedirect(route('mksine.installer.requirements'));
 
     $this->get('/install/requirements')
         ->assertOk()
@@ -134,8 +132,22 @@ it('shows the language choice and stores the chosen language', function (): void
         ->assertSee(__('mksine::install.web.requirements_heading', [], 'fa'));
 });
 
-it('keeps every page after the start closed until the setup token is entered', function (): void {
+it('opens the installer without a code for the first browser', function (): void {
+    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.welcome'));
+    $this->postJson('/install/run')->assertForbidden();
+
+    $this->post('/install/language', ['locale' => 'en'])->assertRedirect(route('mksine.installer.requirements'));
+    $this->get('/install/requirements')->assertOk();
+
+    expect(is_file($this->tmp . '/' . SetupToken::FILE_NAME))->toBeFalse();
+});
+
+it('asks a second browser for the setup code', function (): void {
+    $this->post('/install/language', ['locale' => 'en']);
+    $this->flushSession();
+
     $this->get('/install/requirements')->assertRedirect(route('mksine.installer.verify'));
+    $this->post('/install/language', ['locale' => 'en'])->assertRedirect(route('mksine.installer.verify'));
     $this->postJson('/install/run')->assertForbidden();
 
     $this->get('/install/verify')->assertOk()->assertSee(SetupToken::FILE_NAME);
@@ -151,7 +163,7 @@ it('rejects a wrong setup token', function (): void {
         ->assertRedirect('/install/verify')
         ->assertSessionHasErrors('token');
 
-    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.verify'));
+    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.welcome'));
 });
 
 it('opens the installer after the right setup token, typed loosely', function (): void {
@@ -200,7 +212,7 @@ it('rejects a wrong or expired handoff code', function (): void {
 
     file_put_contents(storage_path(InstallerHandoff::FILE), json_encode(['token_hash' => hash('sha256', 'handoff-code'), 'expires_at' => time() - 1]));
     $this->post('/install/handoff', ['handoff' => 'handoff-code'])->assertRedirect(route('mksine.installer.welcome'));
-    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.verify'));
+    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.welcome'));
 });
 
 it('tests and saves an SQLite database', function (): void {

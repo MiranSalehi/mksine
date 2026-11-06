@@ -8,6 +8,13 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.23.1 - 2026-11-06
+
+### Changed
+
+- **The quick installer is now `mksine.php`** (was `mksine-installer.php`) and opens at `https://your-domain/mksine.php`. It no longer asks for a setup code: the browser that clicks *Download and install* owns the run, and another browser can take over after 10 minutes without activity. Nothing is written to the server before the run starts.
+- **`/install` no longer asks for the setup code** in the browser that chooses the language first (a form post, so crawlers never claim it). The code from `SETUP-TOKEN.txt` is asked for only when a second browser tries to continue, and the file is created only then. Pages after the language step send an unclaimed visitor back to the language choice.
+
 ## 1.23.0 - 2026-11-06
 
 ### Added

@@ -9,9 +9,10 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 
 /**
- * Which browser session may run the installer. A session becomes the owner after it
- * enters the setup token ({@see SetupToken}); a later session that enters the token
- * takes over, because only someone with access to the server files can read it.
+ * Which browser session may run the installer. The first session that chooses a language
+ * (a form post, so crawlers never claim it) becomes the owner without a code. Another
+ * session can take over only with the setup token ({@see SetupToken}), because only
+ * someone with access to the server files can read it.
  */
 class InstallerOwnership
 {
@@ -27,6 +28,11 @@ class InstallerOwnership
         $hash = $this->ownerHash();
 
         return is_string($token) && $hash !== null && hash_equals($hash, hash('sha256', $token));
+    }
+
+    public function hasOwner(): bool
+    {
+        return $this->ownerHash() !== null;
     }
 
     public function claim(Session $session): void

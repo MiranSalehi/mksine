@@ -229,7 +229,7 @@ it('describes a release with sizes, checksums and requirements', function (): vo
         ])
         ->and($manifest['files'][1]['name'])->toBe('mksine-1.22.0-server.zip')
         ->and($manifest['installer'])->toBe([
-            'name' => 'mksine-installer.php',
+            'name' => 'mksine.php',
             'size' => filesize($installer),
             'sha256' => hash_file('sha256', $installer),
         ])
@@ -237,6 +237,6 @@ it('describes a release with sizes, checksums and requirements', function (): vo
         ->and(ReleaseManifest::checksums($manifest))->toBe(
             hash('sha256', 'shared-bytes') . '  mksine-1.22.0-shared-hosting.zip' . "\n"
             . hash('sha256', 'server-bytes!') . '  mksine-1.22.0-server.zip' . "\n"
-            . hash_file('sha256', $installer) . '  mksine-installer.php' . "\n"
+            . hash_file('sha256', $installer) . '  mksine.php' . "\n"
         );
 });
