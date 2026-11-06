@@ -45,6 +45,32 @@ class ReleaseArchiveBuildRoots
     }
 
     /**
+     * Build roots for a public release: this package and the plugins. Project themes and the
+     * project's own Vite build are not part of a release.
+     *
+     * @return list<string>
+     */
+    public static function discoverForRelease(string $basePath): array
+    {
+        $basePath = rtrim($basePath, DIRECTORY_SEPARATOR);
+        $roots = [];
+
+        $packagePath = $basePath.DIRECTORY_SEPARATOR.'packages'.DIRECTORY_SEPARATOR.'mksine';
+        if (self::packageHasBuildScript($packagePath.DIRECTORY_SEPARATOR.'package.json')) {
+            $roots[] = $packagePath;
+        }
+
+        return [...$roots, ...self::childBuildRoots(self::pluginsPath($basePath))];
+    }
+
+    public static function pluginsPath(string $basePath): string
+    {
+        $pluginsPath = (string) self::config('mksine.plugins_path', 'plugins');
+
+        return self::isAbsolute($pluginsPath) ? $pluginsPath : rtrim($basePath, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$pluginsPath;
+    }
+
+    /**
      * @return list<string>
      */
     private static function childBuildRoots(string $parent): array

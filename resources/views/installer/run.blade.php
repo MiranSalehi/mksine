@@ -80,6 +80,8 @@
             function fail(message) {
                 errorBox.textContent = message;
                 errorBox.hidden = false;
+                // Lets the user change the site details or plugin choice before retrying.
+                root.querySelector('[data-back]').hidden = false;
                 startButton.disabled = false;
                 startButton.textContent = text.retry;
             }

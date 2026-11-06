@@ -8,6 +8,23 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.22.1 - 2026-11-06
+
+### Fixed
+
+- **Release zips contained the maintainer's own project.** `mks:release-build` zipped the development application, so 1.22.0 downloads included editor and AI-tool folders (`.cursor`, `.ai`, `.agents`, `.specs`, `.mksflow`, `graphify-out`), internal notes, a project theme and project-specific code, at 123–140 MB. It now builds a clean Laravel application with MKSine and the plugins in a temporary folder, packs only the application folders, strips docs from `vendor/` and plugins, and never ships `composer.lock`. Downloads are about 44 MB. `--no-dev` is gone (production dependencies are always used); `--laravel`, `--skip-build` and `--keep-staging` were added.
+- **Web installer.** After a failed step, *Back* reappears so the site details or plugin choice can be changed before retrying. Long paths on the requirements page wrap instead of widening the page.
+
+## 1.22.0 - 2026-11-05
+
+### Added
+
+- **Install pipeline.** `mksine:install` runs ordered, repeatable steps (requirements, `.env`, user model, admin panel, publishing, migrations, assets, theme, plugins, permissions, hooks, admin, sample content, locale, runtime, finish), stops at the first failure with a non-zero exit code and continues with `--resume`. New options: `--profile`, `--theme`, `--plugins`, `--locale`, `--seed-demo`, `--app-url`, `--db-*`. It registers `MksinePlugin` on the admin panel and removes Laravel's welcome route.
+- **Web installer at `/install`** for hosts without a terminal: language, a security code from `SETUP-TOKEN.txt`, requirements, database test, site and admin, then one install step per request. It closes itself when installation finishes.
+- **Shared hosting support.** `MKSINE_PUBLIC_PATH` for a web root outside the project; migrations run in chunks; the scheduler drains the `database` queue on shared installs; the admin console is hidden where `proc_open` is disabled.
+- **System health page** (System → System health) for cron, queue, requirements, environment and risky settings.
+- **`mksine:doctor`**, **`mksine:server-config`** and **`mks:release-build`** (shared-hosting and server zips, `SHA256SUMS`, `release.json`), plus `scripts/publish-release.sh` for GitHub Releases.
+
 ## 1.21.0 - 2026-11-04
 
 ### Added

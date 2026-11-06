@@ -38,6 +38,7 @@
         table { width: 100%; border-collapse: collapse; }
         td { padding: 7px 4px; border-bottom: 1px solid var(--border); vertical-align: top; }
         td.status { text-align: end; white-space: nowrap; font-weight: 600; }
+        td.status .mono { white-space: normal; overflow-wrap: anywhere; font-weight: 400; }
         .ok { color: var(--ok); } .warn { color: var(--warn); } .error { color: var(--error); }
         .alert { padding: 12px 14px; border-radius: 8px; border: 1px solid currentColor; margin-bottom: 14px; }
         .alert ul { margin: 6px 0 0; padding-inline-start: 18px; }

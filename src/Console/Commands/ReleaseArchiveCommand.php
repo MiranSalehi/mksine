@@ -9,6 +9,7 @@ use Miran\Mksine\Support\ReleaseArchiveBuildRoots;
 use Miran\Mksine\Support\ReleaseArchiveOptions;
 use Miran\Mksine\Support\ReleaseArchiveStaging;
 use Miran\Mksine\Support\ReleaseArchiveZipper;
+use Miran\Mksine\Support\ReleaseAssetBuilder;
 use Symfony\Component\Process\Process;
 
 class ReleaseArchiveCommand extends Command
@@ -117,27 +118,12 @@ class ReleaseArchiveCommand extends Command
      */
     private function buildRoots(string $basePath, array $roots): bool
     {
-        foreach ($roots as $root) {
-            $label = str_replace($basePath.DIRECTORY_SEPARATOR, '', $root) ?: '(project root)';
+        $error = ReleaseAssetBuilder::build($basePath, $roots, fn (string $line) => $this->output->write($line));
 
-            if (! is_dir($root.DIRECTORY_SEPARATOR.'node_modules')) {
-                $installCommand = is_file($root.DIRECTORY_SEPARATOR.'package-lock.json') ? ['npm', 'ci'] : ['npm', 'install'];
-                $this->info('Installing npm dependencies in '.$label.'…');
+        if ($error !== null) {
+            $this->error($error);
 
-                if (! $this->runProcess($installCommand, $root)) {
-                    $this->error(implode(' ', $installCommand).' failed in '.$root);
-
-                    return false;
-                }
-            }
-
-            $this->info("Running npm run build in {$label}…");
-
-            if (! $this->runProcess(['npm', 'run', 'build'], $root)) {
-                $this->error('npm run build failed in '.$root);
-
-                return false;
-            }
+            return false;
         }
 
         return true;

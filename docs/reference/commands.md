@@ -466,12 +466,12 @@ See [Operations → release archive](../operations/release-archive.md) for the c
 ### `mks:release-build`
 
 ```
-mks:release-build [--output-dir=] [--no-dev] [--skip-build]
+mks:release-build [--output-dir=] [--laravel=^12.0] [--skip-build] [--keep-staging]
 ```
 
-Source: [`ReleaseBuildCommand`](../../src/Console/Commands/ReleaseBuildCommand.php).
+Source: [`ReleaseBuildCommand`](../../src/Console/Commands/ReleaseBuildCommand.php), [`ReleaseSkeleton`](../../src/Support/ReleaseSkeleton.php).
 
-Runs `mks:release-archive` for both layouts and writes `mksine-{version}-shared-hosting.zip`, `mksine-{version}-server.zip`, `SHA256SUMS` and `release.json` to `storage/app/releases/{version}/` (or `--output-dir`). Use `--no-dev` for public releases. See [Release archive → Publishing a release](../operations/release-archive.md#publishing-a-release).
+Builds a public release from a clean Laravel application with MKSine and the plugins (never from your own project) and writes `mksine-{version}-shared-hosting.zip`, `mksine-{version}-server.zip`, `SHA256SUMS` and `release.json` to `storage/app/releases/{version}/` (or `--output-dir`). Needs Composer and network access. See [Release archive → Publishing a release](../operations/release-archive.md#publishing-a-release).
 
 ## Updater commands
 

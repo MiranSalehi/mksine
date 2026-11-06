@@ -36,7 +36,7 @@ if ! git -C "$PACKAGE_DIR" ls-remote --exit-code --tags origin "refs/tags/$TAG" 
 fi
 
 echo "Building MKSine $VERSION release files…"
-php -d memory_limit=1G "$APP_DIR/artisan" mks:release-build --no-dev --output-dir="$OUT"
+php -d memory_limit=1G "$APP_DIR/artisan" mks:release-build --output-dir="$OUT"
 
 (cd "$OUT" && shasum -a 256 -c SHA256SUMS)
 

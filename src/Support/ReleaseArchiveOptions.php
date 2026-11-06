@@ -24,6 +24,8 @@ final readonly class ReleaseArchiveOptions
         public string $layout = self::LAYOUT_SINGLE,
         public string $appDirectory = 'mksine',
         public string $publicDirectory = 'public_html',
+        /** When set, only these top-level project entries are packed (see {@see ReleaseSkeleton::TOP_LEVEL_ALLOWLIST}). */
+        public ?array $topLevelAllowlist = null,
     ) {
         if (! in_array($layout, [self::LAYOUT_SINGLE, self::LAYOUT_SPLIT], true)) {
             throw new InvalidArgumentException("Unknown layout [{$layout}]. Use single or split.");
@@ -50,6 +52,10 @@ final readonly class ReleaseArchiveOptions
      */
     public function entryName(string $relativePath): ?string
     {
+        if ($this->topLevelAllowlist !== null && ! in_array(explode('/', $relativePath, 2)[0], $this->topLevelAllowlist, true)) {
+            return null;
+        }
+
         if (! $this->isSplit()) {
             return $relativePath;
         }

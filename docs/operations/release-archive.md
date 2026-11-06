@@ -18,8 +18,18 @@ There are two kinds of archive:
 For a public download (mksine.com), build both layouts at once:
 
 ```bash
-php artisan mks:release-build --no-dev
+php artisan mks:release-build
 ```
+
+A public release is **not** a zip of your own project. `mks:release-build` builds a clean application in a temporary folder and packs that:
+
+1. `composer create-project laravel/laravel` (`--laravel`, default `^12.0`).
+2. A copy of this package without docs, tests, build tooling or theme sources, installed as a path repository with `composer update --no-dev`.
+3. `filament:install --panels` and the file steps of `mksine:install` (user model, `MksinePlugin` on the panel, config, migrations, translations, assets).
+4. The plugins from `config('mksine.plugins_path')`, without `node_modules`, docs, tests, build files or stray archives, and their published assets.
+5. Cleanup: READMEs, changelogs and doc folders are stripped from `vendor/`; `composer.json` points at `https://github.com/MiranSalehi/mksine` with `^{version}` so a server with Composer can update later; `composer.lock` is not shipped.
+
+Only `app`, `bootstrap`, `config`, `database`, `lang`, `plugins`, `public`, `resources`, `routes`, `storage`, `vendor`, `artisan`, `composer.json` and `.env.example` are packed. Your project's own code, themes, `.env`, editor and AI-tool folders never reach a release. Every command in the build runs with a clean environment, so the maintainer's `APP_*` and `DB_*` settings do not leak in. It needs Composer and network access; `--skip-build` skips the npm builds of the package and plugins, and `--keep-staging` keeps the temporary application for inspection.
 
 This writes to `storage/app/releases/{version}/`:
 
@@ -30,12 +40,14 @@ This writes to `storage/app/releases/{version}/`:
 | `SHA256SUMS` | Checksums; verify with `shasum -a 256 -c SHA256SUMS` |
 | `release.json` | Version, release date, requirements and each file's name, size and SHA-256, for the download page |
 
-`scripts/publish-release.sh` (in the package) runs that build with `--no-dev`, verifies the checksums and attaches the files to the GitHub release for tag `v{version}`, which must already be pushed. It creates the release when it does not exist (`--draft` makes it a draft) and replaces the files when it does. It needs the GitHub CLI (`gh`) logged in. The download page reads the newest manifest from `https://github.com/MiranSalehi/mksine/releases/latest/download/release.json`.
+`scripts/publish-release.sh` (in the package) runs that build, verifies the checksums and attaches the files to the GitHub release for tag `v{version}`, which must already be pushed. It creates the release when it does not exist (`--draft` makes it a draft) and replaces the files when it does. It needs the GitHub CLI (`gh`) logged in. The download page reads the newest manifest from `https://github.com/MiranSalehi/mksine/releases/latest/download/release.json`.
 
 ```bash
-git -C packages/mksine tag v1.22.0 && git -C packages/mksine push origin v1.22.0
+git -C packages/mksine tag v1.22.1 && git -C packages/mksine push origin v1.22.1
 packages/mksine/scripts/publish-release.sh
 ```
+
+`mks:release-archive` (below) still zips **your own project**, for deploying your own site.
 
 End-user installation is described in [Installing MKSine](../guides/install/install.md) ([فارسی](../guides/install/install.fa.md)).
 

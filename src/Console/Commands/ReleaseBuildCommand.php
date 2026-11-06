@@ -6,51 +6,92 @@ namespace Miran\Mksine\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Miran\Mksine\Support\ComposerBinary;
 use Miran\Mksine\Support\PackageVersion;
+use Miran\Mksine\Support\ReleaseArchiveBuildRoots;
+use Miran\Mksine\Support\ReleaseArchiveOptions;
+use Miran\Mksine\Support\ReleaseArchiveZipper;
+use Miran\Mksine\Support\ReleaseAssetBuilder;
 use Miran\Mksine\Support\ReleaseManifest;
+use Miran\Mksine\Support\ReleaseSkeleton;
+use Throwable;
 
 /**
- * Builds everything a public release needs: the shared-hosting and server zips,
- * SHA256SUMS and release.json for the download page.
+ * Builds a public release from a clean Laravel application with MKSine and the official
+ * plugins — never from the maintainer's own project — and writes the shared-hosting and
+ * server zips, SHA256SUMS and release.json.
  */
 class ReleaseBuildCommand extends Command
 {
     protected $signature = 'mks:release-build
                             {--output-dir= : Directory for the release files (default storage/app/releases/{version})}
-                            {--no-dev : Production Composer dependencies only (recommended for public releases)}
-                            {--skip-build : Skip npm builds}';
+                            {--laravel=' . ReleaseSkeleton::LARAVEL_CONSTRAINT . ' : Laravel version constraint for the skeleton}
+                            {--skip-build : Skip npm builds of the package and plugins}
+                            {--keep-staging : Keep the staging application for inspection}';
 
-    protected $description = 'Build the shared-hosting and server zips, SHA256SUMS and release.json for a public release';
+    protected $description = 'Build a clean MKSine release (shared-hosting and server zips, SHA256SUMS, release.json)';
 
     public function handle(): int
     {
         $version = PackageVersion::current();
-        $outputDirectory = $this->outputDirectory($version);
-        File::ensureDirectoryExists($outputDirectory);
+        $basePath = base_path();
+        $composer = ComposerBinary::argv($basePath);
 
-        $files = [];
-        $skipBuild = (bool) $this->option('skip-build');
+        if ($composer === null) {
+            $this->error('Composer was not found; it is needed to build the release application.');
 
-        foreach (array_keys(ReleaseManifest::LAYOUTS) as $layout) {
-            $path = $outputDirectory . DIRECTORY_SEPARATOR . ReleaseManifest::fileName($version, $layout);
-            $this->info("Building {$layout} archive…");
+            return self::FAILURE;
+        }
 
-            $exitCode = $this->call('mks:release-archive', array_filter([
-                '--layout' => $layout,
-                '--output' => $path,
-                '--no-dev' => (bool) $this->option('no-dev'),
-                '--skip-build' => $skipBuild,
-            ]));
+        if (! $this->option('skip-build')) {
+            $error = ReleaseAssetBuilder::build($basePath, ReleaseArchiveBuildRoots::discoverForRelease($basePath), fn (string $line) => $this->output->write($line));
 
-            if ($exitCode !== self::SUCCESS) {
-                $this->error("Building the {$layout} archive failed.");
+            if ($error !== null) {
+                $this->error($error);
 
                 return self::FAILURE;
             }
+        }
 
-            // Assets are built once; the second layout reuses them.
-            $skipBuild = true;
-            $files[$layout] = $path;
+        $stagingPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'mksine-release-' . $version . '-' . bin2hex(random_bytes(4));
+
+        try {
+            (new ReleaseSkeleton(
+                packagePath: $basePath . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'mksine',
+                pluginsPath: ReleaseArchiveBuildRoots::pluginsPath($basePath),
+                stagingPath: $stagingPath,
+                composer: $composer,
+                version: $version,
+                log: fn (string $message) => $this->info($message),
+                laravelConstraint: (string) $this->option('laravel'),
+            ))->build();
+
+            $outputDirectory = $this->outputDirectory($version);
+            File::ensureDirectoryExists($outputDirectory);
+            $files = [];
+
+            foreach (array_keys(ReleaseManifest::LAYOUTS) as $layout) {
+                $path = $outputDirectory . DIRECTORY_SEPARATOR . ReleaseManifest::fileName($version, $layout);
+                $this->info("Packing the {$layout} archive…");
+
+                ReleaseArchiveZipper::createArchive($stagingPath, $path, new ReleaseArchiveOptions(
+                    includeExtensions: true,
+                    layout: $layout,
+                    topLevelAllowlist: ReleaseSkeleton::TOP_LEVEL_ALLOWLIST,
+                ));
+
+                $files[$layout] = $path;
+            }
+        } catch (Throwable $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        } finally {
+            if (! $this->option('keep-staging')) {
+                File::deleteDirectory($stagingPath);
+            } else {
+                $this->line("Staging application kept at {$stagingPath}");
+            }
         }
 
         $manifest = ReleaseManifest::build($version, $files, now());
@@ -64,10 +105,6 @@ class ReleaseBuildCommand extends Command
         }
         $this->line('  ' . ReleaseManifest::FILE_NAME . ', ' . ReleaseManifest::CHECKSUMS_FILE_NAME);
         $this->line("  in {$outputDirectory}");
-
-        if (! $this->option('no-dev')) {
-            $this->warn('Built without --no-dev: the zips include development packages. Use --no-dev for public releases.');
-        }
 
         return self::SUCCESS;
     }
