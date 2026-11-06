@@ -8,6 +8,14 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.23.0 - 2026-11-06
+
+### Added
+
+- **Quick installer (`mksine-installer.php`).** One small file, published with every release, that users upload to their web root instead of the zip. After the setup code from `SETUP-TOKEN.txt`, it checks the server, downloads the newest release from GitHub in time-limited parts (resumed with HTTP `Range`), verifies its SHA-256, checks every zip entry, extracts in batches, keeps the host's `.htaccess` lines, renames placeholder pages, sets `MKSINE_PUBLIC_PATH` for the real web folder and deletes itself. It picks the shared-hosting layout (`../mksine`) or, for an otherwise empty folder around a `public` web root, the server layout. Hosts that block downloads can upload the zip next to it. Written in PHP 7.0 syntax so an old PHP shows a readable message.
+- **`POST /install/handoff`.** A one-time code from the quick installer (stored as a SHA-256 hash, valid 30 minutes, deleted on use) opens the web installer without entering the setup code twice.
+- `mks:release-build` writes the version-stamped `mksine-installer.php` and lists it under `installer` in `release.json` and in `SHA256SUMS`; `scripts/publish-release.sh` uploads it.
+
 ## 1.22.1 - 2026-11-06
 
 ### Fixed

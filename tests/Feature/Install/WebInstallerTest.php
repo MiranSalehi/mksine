@@ -13,6 +13,7 @@ use Miran\Mksine\Core\Install\InstallPipeline;
 use Miran\Mksine\Core\Install\InstallProgress;
 use Miran\Mksine\Core\Install\PreInstallBootstrap;
 use Miran\Mksine\Core\Install\StepResult;
+use Miran\Mksine\Core\Install\Web\InstallerHandoff;
 use Miran\Mksine\Core\Install\Web\InstallerOwnership;
 use Miran\Mksine\Core\Install\Web\SetupToken;
 use Miran\Mksine\Http\Controllers\Installer\InstallerRoutes;
@@ -173,6 +174,33 @@ it('lets another browser with the setup token take over', function (): void {
 
     $this->post('/install/verify', ['token' => $code])->assertRedirect(route('mksine.installer.requirements'));
     $this->get('/install/requirements')->assertOk();
+});
+
+it('opens the installer once with the quick installer\'s handoff code', function (): void {
+    file_put_contents(storage_path(InstallerHandoff::FILE), json_encode(['token_hash' => hash('sha256', 'handoff-code'), 'expires_at' => time() + 600]));
+
+    $this->post('/install/handoff', ['handoff' => 'handoff-code', 'locale' => 'fa'])
+        ->assertRedirect(route('mksine.installer.requirements'))
+        ->assertSessionHas('mksine_installer.locale', 'fa');
+
+    $this->get('/install/requirements')->assertOk();
+    expect(file_exists(storage_path(InstallerHandoff::FILE)))->toBeFalse();
+
+    $this->flushSession();
+    $this->post('/install/handoff', ['handoff' => 'handoff-code'])->assertRedirect(route('mksine.installer.welcome'));
+    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.verify'));
+});
+
+it('rejects a wrong or expired handoff code', function (): void {
+    $this->post('/install/handoff', ['handoff' => 'anything'])->assertRedirect(route('mksine.installer.welcome'));
+
+    file_put_contents(storage_path(InstallerHandoff::FILE), json_encode(['token_hash' => hash('sha256', 'handoff-code'), 'expires_at' => time() + 600]));
+    $this->post('/install/handoff', ['handoff' => 'other-code'])->assertRedirect(route('mksine.installer.welcome'));
+    expect(file_exists(storage_path(InstallerHandoff::FILE)))->toBeTrue();
+
+    file_put_contents(storage_path(InstallerHandoff::FILE), json_encode(['token_hash' => hash('sha256', 'handoff-code'), 'expires_at' => time() - 1]));
+    $this->post('/install/handoff', ['handoff' => 'handoff-code'])->assertRedirect(route('mksine.installer.welcome'));
+    $this->get('/install/requirements')->assertRedirect(route('mksine.installer.verify'));
 });
 
 it('tests and saves an SQLite database', function (): void {

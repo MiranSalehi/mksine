@@ -10,5 +10,8 @@
         "types_spaces": {
             "space": "single"
         }
-    }
+    },
+    "notPath": [
+        "resources/installer/mksine-installer.php"
+    ]
 }

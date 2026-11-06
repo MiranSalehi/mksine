@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
+use Miran\Mksine\Support\QuickInstaller;
 use Miran\Mksine\Support\ReleaseArchiveBuildRoots;
 use Miran\Mksine\Support\ReleaseArchiveOptions;
 use Miran\Mksine\Support\ReleaseArchiveStaging;
@@ -209,10 +210,12 @@ it('describes a release with sizes, checksums and requirements', function (): vo
     rename($this->tmp . '/shared.zip', $shared);
     rename($this->tmp . '/server.zip', $server);
 
+    $installer = QuickInstaller::write($this->tmp, '1.22.0');
+
     $manifest = ReleaseManifest::build('1.22.0', [
         ReleaseArchiveOptions::LAYOUT_SPLIT => $shared,
         ReleaseArchiveOptions::LAYOUT_SINGLE => $server,
-    ], new DateTimeImmutable('2026-11-05T10:00:00+00:00'));
+    ], new DateTimeImmutable('2026-11-05T10:00:00+00:00'), $installer);
 
     expect($manifest['version'])->toBe('1.22.0')
         ->and($manifest['released_at'])->toBe('2026-11-05T10:00:00+00:00')
@@ -225,8 +228,15 @@ it('describes a release with sizes, checksums and requirements', function (): vo
             'sha256' => hash('sha256', 'shared-bytes'),
         ])
         ->and($manifest['files'][1]['name'])->toBe('mksine-1.22.0-server.zip')
+        ->and($manifest['installer'])->toBe([
+            'name' => 'mksine-installer.php',
+            'size' => filesize($installer),
+            'sha256' => hash_file('sha256', $installer),
+        ])
+        ->and(file_get_contents($installer))->toContain("const MKSI_BUILD = '1.22.0';")
         ->and(ReleaseManifest::checksums($manifest))->toBe(
             hash('sha256', 'shared-bytes') . '  mksine-1.22.0-shared-hosting.zip' . "\n"
             . hash('sha256', 'server-bytes!') . '  mksine-1.22.0-server.zip' . "\n"
+            . hash_file('sha256', $installer) . '  mksine-installer.php' . "\n"
         );
 });

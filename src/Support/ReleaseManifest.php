@@ -35,9 +35,10 @@ final class ReleaseManifest
 
     /**
      * @param  array<string, string>  $files  Layout => absolute zip path.
+     * @param  string|null  $installerPath  The stamped quick installer ({@see QuickInstaller}).
      * @return array<string, mixed>
      */
-    public static function build(string $version, array $files, DateTimeInterface $releasedAt): array
+    public static function build(string $version, array $files, DateTimeInterface $releasedAt, ?string $installerPath = null): array
     {
         $entries = [];
 
@@ -51,7 +52,7 @@ final class ReleaseManifest
             ];
         }
 
-        return [
+        $manifest = [
             'name' => 'MKSine',
             'version' => $version,
             'released_at' => $releasedAt->format(DATE_ATOM),
@@ -63,6 +64,16 @@ final class ReleaseManifest
             ],
             'files' => $entries,
         ];
+
+        if ($installerPath !== null) {
+            $manifest['installer'] = [
+                'name' => basename($installerPath),
+                'size' => (int) filesize($installerPath),
+                'sha256' => (string) hash_file('sha256', $installerPath),
+            ];
+        }
+
+        return $manifest;
     }
 
     /**
@@ -70,9 +81,15 @@ final class ReleaseManifest
      */
     public static function checksums(array $manifest): string
     {
+        $files = (array) $manifest['files'];
+
+        if (isset($manifest['installer']) && is_array($manifest['installer'])) {
+            $files[] = $manifest['installer'];
+        }
+
         $lines = array_map(
             fn (array $file): string => $file['sha256'] . '  ' . $file['name'],
-            (array) $manifest['files'],
+            $files,
         );
 
         return implode("\n", $lines) . "\n";

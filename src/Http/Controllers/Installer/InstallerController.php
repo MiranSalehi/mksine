@@ -23,6 +23,7 @@ use Miran\Mksine\Core\Install\InstallContext;
 use Miran\Mksine\Core\Install\InstallPipeline;
 use Miran\Mksine\Core\Install\InstallStepStatus;
 use Miran\Mksine\Core\Install\Steps\ConfigureRuntimeStep;
+use Miran\Mksine\Core\Install\Web\InstallerHandoff;
 use Miran\Mksine\Core\Install\Web\InstallerOwnership;
 use Miran\Mksine\Core\Install\Web\SetupToken;
 use Miran\Mksine\Core\Plugins\PluginManager;
@@ -85,6 +86,29 @@ class InstallerController extends Controller
 
         $request->session()->regenerate();
         $ownership->claim($request->session());
+
+        return redirect()->route('mksine.installer.requirements');
+    }
+
+    /**
+     * Continue from the quick installer, which already checked the setup token.
+     */
+    public function handoff(Request $request, InstallerHandoff $handoff, InstallerOwnership $ownership): RedirectResponse
+    {
+        $code = $request->input('handoff');
+
+        if (! is_string($code) || ! $handoff->consume($code)) {
+            return redirect()->route('mksine.installer.welcome');
+        }
+
+        $request->session()->regenerate();
+        $ownership->claim($request->session());
+
+        $locale = $request->input('locale');
+
+        if (in_array($locale, PrepareInstallerRequest::LOCALES, true)) {
+            $request->session()->put(PrepareInstallerRequest::LOCALE_SESSION_KEY, $locale);
+        }
 
         return redirect()->route('mksine.installer.requirements');
     }

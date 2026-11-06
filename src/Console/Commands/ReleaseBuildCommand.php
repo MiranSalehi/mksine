@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Miran\Mksine\Support\ComposerBinary;
 use Miran\Mksine\Support\PackageVersion;
+use Miran\Mksine\Support\QuickInstaller;
 use Miran\Mksine\Support\ReleaseArchiveBuildRoots;
 use Miran\Mksine\Support\ReleaseArchiveOptions;
 use Miran\Mksine\Support\ReleaseArchiveZipper;
@@ -19,7 +20,7 @@ use Throwable;
 /**
  * Builds a public release from a clean Laravel application with MKSine and the official
  * plugins — never from the maintainer's own project — and writes the shared-hosting and
- * server zips, SHA256SUMS and release.json.
+ * server zips, the quick installer (mksine-installer.php), SHA256SUMS and release.json.
  */
 class ReleaseBuildCommand extends Command
 {
@@ -29,7 +30,7 @@ class ReleaseBuildCommand extends Command
                             {--skip-build : Skip npm builds of the package and plugins}
                             {--keep-staging : Keep the staging application for inspection}';
 
-    protected $description = 'Build a clean MKSine release (shared-hosting and server zips, SHA256SUMS, release.json)';
+    protected $description = 'Build a clean MKSine release (shared-hosting and server zips, quick installer, SHA256SUMS, release.json)';
 
     public function handle(): int
     {
@@ -82,6 +83,8 @@ class ReleaseBuildCommand extends Command
 
                 $files[$layout] = $path;
             }
+
+            $installerPath = QuickInstaller::write($outputDirectory, $version);
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
 
@@ -94,7 +97,7 @@ class ReleaseBuildCommand extends Command
             }
         }
 
-        $manifest = ReleaseManifest::build($version, $files, now());
+        $manifest = ReleaseManifest::build($version, $files, now(), $installerPath);
         File::put($outputDirectory . DIRECTORY_SEPARATOR . ReleaseManifest::FILE_NAME, (string) json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
         File::put($outputDirectory . DIRECTORY_SEPARATOR . ReleaseManifest::CHECKSUMS_FILE_NAME, ReleaseManifest::checksums($manifest));
 
@@ -103,7 +106,7 @@ class ReleaseBuildCommand extends Command
         foreach ($manifest['files'] as $file) {
             $this->line(sprintf('  %s  %s MB', $file['name'], number_format($file['size'] / 1048576, 1)));
         }
-        $this->line('  ' . ReleaseManifest::FILE_NAME . ', ' . ReleaseManifest::CHECKSUMS_FILE_NAME);
+        $this->line('  ' . QuickInstaller::FILE_NAME . ', ' . ReleaseManifest::FILE_NAME . ', ' . ReleaseManifest::CHECKSUMS_FILE_NAME);
         $this->line("  in {$outputDirectory}");
 
         return self::SUCCESS;

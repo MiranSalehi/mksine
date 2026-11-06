@@ -12,6 +12,8 @@
 #
 # The download page reads the newest manifest from
 #   https://github.com/{repo}/releases/latest/download/release.json
+# and links the quick installer at
+#   https://github.com/{repo}/releases/latest/download/mksine-installer.php
 set -euo pipefail
 
 PACKAGE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -40,7 +42,7 @@ php -d memory_limit=1G "$APP_DIR/artisan" mks:release-build --output-dir="$OUT"
 
 (cd "$OUT" && shasum -a 256 -c SHA256SUMS)
 
-ASSETS=("$OUT"/mksine-"$VERSION"-*.zip "$OUT/release.json" "$OUT/SHA256SUMS")
+ASSETS=("$OUT"/mksine-"$VERSION"-*.zip "$OUT/mksine-installer.php" "$OUT/release.json" "$OUT/SHA256SUMS")
 
 if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
     gh release upload "$TAG" "${ASSETS[@]}" --repo "$REPO" --clobber
@@ -50,3 +52,4 @@ fi
 
 echo "Published: https://github.com/$REPO/releases/tag/$TAG"
 echo "Manifest:  https://github.com/$REPO/releases/latest/download/release.json"
+echo "Installer: https://github.com/$REPO/releases/latest/download/mksine-installer.php"

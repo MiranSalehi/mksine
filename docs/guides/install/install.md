@@ -13,10 +13,29 @@ This guide is for site owners installing MKSine from the download on mksine.com.
 - **An empty database** (MySQL 5.7+, MariaDB 10.3+ or PostgreSQL) and a user with full access to it. SQLite also works for small sites.
 - **Access to your files**: the hosting panel's File Manager, FTP or SSH.
 
+## Quick install (recommended)
+
+Instead of uploading the whole zip, upload one small file and let it fetch MKSine for you.
+
+1. Create the database and choose PHP 8.2 or newer (steps 1 and 2 under [Shared hosting](#shared-hosting-cpanel-directadmin)).
+2. Download `mksine-installer.php` from mksine.com and upload it to `public_html` (your domain's web folder).
+3. Open `https://YOURDOMAIN/mksine-installer.php`.
+4. **Security code.** It creates `mksine/SETUP-TOKEN.txt` next to `public_html`. Open that file in the File Manager and enter the code on its first line.
+5. It checks PHP, extensions, folder permissions and disk space, and shows where the files will go. Click **Download and install**.
+6. Keep the page open. It downloads the newest release from GitHub in small parts (a slow host does not time out), checks its SHA-256 checksum, extracts it and deletes itself. A host placeholder page such as `index.html` is renamed to `index.html.mksine-old`; your host's lines in `.htaccess` (such as the PHP version) are kept.
+7. The MKSine installer opens at the *Requirements* step; you do not enter the code again. Continue from [step 4](#4-run-the-installer) below.
+
+Notes:
+
+- The application goes to a `mksine/` folder **next to** the web folder, as in the manual install. If that folder already contains files, or the web folder already has an `index.php`, it stops and tells you what to remove.
+- If your host blocks downloads from the internet, download `mksine-{version}-shared-hosting.zip` yourself and upload it next to `mksine-installer.php`. The installer uses the uploaded zip.
+- On your own server, when the web root is a folder named `public` with nothing else beside it (for example `/var/www/example.com/public`), the application goes to its parent folder and `mksine-{version}-server.zip` is used.
+
 ## Which file to download
 
 | File | For |
 | ---- | --- |
+| `mksine-installer.php` | [Quick install](#quick-install-recommended): upload one file, it downloads the rest |
 | `mksine-{version}-shared-hosting.zip` | cPanel, DirectAdmin and other hosting panels |
 | `mksine-{version}-server.zip` | Your own server (VPS) where you control the web server |
 | `SHA256SUMS` | Optional: checksums to confirm the download is intact (`shasum -a 256 -c SHA256SUMS`) |
@@ -129,6 +148,8 @@ On shared hosting it is normal that *Background processes* shows *Disabled*; the
 | A blank page or "500 Server Error" before the installer appears | Check the PHP version (8.2+) and that `mksine/storage` and `mksine/bootstrap/cache` are writable. The error is in `mksine/storage/logs/laravel.log`. |
 | A "Composer dependencies require a PHP version" message | Your domain uses an older PHP. Change it in the panel (step 2). |
 | The host's placeholder page shows instead of the installer | Delete `index.html` / `default.html` from `public_html`. |
+| `mksine-installer.php` says it could not read the latest release | Your host blocks outgoing downloads. Upload the shared-hosting zip next to `mksine-installer.php` and click *Check again*. |
+| `mksine-installer.php` asks to be moved to the site's root folder | Upload it directly into the domain's web folder, not into a subfolder. |
 | "Could not create the security code file" | Make the `mksine/` folder writable (permissions 755), then reload. |
 | "Could not connect to the database" | Use `localhost` as the host, and the full prefixed database and user names. Make sure the user has all privileges on the database. |
 | A step fails during installation | Read the message under the step, fix the cause, and click *Try again*. Finished steps are not repeated. |

@@ -107,7 +107,7 @@ final class ReleaseSkeleton
             }
         }
 
-        if (preg_match('#^resources/views/themes/[^/]+/src/#', $relativePath) === 1) {
+        if (preg_match('#^resources/views/themes/[^/]+/src/#', $relativePath) === 1 || str_starts_with($relativePath, 'resources/installer/')) {
             return false;
         }
 

@@ -37,15 +37,28 @@ This writes to `storage/app/releases/{version}/`:
 | ---- | ------- |
 | `mksine-{version}-shared-hosting.zip` | Split layout (`mksine/` + `public_html/`) for cPanel and DirectAdmin |
 | `mksine-{version}-server.zip` | Single layout for a VPS; point the document root at `public/` |
+| `mksine-installer.php` | The quick installer (below), with the version stamped in |
 | `SHA256SUMS` | Checksums; verify with `shasum -a 256 -c SHA256SUMS` |
-| `release.json` | Version, release date, requirements and each file's name, size and SHA-256, for the download page |
+| `release.json` | Version, release date, requirements, each zip's name, size and SHA-256, and the quick installer under `installer`, for the download page |
 
 `scripts/publish-release.sh` (in the package) runs that build, verifies the checksums and attaches the files to the GitHub release for tag `v{version}`, which must already be pushed. It creates the release when it does not exist (`--draft` makes it a draft) and replaces the files when it does. It needs the GitHub CLI (`gh`) logged in. The download page reads the newest manifest from `https://github.com/MiranSalehi/mksine/releases/latest/download/release.json`.
 
 ```bash
-git -C packages/mksine tag v1.22.1 && git -C packages/mksine push origin v1.22.1
+git -C packages/mksine tag v1.23.0 && git -C packages/mksine push origin v1.23.0
 packages/mksine/scripts/publish-release.sh
 ```
+
+### Quick installer (`mksine-installer.php`)
+
+A single PHP file (source: [`resources/installer/mksine-installer.php`](../../resources/installer/mksine-installer.php)) that users upload to their web root instead of the zip. It uses only PHP 7.0 syntax, so an old PHP version gets a readable message rather than a parse error. It:
+
+1. writes `SETUP-TOKEN.txt` to the application folder (the same file and format as `/install`) and asks for the code;
+2. reads `release.json` from `releases/latest/download/` and downloads the zip for its layout from the **versioned** URL `releases/download/v{version}/`, in time-limited parts resumed with HTTP `Range`;
+3. checks the SHA-256 from the manifest, then checks every entry (no `..` or absolute paths, no existing file overwritten) before extracting in batches;
+4. writes `index.php` and the merged `.htaccess` last, sets `MKSINE_PUBLIC_PATH` in `.env.example` to the real web folder, and deletes the zip, its state file and itself;
+5. posts a one-time code to `/install/handoff` ([`InstallerHandoff`](../../src/Core/Install/Web/InstallerHandoff.php): SHA-256 in `storage/mksine/installer-handoff.json`, valid for 30 minutes, deleted on use), so `/install` opens without asking for the token again. Releases before 1.23.0 have no handoff route; the installer then opens `/install`.
+
+Layout: shared (`../mksine` + the web root) unless the web root is a folder named `public` whose parent holds nothing else, in which case the server zip is extracted into the parent. A zip named `mksine-{version}-{shared-hosting|server}.zip` next to the file is used instead of downloading; it is checksum-verified only when it matches the latest manifest. `MKSINE_INSTALLER_MANIFEST_URL` (environment) overrides the manifest URL for testing.
 
 `mks:release-archive` (below) still zips **your own project**, for deploying your own site.
 

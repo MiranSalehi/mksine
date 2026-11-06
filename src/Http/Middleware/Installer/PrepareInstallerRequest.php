@@ -21,7 +21,7 @@ class PrepareInstallerRequest
     public const LOCALE_SESSION_KEY = 'mksine_installer.locale';
 
     /** @var list<string> */
-    public const OPEN_ROUTES = ['mksine.installer.welcome', 'mksine.installer.language', 'mksine.installer.verify', 'mksine.installer.verify.store'];
+    public const OPEN_ROUTES = ['mksine.installer.welcome', 'mksine.installer.language', 'mksine.installer.verify', 'mksine.installer.verify.store', 'mksine.installer.handoff'];
 
     public function __construct(private readonly InstallerOwnership $ownership) {}
 
