@@ -31,6 +31,10 @@ When adding an entry, copy this skeleton:
 
 ## Unreleased
 
+- (none)
+
+## 1.26.0 (2026-11-17)
+
 ### Action required
 
 - Other roles than Super Admin need the generated `View:SettingsAppearancePage` permission (run `shield:generate`) to edit the company appearance. *My appearance* needs no permission.
@@ -40,6 +44,7 @@ When adding an entry, copy this skeleton:
 
 - Custom admin screens that used violet accents (menu builder, page builder, marketplace) now follow the primary colour, blue by default; emerald became Filament's `success` green.
 - When a company or personal look sets the mode, Filament's light/dark switcher in the user menu is hidden.
+- Print views can opt into the company colour with `<x-mksine::print.colors />` in `<head>` and `var(--mks-print-title, <old value>)`-style fallbacks; with *Print without colour* on they print as before.
 
 ## 1.25.0 (2026-11-17)
 

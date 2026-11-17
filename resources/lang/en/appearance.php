@@ -65,6 +65,8 @@ return [
     'notices' => [
         'adjusted' => 'Darkened a little so text on it stays readable.',
         'near_danger' => 'This colour is close to the red used for errors and deletes; ordinary buttons may look like delete buttons.',
+        'label_with_floating' => 'Has no effect with floating labels: the label sits inside the field.',
+        'label_side_narrow' => 'Side labels apply to boxed fields wide enough (about 19rem); narrower fields keep the label on top.',
     ],
     'errors' => [
         'bad_hex' => 'Use a colour code like #rgb or #rrggbb.',
@@ -101,5 +103,11 @@ return [
         'row_2' => 'Order 1025',
         'row_3' => 'Order 1026',
         'link' => 'View all',
+    ],
+    'print' => [
+        'heading' => 'Printing',
+        'monochrome' => 'Print without colour',
+        'monochrome_helper' => 'On: prints are black and grey. Off: titles, the header rule and table headings use the company appearance’s primary colour (never a person’s own look).',
+        'saved' => 'Print setting saved.',
     ],
 ];

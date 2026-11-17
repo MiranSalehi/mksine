@@ -79,7 +79,9 @@ final class AppearanceRenderer
 
         $style = $variables === '' ? '' : '<style data-mks-appearance>html.fi{' . $variables . '}</style>';
 
-        return $style . '<script data-mks-appearance>' . $this->bootScript($state) . '</script>';
+        $floating = $look->field === AppearanceField::Floating ? self::floatingLabelScript() : '';
+
+        return $style . '<script data-mks-appearance>' . $this->bootScript($state) . $floating . '</script>';
     }
 
     /**
@@ -171,6 +173,38 @@ final class AppearanceRenderer
         }
 
         return $css;
+    }
+
+    /**
+     * Floating labels need to know whether a text input holds a value. Filament drops blank
+     * placeholders, so `:placeholder-shown` cannot tell; this keeps `data-mks-filled` on each
+     * `.fi-fo-field` in sync on typing, after Livewire morphs and after `wire:navigate`.
+     * Idempotent, and inert unless `<html data-field="floating">`.
+     */
+    public static function floatingLabelScript(): string
+    {
+        return <<<'JS'
+(function () {
+    if (window.mksFloatingLabels) { return; }
+    var mark = function (field) {
+        var input = field.querySelector('.fi-fo-text-input input.fi-input');
+        if (input) { field.toggleAttribute('data-mks-filled', input.value !== ''); }
+    };
+    var sync = function () {
+        if (document.documentElement.getAttribute('data-field') !== 'floating') { return; }
+        document.querySelectorAll('.fi-fo-field').forEach(mark);
+    };
+    window.mksFloatingLabels = { sync: sync };
+    document.addEventListener('input', function (event) {
+        var field = event.target && event.target.closest ? event.target.closest('.fi-fo-field') : null;
+        if (field) { mark(field); }
+    }, true);
+    document.addEventListener('DOMContentLoaded', sync);
+    document.addEventListener('livewire:navigated', sync);
+    var hook = function () { window.Livewire.hook('morphed', function () { sync(); }); };
+    if (window.Livewire && window.Livewire.hook) { hook(); } else { document.addEventListener('livewire:init', hook); }
+})();
+JS;
     }
 
     /**

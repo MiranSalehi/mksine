@@ -8,6 +8,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Validation\ValidationException;
 use Miran\Mksine\Core\Appearance\Appearance;
 use Miran\Mksine\Core\Appearance\AppearanceRepository;
+use Miran\Mksine\Core\Appearance\PrintColors;
 use Miran\Mksine\Filament\Concerns\InteractsWithAppearanceEditor;
 
 /**
@@ -24,6 +25,8 @@ class SettingsAppearancePage extends MksSettingsPage
 
     public string $saveName = '';
 
+    public bool $printMonochrome = false;
+
     public static function getNavigationLabel(): string
     {
         return __('mksine::appearance.company.navigation_label');
@@ -32,6 +35,19 @@ class SettingsAppearancePage extends MksSettingsPage
     public function mount(): void
     {
         $this->fillAppearanceEditor(app(AppearanceRepository::class)->company());
+        $this->printMonochrome = app(PrintColors::class)->isMonochrome();
+    }
+
+    /**
+     * "Print without colour" is an ordinary company setting, saved as soon as it is switched.
+     */
+    public function updatedPrintMonochrome(): void
+    {
+        $this->authorizeCompanyEdit();
+
+        app(PrintColors::class)->setMonochrome($this->printMonochrome);
+
+        Notification::make()->title(__('mksine::appearance.print.saved'))->success()->send();
     }
 
     protected function settingsSchema(): array

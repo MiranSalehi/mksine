@@ -1,6 +1,17 @@
 <x-filament-panels::page>
     @include('mksine::filament.partials.appearance-editor')
 
+    <section class="max-w-2xl space-y-2 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
+        <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ __('mksine::appearance.print.heading') }}</h3>
+        <label class="flex items-start gap-3">
+            <x-filament::input.checkbox wire:model.live="printMonochrome" class="mt-0.5" />
+            <span class="space-y-1">
+                <span class="block text-sm font-medium text-gray-950 dark:text-white">{{ __('mksine::appearance.print.monochrome') }}</span>
+                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ __('mksine::appearance.print.monochrome_helper') }}</span>
+            </span>
+        </label>
+    </section>
+
     <x-filament::modal id="mks-appearance-save-named" width="md" :heading="__('mksine::appearance.saved_looks.save_as')">
         <form wire:submit="saveNamedAppearance" class="space-y-3">
             <label for="mks-appearance-save-name" class="block text-sm font-medium text-gray-950 dark:text-white">
