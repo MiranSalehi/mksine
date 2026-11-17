@@ -6,11 +6,17 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
+- (none)
+
+## 1.26.0 - 2026-11-17
+
 ### Added
 
 - **Admin appearance.** Settings → Appearance sets the company look (everyone's default); **My appearance** in the user menu lets each admin change any part for themselves only, with *Same as company* to clear it. Parts: primary colour (8 ready colours, picker, hex), light/dark/system mode, sidebar colour (dark/light/brand), corners, text size and density. Ready looks Modern (the current panel), Classic, Minimal, Soft and Bold; the company can save up to 24 named looks. Live preview applies to the current page only and is undone on leave.
 - **Colour engine** (`Miran\Mksine\Core\Appearance\ColorScale`): builds the 50–950 palette in OKLCH with step 600 equal to the chosen colour, darkened only until white text on it reaches 4.5:1 (never below lightness 0.3); tinted greys, an accent at −40°, sRGB gamut mapping, and a warning when the hue is within 14° of the danger red.
 - The look is resolved on the server and written into `<head>` (no flash, also after `wire:navigate`). With no look set nothing is added and the panel is unchanged.
+- **Field shapes and label position** (Settings → Appearance → Forms, and My appearance): filled (Filament's own), outlined, underline and floating label; labels on top or beside the field. A side label applies only when the boxed field itself is at least ~19rem wide (container query); segmented choices, checkboxes, toggles, radios, rich-text editors and table/simple repeater rows keep their layout. *Top* also undoes forms that ask for inline labels.
+- **Company colour in print.** `<x-mksine::print.colors />` gives print views `--mks-print-title`/`-rule`/`-head-bg`/`-accent` from the **company** look (never a person's own), with `print-color-adjust: exact`. *Print without colour* on Settings → Appearance emits nothing, so views that use the variables with their old values as fallback print exactly as before. mks-booking's appointment and consent prints use it.
 
 ### Changed
 

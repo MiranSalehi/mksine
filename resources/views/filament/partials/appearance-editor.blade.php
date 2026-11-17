@@ -54,6 +54,7 @@
             })
             const dark = state.mode === 'dark' || (state.mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
             root.classList.toggle('dark', state.mode ? dark : this.snapshot.dark)
+            window.mksFloatingLabels && window.mksFloatingLabels.sync()
         },
         restore() {
             if (! this.snapshot) { return }
@@ -65,12 +66,14 @@
             })
             root.classList.toggle('dark', this.snapshot.dark)
             this.snapshot = null
+            window.mksFloatingLabels && window.mksFloatingLabels.sync()
         },
     }"
     x-on:mks-appearance-preview.window="if ($event.detail.editor === editor) { apply($event.detail.state) }"
     x-on:mks-appearance-restore.window="if ($event.detail.editor === editor) { restore() }"
     x-on:livewire:navigating.window="restore()"
 >
+    <script>{!! \Miran\Mksine\Core\Appearance\AppearanceRenderer::floatingLabelScript() !!}</script>
     <div class="@container"><div class="grid gap-6 @3xl:grid-cols-[minmax(0,1fr)_16rem] @5xl:grid-cols-[minmax(0,1fr)_19rem]">
         {{-- Settings column (its own container: cards and parts follow its width) --}}
         <div class="@container min-w-0 space-y-6">

@@ -436,6 +436,7 @@ class MksineServiceProvider extends PackageServiceProvider
         // Admin look (company + personal): read once per request.
         $this->app->scoped(\Miran\Mksine\Core\Appearance\AppearanceRepository::class);
         $this->app->scoped(\Miran\Mksine\Core\Appearance\AppearanceRenderer::class);
+        $this->app->scoped(\Miran\Mksine\Core\Appearance\PrintColors::class);
 
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {

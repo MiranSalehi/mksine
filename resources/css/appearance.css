@@ -144,3 +144,155 @@ html[data-rail='brand']:not(.dark) .fi-sidebar {
 html.dark[data-rail='brand'] .fi-sidebar {
     background-color: var(--primary-900);
 }
+
+/* ---- Field shapes (Filament's boxed inputs: .fi-input-wrp) ----
+ * filled (default): Filament's own white box with a soft ring — nothing here.
+ * Error (.fi-invalid), disabled and read-only states keep Filament's colours in every shape.
+ */
+html[data-field='outlined'] .fi-input-wrp,
+html[data-field='floating'] .fi-input-wrp {
+    --tw-shadow: 0 0 transparent;
+}
+
+html[data-field='outlined'] .fi-input-wrp:not(.fi-invalid):not(:focus-within),
+html[data-field='floating'] .fi-input-wrp:not(.fi-invalid):not(:focus-within) {
+    --tw-ring-color: var(--gray-400);
+}
+
+html.dark[data-field='outlined'] .fi-input-wrp:not(.fi-invalid):not(:focus-within),
+html.dark[data-field='floating'] .fi-input-wrp:not(.fi-invalid):not(:focus-within) {
+    --tw-ring-color: var(--gray-600);
+}
+
+html[data-field='underline'] .fi-input-wrp {
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: inset 0 -1px 0 var(--gray-400);
+}
+
+html.dark[data-field='underline'] .fi-input-wrp {
+    box-shadow: inset 0 -1px 0 var(--gray-600);
+}
+
+html[data-field='underline'] .fi-input-wrp:not(.fi-disabled):focus-within {
+    box-shadow: inset 0 -2px 0 var(--primary-600);
+}
+
+html.dark[data-field='underline'] .fi-input-wrp:not(.fi-disabled):focus-within {
+    box-shadow: inset 0 -2px 0 var(--primary-500);
+}
+
+html[data-field='underline'] .fi-input-wrp.fi-invalid,
+html[data-field='underline'] .fi-input-wrp.fi-invalid:focus-within {
+    box-shadow: inset 0 -2px 0 var(--danger-600);
+}
+
+html[data-field='underline'] .fi-input-wrp .fi-input-wrp-content-ctn-ps,
+html[data-field='underline'] .fi-input-wrp .fi-input {
+    padding-inline-start: 0.25rem;
+}
+
+/* ---- Floating label: one-line text inputs only, without placeholder, prefix or hint ----
+ * The label sits inside the empty box and moves onto its frame when the field has focus or a value
+ * ([data-mks-filled] is kept in sync by AppearanceRenderer's script: Filament drops blank placeholders,
+ * so :placeholder-shown cannot tell).
+ */
+html[data-field='floating'] .fi-fo-field:has(> .fi-fo-field-content-col .fi-fo-text-input):not(:has(.fi-input-wrp-prefix-has-content, input.fi-input[placeholder], > .fi-fo-field-label-col .fi-fo-field-label-ctn > :not(.fi-fo-field-label))) {
+    position: relative;
+
+    & > .fi-fo-field-label-col {
+        position: absolute;
+        z-index: 1;
+        inset-block-start: 0;
+        inset-inline-start: 0.625rem;
+        display: flex;
+        align-items: center;
+        block-size: 2.25rem;
+        max-inline-size: calc(100% - 1.25rem);
+        padding-inline: 0.25rem;
+        pointer-events: none;
+        transition:
+            block-size 120ms ease,
+            inset-block-start 120ms ease;
+    }
+
+    & .fi-fo-field-label-content {
+        font-weight: 400;
+        color: var(--gray-500);
+        transition: font-size 120ms ease;
+    }
+
+    &:focus-within > .fi-fo-field-label-col,
+    &[data-mks-filled] > .fi-fo-field-label-col {
+        inset-block-start: -0.55rem;
+        block-size: 1.1rem;
+        background-color: var(--color-white);
+    }
+
+    &:focus-within .fi-fo-field-label-content,
+    &[data-mks-filled] .fi-fo-field-label-content {
+        font-size: var(--text-xs);
+        color: var(--gray-600);
+    }
+
+    &:focus-within .fi-fo-field-label-content {
+        color: var(--primary-600);
+    }
+}
+
+html.dark[data-field='floating'] .fi-fo-field:has(> .fi-fo-field-content-col .fi-fo-text-input) {
+    &:focus-within > .fi-fo-field-label-col,
+    &[data-mks-filled] > .fi-fo-field-label-col {
+        background-color: var(--gray-900);
+    }
+
+    &:focus-within .fi-fo-field-label-content,
+    &[data-mks-filled] .fi-fo-field-label-content {
+        color: var(--gray-300);
+    }
+
+    &:focus-within .fi-fo-field-label-content {
+        color: var(--primary-400);
+    }
+}
+
+/* ---- Label position ----
+ * Top: also undoes forms whose code asked for inline labels.
+ * Side: each boxed field measures itself (container query): from ~19rem the label takes an 8rem
+ * column beside the box, narrower fields keep it on top. Segmented choices, checkboxes, toggles,
+ * radios, rich-text editors and table/simple repeater rows keep their own layout. No effect with
+ * floating labels.
+ */
+html[data-label='top'] .fi-fo-field.fi-fo-field-has-inline-label {
+    grid-template-columns: minmax(0, 1fr);
+
+    & .fi-fo-field-content-col {
+        grid-column: auto;
+    }
+}
+
+html[data-label='side']:not([data-field='floating'])
+    .fi-fo-field:has(> .fi-fo-field-content-col .fi-input-wrp):not(:has(.fi-fo-repeater, .fi-fo-builder, .fi-fo-key-value, .fi-fo-checkbox-list, .fi-fo-radio, .fi-fo-toggle-buttons, .fi-fo-rich-editor, .fi-fo-markdown-editor, .ckeditor-field-wrapper)):not(.fi-fo-table-repeater .fi-fo-field, .fi-fo-simple-repeater .fi-fo-field) {
+    container-type: inline-size;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem 1rem;
+
+    & > .fi-fo-field-label-col,
+    & > .fi-fo-field-content-col {
+        flex: 1 1 100%;
+        min-inline-size: 0;
+    }
+
+    @container (min-width: 19rem) {
+        & > .fi-fo-field-label-col {
+            flex: 0 0 8rem;
+            padding-block-start: 0.5rem;
+        }
+
+        & > .fi-fo-field-content-col {
+            flex: 1 1 0;
+        }
+    }
+}
