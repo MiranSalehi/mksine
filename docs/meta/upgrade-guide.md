@@ -10,6 +10,26 @@ This file accumulates **migration notes** per release. Add a new section at the 
 
 If a release contains only patch-level fixes with no migration steps, you do not need a section here.
 
+## How to upgrade
+
+Package migrations are **published into the app** (`database/migrations`), not loaded from `vendor/`. After `composer update miran/mksine`, a plain `php artisan migrate` therefore does not see new package migrations, and `migrate:status` does not list them as pending.
+
+Either run the update command, which does all three steps:
+
+```bash
+php artisan mksine:update --force
+```
+
+or do them by hand:
+
+```bash
+composer update miran/mksine
+php artisan vendor:publish --tag=mksine-migrations
+php artisan migrate
+```
+
+Without `--force`, `vendor:publish` copies only the migrations the app does not have yet and leaves existing files alone. Then follow the release's own notes below (for example `optimize:clear`, `shield:generate`), for **every** release between your version and the new one.
+
 ## Template
 
 When adding an entry, copy this skeleton:
@@ -50,7 +70,7 @@ When adding an entry, copy this skeleton:
 
 ### Action required
 
-- Run migrations (adds `media.conversions`), then `php artisan mksine:media-conversions` once to build WebP copies of existing images. Themes outside core (for example voltech) get the benefit only where they render images with `<x-mksine::image>`.
+- Publish and run the package migrations (adds `media.conversions`; see [How to upgrade](#how-to-upgrade)), then `php artisan mksine:media-conversions` once to build WebP copies of existing images. Themes outside core (for example voltech) get the benefit only where they render images with `<x-mksine::image>`.
 
 ### Behavior changes (non-breaking, but visible)
 
@@ -68,7 +88,7 @@ When adding an entry, copy this skeleton:
 
 - **Delete the leaked marketplace secret** on sites installed from a 1.22.0–1.23.2 zip: `rm vendor/miran/mksine/resources/keys/*.sec` (or `mksine/vendor/...` in the shared-hosting layout). Sign catalog releases with the v2 key from now on; v1 signatures are rejected.
 - Run `php artisan mksine:content-scan` once and review what it lists.
-- Run migrations (`php artisan mksine:update`, or `php artisan migrate`) to add the listing indexes.
+- Run migrations (`php artisan mksine:update`, or `vendor:publish --tag=mksine-migrations` then `php artisan migrate`) to add the listing indexes.
 - Recommended on production: `php artisan optimize` after each deploy. Route caching now works with plugins (activation clears it).
 
 ### Behavior changes (non-breaking, but visible)
@@ -119,7 +139,7 @@ When adding an entry, copy this skeleton:
 
 ### Behavior changes (non-breaking, but visible)
 
-- **Run the new page-builder migrations.** `page_builder_revisions` and `page_builder_sections` are created by the package migrations dated `2026_10_10_030300` and `2026_10_10_031700`. Migration: `php artisan migrate`.
+- **Run the new page-builder migrations.** `page_builder_revisions` and `page_builder_sections` are created by the package migrations dated `2026_10_10_030300` and `2026_10_10_031700`. Migration: `php artisan vendor:publish --tag=mksine-migrations`, then `php artisan migrate`.
 - **Unregistered block types are removed when a payload is normalized.** Preview, paste, save, duplicate, and template load drop a block whose `type` is not in `ComponentRegistry`. A page that stores a theme or plugin block will lose that block in the editor if the block is not registered on that boot. Migration: register those classes from the theme `theme.php` or the plugin `boot()` before editing builder pages.
 - **Default blocks load `mksine-blocks.css`.** The shared renderer emits a package stylesheet scoped to `.mksine-block`. It does not use the active theme's Tailwind build or its dark-mode variant. Migration: none for theme templates that already include `mksine::page-builder.render.block`. Do not copy block utilities into the theme stylesheet to restyle the same elements.
 - **The builder editor is the canvas.** There is no structure list and no left navigator. Settings open in a slide-over. Empty pages do not mount the preview iframe. Session undo is not a `page_builder_revisions` row. Migration: none.
