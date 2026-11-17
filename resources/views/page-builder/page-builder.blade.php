@@ -32,21 +32,21 @@
             /* Drag states */
             .sortable-ghost {
                 opacity: 0.45;
-                background: rgb(245 243 255);
-                border-radius: 0.75rem;
-                border: 1.5px dashed rgb(139 92 246 / 0.5);
+                background: var(--primary-50);
+                border-radius: var(--radius-xl);
+                border: 1.5px dashed color-mix(in oklab, var(--primary-500) 50%, transparent);
                 box-shadow: none;
             }
             .dark .sortable-ghost {
-                background: rgb(109 40 217 / 0.1);
-                border-color: rgb(139 92 246 / 0.4);
+                background: color-mix(in oklab, var(--primary-700) 10%, transparent);
+                border-color: color-mix(in oklab, var(--primary-500) 40%, transparent);
             }
             .sortable-chosen {
-                box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.12), 0 0 0 2px rgb(124 58 237 / 0.2);
+                box-shadow: 0 8px 24px -6px color-mix(in oklab, black 12%, transparent), 0 0 0 2px color-mix(in oklab, var(--primary-600) 20%, transparent);
                 transform: scale(1.01);
             }
             .dark .sortable-chosen {
-                box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.6), 0 0 0 1.5px rgb(139 92 246 / 0.35);
+                box-shadow: 0 12px 32px -8px color-mix(in oklab, black 60%, transparent), 0 0 0 1.5px color-mix(in oklab, var(--primary-500) 35%, transparent);
             }
             .sortable-drag { opacity: 1; }
 
@@ -70,10 +70,10 @@
             /* Filament modal overrides — template picker, component picker */
             #template-picker-modal .fi-modal-window,
             #component-picker-modal .fi-modal-window {
-                border-radius: 16px;
-                border: 1px solid rgb(228 228 231);
-                background: #fff;
-                box-shadow: 0 20px 60px -12px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(0 0 0 / 0.03);
+                border-radius: var(--radius-2xl);
+                border: 1px solid var(--gray-200);
+                background: white;
+                box-shadow: 0 20px 60px -12px color-mix(in oklab, black 15%, transparent), 0 0 0 1px color-mix(in oklab, black 3%, transparent);
                 overflow: clip;
             }
             .mksine-pb-properties .fi-dropdown-panel {
@@ -82,14 +82,14 @@
             .dark #template-picker-modal .fi-modal-window,
             .dark #component-picker-modal .fi-modal-window,
             .dark .mksine-pb-properties {
-                border-color: rgb(255 255 255 / 0.07);
-                background: rgb(24 24 27);
-                box-shadow: 0 24px 64px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.04);
+                border-color: color-mix(in oklab, white 7%, transparent);
+                background: var(--gray-900);
+                box-shadow: 0 24px 64px -12px color-mix(in oklab, black 60%, transparent), 0 0 0 1px color-mix(in oklab, white 4%, transparent);
             }
 
             #template-picker-modal .fi-modal-close-overlay,
             #component-picker-modal .fi-modal-close-overlay {
-                background: rgb(9 9 11 / 0.55);
+                background: color-mix(in oklab, var(--gray-950) 55%, transparent);
                 backdrop-filter: blur(4px);
             }
 
@@ -123,22 +123,22 @@
                 width: 100%;
                 overflow: hidden;
                 transition: width 150ms ease;
-                border: 1px solid rgb(228 228 231);
-                border-radius: 12px;
-                background: #fff;
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-xl);
+                background: white;
             }
             .mksine-pb-frame.is-empty {
                 height: auto;
                 min-height: 0;
-                border-color: rgb(221 214 254);
-                background: linear-gradient(90deg, rgb(245 243 255) 0%, rgb(255 255 255) 52%);
+                border-color: var(--primary-200);
+                background: linear-gradient(90deg, var(--primary-50) 0%, white 52%);
             }
             .dark .mksine-pb-frame.is-empty {
-                border-color: rgb(139 92 246 / 0.35);
-                background: linear-gradient(90deg, rgb(46 16 101 / 0.5) 0%, rgb(9 9 11) 58%);
+                border-color: color-mix(in oklab, var(--primary-500) 35%, transparent);
+                background: linear-gradient(90deg, color-mix(in oklab, var(--primary-950) 50%, transparent) 0%, var(--gray-950) 58%);
             }
             .mksine-pb-empty:hover .mksine-pb-empty-cta {
-                background: rgb(109 40 217);
+                background: var(--primary-700);
             }
             .mksine-pb-frame.is-tablet { width: 768px; max-width: 100%; margin-inline: auto; }
             .mksine-pb-frame.is-mobile { width: 390px; max-width: 100%; margin-inline: auto; }
@@ -148,10 +148,10 @@
                 width: 100%;
                 height: 100%;
                 border: 0;
-                background: #fff;
+                background: white;
             }
             .dark .mksine-pb-frame {
-                border-color: rgb(255 255 255 / 0.08);
+                border-color: color-mix(in oklab, white 8%, transparent);
             }
             #mksine-page-builder-root.is-workspace .mksine-page-builder,
             #mksine-page-builder-root.is-workspace .mksine-page-builder > .flex {
@@ -165,15 +165,15 @@
                 min-height: 0;
                 flex: 1;
                 flex-direction: column;
-                background: rgb(244 244 245);
+                background: var(--gray-100);
                 padding: 16px;
             }
             #mksine-page-builder-root.is-workspace {
-                background: rgb(244 244 245);
+                background: var(--gray-100);
             }
             .dark #mksine-page-builder-root.is-workspace,
             .dark #mksine-page-builder-root.is-workspace .mksine-pb-stage {
-                background: rgb(9 9 11);
+                background: var(--gray-950);
             }
             #mksine-page-builder-root.is-workspace .mksine-pb-workspace {
                 min-height: 0;
@@ -189,14 +189,14 @@
                 height: auto;
                 min-height: 0;
                 flex: 1;
-                box-shadow: 0 12px 40px rgb(0 0 0 / 0.08);
+                box-shadow: 0 12px 40px color-mix(in oklab, black 8%, transparent);
             }
         </style>
 
         <div class="flex w-full flex-col">
             @include('mksine::page-builder.components.toolbar')
 
-            <div class="mksine-pb-stage bg-zinc-50 px-4 py-5 dark:bg-zinc-950">
+            <div class="mksine-pb-stage bg-gray-50 px-4 py-5 dark:bg-gray-950">
                 <div class="mksine-pb-workspace">
                 <div
                     class="mksine-pb-canvas relative z-0 min-w-0"
@@ -209,7 +209,7 @@
                                 type="button"
                                 @click="viewport = '{{ $viewport }}'"
                                 :aria-pressed="viewport === '{{ $viewport }}'"
-                                :class="viewport === '{{ $viewport }}' ? 'bg-violet-600 text-white' : 'bg-white text-zinc-600 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-white/10'"
+                                :class="viewport === '{{ $viewport }}' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-white/10'"
                                 class="rounded-md px-2.5 py-1 text-xs font-medium"
                             >{{ $label }}</button>
                         @endforeach
@@ -229,14 +229,14 @@
                                 wire:target="addBlockAtPosition"
                                 class="mksine-pb-empty flex w-full items-center gap-3 bg-transparent px-3.5 py-3 text-start"
                             >
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm ring-1 ring-violet-100 dark:bg-zinc-900 dark:text-violet-300 dark:ring-white/10">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-600 shadow-sm ring-1 ring-primary-100 dark:bg-gray-900 dark:text-primary-300 dark:ring-white/10">
                                     <x-heroicon-o-squares-2x2 class="h-5 w-5" aria-hidden="true" />
                                 </span>
                                 <span class="min-w-0 flex-1">
-                                    <span class="block truncate text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{{ __('mksine::page_builder.your_page_is_empty') }}</span>
-                                    <span class="mt-0.5 block truncate text-xs text-zinc-500 dark:text-zinc-400">{{ __('mksine::page_builder.start_building_by_adding') }}</span>
+                                    <span class="block truncate text-sm font-semibold tracking-tight text-gray-900 dark:text-gray-50">{{ __('mksine::page_builder.your_page_is_empty') }}</span>
+                                    <span class="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">{{ __('mksine::page_builder.start_building_by_adding') }}</span>
                                 </span>
-                                <span class="mksine-pb-empty-cta inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white shadow-[0_2px_8px_0_rgb(124_58_237/0.3)]">
+                                <span class="mksine-pb-empty-cta inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary-600 px-3 text-xs font-semibold text-white shadow-[0_2px_8px_0_color-mix(in_oklab,var(--primary-600)_30%,transparent)]">
                                     <span class="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
                                         <span wire:loading.class="opacity-0" wire:target="addBlockAtPosition">
                                             <x-heroicon-o-plus class="h-3.5 w-3.5" />
@@ -280,13 +280,13 @@
                         </div>
                         @endif
                         <div
-                            class="pointer-events-auto absolute inset-0 z-10 hidden items-center justify-center bg-white/55 dark:bg-zinc-950/55"
+                            class="pointer-events-auto absolute inset-0 z-10 hidden items-center justify-center bg-white/55 dark:bg-gray-950/55"
                             wire:loading.flex
                             wire:target="addBlock,loadTemplate,undo,redo,duplicateBlock,removeBlock,saveBlock,reorderBlocks,reorderColumnBlocks,reorderNavigator,moveNavigatorBlock,moveBlockAfterDrag"
                             aria-hidden="true"
                         >
-                            <div class="pointer-events-none flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-zinc-900/90">
-                                <x-filament::loading-indicator class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                            <div class="pointer-events-none flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm dark:bg-gray-900/90">
+                                <x-filament::loading-indicator class="h-5 w-5 text-primary-600 dark:text-primary-400" />
                             </div>
                         </div>
                     </div>

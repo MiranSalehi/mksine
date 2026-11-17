@@ -17,11 +17,11 @@
 }
 
 .mks-jalali-picker-input::placeholder {
-    color: var(--gray-400, #9ca3af);
+    color: var(--gray-400);
 }
 
 .mks-jalali-picker-input:disabled {
-    color: var(--gray-500, #6b7280);
+    color: var(--gray-500);
     cursor: not-allowed;
 }
 
@@ -32,13 +32,13 @@
     width: 18rem;
     max-width: calc(100vw - 1rem);
     padding: 1rem;
-    border-radius: 0.5rem;
-    background: #fff;
+    border-radius: var(--radius-lg);
+    background: white;
     box-shadow:
-        0 10px 15px -3px rgb(0 0 0 / 0.1),
-        0 4px 6px -4px rgb(0 0 0 / 0.1),
-        0 0 0 1px rgb(3 7 18 / 0.05);
-    color: var(--gray-950, #030712);
+        0 10px 15px -3px color-mix(in oklab, black 10%, transparent),
+        0 4px 6px -4px color-mix(in oklab, black 10%, transparent),
+        0 0 0 1px color-mix(in oklab, var(--gray-950) 5%, transparent);
+    color: var(--gray-950);
     font-size: 0.875rem;
 }
 
@@ -88,7 +88,7 @@
 
 .mks-jalali-picker-weekdays {
     margin-bottom: 0.25rem;
-    color: var(--gray-500, #6b7280);
+    color: var(--gray-500);
     font-size: 0.75rem;
     font-weight: 500;
     text-align: center;
@@ -110,17 +110,17 @@
 }
 
 .mks-jalali-picker-days .mks-jalali-picker-today {
-    color: var(--primary-600, #d97706);
+    color: var(--primary-600);
     font-weight: 600;
 }
 
 .mks-jalali-picker-days .mks-jalali-picker-focused:not(:disabled) {
-    background: var(--gray-100, #f3f4f6);
+    background: var(--gray-100);
 }
 
 .mks-jalali-picker-days .mks-jalali-picker-selected:not(:disabled) {
-    background: var(--primary-600, #d97706);
-    color: #fff;
+    background: var(--primary-600);
+    color: white;
     font-weight: 600;
 }
 
@@ -146,26 +146,26 @@
 }
 
 .dark .mks-jalali-picker-panel {
-    background: var(--gray-900, #111827);
+    background: var(--gray-900);
     box-shadow:
-        0 10px 15px -3px rgb(0 0 0 / 0.4),
-        0 0 0 1px rgb(255 255 255 / 0.1);
-    color: #fff;
+        0 10px 15px -3px color-mix(in oklab, black 40%, transparent),
+        0 0 0 1px color-mix(in oklab, white 10%, transparent);
+    color: white;
 }
 
 .dark .mks-jalali-picker-panel select option {
-    background: var(--gray-900, #111827);
+    background: var(--gray-900);
 }
 
 .dark .mks-jalali-picker-days .mks-jalali-picker-today {
-    color: var(--primary-400, #fbbf24);
+    color: var(--primary-400);
 }
 
 .dark .mks-jalali-picker-days .mks-jalali-picker-focused:not(:disabled) {
-    background: rgb(255 255 255 / 0.1);
+    background: color-mix(in oklab, white 10%, transparent);
 }
 
 .dark .mks-jalali-picker-days .mks-jalali-picker-selected:not(:disabled) {
-    background: var(--primary-500, #f59e0b);
-    color: var(--gray-950, #030712);
+    background: var(--primary-500);
+    color: var(--gray-950);
 }

@@ -47,15 +47,15 @@
     </div>
 @elseif($media->isAudio())
     <div @class([
-        'flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-sky-50 to-indigo-100 px-2 dark:from-sky-950 dark:to-indigo-950' => $variant === 'grid',
-        'space-y-3 bg-gradient-to-br from-sky-50 to-indigo-100 p-4 dark:from-sky-950 dark:to-indigo-950' => $variant === 'detail',
+        'flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-info-50 to-primary-100 px-2 dark:from-info-950 dark:to-primary-950' => $variant === 'grid',
+        'space-y-3 bg-gradient-to-br from-info-50 to-primary-100 p-4 dark:from-info-950 dark:to-primary-950' => $variant === 'detail',
     ])>
         <x-heroicon-o-musical-note @class([
-            'h-10 w-10 text-sky-500 dark:text-sky-400' => $variant === 'grid',
-            'mx-auto h-10 w-10 text-sky-500 dark:text-sky-400' => $variant === 'detail',
+            'h-10 w-10 text-info-500 dark:text-info-400' => $variant === 'grid',
+            'mx-auto h-10 w-10 text-info-500 dark:text-info-400' => $variant === 'detail',
         ]) />
         @if($variant === 'grid')
-            <span class="max-w-full truncate text-[10px] font-medium text-sky-800 dark:text-sky-200">{{ $media->name }}</span>
+            <span class="max-w-full truncate text-[10px] font-medium text-info-800 dark:text-info-200">{{ $media->name }}</span>
         @else
             <audio src="{{ $src }}" class="w-full" controls preload="metadata"></audio>
         @endif

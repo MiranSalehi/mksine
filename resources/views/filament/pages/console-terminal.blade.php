@@ -2,7 +2,7 @@
     @php
         $minHeight = max(320, (int) config('mksine.console_terminal.default_output_height_px', 500));
         $logs = $this->logs;
-        $iconButton = 'inline-flex size-8 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/[0.07] hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 disabled:pointer-events-none disabled:opacity-40';
+        $iconButton = 'inline-flex size-8 items-center justify-center rounded-md text-[color:var(--mks-terminal-fg-muted)] transition hover:bg-white/[0.07] hover:text-[color:var(--mks-terminal-fg-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 disabled:pointer-events-none disabled:opacity-40';
     @endphp
 
     <div
@@ -361,11 +361,11 @@
                     <div
                         class="flex shrink-0 items-center gap-2 rounded-md bg-white/[0.05] px-2.5 py-1 text-xs font-medium"
                         x-bind:class="{
-                            'text-zinc-400': state === 'idle',
-                            'text-amber-300': state === 'pending' || state === 'stopped',
-                            'text-emerald-400': state === 'running' || state === 'completed',
-                            'text-red-400': state === 'failed',
-                            'text-violet-300': state === 'interactive',
+                            'text-[color:var(--mks-terminal-fg-muted)]': state === 'idle',
+                            'text-warning-300': state === 'pending' || state === 'stopped',
+                            'text-success-400': state === 'running' || state === 'completed',
+                            'text-danger-400': state === 'failed',
+                            'text-primary-300': state === 'interactive',
                         }"
                     >
                         <span class="relative flex size-2">
@@ -382,7 +382,7 @@
                     </div>
 
                     <p
-                        class="min-w-0 flex-1 truncate font-mono text-xs text-zinc-500"
+                        class="min-w-0 flex-1 truncate font-mono text-xs text-[color:var(--mks-terminal-fg-subtle)]"
                         x-text="viewing ? viewing.command : (process?.command ?? '')"
                     ></p>
 
@@ -395,7 +395,7 @@
                             title="{{ __('mksine::console_terminal.copy_output') }}"
                         >
                             <x-filament::icon x-show="! copied" icon="heroicon-m-clipboard-document" class="size-4" />
-                            <x-filament::icon x-show="copied" x-cloak icon="heroicon-m-check" class="size-4 text-emerald-400" />
+                            <x-filament::icon x-show="copied" x-cloak icon="heroicon-m-check" class="size-4 text-success-400" />
                         </button>
                         <button
                             type="button"
@@ -451,21 +451,21 @@
                 <div
                     x-show="viewing"
                     x-cloak
-                    class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-primary-500/20 bg-primary-500/10 px-4 py-2 text-xs text-zinc-300"
+                    class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-primary-500/20 bg-primary-500/10 px-4 py-2 text-xs text-[color:var(--mks-terminal-fg)]"
                 >
                     <x-filament::icon icon="heroicon-m-archive-box" class="size-4 text-primary-400" />
-                    <span class="font-medium text-zinc-100" dir="auto">{{ __('mksine::console_terminal.viewing_history') }}</span>
-                    <span class="font-mono text-zinc-400" x-text="viewing?.created_at"></span>
-                    <span class="font-mono text-zinc-400" x-text="viewing?.duration"></span>
+                    <span class="font-medium text-[color:var(--mks-terminal-fg-strong)]" dir="auto">{{ __('mksine::console_terminal.viewing_history') }}</span>
+                    <span class="font-mono text-[color:var(--mks-terminal-fg-muted)]" x-text="viewing?.created_at"></span>
+                    <span class="font-mono text-[color:var(--mks-terminal-fg-muted)]" x-text="viewing?.duration"></span>
                     <span
                         class="rounded px-1.5 py-0.5 font-mono text-[11px]"
-                        x-bind:class="viewing?.exit_code === 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'"
+                        x-bind:class="viewing?.exit_code === 0 ? 'bg-success-500/15 text-success-300' : 'bg-danger-500/15 text-danger-300'"
                         x-text="'exit ' + viewing?.exit_code"
                     ></span>
                     <span class="flex-1"></span>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-medium text-zinc-300 hover:bg-white/[0.07] hover:text-white"
+                        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-medium text-[color:var(--mks-terminal-fg)] hover:bg-white/[0.07] hover:text-white"
                         x-on:click="useCommand(viewing.command)"
                     >
                         <x-filament::icon icon="heroicon-m-arrow-path" class="size-3.5" />
@@ -494,10 +494,10 @@
                             <div class="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary-500/10 text-primary-400 ring-1 ring-primary-500/25">
                                 <x-filament::icon icon="heroicon-o-command-line" class="size-6" />
                             </div>
-                            <p class="text-sm font-semibold text-zinc-100" dir="auto">{{ __('mksine::console_terminal.welcome_title') }}</p>
-                            <p class="mt-1.5 max-w-md text-xs leading-relaxed text-zinc-500" dir="auto">{{ __('mksine::console_terminal.welcome_body') }}</p>
+                            <p class="text-sm font-semibold text-[color:var(--mks-terminal-fg-strong)]" dir="auto">{{ __('mksine::console_terminal.welcome_title') }}</p>
+                            <p class="mt-1.5 max-w-md text-xs leading-relaxed text-[color:var(--mks-terminal-fg-subtle)]" dir="auto">{{ __('mksine::console_terminal.welcome_body') }}</p>
 
-                            <dl class="mt-6 grid grid-cols-[auto_auto] gap-x-4 gap-y-2 text-[11px] text-zinc-500">
+                            <dl class="mt-6 grid grid-cols-[auto_auto] gap-x-4 gap-y-2 text-[11px] text-[color:var(--mks-terminal-fg-subtle)]">
                                 <dt class="text-end"><kbd>Enter</kbd></dt>
                                 <dd class="text-start" dir="auto">{{ __('mksine::console_terminal.shortcut_run') }}</dd>
                                 <dt class="text-end"><kbd>Tab</kbd></dt>
@@ -517,31 +517,31 @@
                         x-show="interactive.active"
                         x-cloak
                         x-transition.opacity
-                        class="absolute inset-0 z-20 flex flex-col bg-[#0b0e14]/95 p-4 text-sm text-zinc-200 backdrop-blur-sm"
+                        class="absolute inset-0 z-20 flex flex-col bg-[var(--mks-terminal-bg)]/95 p-4 text-sm text-[color:var(--mks-terminal-fg-soft)] backdrop-blur-sm"
                     >
                         <div class="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
                             <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-violet-300" dir="auto" x-text="label('interactive_title')"></p>
-                                    <p class="mt-0.5 truncate font-mono text-xs text-zinc-500" x-text="interactive.command"></p>
+                                    <p class="text-sm font-semibold text-primary-300" dir="auto" x-text="label('interactive_title')"></p>
+                                    <p class="mt-0.5 truncate font-mono text-xs text-[color:var(--mks-terminal-fg-subtle)]" x-text="interactive.command"></p>
                                 </div>
                                 <button
                                     type="button"
-                                    class="rounded-md px-3 py-1.5 text-xs text-zinc-400 hover:bg-white/[0.07] hover:text-zinc-100"
+                                    class="rounded-md px-3 py-1.5 text-xs text-[color:var(--mks-terminal-fg-muted)] hover:bg-white/[0.07] hover:text-[color:var(--mks-terminal-fg-strong)]"
                                     x-on:click="cancelInteractive()"
                                     x-text="label('interactive_cancel')"
                                 ></button>
                             </div>
 
                             <div x-show="interactive.step === 'mode'" class="space-y-2 p-4">
-                                <p class="mb-3 text-xs text-zinc-500" dir="auto" x-text="interactiveSummary"></p>
+                                <p class="mb-3 text-xs text-[color:var(--mks-terminal-fg-subtle)]" dir="auto" x-text="interactiveSummary"></p>
                                 <template x-for="option in interactiveModeOptions" :key="option.id">
                                     <button
                                         type="button"
-                                        class="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-start transition hover:border-violet-400/50 hover:bg-violet-500/10"
+                                        class="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-4 py-3 text-start transition hover:border-primary-400/50 hover:bg-primary-500/10"
                                         x-on:click="chooseInteractiveMode(option.id)"
                                     >
-                                        <span class="flex size-7 items-center justify-center rounded-md bg-violet-500/15 text-violet-300" x-text="option.icon"></span>
+                                        <span class="flex size-7 items-center justify-center rounded-md bg-primary-500/15 text-primary-300" x-text="option.icon"></span>
                                         <span dir="auto" x-text="option.label"></span>
                                     </button>
                                 </template>
@@ -553,14 +553,14 @@
                                     x-ref="interactiveSearch"
                                     x-model="interactive.search"
                                     x-bind:placeholder="label('interactive_search_placeholder')"
-                                    class="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                                    class="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 font-mono text-sm text-[color:var(--mks-terminal-fg-strong)] placeholder:text-[color:var(--mks-terminal-fg-faint)] focus:border-primary-400/60 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                                 />
                                 <div class="min-h-0 flex-1 space-y-0.5 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-1.5">
                                     <template x-for="entry in filteredInteractiveMigrations()" :key="entry.name">
                                         <label class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 hover:bg-white/[0.04]">
                                             <input
                                                 type="checkbox"
-                                                class="mt-0.5 rounded border-zinc-600 bg-transparent text-violet-500 focus:ring-violet-500"
+                                                class="mt-0.5 rounded border-[color:var(--mks-terminal-fg-faint)] bg-transparent text-primary-500 focus:ring-primary-500"
                                                 :value="entry.name"
                                                 x-model="interactive.selected"
                                                 x-show="interactive.mode !== 'single'"
@@ -568,38 +568,38 @@
                                             <input
                                                 type="radio"
                                                 name="mks-console-interactive-migration"
-                                                class="mt-0.5 border-zinc-600 bg-transparent text-violet-500 focus:ring-violet-500"
+                                                class="mt-0.5 border-[color:var(--mks-terminal-fg-faint)] bg-transparent text-primary-500 focus:ring-primary-500"
                                                 :value="entry.name"
                                                 x-model="interactive.singleSelected"
                                                 x-show="interactive.mode === 'single'"
                                             />
                                             <span
                                                 class="mt-px shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-                                                x-bind:class="entry.executed ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'"
+                                                x-bind:class="entry.executed ? 'bg-success-500/15 text-success-300' : 'bg-warning-500/15 text-warning-300'"
                                                 x-text="migrationStatusLabel(entry)"
                                             ></span>
-                                            <span class="min-w-0 break-all font-mono text-xs leading-relaxed text-zinc-300">
-                                                <span class="text-zinc-500" x-text="'[' + entry.source_label + ']'"></span>
+                                            <span class="min-w-0 break-all font-mono text-xs leading-relaxed text-[color:var(--mks-terminal-fg)]">
+                                                <span class="text-[color:var(--mks-terminal-fg-subtle)]" x-text="'[' + entry.source_label + ']'"></span>
                                                 <span x-text="entry.name"></span>
                                             </span>
                                         </label>
                                     </template>
                                     <p
                                         x-show="filteredInteractiveMigrations().length === 0"
-                                        class="px-3 py-6 text-center text-xs text-zinc-500"
+                                        class="px-3 py-6 text-center text-xs text-[color:var(--mks-terminal-fg-subtle)]"
                                         x-text="label('interactive_no_migrations')"
                                     ></p>
                                 </div>
                                 <div class="flex flex-wrap justify-end gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg px-4 py-2 text-xs text-zinc-400 hover:bg-white/[0.07] hover:text-zinc-100"
+                                        class="rounded-lg px-4 py-2 text-xs text-[color:var(--mks-terminal-fg-muted)] hover:bg-white/[0.07] hover:text-[color:var(--mks-terminal-fg-strong)]"
                                         x-on:click="interactive.step = 'mode'"
                                         x-text="label('interactive_back')"
                                     ></button>
                                     <button
                                         type="button"
-                                        class="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-40"
+                                        class="rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-500 disabled:opacity-40"
                                         x-on:click="previewInteractive()"
                                         x-bind:disabled="selectedMigrationNames().length === 0 || loading"
                                         x-text="label('interactive_continue')"
@@ -615,20 +615,20 @@
                                 <div class="flex flex-wrap justify-end gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg px-4 py-2 text-xs text-zinc-400 hover:bg-white/[0.07] hover:text-zinc-100"
+                                        class="rounded-lg px-4 py-2 text-xs text-[color:var(--mks-terminal-fg-muted)] hover:bg-white/[0.07] hover:text-[color:var(--mks-terminal-fg-strong)]"
                                         x-on:click="interactive.step = interactive.mode === 'all' ? 'mode' : 'select'"
                                         x-text="label('interactive_back')"
                                     ></button>
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-amber-400/40 px-4 py-2 text-xs text-amber-200 hover:bg-amber-500/10 disabled:opacity-40"
+                                        class="rounded-lg border border-warning-400/40 px-4 py-2 text-xs text-warning-200 hover:bg-warning-500/10 disabled:opacity-40"
                                         x-on:click="executeInteractive(true)"
                                         x-bind:disabled="loading"
                                         x-text="label('interactive_dry_run')"
                                     ></button>
                                     <button
                                         type="button"
-                                        class="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-40"
+                                        class="rounded-lg bg-success-600 px-4 py-2 text-xs font-semibold text-white hover:bg-success-500 disabled:opacity-40"
                                         x-on:click="executeInteractive(false)"
                                         x-bind:disabled="loading"
                                         x-text="interactive.requiresProductionConfirm ? label('interactive_confirm_production') : label('interactive_execute')"
@@ -648,13 +648,13 @@
                         <template x-for="chip in config.quickCommands" :key="chip.command">
                             <button
                                 type="button"
-                                class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-zinc-400 transition hover:border-primary-500/40 hover:bg-primary-500/10 hover:text-zinc-100"
+                                class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-[color:var(--mks-terminal-fg-muted)] transition hover:border-primary-500/40 hover:bg-primary-500/10 hover:text-[color:var(--mks-terminal-fg-strong)]"
                                 x-on:click="useCommand(chip.command)"
                                 x-bind:title="chip.command"
                             >
                                 <span
                                     x-show="chip.long_running"
-                                    class="size-1.5 rounded-full bg-amber-400"
+                                    class="size-1.5 rounded-full bg-warning-400"
                                     title="{{ __('mksine::console_terminal.long_running') }}"
                                 ></span>
                                 <span x-text="chip.label"></span>
@@ -667,21 +667,21 @@
                         <div
                             x-show="suggestionsOpen"
                             x-cloak
-                            class="absolute inset-x-3 bottom-full z-30 mb-1 overflow-hidden rounded-lg border border-white/10 bg-[#151922] shadow-2xl shadow-black/50"
+                            class="absolute inset-x-3 bottom-full z-30 mb-1 overflow-hidden rounded-lg border border-white/10 bg-[var(--mks-terminal-surface)] shadow-2xl shadow-black/50"
                         >
                             <template x-for="(item, index) in matchingSuggestions" :key="item.value">
                                 <button
                                     type="button"
                                     class="flex w-full items-baseline gap-3 px-3 py-1.5 text-start"
-                                    x-bind:class="index === suggestionIndex ? 'bg-primary-500/15 text-white' : 'text-zinc-300 hover:bg-white/[0.04]'"
+                                    x-bind:class="index === suggestionIndex ? 'bg-primary-500/15 text-white' : 'text-[color:var(--mks-terminal-fg)] hover:bg-white/[0.04]'"
                                     x-on:mousedown.prevent="acceptSuggestion(index)"
                                     x-on:mouseenter="suggestionIndex = index"
                                 >
                                     <span class="shrink-0 font-mono text-xs" x-text="item.value"></span>
-                                    <span class="min-w-0 truncate text-[11px] text-zinc-500" x-text="item.description"></span>
+                                    <span class="min-w-0 truncate text-[11px] text-[color:var(--mks-terminal-fg-subtle)]" x-text="item.description"></span>
                                 </button>
                             </template>
-                            <div class="border-t border-white/[0.06] px-3 py-1.5 text-[10px] text-zinc-500">
+                            <div class="border-t border-white/[0.06] px-3 py-1.5 text-[10px] text-[color:var(--mks-terminal-fg-subtle)]">
                                 <kbd>Tab</kbd> {{ __('mksine::console_terminal.shortcut_complete') }}
                                 · <kbd>↑</kbd> <kbd>↓</kbd>
                                 · <kbd>Esc</kbd>
@@ -705,10 +705,10 @@
                                 spellcheck="false"
                                 aria-label="{{ __('mksine::console_terminal.input_label') }}"
                                 placeholder="{{ __('mksine::console_terminal.input_placeholder') }}"
-                                class="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-sm text-zinc-100 shadow-none outline-none placeholder:text-zinc-600 focus:outline-none focus:ring-0 disabled:opacity-50"
+                                class="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 font-mono text-sm text-[color:var(--mks-terminal-fg-strong)] shadow-none outline-none placeholder:text-[color:var(--mks-terminal-fg-faint)] focus:outline-none focus:ring-0 disabled:opacity-50"
                             />
 
-                            <svg x-show="loading" x-cloak class="size-4 animate-spin text-zinc-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <svg x-show="loading" x-cloak class="size-4 animate-spin text-[color:var(--mks-terminal-fg-subtle)]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"></circle>
                                 <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
                             </svg>
@@ -727,7 +727,7 @@
                                 x-show="canStop"
                                 x-cloak
                                 type="button"
-                                class="inline-flex h-8 items-center gap-2 rounded-md px-3 text-xs font-medium text-zinc-300 ring-1 ring-white/15 transition hover:bg-white/[0.07] hover:text-white"
+                                class="inline-flex h-8 items-center gap-2 rounded-md px-3 text-xs font-medium text-[color:var(--mks-terminal-fg)] ring-1 ring-white/15 transition hover:bg-white/[0.07] hover:text-white"
                                 x-on:click="detach()"
                                 title="{{ __('mksine::console_terminal.detach_hint') }}"
                             >
@@ -738,7 +738,7 @@
                                 x-show="canStop"
                                 x-cloak
                                 type="button"
-                                class="inline-flex h-8 items-center gap-2 rounded-md bg-red-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-500 disabled:opacity-40"
+                                class="inline-flex h-8 items-center gap-2 rounded-md bg-danger-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-danger-500 disabled:opacity-40"
                                 x-on:click="stop()"
                                 x-bind:disabled="loading"
                             >
@@ -878,8 +878,8 @@
             }
 
             .mks-console__terminal {
-                background: #0b0e14;
-                color: #d4d4d8;
+                background: var(--mks-terminal-bg);
+                color: var(--mks-terminal-fg);
                 color-scheme: dark;
             }
 
@@ -888,7 +888,7 @@
                 font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
                 font-size: 12.5px;
                 line-height: 1.65;
-                color: #d4d4d8;
+                color: var(--mks-terminal-fg);
                 white-space: pre-wrap;
                 word-break: break-word;
                 tab-size: 4;
@@ -898,7 +898,7 @@
 
             .mks-console__output ::selection,
             .mks-console__output::selection {
-                background: rgb(99 102 241 / 0.4);
+                background: color-mix(in oklab, var(--primary-500) 40%, transparent);
             }
 
             .mks-console kbd {
@@ -906,22 +906,22 @@
                 min-width: 1.25rem;
                 align-items: center;
                 justify-content: center;
-                border-radius: 0.25rem;
-                border: 1px solid rgb(255 255 255 / 0.12);
+                border-radius: var(--radius-sm);
+                border: 1px solid color-mix(in oklab, white 12%, transparent);
                 border-bottom-width: 2px;
-                background: rgb(255 255 255 / 0.04);
+                background: color-mix(in oklab, white 4%, transparent);
                 padding: 0 0.3rem;
                 font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                 font-size: 10px;
                 line-height: 1.1rem;
-                color: #a1a1aa;
+                color: var(--mks-terminal-fg-muted);
             }
 
             .mks-console__scroller,
             .mks-console__chips,
             .mks-console__terminal [class*='overflow-y-auto'] {
                 scrollbar-width: thin;
-                scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+                scrollbar-color: color-mix(in oklab, white 14%, transparent) transparent;
             }
 
             .mks-console__chips {
@@ -933,7 +933,7 @@
                 inset: 0;
                 z-index: 60;
                 padding: 0.75rem;
-                background: rgb(3 7 18 / 0.8);
+                background: var(--mks-terminal-backdrop);
                 backdrop-filter: blur(4px);
             }
 

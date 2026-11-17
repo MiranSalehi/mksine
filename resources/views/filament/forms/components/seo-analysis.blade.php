@@ -32,7 +32,7 @@
 
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
             <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ __('mksine::seo.snippet_heading') }}</p>
-            <p class="mt-2 text-lg font-medium text-blue-800 dark:text-blue-300">
+            <p class="mt-2 text-lg font-medium text-info-800 dark:text-info-300">
                 {{ $result->snippet['title'] !== '' ? $result->snippet['title'] : __('mksine::seo.snippet_untitled') }}
             </p>
             <p class="mt-0.5 text-sm text-success-700 dark:text-success-400" dir="ltr">

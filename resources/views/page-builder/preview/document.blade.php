@@ -1,6 +1,13 @@
 @php
     $locale = app()->getLocale();
     $textDirection = in_array($locale, ['fa', 'ar', 'ku', 'he'], true) ? 'rtl' : 'ltr';
+
+    /*
+     * Editor chrome (outlines, insert buttons, block toolbars) uses namespaced --mks-editor-* tokens so it
+     * never collides with the storefront theme's own variables. Server-side defaults come from Filament's
+     * colour registry; the script below swaps in the admin panel's live palette and radii from the parent page.
+     */
+    $editorPalettes = \Illuminate\Support\Arr::only(\Filament\Support\Facades\FilamentColor::getColors(), ['primary', 'gray', 'danger']);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', $locale) }}" dir="{{ $textDirection }}">
@@ -10,31 +17,69 @@
     <title>{{ __('mksine::page_builder.canvas_preview') }}</title>
     @themeAssets
     <style>
+        :root {
+            @foreach ($editorPalettes as $editorPaletteName => $editorShades)
+                @foreach ($editorShades as $editorShade => $editorShadeValue)
+                    --mks-editor-{{ $editorPaletteName }}-{{ $editorShade }}: {{ $editorShadeValue }};
+                @endforeach
+            @endforeach
+            --mks-editor-radius-md: 0.375rem;
+            --mks-editor-radius-lg: 0.5rem;
+        }
+    </style>
+    <script>
+        (function () {
+            try {
+                if (window.parent === window) {
+                    return;
+                }
+                const styles = window.parent.getComputedStyle(window.parent.document.documentElement);
+                const target = document.documentElement.style;
+                const copy = function (from, to) {
+                    const value = styles.getPropertyValue(from).trim();
+                    if (value !== '') {
+                        target.setProperty(to, value);
+                    }
+                };
+                ['primary', 'gray', 'danger'].forEach(function (palette) {
+                    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(function (shade) {
+                        copy('--' + palette + '-' + shade, '--mks-editor-' + palette + '-' + shade);
+                    });
+                });
+                ['sm', 'md', 'lg', 'xl', '2xl'].forEach(function (size) {
+                    copy('--radius-' + size, '--mks-editor-radius-' + size);
+                });
+            } catch (error) {
+                // Cross-origin or detached frame: keep the server-side defaults.
+            }
+        })();
+    </script>
+    <style>
         [data-mksine-block-id] {
             position: relative;
             display: flow-root;
             cursor: pointer;
             margin: 8px;
-            outline: 1px solid rgb(228 228 231);
-            background: #fff;
+            outline: 1px solid var(--mks-editor-gray-200);
+            background: white;
             transition: outline-color 120ms ease;
         }
         [data-mksine-block-id]:hover,
         [data-mksine-block-id]:focus-within {
-            outline-color: rgb(167 139 250);
+            outline-color: var(--mks-editor-primary-400);
         }
         [data-mksine-block-id]:hover:has([data-mksine-block-id]:hover),
         [data-mksine-block-id]:focus-within:has([data-mksine-block-id]:focus-within),
         [data-mksine-block-id]:hover:has(.mksine-insert:hover),
         [data-mksine-block-id]:focus-within:has(.mksine-insert:focus-within) {
-            outline-color: rgb(228 228 231);
+            outline-color: var(--mks-editor-gray-200);
         }
         [data-mksine-block-id].is-selected,
         [data-mksine-block-id].is-selected:hover:has([data-mksine-block-id]:hover),
         [data-mksine-block-id].is-selected:hover:has(.mksine-insert:hover) {
-            outline: 2px solid rgb(109 40 217);
+            outline: 2px solid var(--mks-editor-primary-700);
         }
-        .mksine-region-hot { outline: 1px dashed rgb(167 139 250); outline-offset: 2px; }
+        .mksine-region-hot { outline: 1px dashed var(--mks-editor-primary-400); outline-offset: 2px; }
         [data-mksine-inline="heading"] { cursor: text; }
         .mksine-insert {
             position: relative;
@@ -52,7 +97,7 @@
             right: 16px;
             top: 50%;
             height: 1px;
-            background: rgb(167 139 250 / 0.55);
+            background: color-mix(in oklab, var(--mks-editor-primary-400) 55%, transparent);
             transition: background-color 120ms ease;
         }
         .mksine-insert button {
@@ -64,13 +109,13 @@
             width: 18px;
             height: 18px;
             border: 0;
-            border-radius: 999px;
-            background: rgb(245 243 255);
-            color: rgb(139 92 246);
+            border-radius: 9999px;
+            background: var(--mks-editor-primary-50);
+            color: var(--mks-editor-primary-500);
             font: 600 12px/1 system-ui, sans-serif;
             padding: 0;
             cursor: pointer;
-            box-shadow: inset 0 0 0 1px rgb(221 214 254);
+            box-shadow: inset 0 0 0 1px var(--mks-editor-primary-200);
             transition: background-color 120ms ease, color 120ms ease;
         }
         .mksine-insert-label { display: none; }
@@ -81,7 +126,7 @@
         }
         .mksine-insert:hover::before,
         .mksine-insert:focus-within::before {
-            background: rgb(124 58 237 / 0.7);
+            background: color-mix(in oklab, var(--mks-editor-primary-600) 70%, transparent);
         }
         .mksine-insert:hover button,
         .mksine-insert:focus-within button,
@@ -98,8 +143,8 @@
         }
         .mksine-insert:hover button,
         .mksine-insert:focus-within button {
-            background: rgb(124 58 237);
-            color: #fff;
+            background: var(--mks-editor-primary-600);
+            color: white;
             box-shadow: none;
         }
         .mksine-insert-plus {
@@ -117,9 +162,9 @@
         .mksine-insert.is-visible .mksine-insert-plus {
             width: 16px;
             height: 16px;
-            border-radius: 999px;
-            background: #fff;
-            color: rgb(124 58 237);
+            border-radius: 9999px;
+            background: white;
+            color: var(--mks-editor-primary-600);
         }
         .mksine-canvas-tools {
             position: relative;
@@ -129,15 +174,15 @@
             gap: 4px;
             height: 26px;
             padding: 0 8px;
-            background: rgb(250 250 250);
-            color: rgb(82 82 91);
-            border-bottom: 1px solid rgb(228 228 231);
+            background: var(--mks-editor-gray-50);
+            color: var(--mks-editor-gray-600);
+            border-bottom: 1px solid var(--mks-editor-gray-200);
             transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
         }
         [data-mksine-block-id].is-selected > .mksine-canvas-tools {
-            background: rgb(245 243 255);
-            color: rgb(91 33 182);
-            border-bottom-color: rgb(221 214 254);
+            background: var(--mks-editor-primary-50);
+            color: var(--mks-editor-primary-800);
+            border-bottom-color: var(--mks-editor-primary-200);
         }
         .mksine-canvas-tools button {
             display: none;
@@ -180,11 +225,11 @@
             top: 0;
             max-width: 240px;
             padding: 6px 10px;
-            border-radius: 8px;
-            background: rgb(109 40 217);
-            color: #fff;
+            border-radius: var(--mks-editor-radius-lg);
+            background: var(--mks-editor-primary-700);
+            color: white;
             font: 600 12px/1.2 system-ui, sans-serif;
-            box-shadow: 0 10px 24px rgb(76 29 149 / 0.35);
+            box-shadow: 0 10px 24px color-mix(in oklab, var(--mks-editor-primary-900) 35%, transparent);
             pointer-events: none;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -193,27 +238,27 @@
         .mksine-drop-line {
             height: 4px;
             margin: 8px;
-            border-radius: 999px;
-            background: rgb(109 40 217);
-            box-shadow: 0 0 0 4px rgb(237 233 254);
+            border-radius: 9999px;
+            background: var(--mks-editor-primary-700);
+            box-shadow: 0 0 0 4px var(--mks-editor-primary-100);
             pointer-events: none;
         }
         [data-mksine-drop].is-drop-target {
-            outline: 2px solid rgb(124 58 237);
+            outline: 2px solid var(--mks-editor-primary-600);
             outline-offset: 2px;
         }
         .mksine-canvas-tools button {
             width: 18px;
             height: 18px;
             border: 0;
-            border-radius: 6px;
-            background: rgb(237 233 254);
-            color: rgb(91 33 182);
+            border-radius: var(--mks-editor-radius-md);
+            background: var(--mks-editor-primary-100);
+            color: var(--mks-editor-primary-800);
             cursor: pointer;
             font: 700 13px/1 system-ui, sans-serif;
         }
-        .mksine-canvas-tools button:hover { background: rgb(221 214 254); }
-        .mksine-canvas-tools button[data-mksine-action="remove"]:hover { background: rgb(185 28 28); }
+        .mksine-canvas-tools button:hover { background: var(--mks-editor-primary-200); }
+        .mksine-canvas-tools button[data-mksine-action="remove"]:hover { background: var(--mks-editor-danger-700); }
         @media (prefers-reduced-motion: reduce) {
             [data-mksine-block-id],
             .mksine-insert,
@@ -228,7 +273,7 @@
         html:has(.mksine-canvas-empty) .builder-content {
             height: 100%;
             margin: 0;
-            background: #fff;
+            background: white;
         }
         .mksine-canvas-empty {
             display: flex;
@@ -239,8 +284,8 @@
             height: 100%;
             margin: 0;
             padding: 0 16px;
-            background: #fff;
-            color: #3f3f46;
+            background: white;
+            color: var(--mks-editor-gray-700);
             font: 500 13px/1 system-ui, sans-serif;
         }
         .mksine-canvas-empty p {
@@ -251,18 +296,18 @@
             align-items: center;
             gap: 8px;
             border: 0;
-            border-radius: 999px;
-            background: rgb(124 58 237);
-            color: #fff;
+            border-radius: 9999px;
+            background: var(--mks-editor-primary-600);
+            color: white;
             font: 600 13px/1 system-ui, sans-serif;
             padding: 7px 12px 7px 7px;
             cursor: pointer;
         }
         .mksine-canvas-empty button:hover {
-            background: rgb(109 40 217);
+            background: var(--mks-editor-primary-700);
         }
         .mksine-canvas-empty button:focus-visible {
-            outline: 2px solid rgb(124 58 237);
+            outline: 2px solid var(--mks-editor-primary-600);
             outline-offset: 2px;
         }
         .mksine-canvas-empty button span {
@@ -271,9 +316,9 @@
             height: 16px;
             align-items: center;
             justify-content: center;
-            border-radius: 999px;
-            background: #fff;
-            color: rgb(124 58 237);
+            border-radius: 9999px;
+            background: white;
+            color: var(--mks-editor-primary-600);
             font-size: 14px;
         }
     </style>

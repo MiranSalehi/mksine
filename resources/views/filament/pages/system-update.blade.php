@@ -31,7 +31,7 @@ php artisan migrate --force</code></pre>
                 </p>
                 <pre class="bg-gray-100 dark:bg-gray-800 rounded px-3 py-2 text-xs overflow-x-auto"><code>php artisan mksine:update --force</code></pre>
                 @if ($this->composerIsAvailable() && $this->consoleTerminalUrl())
-                    <p class="text-amber-700 dark:text-amber-300">
+                    <p class="text-warning-700 dark:text-warning-300">
                         {{ __('mksine::updater.core_console_warning') }}
                     </p>
                     <p>
@@ -40,7 +40,7 @@ php artisan migrate --force</code></pre>
                         </a>
                     </p>
                 @elseif (! $this->composerIsAvailable())
-                    <p class="text-amber-700 dark:text-amber-300">
+                    <p class="text-warning-700 dark:text-warning-300">
                         {{ __('mksine::updater.core_composer_missing') }}
                     </p>
                 @endif

@@ -13,8 +13,8 @@
     $directoryBase = 'inline-flex flex-1 items-center justify-center rounded-md px-3 py-1.5 text-center text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
     $outlineClass = $directoryBase.' is-outline border border-gray-300 bg-white font-medium text-gray-800 hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800';
     $installClass = $directoryBase.' is-install border border-transparent bg-primary-600 text-white hover:bg-primary-500';
-    $updateClass = $directoryBase.' is-update border border-transparent bg-amber-500 text-white hover:bg-amber-400 focus-visible:ring-amber-500';
-    $installedChipClass = $directoryBase.' is-installed cursor-default gap-1.5 border border-emerald-200 bg-emerald-100 font-semibold text-emerald-800 shadow-none dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-200';
+    $updateClass = $directoryBase.' is-update border border-transparent bg-warning-500 text-white hover:bg-warning-400 focus-visible:ring-warning-500';
+    $installedChipClass = $directoryBase.' is-installed cursor-default gap-1.5 border border-success-200 bg-success-100 font-semibold text-success-800 shadow-none dark:border-success-500/30 dark:bg-success-500/20 dark:text-success-200';
 @endphp
 
 @if ($isDirectory)
@@ -75,7 +75,7 @@
                 {{ __('mksine::marketplace.update') }}
             </x-filament::button>
         @elseif ($installed)
-            <span class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-emerald-100 px-2.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200" role="status">
+            <span class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-success-100 px-2.5 text-xs font-semibold text-success-800 dark:bg-success-500/20 dark:text-success-200" role="status">
                 <x-heroicon-s-check class="h-3.5 w-3.5" />
                 {{ __('mksine::marketplace.installed_badge') }}
             </span>

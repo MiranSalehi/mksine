@@ -4,6 +4,7 @@ namespace Miran\Mksine;
 
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Contracts\Plugin;
+use Filament\Facades\Filament;
 use Filament\Navigation\NavigationManager;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
@@ -16,6 +17,7 @@ use Filament\View\PanelsRenderHook;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
+use Miran\Mksine\Core\Appearance\AppearanceRenderer;
 use Miran\Mksine\Core\Plugins\Contracts\RegistersFilamentPlugins;
 use Miran\Mksine\Core\Plugins\PluginManager;
 use Miran\Mksine\Core\Theme\ThemeBootstrap;
@@ -24,6 +26,7 @@ use Miran\Mksine\Filament\Support\AdminSidebarNavigation;
 use Miran\Mksine\Filament\Support\FilamentPanelComponentCache;
 use Miran\Mksine\Filament\Support\MksinePanelStyles;
 use Miran\Mksine\Filament\Pages\MksineDashboard;
+use Miran\Mksine\Livewire\MyAppearance;
 use Miran\Mksine\Support\Frontend\StorefrontUrl;
 use Miran\Mksine\Support\Logging\MksineLog;
 
@@ -84,6 +87,11 @@ class MksinePlugin implements Plugin
                     ->icon(Heroicon::ArrowTopRightOnSquare)
                     ->url(fn (): string => StorefrontUrl::resolve(), shouldOpenInNewTab: true)
                     ->sort(20),
+                'my-appearance' => Action::make('my-appearance')
+                    ->label(fn (): string => __('mksine::appearance.my.menu_label'))
+                    ->icon(Heroicon::OutlinedSwatch)
+                    ->alpineClickHandler("\$dispatch('open-modal', { id: '".MyAppearance::MODAL_ID."' })")
+                    ->sort(25),
             ]);
 
         // Register early so group icons exist before navigation is first resolved.
@@ -135,6 +143,8 @@ class MksinePlugin implements Plugin
             fn (): string => MksinePanelStyles::renderAfterTheme(),
         );
 
+        $this->bootAppearance();
+
         FilamentView::registerRenderHook(
             PanelsRenderHook::TOPBAR_START,
             fn (): string => view('mksine::filament.partials.view-site-topbar-link', [
@@ -146,6 +156,25 @@ class MksinePlugin implements Plugin
         FilamentView::registerRenderHook(
             PanelsRenderHook::CONTENT_BEFORE,
             fn (): string => view('mksine::filament.partials.theme-dependency-warning-banner')->render(),
+        );
+    }
+
+    /**
+     * Company / personal admin look: palettes for Filament, `<head>` variables and attributes
+     * (after the MKSine stylesheet, before Filament's dark-mode script) and the "My appearance" window.
+     */
+    protected function bootAppearance(): void
+    {
+        Filament::serving(static fn () => app(AppearanceRenderer::class)->registerColors());
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            static fn (): string => app(AppearanceRenderer::class)->renderHead(),
+        );
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            static fn (): string => auth()->check() ? Blade::render('@livewire(\'mksine::my-appearance\')') : '',
         );
     }
 
