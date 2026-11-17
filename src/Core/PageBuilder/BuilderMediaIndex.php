@@ -20,8 +20,6 @@ final class BuilderMediaIndex
      */
     private array $loaded = [];
 
-    private bool $warmed = false;
-
     /**
      * @param  array<int, mixed>  $blocks
      */
@@ -30,15 +28,17 @@ final class BuilderMediaIndex
         $ids = [];
         $this->collectIds($blocks, $ids);
 
-        $this->loaded = [];
-        if ($ids !== []) {
-            $rows = Media::query()->whereIn('id', array_values(array_unique($ids)))->get();
-            foreach ($rows as $media) {
-                $this->loaded[(int) $media->getKey()] = $media;
+        // Merge, never reset: a section reference renders its own payload (and warms) in the
+        // middle of the outer page, whose images must stay resolvable afterwards.
+        $missing = array_values(array_diff(array_unique($ids), array_keys($this->loaded)));
+
+        if ($missing !== []) {
+            $rows = Media::query()->whereIn('id', $missing)->get()->keyBy(fn (Media $media): int => (int) $media->getKey());
+
+            foreach ($missing as $id) {
+                $this->loaded[$id] = $rows->get($id);
             }
         }
-
-        $this->warmed = true;
     }
 
     public function find(mixed $id): ?Media
@@ -46,10 +46,6 @@ final class BuilderMediaIndex
         $id = $this->numericId($id);
         if ($id === null) {
             return null;
-        }
-
-        if ($this->warmed) {
-            return $this->loaded[$id] ?? null;
         }
 
         if (! array_key_exists($id, $this->loaded)) {

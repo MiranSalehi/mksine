@@ -16,6 +16,9 @@ use Throwable;
  */
 final class StorefrontViewedResponder
 {
+    /** Request attribute holding the view that was emitted (the page cache stores and replays it). */
+    public const string CONTENT_ATTRIBUTE = 'mksine.storefront_viewed_content';
+
     /**
      * @param  array{type?: string|null, id?: int|string|null, status?: string|null}  $content
      */
@@ -36,6 +39,11 @@ final class StorefrontViewedResponder
         }
 
         $request->attributes->set('mksine.storefront_viewed', true);
+        $request->attributes->set(self::CONTENT_ATTRIBUTE, [
+            'type' => $content['type'] ?? null,
+            'id' => $content['id'] ?? null,
+            'status' => $content['status'] ?? null,
+        ]);
 
         $path = StorefrontRequest::normalizedPath($request);
         $id = $content['id'] ?? null;

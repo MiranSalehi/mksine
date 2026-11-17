@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Database\Factories\TagFactory;
+use Miran\Mksine\Models\Concerns\SanitizesHtmlOnSave;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 class Tag extends Model
 {
     use HasFactory;
+    use SanitizesHtmlOnSave;
     use SoftDeletes;
 
     protected $fillable = [
@@ -110,5 +112,13 @@ class Tag extends Model
 
             return url($path);
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sanitizedHtmlAttributes(): array
+    {
+        return ['description'];
     }
 }

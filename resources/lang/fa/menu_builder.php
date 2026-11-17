@@ -13,6 +13,7 @@ return array (
   'label' => 'برچسب',
   'target' => 'هدف',
   'url' => 'نشانی',
+  'unsafe_url' => 'این نوع لینک مجاز نیست. از http، https، mailto، tel یا مسیر داخل سایت استفاده کنید.',
   'item_updated' => 'آیتم به‌روز شد',
   'menu_structure_updated' => 'ساختار منو به‌روز شد',
   'menu_saved' => 'منو با موفقیت ذخیره شد',

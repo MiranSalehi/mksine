@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Core\Content\ContentType;
 use Miran\Mksine\Core\Content\ContentTypeRegistry;
 use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Models\Concerns\HasPublicationWindow;
+use Miran\Mksine\Models\Concerns\SanitizesHtmlOnSave;
 use Miran\Mksine\Observers\ContentSlugObserver;
 use Miran\Mksine\Traits\HasMediaAttachments;
 use Miran\Mksine\Traits\HasTags;
@@ -22,7 +24,9 @@ class Entry extends Model
 {
     use HasFactory;
     use HasMediaAttachments;
+    use HasPublicationWindow;
     use HasTags;
+    use SanitizesHtmlOnSave;
     use SoftDeletes;
 
     protected $table = 'mks_entries';
@@ -88,14 +92,5 @@ class Entry extends Model
     public function scopeOfType(Builder $query, string $type): Builder
     {
         return $query->where('content_type', $type);
-    }
-
-    /**
-     * @param  Builder<Entry>  $query
-     * @return Builder<Entry>
-     */
-    public function scopePublished(Builder $query): Builder
-    {
-        return $query->where('status', 'published');
     }
 }

@@ -4,9 +4,12 @@ namespace Miran\Mksine\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Miran\Mksine\Core\PageBuilder\PayloadNormalizer;
+use Miran\Mksine\Models\Concerns\SanitizesHtmlOnSave;
 
 class PageBuilderSection extends Model
 {
+    use SanitizesHtmlOnSave;
+
     protected $fillable = [
         'name',
         'builder_payload',
@@ -31,5 +34,21 @@ class PageBuilderSection extends Model
 
             $section->builder_payload = app(PayloadNormalizer::class)->normalize($payload, false, $ownerId);
         });
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sanitizedHtmlAttributes(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sanitizedBuilderPayloadAttributes(): array
+    {
+        return ['builder_payload'];
     }
 }

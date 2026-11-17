@@ -119,12 +119,12 @@
 
                 @if ($post->featuredImage?->url)
                     <figure class="mb-10 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 shadow-none dark:border-slate-700 dark:bg-slate-900">
-                        <img
-                            src="{{ asset($post->featuredImage->url) }}"
-                            alt="{{ $post->title }}"
+                        <x-mksine::image
+                            :media="$post->featuredImage"
+                            :alt="$post->title"
+                            :priority="true"
+                            sizes="(min-width: 1024px) 896px, 100vw"
                             class="aspect-[21/9] w-full object-cover sm:aspect-[2/1]"
-                            loading="eager"
-                            decoding="async"
                         />
                     </figure>
                 @endif
@@ -243,7 +243,7 @@
                                     <li class="group flex gap-3 border-b border-stone-100 pb-4 last:border-0 last:pb-0 dark:border-slate-800">
                                         <a href="{{ route('posts.show', $recent->slug) }}" class="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-slate-800">
                                             @if ($recent->featuredImage?->url)
-                                                <img src="{{ asset($recent->featuredImage->url) }}" alt="" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
+                                                <x-mksine::image :media="$recent->featuredImage" alt="" sizes="80px" class="h-full w-full object-cover transition group-hover:scale-105" />
                                             @else
                                                 <span class="flex h-full w-full items-center justify-center text-stone-400 dark:text-stone-500">
                                                     <x-heroicon-o-photo class="h-6 w-6" />
@@ -305,7 +305,7 @@
                             <a href="{{ route('posts.show', $related->slug) }}" class="block shrink-0">
                                 <div class="relative aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-slate-800">
                                     @if ($related->featuredImage?->url)
-                                        <img src="{{ asset($related->featuredImage->url) }}" alt="" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" />
+                                        <x-mksine::image :media="$related->featuredImage" alt="" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
                                     @else
                                         <div class="flex h-full w-full items-center justify-center">
                                             <x-heroicon-o-photo class="h-14 w-14 text-stone-300 dark:text-stone-600" />

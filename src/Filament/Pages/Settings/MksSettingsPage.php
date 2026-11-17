@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Filament\Pages\Settings;
 
+use BezhanSalleh\FilamentShield\Facades\FilamentShield;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -31,9 +32,30 @@ abstract class MksSettingsPage extends Page implements HasActions, HasSchemas
     protected string $view = 'mksine::filament.pages.mks-settings-page';
 
     /**
+     * Shield permission per settings page class.
+     *
+     * {@see HasPageShield} caches the key in one static property, which every subclass of this
+     * abstract page shares, so the first page checked in a request decided access to all others.
+     *
+     * @var array<class-string, string|null>
+     */
+    private static array $shieldPermissionKeys = [];
+
+    /**
      * @return list<\Filament\Schemas\Components\Component>
      */
     abstract protected function settingsSchema(): array;
+
+    protected static function getPagePermission(): ?string
+    {
+        if (! array_key_exists(static::class, self::$shieldPermissionKeys)) {
+            $page = FilamentShield::getPages()[static::class] ?? null;
+
+            self::$shieldPermissionKeys[static::class] = $page ? array_key_first($page['permissions']) : null;
+        }
+
+        return self::$shieldPermissionKeys[static::class];
+    }
 
     public function getTitle(): string | Htmlable
     {

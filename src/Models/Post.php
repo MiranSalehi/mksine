@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Contracts\AllowsPublicComments;
+use Miran\Mksine\Models\Concerns\HasPublicationWindow;
+use Miran\Mksine\Models\Concerns\SanitizesHtmlOnSave;
 use Miran\Mksine\Observers\ContentSlugObserver;
 use Miran\Mksine\Traits\HasMediaAttachments;
 use Miran\Mksine\Traits\HasTags;
@@ -19,7 +21,9 @@ class Post extends Model implements AllowsPublicComments
 {
     use HasFactory;
     use HasMediaAttachments;
+    use HasPublicationWindow;
     use HasTags;
+    use SanitizesHtmlOnSave;
     use SoftDeletes;
 
     protected $fillable = [

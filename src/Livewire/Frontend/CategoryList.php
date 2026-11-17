@@ -20,9 +20,9 @@ class CategoryList extends Component
             ->whereNull('parent_id')
             ->where('is_active', true)
             ->with([
-                'children' => fn ($q) => $q->where('is_active', true)->with('parent')->withCount(['posts' => fn ($q) => $q->where('status', 'published')]),
+                'children' => fn ($q) => $q->where('is_active', true)->with('parent')->withCount(['posts' => fn ($q) => $q->published()]),
             ])
-            ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['posts' => fn ($q) => $q->published()])
             ->orderBy('sort_order')
             ->get();
 

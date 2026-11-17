@@ -80,6 +80,45 @@ it('never ships local data, backups, OS metadata or the setup token', function (
     'public/uploads/photo.png',
 ])->with([true, false]);
 
+it('never ships signing secrets, only public keys', function (string $path, bool $expected): void {
+    expect(ReleaseArchiveBuildRoots::isSecretKeyPath($path))->toBe(! $expected)
+        ->and(ReleaseArchiveBuildRoots::shouldIncludeInZip($path, includeExtensions: true))->toBe($expected);
+})->with([
+    ['vendor/miran/mksine/resources/keys/marketplace-v1.ed25519.sec', false],
+    ['vendor/miran/mksine/resources/keys/marketplace-v2.ed25519.pub', true],
+    ['packages/mksine/resources/keys/marketplace-v1.ed25519.sec', false],
+    ['packages/mksine/resources/keys/README', false],
+    ['plugins/ecom/signing.SEC', false],
+    ['vendor/composer/ca-bundle/res/cacert.pem', true],
+]);
+
+it('refuses to build an archive that contains a signing secret', function (): void {
+    $zipPath = $this->tmp . '/leaky.zip';
+    $zip = new ZipArchive;
+    $zip->open($zipPath, ZipArchive::CREATE);
+    $zip->addFromString('mksine/vendor/miran/mksine/resources/keys/marketplace-v1.ed25519.pub', 'pub');
+    $zip->addFromString('mksine/vendor/miran/mksine/resources/keys/marketplace-v1.ed25519.sec', 'secret');
+    $zip->close();
+
+    expect(fn () => ReleaseArchiveZipper::assertNoSecretKeys($zipPath))
+        ->toThrow(RuntimeException::class, 'marketplace-v1.ed25519.sec')
+        ->and(file_exists($zipPath))->toBeFalse();
+});
+
+it('leaves secret key files out when zipping a project', function (): void {
+    releaseProject($this->tmp . '/project', [
+        'artisan' => '<?php',
+        'vendor/miran/mksine/resources/keys/marketplace-v2.ed25519.pub' => 'pub',
+        'vendor/miran/mksine/resources/keys/marketplace-v2.ed25519.sec' => 'secret',
+    ]);
+
+    ReleaseArchiveZipper::createArchive($this->tmp . '/project', $this->tmp . '/out/release.zip');
+
+    expect(zipEntries($this->tmp . '/out/release.zip'))
+        ->toContain('vendor/miran/mksine/resources/keys/marketplace-v2.ed25519.pub')
+        ->not->toContain('vendor/miran/mksine/resources/keys/marketplace-v2.ed25519.sec');
+});
+
 it('keeps the normal application files in both archive kinds', function (bool $includeExtensions): void {
     foreach (['artisan', 'app/Models/User.php', 'database/migrations/0001_create_users.php', 'public/index.php', '.env.example'] as $path) {
         expect(ReleaseArchiveBuildRoots::shouldIncludeInZip($path, $includeExtensions))->toBeTrue();

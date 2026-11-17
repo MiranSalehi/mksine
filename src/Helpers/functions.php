@@ -8,7 +8,7 @@ if (! function_exists('mks_setting')) {
      */
     function mks_setting(string $key): mixed
     {
-        return \Miran\Mksine\Models\Setting::where('key', $key)->first()?->value;
+        return app(\Miran\Mksine\Support\SettingStore::class)->get($key);
     }
 }
 

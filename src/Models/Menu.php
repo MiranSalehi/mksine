@@ -72,44 +72,49 @@ class Menu extends Model
 
     /**
      * Build a nested tree structure of menu items.
+     *
+     * Loads every item of the menu in one query and nests them in PHP (eager loading only went
+     * one level deep, so each deeper level cost one query per item).
+     *
+     * @return list<array<string, mixed>>
      */
     public function getTree(): array
     {
-        $items = $this->items()
-            ->with('children')
-            ->whereNull('parent_id')
-            ->orderBy('order')
-            ->get();
+        $childrenByParent = [];
 
-        return $this->buildTreeRecursive($items);
+        foreach ($this->items()->get() as $item) {
+            $childrenByParent[(int) ($item->parent_id ?? 0)][] = $item;
+        }
+
+        return $this->buildTreeRecursive($childrenByParent, 0, []);
     }
 
     /**
-     * Recursively build tree structure.
+     * @param  array<int, list<MenuItem>>  $childrenByParent
+     * @param  array<int, true>  $ancestors  Guards against parent cycles in stored data.
+     * @return list<array<string, mixed>>
      */
-    protected function buildTreeRecursive($items): array
+    protected function buildTreeRecursive(array $childrenByParent, int $parentId, array $ancestors): array
     {
         $tree = [];
 
-        foreach ($items as $item) {
-            $node = [
+        foreach ($childrenByParent[$parentId] ?? [] as $item) {
+            $id = (int) $item->id;
+
+            if (isset($ancestors[$id])) {
+                continue;
+            }
+
+            $tree[] = [
                 'id' => $item->id,
                 'type' => $item->type,
                 'label' => $item->label,
-                'url' => $item->url,
+                'url' => MenuItem::safeUrl($item->url),
                 'reference_id' => $item->reference_id,
                 'target' => $item->target,
                 'order' => $item->order,
-                'children' => [],
+                'children' => $this->buildTreeRecursive($childrenByParent, $id, $ancestors + [$id => true]),
             ];
-
-            if ($item->children->count() > 0) {
-                $node['children'] = $this->buildTreeRecursive(
-                    $item->children->sortBy('order')
-                );
-            }
-
-            $tree[] = $node;
         }
 
         return $tree;

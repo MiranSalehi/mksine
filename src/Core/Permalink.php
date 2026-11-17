@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Core;
 
-use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Content\ContentTypeRegistry;
 
 /**
@@ -34,10 +33,7 @@ class Permalink
         $default = self::DEFAULTS[$key] ?? '/';
 
         try {
-            if (! Schema::hasTable('settings')) {
-                return $default;
-            }
-
+            // SettingStore returns nothing when the table is missing, so no Schema check here.
             $value = mks_setting($key);
 
             return $value !== null && $value !== '' ? (string) $value : $default;

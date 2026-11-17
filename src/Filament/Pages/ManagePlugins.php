@@ -706,8 +706,18 @@ class ManagePlugins extends Page
         };
     }
 
+    /**
+     * Plugin logs hold stack traces and request data, so reading and clearing them is for super admins.
+     */
+    public function canManagePluginLogs(): bool
+    {
+        return SuperAdminGate::check();
+    }
+
     public function getPluginLogContent(string $pluginId): ?string
     {
+        SuperAdminGate::authorize();
+
         return app(PluginLogger::class)->getLogContent($pluginId);
     }
 
@@ -718,6 +728,8 @@ class ManagePlugins extends Page
 
     public function openPluginLog(string $pluginId): void
     {
+        SuperAdminGate::authorize();
+
         $logger = app(PluginLogger::class);
         $this->pluginLogPluginId = $pluginId;
         $this->pluginLogContent = $logger->getLogContent($pluginId) ?? __('mksine::plugins.no_log_entries_yet');
@@ -729,6 +741,8 @@ class ManagePlugins extends Page
 
     public function clearPluginLog(): void
     {
+        SuperAdminGate::authorize();
+
         if ($this->pluginLogPluginId === '') {
             return;
         }

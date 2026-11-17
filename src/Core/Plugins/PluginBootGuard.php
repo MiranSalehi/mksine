@@ -10,11 +10,15 @@ use Miran\Mksine\Models\Plugin as PluginModel;
 /**
  * Boot Guard for detecting and handling plugin boot failures.
  *
- * Strategy: "Per-Plugin Flag + TTL + Stale Detection"
+ * Strategy: "In-memory boot marker + crash flag on fatal shutdown"
  *
- * - One flag file per plugin: storage/framework/cache/mks_plugins/{plugin_id}.booting.json
- * - TTL: flags younger than TTL are considered "still booting" (concurrent request safe)
- * - Only disable when flag exists AND is older than TTL (clearly stale = crash)
+ * - The plugin being booted is kept in memory; nothing touches the disk on a normal request
+ *   (the old design wrote and deleted one flag file per plugin on every request).
+ * - Exceptions are caught by PluginManager and reported through {@see bootFailed()}.
+ * - A fatal error (parse error, out of memory, time limit) kills the process instead; a shutdown
+ *   function then writes storage/framework/cache/mks_plugins/{plugin_id}.booting.json with
+ *   `crashed: true`, and the next request disables that plugin.
+ * - Flags in the old format (no `crashed`) still use the TTL: disabled only when older than TTL.
  * - Corrupt JSON: delete file only, do NOT disable plugin
  */
 final class PluginBootGuard
@@ -26,6 +30,11 @@ final class PluginBootGuard
     private int $ttlSeconds;
 
     private PluginLogger $pluginLogger;
+
+    /** Plugin whose boot is running right now, for the fatal-error shutdown handler. */
+    private ?string $bootingPluginId = null;
+
+    private bool $shutdownHandlerRegistered = false;
 
     public function __construct(
         ?string $pluginsDir = null,
@@ -62,17 +71,12 @@ final class PluginBootGuard
      */
     public function startBoot(string $pluginId): void
     {
-        $this->ensureDirectoryExists();
+        $this->bootingPluginId = $pluginId;
 
-        $data = [
-            'plugin_id' => $pluginId,
-            'started_at' => date('Y-m-d H:i:s'),
-            'pid' => (string) (getmypid() ?: 0),
-            'request_id' => $this->getRequestId(),
-        ];
-
-        $path = $this->getFlagPath($pluginId);
-        $this->atomicWrite($path, $data);
+        if (! $this->shutdownHandlerRegistered) {
+            $this->shutdownHandlerRegistered = true;
+            register_shutdown_function(fn () => $this->recordFatalBootFailure(error_get_last()));
+        }
     }
 
     /**
@@ -80,7 +84,39 @@ final class PluginBootGuard
      */
     public function endBoot(string $pluginId): void
     {
-        $this->clearFlag($pluginId);
+        if ($this->bootingPluginId === $pluginId) {
+            $this->bootingPluginId = null;
+        }
+    }
+
+    /**
+     * Shutdown handler: when the process dies of a fatal error while a plugin is booting, leave a
+     * crash flag so the next request disables that plugin.
+     *
+     * @param  array{type: int, message: string, file: string, line: int}|null  $error
+     */
+    public function recordFatalBootFailure(?array $error): void
+    {
+        $pluginId = $this->bootingPluginId;
+
+        if ($pluginId === null || $error === null) {
+            return;
+        }
+
+        if (($error['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR)) === 0) {
+            return;
+        }
+
+        $this->bootingPluginId = null;
+        $this->ensureDirectoryExists();
+        $this->atomicWrite($this->getFlagPath($pluginId), [
+            'plugin_id' => $pluginId,
+            'started_at' => date('Y-m-d H:i:s'),
+            'crashed' => true,
+            'error' => mb_substr($error['message'], 0, 500),
+            'pid' => (string) (getmypid() ?: 0),
+            'request_id' => $this->getRequestId(),
+        ]);
     }
 
     /**
@@ -195,6 +231,17 @@ final class PluginBootGuard
         }
 
         $ageSeconds = time() - $started;
+
+        if (($data['crashed'] ?? false) === true) {
+            $reason = 'Boot failure detected - plugin crashed during previous boot: ' . (string) ($data['error'] ?? 'fatal error');
+
+            Log::warning('Detected plugin boot failure from previous request', ['plugin_id' => $pluginId, 'error' => $data['error'] ?? null]);
+            $this->pluginLogger->log($pluginId, 'warning', $reason, ['started_at' => $startedAt]);
+            $this->disableFailedPlugin($pluginId, $reason);
+            $this->safeUnlink($filePath);
+
+            return;
+        }
 
         if ($ageSeconds < $this->ttlSeconds) {
             return;

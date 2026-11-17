@@ -16,7 +16,7 @@
     $post = null;
     $postMissing = false;
     if ($postId > 0) {
-        $post = \Miran\Mksine\Models\Post::query()->where('status', 'published')->find($postId);
+        $post = \Miran\Mksine\Models\Post::query()->published()->find($postId);
         if (! $post) {
             $postMissing = true;
         }
@@ -45,7 +45,7 @@
                 ->approved()
                 ->root()
                 ->where('commentable_type', \Miran\Mksine\Models\Post::class)
-                ->whereHasMorph('commentable', [\Miran\Mksine\Models\Post::class], fn ($q) => $q->where('status', 'published'))
+                ->whereHasMorph('commentable', [\Miran\Mksine\Models\Post::class], fn ($q) => $q->published())
                 ->with($commentWith)
                 ->orderByDesc('created_at')
                 ->limit($maxRoot)

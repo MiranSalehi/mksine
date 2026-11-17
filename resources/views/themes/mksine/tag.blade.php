@@ -71,11 +71,12 @@
                         <a href="{{ route('posts.show', $post->slug) }}" class="block shrink-0">
                             <div class="relative aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-slate-800">
                                 @if ($post->featuredImage?->url)
-                                    <img
-                                        src="{{ $post->featuredImage->url }}"
-                                        alt="{{ $post->title }}"
+                                    <x-mksine::image
+                                        :media="$post->featuredImage"
+                                        :alt="$post->title"
+                                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                                         class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                                    >
+                                    />
                                 @endif
                             </div>
                         </a>

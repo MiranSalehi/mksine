@@ -8,6 +8,126 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 - (none)
 
+## 1.25.0 - 2026-11-17
+
+### Security
+
+- **Comment moderation is authorized.** Approve, spam, trash and restore (row and bulk) need `Update:Comment`; reply needs `Create:Comment`. Before, any user who could open the comment list could run them.
+- **The page document API respects content visibility.** `/api/mksine/pages` and `/api/mksine/pages/{slug}` go through `ContentVisibility` like the storefront, so members-only pages are no longer readable without signing in (401 for guests, 403 for signed-in users a plugin denies). New `ContentVisibility::isVisible()` checks without redirecting.
+- **Menu links cannot run script.** Custom links accept http, https, mailto, tel, sms and relative URLs only; `javascript:`, `data:` and `vbscript:` (also with tabs, entities or upper case) are refused in the builder, turned into `#` on save, and rendered as `#` for rows saved before this release.
+- **The menu builder stays inside the selected menu.** Removing, editing and reordering ignore item ids of other menus. A structure that lists an id twice can no longer make two items each other's parent, nesting stops at the builder's depth limit, and `menuItems`/`selectedMenu` are locked against browser updates.
+- **Admin terminal allowlist cannot be bypassed.**
+  - Only value-less flags (`-n`, `-q`, `-v`, …) may precede the sub-command, so `artisan --env about tinker` no longer runs `tinker`.
+  - Artisan sub-commands must be registered names or aliases and run under their canonical name, so abbreviations such as `mks:fresh-super-admin` no longer reach `mksine:fresh-super-admin`.
+  - `--env` (artisan) and `-d`/`--working-dir` (composer) are refused.
+  - `composer require` is no longer on the default allowlist: a required package's autoloaded files run on the next artisan call. Add it back in `mksine.console_terminal.allowed_commands.composer` if you need it.
+- **Default user policy.** The user resource gets `Miran\Mksine\Policies\UserPolicy` (`ViewAny:User`, `Update:User`, …, named after the `mksine.user_model` class) when neither the app nor a plugin has a policy for that model.
+- **Marketplace and plugin logs are super-admin only.** `installFromMarketplace` checks before downloading; reading and clearing plugin logs (which hold stack traces) needs Super Admin, and the *View log* button is hidden for others.
+
+### Fixed
+
+- **Posts dated in the future are no longer public.** `Post` and `Entry` have a shared `published()` scope (status `published` and `published_at` empty or reached), used by every storefront list, single page, count and menu. A post saved as published with a future date now goes live at that time. Pages in `scheduled` status go live once their date passes, without a cron job.
+
+### Changed
+
+- **Storefront pages render as plain Blade.**
+  - **The route:** core storefront routes (home, pages, posts, categories, tags, authors, content types) now go to `StorefrontPageController` instead of the full-page Livewire `FrontendResolver`.
+  - **How it renders:** the controller uses the page classes (`PostShow`, `PageShow`, …) as plain objects. It fills public properties from the route, calls `mount()` and `render()`, and places the view in the theme layout. Livewire runs only for real islands such as comments, so a page without one ships no `livewire.js` (about 79 KB gzip).
+  - **Pagination** is plain `?page=` links that crawlers follow.
+  - **Measured locally:** the home page is 9 KB smaller and renders in about 45 ms instead of about 60 ms.
+  - **Unchanged:** theme Livewire overrides registered with `registerOverride()` still render through Livewire. `MKS_FRONTEND_LIVEWIRE_PAGES=true` (`mksine.frontend.livewire_pages`) restores the previous rendering for every page.
+
+### Added
+
+- **Responsive WebP images.** After an image (JPEG, PNG, WebP) is uploaded, GD writes WebP copies next to it at each width in `mksine.media.responsive_widths` (320–1920) below the original's width, plus one at the original width capped at 1920 (`photo.jpg` → `photo-640w.webp`). The paths are stored in the new `media.conversions` column. On local sample images a 1 MB PNG became 18 KB at 1280 px and 7 KB at 640 px.
+  - **New `<x-mksine::image :media="…" sizes="…" />` component.** It renders a `<picture>` with the WebP `srcset` and the original as fallback, and adds `width`/`height` (no layout shift). Images are `loading="lazy"` by default; `:priority="true"` makes them eager with `fetchpriority="high"`.
+  - **Where the core theme uses it:** featured images in post, category, tag, author and entry pages (the post and entry heroes are high priority), and the page builder image block.
+  - **When the copies are made:** after the response by default, so no queue worker is needed. `MKS_CMS_CONVERSIONS_DISPATCH=queue` sends the work to the queue instead.
+  - **Replacing and deleting:** replacing a file rebuilds its copies. Permanent deletion removes them; the original is untouched, as before.
+  - **Left alone:** GIFs, files GD cannot read, and images too large for `memory_limit` or above `max_conversion_pixels`.
+  - `mksine.media.optimize_images` (default `true`, previously unused) is the switch.
+  - **Backfill:** `php artisan mksine:media-conversions` converts existing images (`--force` rebuilds, `--id=` limits).
+- **Guest full-page cache (off by default).** Storefront pages for visitors who are not signed in are stored as HTML and served without rendering: locally the home page went from about 90 ms and 16 queries to about 1 ms and 0 queries after boot.
+  - **Turning it on:** Settings › Performance (toggle, lifetime in minutes, *Clear page cache* button), `MKS_PAGE_CACHE=true`, or `mksine.page_cache.*` in config. `php artisan mksine:page-cache-clear` flushes it from the console.
+  - **Sessions and CSRF:** the cache runs after the session starts. Each visitor keeps their own session, and the CSRF token in a cached page is replaced with theirs. Livewire scripts are injected on hits, so comments and other components keep working.
+  - **Analytics:** `StorefrontViewed` is recorded with the page and replayed after the response on every hit.
+  - **Never cached:**
+    - requests from signed-in users (any session guard);
+    - requests carrying flashed session data or old input;
+    - requests with a query parameter outside `cacheable_query_params` (`page` by default; `utm_*`, `fbclid`, `gclid` and similar are ignored);
+    - non-200 and non-HTML responses;
+    - responses that set cookies other than the session and XSRF cookies;
+    - responses with `X-Mksine-No-Cache`;
+    - pages whose render called `PageCache::skip()`;
+    - paths, cookies or session keys listed in `bypass_paths`, `bypass_cookies` or `bypass_session_keys`.
+  - **Invalidation:** saving or deleting a post, page, category, tag, comment, entry, media, menu, menu item or location, builder section, setting, theme or plugin flushes every page (once per request). Plugins register their own models with `PageCacheInvalidator::watch(Product::class, ...)`.
+  - **Extension points:**
+    - the `mksine.page_cache.should_cache` filter to veto a request;
+    - the `mksine.page_cache.key_parts` filter to vary the key (currency, device);
+    - the `mksine.page-cache` middleware alias for plugin storefront routes.
+  - Responses carry `X-Mksine-Cache: HIT|MISS|BYPASS`.
+  - **Shops:** the cart badge or preview must call `PageCache::skip()` when the visitor's cart has items before the cache is turned on.
+
+## 1.24.0 - 2026-11-17
+
+### Security
+
+- **Rotate the marketplace signing key: the v1 secret shipped in release zips.** `ReleaseSkeleton` and `ReleaseArchiveBuildRoots` did not filter `resources/keys/*.sec`, so every 1.22.0–1.23.2 server and shared-hosting zip contained `vendor/miran/mksine/resources/keys/marketplace-v1.ed25519.sec`. Anyone with one of those zips could sign marketplace packages. Changes:
+  - The package now ships `marketplace-v2.ed25519.pub` only.
+  - v1 is listed in `MarketplaceReleaseTrust::REVOKED_PUBLIC_KEYS`, is never trusted (even from `MKS_MARKETPLACE_SIGNING_PUBLIC_KEYS`), and `mksine:sign-marketplace-release` refuses to sign with it.
+  - Release builds skip `*.sec` and any non-`.pub` file under `resources/keys`, and `ReleaseArchiveZipper` deletes and fails any zip that still contains one.
+  - **Action:** delete `vendor/miran/mksine/resources/keys/*.sec` on every site installed from a 1.22.0–1.23.2 zip, delete those zips wherever they were published, and sign catalog releases with the v2 secret (kept outside the repo).
+- **Stored XSS: rich content is sanitised on save for everyone but Super Admins.** Post, page and entry content, tag descriptions and page builder text/tabs/accordion blocks were printed raw, so any role that could edit them could plant script that ran in a Super Admin's session. Details:
+  - The new `SanitizesHtmlOnSave` model concern runs `HtmlContentSanitizer` (Symfony HtmlSanitizer) on changed attributes.
+  - It keeps CKEditor formatting (headings, tables, figures, classes, inline styles, links) and https iframes from `mksine.content.embed_hosts` (Aparat, YouTube, Vimeo, Google Maps, Balad, Neshan by default).
+  - It drops `<script>`, event handlers, `javascript:` URLs and other iframes.
+  - Super Admins and console runs without a user keep raw HTML.
+  - `MKS_SANITIZE_HTML=false` turns it off.
+  - New `mksine:content-scan` lists stored records that contain script; `--fix` cleans them after confirmation.
+  - Shortcode attributes still parse when the sanitiser has encoded `=` and quotes.
+- **Super Admins pass every check nothing else decided.** With Shield's `define_via_gate` off, the `super_admin` role held only the permissions it was given, so permissions created later (users, newly activated plugins) returned 403. `SuperAdminGate::registerGateFallback()` adds a Gate `after` callback: undecided checks become true for Super Admins, while a policy that answers false still wins.
+- **Core models fall back to package policies.** `MksineServiceProvider` registered `App\Policies\*` only when the file existed. On hosts without `app/Policies`, Filament found no policy and allowed every action. Posts, pages, categories, tags, comments, media, menus, menu locations, geo data and Shield's role resource were open to any panel user, who could even give themselves `super_admin`. New `Miran\Mksine\Policies\*` defaults (on `ShieldModelPolicy`) map each ability to its Shield permission (`viewAny` → `ViewAny:Post`, built from `filament-shield.permissions`). `PolicyRegistrar` uses `App\Policies\{Model}Policy` when it exists and the package default otherwise. The role policy also covers the configured `permission.models.role`. Bulk delete (`deleteAny`) accepts `DeleteAny:X` or `Delete:X`.
+- **The menu builder needs `Update:Menu`.** `MenuBuilder` had no `canAccess()`, and none of its Livewire methods (save, add, remove, edit, indent, outdent, reorder) checked permissions. Access now requires the `update` ability of the Menu policy, and every method that changes data authorizes against the selected menu. The "Edit menu items" buttons on the menus table and the edit page are shown only to users who can update the menu.
+- **Each settings page checks its own Shield permission.** `HasPageShield` caches the permission key in a static property. Every `MksSettingsPage` subclass shared that property, so the first settings page checked in a request decided access to all of them. `MksSettingsPage` now keeps one key per class.
+
+### Performance
+
+Measured on the local admin dashboard: **95 → 23 queries per request.** Formatting 100 dates: 200 queries → 0.
+
+- **Settings are read once per request.** `mks_setting()` ran one query per call (37 on an admin page; 2–4 per Shamsi date). The new `SettingStore` loads the whole `settings` table with one query, keeps it in the cache between requests, and is flushed when a `Setting` is saved or deleted and after migrations. `Permalink::getUri()` no longer runs `Schema::hasTable('settings')` before every read.
+- **`Schema::hasTable` results are remembered per request.** `DatabaseTables::exists()` replaces the repeated information_schema queries in the plugin bootstrap, hook loading and admin navigation (about 36 per admin request).
+- **`route:cache` now takes effect.**
+  - The package route files load through `loadRoutesFrom()`.
+  - Plugin routes are skipped when routes are cached.
+  - Activating or deactivating a plugin deletes the route cache.
+- **Less work on every request.**
+  - The plugin boot guard keeps its state in memory. Before, each request did three file operations per plugin. It now writes a crash flag only from a shutdown handler after a fatal error, so a slow boot under load can no longer disable a plugin by mistake.
+  - Publish tags for lang, fonts and configs are registered only in the console.
+  - Missing lang files are copied once per package version, not checked on every request.
+  - The Livewire `Testable` mixin is registered only under tests.
+  - The three `mks_hooks` counts are now one `exists()`.
+- **CKEditor (1.2 MB JS, 337 KB gzip) and its CSS load only on pages with an editor**, via the field's own `x-load-js`/`x-load-css`.
+- **Fewer queries on the storefront.**
+  - `Menu::getTree()` loads all items in one query; before, each nested level cost one query per item.
+  - Post lists eager-load the category parent chain used by category links.
+  - Author pages eager-load featured images.
+  - Comments load their users with the list.
+  - `PostComments` loads its commentable once per request.
+  - Users table: avatars are eager-loaded (`HasMediaAttachments` reads loaded attachments).
+- **Composite indexes for listing queries:**
+  - `posts(status, published_at)`
+  - `posts(author_id, status, published_at)`
+  - `pages(status, published_at)`
+  - `mks_entries(content_type, status, published_at)`
+  - `categories(parent_id, is_active, sort_order)`
+  - `taggables(tag_id, taggable_type, taggable_id)`
+
+### Fixed
+
+- **Page builder images no longer vanish after a section reference.** `BuilderMediaIndex::warm()` reset its map, so images of the outer page rendered after a referenced section resolved to nothing. It now merges.
+- **Shamsi dates no longer crash on ICU 67.** `MksDateFormatter` passed the time zone name of ISO strings with an offset (`2026-11-16T13:27:00+03:30` → `+03:30`) to `IntlDateFormatter`. ICU 67.1 rejects it ("datefmt_create: No such time zone"), which caused the 500 error on the order edit page. Non-identifier time zones (offsets and abbreviations) are converted to `config('app.timezone')` first, through `MksDateFormatter::forIntlFormatter()`.
+- **The Settings item and `/admin/settings` need an allowed settings page.** `SettingsCluster` now opens and shows in the sidebar only when the user can access at least one page or resource in it. Super admins always can, through the admin menu page.
+
 ## 1.23.2 - 2026-11-06
 
 ### Security

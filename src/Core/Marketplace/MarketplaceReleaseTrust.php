@@ -17,7 +17,18 @@ final class MarketplaceReleaseTrust
 {
     public const SCHEMA = 'mksine-marketplace-v1';
 
-    public const BUNDLED_PUBLIC_KEY_FILE = 'marketplace-v1.ed25519.pub';
+    public const BUNDLED_PUBLIC_KEY_FILE = 'marketplace-v2.ed25519.pub';
+
+    /**
+     * Public keys whose secret leaked and that must never be trusted again, even when they are
+     * listed in `mksine.marketplace.signing_public_keys` or left behind in `resources/keys`.
+     * v1: its secret shipped inside the 1.22.0–1.23.2 release zips.
+     *
+     * @var list<string>
+     */
+    public const REVOKED_PUBLIC_KEYS = [
+        '86d0bcaeb5b4a085ac933890ea015c6ad3a3f4215fdc4b949f5cf1f80e584636',
+    ];
 
     public static function message(string $kind, string $packageId, string $version, string $sha256): string
     {
@@ -136,7 +147,12 @@ final class MarketplaceReleaseTrust
             }
         }
 
-        return array_values(array_unique($keys));
+        return array_values(array_diff(array_unique($keys), self::REVOKED_PUBLIC_KEYS));
+    }
+
+    public static function isRevoked(string $publicKeyHex): bool
+    {
+        return in_array(strtolower(trim($publicKeyHex)), self::REVOKED_PUBLIC_KEYS, true);
     }
 
     public static function bundledKeysDirectory(): string

@@ -177,6 +177,9 @@ trait InteractsWithMarketplaceCatalog
 
     public function installFromMarketplace(string $slug): void
     {
+        // Before the download: a non-super-admin must not make the server fetch archives.
+        SuperAdminGate::authorize();
+
         $path = null;
 
         try {

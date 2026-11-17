@@ -39,6 +39,10 @@ it('copies only the package files a running site needs', function (string $path,
     ['CHANGELOG.md', false],
     ['phpstan.neon.dist', false],
     ['.github/workflows/docs-lint.yml', false],
+    ['resources/keys/marketplace-v2.ed25519.pub', true],
+    ['resources/keys/marketplace-v1.ed25519.sec', false],
+    ['resources/keys/notes.txt', false],
+    ['config/signing.sec', false],
 ]);
 
 it('copies only the plugin files a running site needs, keeping plugin vendor folders', function (string $path, bool $expected): void {
@@ -58,6 +62,8 @@ it('copies only the plugin files a running site needs, keeping plugin vendor fol
     ['ecom/vite.config.js', false],
     ['mks-booking/composer.lock', false],
     ['mks-notification/README.md', false],
+    ['ecom/resources/keys/signing.sec', false],
+    ['ecom/resources/keys/signing.ed25519.pub', true],
     ['ecom/.DS_Store', false],
 ]);
 

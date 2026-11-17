@@ -8,10 +8,18 @@
     $shadow = $data['shadow'] ?? false;
 
     $imageUrl = null;
+    $media = null;
     if ($imageId) {
         $media = app(\Miran\Mksine\Core\PageBuilder\BuilderMediaIndex::class)->find($imageId);
         $imageUrl = $media?->url;
     }
+
+    $imageSizes = match ($size) {
+        'small' => '(min-width: 640px) 384px, 100vw',
+        'medium' => '(min-width: 640px) 512px, 100vw',
+        'full' => '100vw',
+        default => '(min-width: 768px) 672px, 100vw',
+    };
 
     $sizeClasses = match ($size) {
         'small' => 'max-w-sm',
@@ -37,11 +45,12 @@
 @if ($imageUrl)
     <figure {!! \Miran\Mksine\Core\PageBuilder\BlockRegion::attributes('image', (bool) ($preview ?? false)) !!} class="group mb-8 md:mb-10 {{ $sizeClasses }} {{ $alignmentClasses }}">
         <div class="overflow-hidden {{ $radiusClass }} ring-1 ring-slate-900/5 dark:ring-white/10 {{ $shadowClass }}">
-            <img
-                src="{{ asset($imageUrl) }}"
-                alt="{{ $alt }}"
+            <x-mksine::image
+                :media="$media"
+                :alt="$alt"
+                :sizes="$imageSizes"
                 class="h-auto w-full object-cover transition duration-500 ease-out group-hover:scale-[1.03]"
-            >
+            />
         </div>
         @if ($caption)
             <figcaption class="mt-3 text-center text-sm font-medium text-slate-500 dark:text-slate-400">

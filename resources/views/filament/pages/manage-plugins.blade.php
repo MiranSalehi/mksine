@@ -244,16 +244,18 @@
                                                 </x-filament::button>
                                             @endif
 
-                                            <x-filament::button
-                                                size="sm"
-                                                color="gray"
-                                                outlined
-                                                icon="heroicon-o-document-text"
-                                                wire:click="openPluginLog('{{ $pluginId }}')"
-                                                wire:loading.attr="disabled"
-                                            >
-                                                {{ __('mksine::plugins.view_log') }}
-                                            </x-filament::button>
+                                            @if ($this->canManagePluginLogs())
+                                                <x-filament::button
+                                                    size="sm"
+                                                    color="gray"
+                                                    outlined
+                                                    icon="heroicon-o-document-text"
+                                                    wire:click="openPluginLog('{{ $pluginId }}')"
+                                                    wire:loading.attr="disabled"
+                                                >
+                                                    {{ __('mksine::plugins.view_log') }}
+                                                </x-filament::button>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

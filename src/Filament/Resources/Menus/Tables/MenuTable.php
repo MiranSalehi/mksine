@@ -52,6 +52,7 @@ class MenuTable
                 Action::make('builder')
                     ->label(__('mksine::menus.edit_items'))
                     ->icon('heroicon-o-bars-3-bottom-left')
+                    ->authorize('update')
                     ->url(fn ($record) => MenuBuilder::getUrl(['menu' => $record->id])),
                 DeleteAction::make(),
             ])

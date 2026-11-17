@@ -59,7 +59,7 @@ final class HookStateRepository
         }
 
         try {
-            if (! \Illuminate\Support\Facades\Schema::hasTable('mks_hooks')) {
+            if (! \Miran\Mksine\Support\DatabaseTables::exists('mks_hooks')) {
                 return false;
             }
 

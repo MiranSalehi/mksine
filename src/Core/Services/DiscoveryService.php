@@ -6,7 +6,6 @@ namespace Miran\Mksine\Core\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Hooks\FormHookListenerInterface;
 use Miran\Mksine\Core\Hooks\FormSlotHookListenerInterface;
 use Miran\Mksine\Core\Hooks\MksineListenerInterface;
@@ -598,7 +597,7 @@ class DiscoveryService
     private function isDatabaseAvailable(): bool
     {
         try {
-            if (! Schema::hasTable('mks_hooks')) {
+            if (! \Miran\Mksine\Support\DatabaseTables::exists('mks_hooks')) {
                 return false;
             }
 

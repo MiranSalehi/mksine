@@ -19,7 +19,7 @@ class PostShow extends Component
     public function mount($slug): void
     {
         $this->post = Post::where('slug', $slug)
-            ->where('status', 'published')
+            ->published()
             ->with(['categories' => fn ($q) => $q->with('parent.parent.parent')])
             ->firstOrFail();
 
@@ -37,16 +37,16 @@ class PostShow extends Component
         $categoryIds = $this->post->categories->pluck('id')->toArray();
 
         $relatedPosts = ContentVisibility::constrain(Post::query(), 'post')
-            ->where('status', 'published')
+            ->published()
             ->where('id', '!=', $this->post->id)
             ->when(count($categoryIds) > 0, fn ($q) => $q->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $categoryIds)))
-            ->with(['featuredImage', 'author', 'categories'])
+            ->with(['featuredImage', 'author', 'categories.parent.parent.parent'])
             ->latest('published_at')
             ->take(3)
             ->get();
 
         $recentPosts = ContentVisibility::constrain(Post::query(), 'post')
-            ->where('status', 'published')
+            ->published()
             ->where('id', '!=', $this->post->id)
             ->with(['featuredImage', 'author'])
             ->latest('published_at')
@@ -56,8 +56,8 @@ class PostShow extends Component
         $sidebarCategories = Category::query()
             ->where('is_active', true)
             ->whereNull('parent_id')
-            ->whereHas('posts', fn ($q) => $q->where('status', 'published'))
-            ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
+            ->whereHas('posts', fn ($q) => $q->published())
+            ->withCount(['posts' => fn ($q) => $q->published()])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->take(12)

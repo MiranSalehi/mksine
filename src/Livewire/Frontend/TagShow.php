@@ -39,7 +39,7 @@ class TagShow extends Component
         $this->emitStorefrontView('tag', $this->tag->id, $this->tag->is_active ? 'published' : 'inactive');
 
         $posts = $this->tag->posts()
-            ->where('posts.status', 'published')
+            ->published()
             ->with(['author', 'featuredImage'])
             ->latest('posts.published_at')
             ->paginate(12, ['*'], 'posts');

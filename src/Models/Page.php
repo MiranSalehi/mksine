@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Miran\Mksine\Core\PageBuilder\PayloadNormalizer;
 use Miran\Mksine\Database\Factories\PageFactory;
+use Miran\Mksine\Models\Concerns\SanitizesHtmlOnSave;
 use Miran\Mksine\Observers\ContentSlugObserver;
 use Miran\Mksine\Traits\HasTags;
 
@@ -18,6 +19,7 @@ class Page extends Model
 {
     use HasFactory;
     use HasTags;
+    use SanitizesHtmlOnSave;
     use SoftDeletes;
 
     protected $fillable = [
@@ -100,15 +102,32 @@ class Page extends Model
     }
 
     /**
-     * Scope for published pages.
+     * Public pages: `published` with an empty or reached date, or `scheduled` once its date is reached.
+     *
+     * Scheduled pages go live by the clock, so no cron job has to flip their status first.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<Page>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Page>
      */
     public function scopePublished($query)
     {
-        return $query->where('status', 'published')
-            ->where(function ($q) {
-                $q->whereNull('published_at')
-                    ->orWhere('published_at', '<=', now());
-            });
+        $status = $this->qualifyColumn('status');
+        $publishedAt = $this->qualifyColumn('published_at');
+
+        return $query->where(function ($query) use ($status, $publishedAt): void {
+            $query
+                ->where(function ($query) use ($status, $publishedAt): void {
+                    $query->where($status, 'published')
+                        ->where(function ($query) use ($publishedAt): void {
+                            $query->whereNull($publishedAt)->orWhere($publishedAt, '<=', now());
+                        });
+                })
+                ->orWhere(function ($query) use ($status, $publishedAt): void {
+                    $query->where($status, 'scheduled')
+                        ->whereNotNull($publishedAt)
+                        ->where($publishedAt, '<=', now());
+                });
+        });
     }
 
     /**
@@ -171,5 +190,13 @@ class Page extends Model
         }
 
         return "{$baseSlug}-copy-{$i}";
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sanitizedBuilderPayloadAttributes(): array
+    {
+        return ['builder_payload'];
     }
 }

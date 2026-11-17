@@ -6,8 +6,9 @@ namespace Miran\Mksine\Core\Content;
 
 use Illuminate\Support\Facades\Route;
 use Miran\Mksine\Core\Permalink;
+use Miran\Mksine\Http\Middleware\CacheStorefrontPage;
 use Miran\Mksine\Http\Middleware\EnsureActiveThemeDependencies;
-use Miran\Mksine\Livewire\Frontend\FrontendResolver;
+use Miran\Mksine\Http\Controllers\StorefrontPageController;
 
 /**
  * Registers storefront archive/single routes after plugins boot into {@see ContentTypeRegistry}.
@@ -19,7 +20,7 @@ final class ContentTypeRoutes
         $registry = app(ContentTypeRegistry::class);
         $blocked = self::blockedUris();
 
-        Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function () use ($registry, $blocked): void {
+        Route::middleware(['web', EnsureActiveThemeDependencies::class, CacheStorefrontPage::class])->group(function () use ($registry, $blocked): void {
             foreach ($registry->publicTypes() as $type) {
                 $indexName = 'content.'.$type->key.'.index';
                 $showName = 'content.'.$type->key.'.show';
@@ -27,7 +28,7 @@ final class ContentTypeRoutes
                 if ($type->hasArchive && ! Route::has($indexName)) {
                     $archive = $type->archivePath();
                     if (! in_array($archive, $blocked, true)) {
-                        Route::get($archive, FrontendResolver::class)
+                        Route::get($archive, StorefrontPageController::class)
                             ->defaults('page', 'entry-list')
                             ->defaults('contentType', $type->key)
                             ->name($indexName);
@@ -37,7 +38,7 @@ final class ContentTypeRoutes
                 if (! Route::has($showName)) {
                     $single = $type->singlePattern();
                     if (! in_array($single, $blocked, true)) {
-                        Route::get($single, FrontendResolver::class)
+                        Route::get($single, StorefrontPageController::class)
                             ->defaults('page', 'entry-show')
                             ->defaults('contentType', $type->key)
                             ->name($showName);

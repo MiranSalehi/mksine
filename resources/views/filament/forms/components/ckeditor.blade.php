@@ -73,7 +73,7 @@
                             mediaSelectedHandler: null
                         };
 
-                        const waitFor = (check, cb, maxAttempts = 200) => {
+                        const waitFor = (check, cb, maxAttempts = 600) => {
                             let attempts = 0;
                             const t = setInterval(() => {
                                 attempts++;

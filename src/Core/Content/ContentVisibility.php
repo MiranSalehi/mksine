@@ -35,12 +35,22 @@ final class ContentVisibility
         return $result instanceof Builder ? $result : $query;
     }
 
-    public static function assertVisible(Model $record, string $type, ?Authenticatable $user = null): void
+    /**
+     * Whether plugins allow the record for the user, without redirecting or aborting (JSON APIs).
+     */
+    public static function isVisible(Model $record, string $type, ?Authenticatable $user = null): bool
     {
         $user ??= auth()->user();
         $ok = Hooks::filter(self::FILTER_VISIBLE, true, $record, $type, $user);
 
-        if ($ok === true || $ok === 1 || $ok === '1') {
+        return $ok === true || $ok === 1 || $ok === '1';
+    }
+
+    public static function assertVisible(Model $record, string $type, ?Authenticatable $user = null): void
+    {
+        $user ??= auth()->user();
+
+        if (self::isVisible($record, $type, $user)) {
             return;
         }
 

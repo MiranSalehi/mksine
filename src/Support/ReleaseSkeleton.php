@@ -165,6 +165,10 @@ final class ReleaseSkeleton
             return false;
         }
 
+        if (ReleaseArchiveBuildRoots::isSecretKeyPath($relativePath)) {
+            return false;
+        }
+
         return ! self::isToolingFile($relativePath);
     }
 
@@ -187,7 +191,9 @@ final class ReleaseSkeleton
             }
         }
 
-        return ! self::isToolingFile($relativePath) && ! str_ends_with($relativePath, '.zip');
+        return ! self::isToolingFile($relativePath)
+            && ! str_ends_with($relativePath, '.zip')
+            && ! ReleaseArchiveBuildRoots::isSecretKeyPath($insidePlugin);
     }
 
     /**

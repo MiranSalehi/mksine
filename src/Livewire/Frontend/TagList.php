@@ -19,7 +19,7 @@ class TagList extends Component
         $tags = Tag::query()
             ->where('is_active', true)
             ->withCount([
-                'posts' => fn ($q) => $q->where('status', 'published'),
+                'posts' => fn ($q) => $q->published(),
                 'pages' => fn ($q) => $q->published(),
             ])
             ->orderBy('name')

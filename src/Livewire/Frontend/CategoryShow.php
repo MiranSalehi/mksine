@@ -18,11 +18,13 @@ class CategoryShow extends Component
     public function mount($path)
     {
         $path = is_string($path) ? trim($path, '/') : '';
-        $this->category = Category::findByFullPath($path);
-        if (! $this->category) {
+        $category = Category::findByFullPath($path);
+
+        if (! $category || ! $category->is_active) {
             abort(404);
         }
 
+        $this->category = $category;
         $this->category->loadMissing(['parent.parent.parent.parent.parent']);
     }
 
@@ -33,14 +35,14 @@ class CategoryShow extends Component
         View::share('mksShortcodeContext', mks_shortcode_context(category: $this->category));
 
         $posts = ContentVisibility::constrain($this->category->posts()->getQuery(), 'post')
-            ->where('posts.status', 'published')
-            ->with(['author', 'featuredImage', 'categories'])
+            ->published()
+            ->with(['author', 'featuredImage', 'categories.parent.parent.parent'])
             ->latest('posts.published_at')
             ->paginate(12);
 
         $categories = Category::query()
             ->with('parent')
-            ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['posts' => fn ($q) => $q->published()])
             ->orderBy('sort_order')
             ->take(10)
             ->get();

@@ -27,7 +27,8 @@ class AuthorShow extends Component
 
         $posts = ContentVisibility::constrain(Post::query(), 'post')
             ->where('author_id', $this->author->id)
-            ->where('status', 'published')
+            ->published()
+            ->with('featuredImage')
             ->latest('published_at')
             ->paginate(12);
 

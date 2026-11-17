@@ -17,6 +17,7 @@ class EditMenu extends EditRecord
             \Filament\Actions\Action::make('builder')
                 ->label(__('Edit Menu Items'))
                 ->icon('heroicon-o-bars-3-bottom-left')
+                ->authorize('update')
                 ->url(fn () => MenuBuilder::getUrl(['menu' => $this->record->id])),
             DeleteAction::make(),
         ];

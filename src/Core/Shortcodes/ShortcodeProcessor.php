@@ -219,6 +219,11 @@ final class ShortcodeProcessor
     {
         $text = trim($text);
 
+        // Sanitised HTML stores `=` and quotes as entities (`[gallery ids&#61;&#34;1,2&#34;]`).
+        if (! str_contains($text, '=') && str_contains($text, '&')) {
+            $text = trim(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
         if ($text === '') {
             return [];
         }

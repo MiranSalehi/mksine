@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Miran\Mksine\Filament\Support;
 
 use Filament\Navigation\NavigationGroup;
-use Illuminate\Support\Facades\Schema;
 use Miran\Mksine\Core\Plugins\PluginManager;
+use Miran\Mksine\Support\DatabaseTables;
 
 /**
  * Admin sidebar groups for WordPress-style parent → child navigation.
@@ -46,7 +46,7 @@ final class AdminSidebarNavigation
     public static function usesShopSidebar(): bool
     {
         try {
-            if (! app()->bound(PluginManager::class) || ! Schema::hasTable('mks_plugins')) {
+            if (! app()->bound(PluginManager::class) || ! DatabaseTables::exists('mks_plugins')) {
                 return false;
             }
 

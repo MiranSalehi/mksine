@@ -2,6 +2,7 @@
 
 namespace Miran\Mksine\Livewire\Frontend;
 
+use Illuminate\Routing\Route;
 use Livewire\Component;
 use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Models\Page;
@@ -54,19 +55,7 @@ class FrontendResolver extends Component
     {
         $this->resolvePageFromRequest();
 
-        $componentClass = $this->resolveComponent();
-        $params = $this->params;
-
-        if ($this->pageKey === 'home') {
-            $frontPageId = mks_setting('front_page_id');
-            if ($frontPageId !== null && $frontPageId !== '') {
-                $frontPage = Page::where('id', $frontPageId)->published()->first();
-                if ($frontPage) {
-                    $componentClass = PageShow::class;
-                    $params = ['pageId' => (int) $frontPage->id];
-                }
-            }
-        }
+        [$componentClass, $params] = self::target($this->pageKey, $this->params);
 
         $livewireKey = $this->pageKey . '-' . implode('-', array_map('strval', array_values($params)));
         $params = array_merge($params, ['skipLayout' => true]);
@@ -78,38 +67,70 @@ class FrontendResolver extends Component
         ])->layout(theme_layout());
     }
 
-    protected function resolvePageFromRequest(): void
+    /**
+     * Page key and pass-through parameters of a storefront route.
+     *
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    public static function pageFromRoute(?Route $route): array
     {
-        $route = request()->route();
         if (! $route) {
-            $this->pageKey = 'home';
-            $this->params = [];
-
-            return;
+            return ['home', []];
         }
 
         $defaults = $route->defaults ?? [];
-        if (isset($defaults['page']) && $defaults['page'] !== '') {
-            $this->pageKey = (string) $defaults['page'];
-        } else {
-            $name = $route->getName();
-            $this->pageKey = (string) (self::$routeNameToPage[$name] ?? 'home');
-        }
+        $pageKey = isset($defaults['page']) && $defaults['page'] !== ''
+            ? (string) $defaults['page']
+            : (string) (self::$routeNameToPage[$route->getName()] ?? 'home');
+
         $passThrough = $defaults;
         unset($passThrough['page']);
         $merged = array_merge($passThrough, $route->parameters());
-        $this->params = array_intersect_key($merged, array_flip(['slug', 'path', 'id', 'contentType', 'pageId']));
+
+        return [$pageKey, array_intersect_key($merged, array_flip(['slug', 'path', 'id', 'contentType', 'pageId']))];
+    }
+
+    /**
+     * The theme's Livewire override for a page key, if it registered one.
+     */
+    public static function themeOverride(string $pageKey): ?string
+    {
+        $override = app(ThemeRegistry::class)->getOverride($pageKey);
+
+        return $override && class_exists($override) ? $override : null;
+    }
+
+    /**
+     * Component class and parameters that render a page key (theme override, core default,
+     * and the static front page chosen in settings for "home").
+     *
+     * @param  array<string, mixed>  $params
+     * @return array{0: class-string, 1: array<string, mixed>}
+     */
+    public static function target(string $pageKey, array $params): array
+    {
+        $componentClass = self::themeOverride($pageKey) ?? (self::$defaultComponents[$pageKey] ?? Home::class);
+
+        if ($pageKey === 'home') {
+            $frontPageId = mks_setting('front_page_id');
+            if ($frontPageId !== null && $frontPageId !== '') {
+                $frontPage = Page::where('id', $frontPageId)->published()->first();
+                if ($frontPage) {
+                    return [PageShow::class, ['pageId' => (int) $frontPage->id]];
+                }
+            }
+        }
+
+        return [$componentClass, $params];
+    }
+
+    protected function resolvePageFromRequest(): void
+    {
+        [$this->pageKey, $this->params] = self::pageFromRoute(request()->route());
     }
 
     protected function resolveComponent(): string
     {
-        $registry = app(ThemeRegistry::class);
-        $override = $registry->getOverride($this->pageKey);
-
-        if ($override && class_exists($override)) {
-            return $override;
-        }
-
-        return self::$defaultComponents[$this->pageKey] ?? Home::class;
+        return self::target($this->pageKey, $this->params)[0];
     }
 }

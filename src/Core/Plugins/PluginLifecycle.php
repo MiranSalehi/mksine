@@ -108,6 +108,8 @@ final class PluginLifecycle
                 Log::info("Published translations for plugin: {$pluginId}");
             }
 
+            $this->forgetCachedRoutes();
+
             Log::info("Plugin activated successfully: {$pluginId}");
 
             return true;
@@ -157,6 +159,8 @@ final class PluginLifecycle
             $this->registry->refreshDbRecord($pluginId);
 
             $this->pluginLogger->log($pluginId, 'info', 'Plugin deactivated', ['by' => 'user']);
+
+            $this->forgetCachedRoutes();
 
             Log::info("Plugin deactivated successfully: {$pluginId}");
 
@@ -213,6 +217,19 @@ final class PluginLifecycle
     /**
      * Instantiate a plugin class.
      */
+    /**
+     * Plugin routes are loaded only when routes are not cached, so a cached route file must go
+     * whenever the set of active plugins changes.
+     */
+    private function forgetCachedRoutes(): void
+    {
+        if (! app()->routesAreCached()) {
+            return;
+        }
+
+        @unlink(app()->getCachedRoutesPath());
+    }
+
     public function instantiate(PluginManifest $manifest): ?PluginInterface
     {
         $pluginClass = $manifest->pluginClass();

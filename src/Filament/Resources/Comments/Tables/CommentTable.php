@@ -19,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Miran\Mksine\Core\Hooks\TableHookManager;
 use Miran\Mksine\Models\Comment;
 use Miran\Mksine\Models\Post;
@@ -127,6 +128,7 @@ class CommentTable
             ])
             ->recordActions([
                 Action::make('approve')
+                    ->authorize('update')
                     ->label(__('mksine::comments.approve'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -189,6 +191,7 @@ class CommentTable
                             ->collapsed(),
                     ]),
                 Action::make('reply')
+                    ->authorize(fn (): bool => Gate::allows('create', Comment::class))
                     ->label(__('mksine::comments.reply'))
                     ->icon('heroicon-o-chat-bubble-left-ellipsis')
                     ->color('info')
@@ -218,6 +221,7 @@ class CommentTable
                     }),
                 ActionGroup::make([
                     Action::make('spam')
+                        ->authorize('update')
                         ->label(__('mksine::comments.mark_as_spam'))
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('danger')
@@ -231,6 +235,7 @@ class CommentTable
                                 ->send();
                         }),
                     Action::make('trash')
+                        ->authorize('update')
                         ->label(__('mksine::comments.move_to_trash'))
                         ->icon('heroicon-o-trash')
                         ->color('gray')
@@ -244,6 +249,7 @@ class CommentTable
                                 ->send();
                         }),
                     Action::make('restore')
+                        ->authorize('update')
                         ->label(__('mksine::comments.restore_to_pending'))
                         ->icon('heroicon-o-arrow-uturn-left')
                         ->color('warning')
@@ -264,6 +270,7 @@ class CommentTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('approve')
+                        ->authorize(fn (): bool => Gate::allows('update', new Comment))
                         ->label(__('mksine::comments.approve_selected'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -277,6 +284,7 @@ class CommentTable
                         ->deselectRecordsAfterCompletion()
                         ->requiresConfirmation(),
                     BulkAction::make('spam')
+                        ->authorize(fn (): bool => Gate::allows('update', new Comment))
                         ->label(__('mksine::comments.mark_as_spam'))
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('danger')
@@ -290,6 +298,7 @@ class CommentTable
                         ->deselectRecordsAfterCompletion()
                         ->requiresConfirmation(),
                     BulkAction::make('trash')
+                        ->authorize(fn (): bool => Gate::allows('update', new Comment))
                         ->label(__('mksine::comments.move_to_trash'))
                         ->icon('heroicon-o-trash')
                         ->color('gray')

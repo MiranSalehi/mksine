@@ -105,6 +105,38 @@ class ReleaseArchiveZipper
         }
 
         $zip->close();
+
+        self::assertNoSecretKeys($zipAbsolutePath);
+    }
+
+    /**
+     * Last line of defence: refuse (and delete) an archive that contains a signing secret,
+     * whatever filter let it through. Release 1.22.0–1.23.2 zips shipped the marketplace key.
+     *
+     * @throws \RuntimeException
+     */
+    public static function assertNoSecretKeys(string $zipAbsolutePath): void
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($zipAbsolutePath) !== true) {
+            throw new \RuntimeException("Could not reopen zip to check for secrets: {$zipAbsolutePath}");
+        }
+
+        $leaked = [];
+        for ($index = 0; $index < $zip->numFiles; $index++) {
+            $name = (string) $zip->getNameIndex($index);
+            if (ReleaseArchiveBuildRoots::isSecretKeyPath($name)) {
+                $leaked[] = $name;
+            }
+        }
+
+        $zip->close();
+
+        if ($leaked !== []) {
+            @unlink($zipAbsolutePath);
+
+            throw new \RuntimeException('Release archive would contain signing secrets; build stopped: ' . implode(', ', $leaked));
+        }
     }
 
     /**

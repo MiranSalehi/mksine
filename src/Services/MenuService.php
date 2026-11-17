@@ -102,7 +102,7 @@ class MenuService
             : collect();
 
         $posts = $postIds !== []
-            ? Post::query()->where('status', 'published')->whereIn('id', $postIds)->get()->keyBy('id')
+            ? Post::query()->published()->whereIn('id', $postIds)->get()->keyBy('id')
             : collect();
 
         $ecomCategories = $this->loadEcomCategoriesForMenu($categoryIds);
@@ -234,6 +234,10 @@ class MenuService
         $resolvedCategoryUrl = $this->resolveEcomCategoryUrlForMenuItem($node, $ecomCategories, $cmsCategories);
         if ($resolvedCategoryUrl !== null) {
             $node['url'] = $resolvedCategoryUrl;
+        }
+
+        if (isset($node['url']) && is_string($node['url'])) {
+            $node['url'] = MenuItem::safeUrl($node['url']);
         }
 
         $children = $node['children'] ?? [];

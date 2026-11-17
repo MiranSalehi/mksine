@@ -68,6 +68,12 @@ class SignMarketplaceReleaseCommand extends Command
             return self::FAILURE;
         }
 
+        if (extension_loaded('sodium') && MarketplaceReleaseTrust::isRevoked(bin2hex(sodium_crypto_sign_publickey_from_secretkey((string) hex2bin($secret))))) {
+            $this->error('This key is revoked: its secret leaked. Generate a new keypair with --generate-keypair.');
+
+            return self::FAILURE;
+        }
+
         try {
             $signature = MarketplaceReleaseTrust::sign($kind, $packageId, $version, $sha256, $secret);
         } catch (MarketplaceException $exception) {

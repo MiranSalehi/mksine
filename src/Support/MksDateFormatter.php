@@ -6,6 +6,7 @@ namespace Miran\Mksine\Support;
 
 use Carbon\CarbonInterface;
 use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Support\Carbon;
 use IntlDateFormatter;
 
@@ -113,6 +114,8 @@ final class MksDateFormatter
 
         $locale = self::persianIntlLocale();
 
+        $date = self::forIntlFormatter($date);
+
         $formatter = new IntlDateFormatter(
             $locale,
             IntlDateFormatter::NONE,
@@ -125,6 +128,42 @@ final class MksDateFormatter
         $formatted = $formatter->format($date);
 
         return $formatted !== false ? $formatted : $date->format(self::shamsiPatternToPhp($pattern));
+    }
+
+    /**
+     * The date as {@see IntlDateFormatter} should see it: in a time zone ICU knows by name.
+     *
+     * Dates parsed from ISO strings with an offset (`2026-11-16T13:27:00+03:30`) carry a type 1
+     * time zone named `+03:30`; abbreviations (`IRST`) are type 2. Older ICU builds (67.x on
+     * production hosts) reject both with "datefmt_create: No such time zone", so anything that
+     * is not an IANA identifier is converted to `config('app.timezone')` first.
+     *
+     * @internal Public for tests.
+     */
+    public static function forIntlFormatter(CarbonInterface $date): CarbonInterface
+    {
+        if (self::isIdentifierTimezone($date->getTimezone())) {
+            return $date;
+        }
+
+        $appTimezone = config('app.timezone');
+
+        if (! is_string($appTimezone) || $appTimezone === '' || ! self::isIdentifierTimezone(new DateTimeZone($appTimezone))) {
+            $appTimezone = 'UTC';
+        }
+
+        return $date->copy()->setTimezone($appTimezone);
+    }
+
+    private static function isIdentifierTimezone(DateTimeZone $timezone): bool
+    {
+        $name = $timezone->getName();
+
+        if (str_starts_with($name, '+') || str_starts_with($name, '-')) {
+            return false;
+        }
+
+        return ($timezone->__serialize()['timezone_type'] ?? 3) === 3;
     }
 
     private static function persianIntlLocale(): string

@@ -279,3 +279,19 @@ it('ships a bundled marketplace public key', function (): void {
     expect($key)->toBeString()->toHaveLength(64)
         ->and(MarketplaceReleaseTrust::trustedPublicKeys())->toContain($key);
 });
+
+it('ships only the v2 public key and never a secret', function (): void {
+    $directory = MarketplaceReleaseTrust::bundledKeysDirectory();
+
+    expect(array_map('basename', MarketplaceReleaseTrust::bundledPublicKeyFiles()))->toBe([MarketplaceReleaseTrust::BUNDLED_PUBLIC_KEY_FILE])
+        ->and(glob($directory . '/*.sec') ?: [])->toBe([]);
+});
+
+it('never trusts the revoked v1 key, even from config', function (): void {
+    $revoked = MarketplaceReleaseTrust::REVOKED_PUBLIC_KEYS[0];
+
+    config(['mksine.marketplace.signing_public_keys' => [$revoked, strtoupper($revoked)]]);
+
+    expect(MarketplaceReleaseTrust::trustedPublicKeys())->not->toContain($revoked)
+        ->and(MarketplaceReleaseTrust::isRevoked(strtoupper($revoked)))->toBeTrue();
+});

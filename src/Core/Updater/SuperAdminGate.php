@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Miran\Mksine\Core\Updater;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Authorization guard for updater actions.
@@ -42,6 +43,33 @@ final class SuperAdminGate
         }
 
         return false;
+    }
+
+    /**
+     * Super Admins pass every ability that nothing else decided.
+     *
+     * With Shield's `define_via_gate` off, the role only holds the permissions it was given, so
+     * permissions created later (a new resource, an activated plugin) were missing and Super
+     * Admins got 403s. This runs as a Gate "after" callback: a policy that explicitly answers
+     * false (e.g. read-only geo countries) still wins; only undecided checks become true.
+     */
+    public static function registerGateFallback(): void
+    {
+        if (! (bool) config('filament-shield.super_admin.enabled', true)) {
+            return;
+        }
+
+        if ((bool) config('filament-shield.super_admin.define_via_gate', false)) {
+            return;
+        }
+
+        Gate::after(static function (Authenticatable $user, string $ability, mixed $result): ?bool {
+            if ($result !== null) {
+                return null;
+            }
+
+            return self::check($user) ? true : null;
+        });
     }
 
     public static function authorize(?Authenticatable $user = null): void

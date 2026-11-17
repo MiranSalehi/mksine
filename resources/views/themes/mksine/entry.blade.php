@@ -28,7 +28,7 @@
 
             @if($entry->featuredImage)
                 <div class="mb-8 overflow-hidden rounded-lg">
-                    <img src="{{ $entry->featuredImage->full_url ?? $entry->featured_image }}" alt="" class="w-full h-auto">
+                    <x-mksine::image :media="$entry->featuredImage" alt="" :priority="true" sizes="(min-width: 1024px) 896px, 100vw" class="w-full h-auto" />
                 </div>
             @endif
 

@@ -22,7 +22,7 @@ return [
     | This is used for compatibility checks and migrations.
     |
     */
-    'version' => '1.23.2',
+    'version' => '1.25.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -331,8 +331,16 @@ return [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ],
 
-        // Image optimization
+        // Responsive images: after upload, GD writes WebP copies at these widths next to the
+        // original (photo-640w.webp …); <x-mksine::image> serves them with srcset.
+        // Backfill existing images: php artisan mksine:media-conversions
         'optimize_images' => env('MKS_CMS_OPTIMIZE_IMAGES', true),
+        'responsive_widths' => [320, 640, 960, 1280, 1920],
+        'webp_quality' => (int) env('MKS_CMS_WEBP_QUALITY', 80),
+        // Larger images are left as they are (GD decodes the whole image into memory).
+        'max_conversion_pixels' => (int) env('MKS_CMS_MAX_CONVERSION_PIXELS', 40_000_000),
+        // after_response (default, no worker needed), queue, or sync.
+        'conversions_dispatch' => env('MKS_CMS_CONVERSIONS_DISPATCH', 'after_response'),
 
         // Generate thumbnails
         'generate_thumbnails' => env('MKS_CMS_GENERATE_THUMBNAILS', true),
@@ -369,6 +377,57 @@ return [
 
         // Enable post scheduling
         'enable_scheduling' => env('MKS_CMS_ENABLE_SCHEDULING', true),
+
+        // Strip script (stored XSS) from post, page, entry and tag HTML and from page builder
+        // text/tabs/accordion blocks when anyone but a Super Admin saves them. Super Admins
+        // keep raw HTML. Turn off only if every panel user is fully trusted.
+        'sanitize_html' => env('MKS_SANITIZE_HTML', true),
+
+        // Hosts whose https iframes survive sanitising (video and map embeds).
+        'embed_hosts' => \Miran\Mksine\Support\Security\HtmlContentSanitizer::DEFAULT_EMBED_HOSTS,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Storefront Rendering
+    |--------------------------------------------------------------------------
+    |
+    | Storefront pages render as plain Blade (no livewire.js unless a page has
+    | an interactive island such as comments). Set to true to go back to the
+    | previous full-page Livewire rendering. Theme page overrides that are
+    | Livewire components always render through Livewire.
+    |
+    */
+    'frontend' => [
+        'livewire_pages' => env('MKS_FRONTEND_LIVEWIRE_PAGES', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guest Page Cache
+    |--------------------------------------------------------------------------
+    |
+    | Stores the HTML of storefront pages for visitors who are not signed in and
+    | serves it without rendering. Any content change flushes it. Off by default;
+    | turn it on in Settings > Performance (overrides `enabled`). Shops: make the
+    | cart badge call PageCache::skip() when the cart has items, or list the
+    | session key that holds a non-empty cart in `bypass_session_keys`.
+    |
+    */
+    'page_cache' => [
+        'enabled' => env('MKS_PAGE_CACHE', false),
+        'ttl' => (int) env('MKS_PAGE_CACHE_TTL', 3600),
+        // Cache store name; null uses the default store.
+        'store' => env('MKS_PAGE_CACHE_STORE'),
+        // Query parameters that may vary a cached page; any other parameter skips the cache.
+        'cacheable_query_params' => ['page'],
+        // Tracking parameters dropped from the key (utm_* always is).
+        'ignored_query_params' => ['fbclid', 'gclid', 'yclid', 'msclkid', '_ga', 'ref'],
+        // Path patterns (as for Request::is) that are never cached, e.g. 'cart', 'checkout/*'.
+        'bypass_paths' => [],
+        // Requests carrying any of these cookies or session keys are never served from cache.
+        'bypass_cookies' => [],
+        'bypass_session_keys' => [],
     ],
 
     /*
@@ -801,7 +860,8 @@ return [
                 'licenses',
                 'outdated',
                 'remove',
-                'require',
+                // `require` is deliberately absent: a required package's autoloaded files run
+                // on the next artisan call, so it would turn the terminal into a code runner.
                 'show',
                 'update',
                 'validate',

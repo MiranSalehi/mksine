@@ -18,6 +18,10 @@ use Miran\Mksine\Support\CommentableType;
 
 class PostComments extends Component
 {
+    private ?Model $resolvedCommentable = null;
+
+    private ?string $resolvedCommentableKey = null;
+
     #[Locked]
     public string $commentableType;
 
@@ -211,7 +215,7 @@ class PostComments extends Component
             ->where('commentable_id', $commentable->getKey())
             ->approved()
             ->root()
-            ->with(['replies' => fn ($q) => $q->approved()->orderBy('created_at')])
+            ->with(['user', 'replies' => fn ($q) => $q->approved()->orderBy('created_at')->with('user')])
             ->orderBy('created_at')
             ->get();
     }
@@ -231,15 +235,21 @@ class PostComments extends Component
         ]);
     }
 
+    /**
+     * Loaded once per request (render asked for it two or three times, each a query).
+     */
     private function commentable(): ?Model
     {
-        $class = CommentableType::resolve($this->commentableType);
-
-        if ($class === null) {
-            return null;
+        if ($this->resolvedCommentableKey === $this->commentableType . ':' . $this->commentableId) {
+            return $this->resolvedCommentable;
         }
 
-        return $class::query()->find($this->commentableId);
+        $class = CommentableType::resolve($this->commentableType);
+
+        $this->resolvedCommentable = $class === null ? null : $class::query()->find($this->commentableId);
+        $this->resolvedCommentableKey = $this->commentableType . ':' . $this->commentableId;
+
+        return $this->resolvedCommentable;
     }
 
     private function parentComment(): ?Comment

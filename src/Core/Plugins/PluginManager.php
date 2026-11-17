@@ -291,6 +291,11 @@ final class PluginManager
      */
     private function loadPluginRoutes(PluginInterface $instance, PluginManifest $manifest): void
     {
+        // `route:cache` already holds active plugins' routes; activation clears it (PluginLifecycle).
+        if (app()->routesAreCached()) {
+            return;
+        }
+
         $webRoutes = $instance->webRoutesPath() ?? $manifest->webRoutesPath();
         if ($webRoutes && file_exists((string) $webRoutes)) {
             Route::middleware(['web'])->group($webRoutes);

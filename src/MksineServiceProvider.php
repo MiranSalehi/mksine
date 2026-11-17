@@ -2,19 +2,6 @@
 
 namespace Miran\Mksine;
 
-use App\Policies\CategoryPolicy;
-use App\Policies\CommentPolicy;
-use App\Policies\EntryPolicy;
-use App\Policies\GeoCityPolicy;
-use App\Policies\GeoCountryPolicy;
-use App\Policies\GeoStatePolicy;
-use App\Policies\MediaPolicy;
-use App\Policies\MenuLocationPolicy;
-use App\Policies\MenuPolicy;
-use App\Policies\PagePolicy;
-use App\Policies\PostPolicy;
-use App\Policies\RolePolicy;
-use App\Policies\TagPolicy;
 use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\PanelRegistry;
@@ -31,6 +18,7 @@ use Illuminate\Console\Events\ScheduledTaskFailed;
 use Illuminate\Console\Events\ScheduledTaskFinished;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Translation\HasLocalePreference;
+use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
@@ -40,9 +28,7 @@ use Illuminate\Queue\Events\WorkerStarting;
 use Illuminate\Queue\Events\WorkerStopping;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Translation\FileLoader;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -50,6 +36,9 @@ use Miran\Mksine\Commands\ArtisanCommand;
 use Miran\Mksine\Commands\MksineCommand;
 use Miran\Mksine\Commands\MksineInstallCommand;
 use Miran\Mksine\Console\Commands\ConsoleRunDetachedCommand;
+use Miran\Mksine\Console\Commands\ContentScanCommand;
+use Miran\Mksine\Console\Commands\PageCacheClearCommand;
+use Miran\Mksine\Console\Commands\MediaConversionsCommand;
 use Miran\Mksine\Console\Commands\CreateSuperAdminCommand;
 use Miran\Mksine\Console\Commands\DiscoverHooksCommand;
 use Miran\Mksine\Console\Commands\DoctorCommand;
@@ -162,6 +151,7 @@ use Miran\Mksine\Core\Theme\ThemeRegistry;
 use Miran\Mksine\Core\Translation\AdminTranslationManager;
 use Miran\Mksine\Core\Translation\MksineFileLoader;
 use Miran\Mksine\Core\Translation\TranslationFileManager;
+use Miran\Mksine\Core\Updater\SuperAdminGate;
 use Miran\Mksine\Filament\Support\AdminMenu\AdminMenuOverrides;
 use Miran\Mksine\Filament\Support\FilamentPanelDashboard;
 use Miran\Mksine\Filament\Support\MksFilamentDateMacros;
@@ -179,20 +169,11 @@ use Miran\Mksine\Livewire\Frontend\PostShow;
 use Miran\Mksine\Livewire\Frontend\TagList;
 use Miran\Mksine\Livewire\Frontend\TagShow;
 use Miran\Mksine\Livewire\MediaPickerModal;
-use Miran\Mksine\Models\Category;
-use Miran\Mksine\Models\Comment;
-use Miran\Mksine\Models\Entry;
-use Miran\Mksine\Models\GeoCity;
-use Miran\Mksine\Models\GeoCountry;
-use Miran\Mksine\Models\GeoState;
 use Miran\Mksine\Models\Media;
 use Miran\Mksine\Models\Menu;
-use Miran\Mksine\Models\MenuLocation;
 use Miran\Mksine\Models\Page;
-use Miran\Mksine\Models\PageBuilderSection;
-use Miran\Mksine\Models\Post;
 use Miran\Mksine\Models\Tag;
-use Miran\Mksine\Policies\PageBuilderSectionPolicy;
+use Miran\Mksine\Policies\PolicyRegistrar;
 use Miran\Mksine\Services\Geo\GeoResolver;
 use Miran\Mksine\Services\Geo\StoreGeoSettings;
 use Miran\Mksine\Services\MenuService;
@@ -204,11 +185,15 @@ use Miran\Mksine\Support\Frontend\FrontendAdminBar;
 use Miran\Mksine\Support\Frontend\FrontendAdminBarContextResolver;
 use Miran\Mksine\Support\Frontend\RegisterFrontendAdminBarCoreItems;
 use Miran\Mksine\Support\LivewireUploadConfiguration;
+use Miran\Mksine\Support\DatabaseTables;
+use Miran\Mksine\Core\PageCache\PageCache;
+use Miran\Mksine\Core\PageCache\PageCacheInvalidator;
+use Miran\Mksine\Http\Middleware\CacheStorefrontPage;
 use Miran\Mksine\Support\PublicPathConfigurator;
+use Miran\Mksine\Support\SettingStore;
 use Miran\Mksine\Testing\TestsMksine;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class MksineServiceProvider extends PackageServiceProvider
@@ -438,6 +423,12 @@ class MksineServiceProvider extends PackageServiceProvider
         });
 
         $this->app->scoped(BuilderMediaIndex::class);
+        $this->app->scoped(SettingStore::class);
+        $this->app->scoped(DatabaseTables::class);
+        $this->app->scoped(PageCache::class);
+
+        // Migrations and seeders may write `settings` without model events.
+        Event::listen(MigrationsEnded::class, static fn () => app(SettingStore::class)->flush());
 
         // Admin menu overrides: the setting is read at most once per request.
         $this->app->scoped(AdminMenuOverrides::class);
@@ -519,9 +510,14 @@ class MksineServiceProvider extends PackageServiceProvider
         // merges lang/{locale}/*.php on top (do not call loadTranslationsFrom(lang_path(), 'mksine') — it
         // replaces the namespace hint and drops package keys).
 
-        $this->registerPublishableLang();
-        $this->registerPublishableFonts();
-        $this->registerPublishableInstallerConfigs();
+        // Publish tags are only read by `vendor:publish`; walking the lang and font folders on
+        // every web request was wasted file-system work.
+        if ($this->app->runningInConsole()) {
+            $this->registerPublishableLang();
+            $this->registerPublishableFonts();
+            $this->registerPublishableInstallerConfigs();
+        }
+
         $this->ensureDefaultLangInProject();
 
         // Configure Language Switch: locales from TranslationFileManager, render in panel header (topbar).
@@ -542,14 +538,20 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $this->registerModelPolicies();
 
+        // Guest full-page cache: alias for plugin storefront routes, and flush on content changes.
+        app('router')->aliasMiddleware('mksine.page-cache', CacheStorefrontPage::class);
+        PageCacheInvalidator::registerCoreModels();
+
         $consoleTerminalRoutes = __DIR__.'/../routes/console-terminal.php';
         if (file_exists($consoleTerminalRoutes)) {
-            require $consoleTerminalRoutes;
+            // Skipped when `route:cache` already holds these routes.
+            $this->loadRoutesFrom($consoleTerminalRoutes);
         }
 
         $geoRoutes = __DIR__.'/../routes/geo.php';
         if (file_exists($geoRoutes)) {
-            require $geoRoutes;
+            // Skipped when `route:cache` already holds these routes.
+            $this->loadRoutesFrom($geoRoutes);
         }
 
         $this->registerWebInstaller();
@@ -557,7 +559,8 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $pageDocumentRoutes = __DIR__.'/../routes/page-document.php';
         if (file_exists($pageDocumentRoutes)) {
-            require $pageDocumentRoutes;
+            // Skipped when `route:cache` already holds these routes.
+            $this->loadRoutesFrom($pageDocumentRoutes);
         }
 
         // Asset Registration
@@ -630,8 +633,10 @@ class MksineServiceProvider extends PackageServiceProvider
         // Register project theme views
         app(ThemeManager::class)->registerProjectThemeViews();
 
-        // Testing
-        Testable::mixin(new TestsMksine);
+        // Livewire testing helpers are only needed under test.
+        if ($this->app->runningUnitTests()) {
+            Testable::mixin(new TestsMksine);
+        }
 
         // Initialize and boot plugins
         $this->initializePluginSystem();
@@ -660,34 +665,15 @@ class MksineServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Register Laravel Gate policies for package models.
      * Laravel only auto-discovers policies for App\Models\*; package models need explicit binding.
-     * Uses app policies (e.g. from Filament Shield) when present.
+     * App policies (`App\Policies\{Model}Policy`, e.g. from Filament Shield) win; otherwise the
+     * package's Shield-permission defaults apply, so a host without `app/Policies` does not leave
+     * the admin resources open.
      */
     protected function registerModelPolicies(): void
     {
-        $bindings = [
-            Category::class => CategoryPolicy::class,
-            Tag::class => TagPolicy::class,
-            Comment::class => CommentPolicy::class,
-            Media::class => MediaPolicy::class,
-            Menu::class => MenuPolicy::class,
-            MenuLocation::class => MenuLocationPolicy::class,
-            Page::class => PagePolicy::class,
-            PageBuilderSection::class => PageBuilderSectionPolicy::class,
-            Post::class => PostPolicy::class,
-            Entry::class => EntryPolicy::class,
-            Role::class => RolePolicy::class,
-            GeoCountry::class => GeoCountryPolicy::class,
-            GeoState::class => GeoStatePolicy::class,
-            GeoCity::class => GeoCityPolicy::class,
-        ];
-
-        foreach ($bindings as $model => $policy) {
-            if (class_exists($policy)) {
-                Gate::policy($model, $policy);
-            }
-        }
+        PolicyRegistrar::register();
+        SuperAdminGate::registerGateFallback();
     }
 
     /**
@@ -894,15 +880,17 @@ class MksineServiceProvider extends PackageServiceProvider
         $ckeditorJsPath = __DIR__.'/../resources/dist/mks-ckeditor-field.js';
 
         if (file_exists($ckeditorCssPath)) {
-            $assets[] = Css::make('mks-ckeditor-field', $ckeditorCssPath);
+            // Loaded by the field itself (x-load-css), not on every admin page.
+            $assets[] = Css::make('mks-ckeditor-field', $ckeditorCssPath)->loadedOnRequest();
         }
 
         if (file_exists($ckeditorFilamentCssPath)) {
-            $assets[] = Css::make('mks-ckeditor-filament', $ckeditorFilamentCssPath);
+            $assets[] = Css::make('mks-ckeditor-filament', $ckeditorFilamentCssPath)->loadedOnRequest();
         }
 
         if (file_exists($ckeditorJsPath)) {
-            $assets[] = Js::make('mks-ckeditor-field', $ckeditorJsPath);
+            // 1.2 MB (337 KB gzip): loaded by the field itself (x-load-js), not on every admin page.
+            $assets[] = Js::make('mks-ckeditor-field', $ckeditorJsPath)->loadedOnRequest();
         }
 
         if (file_exists($cssPath)) {
@@ -1011,6 +999,9 @@ class MksineServiceProvider extends PackageServiceProvider
             SignMarketplaceReleaseCommand::class,
             ConsoleRunDetachedCommand::class,
             CreateSuperAdminCommand::class,
+            ContentScanCommand::class,
+            PageCacheClearCommand::class,
+            MediaConversionsCommand::class,
             FreshSuperAdminCommand::class,
             MigrateSmartCommand::class,
         ];
@@ -1061,7 +1052,7 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         try {
             // Check if database connection is available and table exists
-            if (! app()->bound('db') || ! Schema::hasTable('mks_hooks')) {
+            if (! DatabaseTables::exists('mks_hooks')) {
                 return;
             }
 
@@ -1284,7 +1275,7 @@ class MksineServiceProvider extends PackageServiceProvider
     {
         try {
             // Check if database is available
-            if (! app()->bound('db') || ! Schema::hasTable('mks_hooks')) {
+            if (! DatabaseTables::exists('mks_hooks')) {
                 // If no database, discover from code
                 $this->discoverFormAndTableHooks();
 
@@ -1294,22 +1285,13 @@ class MksineServiceProvider extends PackageServiceProvider
             $formHookManager = app(FormHookManager::class);
             $tableHookManager = app(TableHookManager::class);
 
-            // Check if hooks are already registered (from database)
-            $formHooksInDb = DB::table('mks_hooks')
-                ->where('hook_type', 'form')
+            // If no form/table hooks are in the database, discover from code as fallback (one query).
+            $hasStoredHooks = DB::table('mks_hooks')
+                ->whereIn('hook_type', ['form', 'form_slot', 'table'])
                 ->where('is_enabled', true)
-                ->count();
-            $formSlotHooksInDb = DB::table('mks_hooks')
-                ->where('hook_type', 'form_slot')
-                ->where('is_enabled', true)
-                ->count();
-            $tableHooksInDb = DB::table('mks_hooks')
-                ->where('hook_type', 'table')
-                ->where('is_enabled', true)
-                ->count();
+                ->exists();
 
-            // If no hooks in database, discover from code as fallback
-            if ($formHooksInDb === 0 && $formSlotHooksInDb === 0 && $tableHooksInDb === 0) {
+            if (! $hasStoredHooks) {
                 $this->discoverFormAndTableHooks();
             }
         } catch (\Exception $e) {
@@ -1541,7 +1523,7 @@ class MksineServiceProvider extends PackageServiceProvider
         }
 
         try {
-            if (! Schema::hasTable('mks_plugins')) {
+            if (! DatabaseTables::exists('mks_plugins')) {
                 return;
             }
 
@@ -1716,6 +1698,13 @@ class MksineServiceProvider extends PackageServiceProvider
             return;
         }
 
+        // Copy missing files once per package version instead of globbing ~80 files per request.
+        $marker = storage_path('framework/mksine-lang-synced');
+        $version = (string) config('mksine.version', '');
+        if ($version !== '' && @file_get_contents($marker) === $version) {
+            return;
+        }
+
         $packageLang = realpath(__DIR__.'/../resources/lang');
         if (! $packageLang || ! is_dir($packageLang)) {
             return;
@@ -1733,6 +1722,10 @@ class MksineServiceProvider extends PackageServiceProvider
                 $filesystem->ensureDirectoryExists(dirname($target));
                 $filesystem->copy($absPath, $target);
             }
+        }
+
+        if ($version !== '') {
+            @file_put_contents($marker, $version);
         }
     }
 

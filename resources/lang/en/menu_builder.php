@@ -13,6 +13,7 @@ return [
     'label' => 'Label',
     'target' => 'Target',
     'url' => 'URL',
+    'unsafe_url' => 'This link type is not allowed. Use http, https, mailto, tel or a site path.',
     'item_updated' => 'Item updated',
     'menu_structure_updated' => 'Menu structure updated',
     'menu_saved' => 'Menu saved successfully',

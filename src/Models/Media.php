@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Miran\Mksine\Core\Media\ImageConversions;
+use Miran\Mksine\Jobs\GenerateMediaConversions;
+use Miran\Mksine\Support\MediaStoredFile;
 
 class Media extends Model
 {
@@ -40,7 +43,40 @@ class Media extends Model
         'width' => 'integer',
         'height' => 'integer',
         'uploaded_by' => 'integer',
+        'conversions' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        // Responsive WebP copies (see ImageConversions): built after upload, rebuilt when the
+        // file is replaced, removed when the media item is permanently deleted.
+        static::created(static function (Media $media): void {
+            if (app(ImageConversions::class)->canConvert($media)) {
+                GenerateMediaConversions::dispatchFor($media);
+            }
+        });
+
+        static::updated(static function (Media $media): void {
+            if (! $media->wasChanged('path')) {
+                return;
+            }
+
+            $previous = $media->getOriginal('conversions');
+            app(ImageConversions::class)->delete($media, is_array($previous) ? $previous : null);
+
+            if ($media->conversions !== null) {
+                $media->forceFill(['conversions' => null])->saveQuietly();
+            }
+
+            if (app(ImageConversions::class)->canConvert($media)) {
+                GenerateMediaConversions::dispatchFor($media);
+            }
+        });
+
+        static::forceDeleted(static function (Media $media): void {
+            app(ImageConversions::class)->delete($media);
+        });
+    }
 
     /**
      * Get all media attachments for this media.
@@ -70,6 +106,36 @@ class Media extends Model
         }
 
         return Storage::disk($this->disk ?? 'public')->url($this->path);
+    }
+
+    /**
+     * `srcset` of the responsive WebP copies ("…-640w.webp 640w, …"), or null before they exist.
+     */
+    public function srcset(): ?string
+    {
+        $conversions = is_array($this->conversions) ? $this->conversions : [];
+
+        if ($conversions === []) {
+            return null;
+        }
+
+        ksort($conversions);
+        $candidates = [];
+
+        foreach ($conversions as $width => $path) {
+            if (is_string($path) && (int) $width > 0) {
+                $candidates[] = $this->publicUrlFor($path) . ' ' . (int) $width . 'w';
+            }
+        }
+
+        return $candidates === [] ? null : implode(', ', $candidates);
+    }
+
+    private function publicUrlFor(string $path): string
+    {
+        $url = MediaStoredFile::publicUrl($this->disk ?: 'public', $path);
+
+        return str_starts_with($url, '/') && ! str_starts_with($url, '//') ? asset($url) : $url;
     }
 
     /**

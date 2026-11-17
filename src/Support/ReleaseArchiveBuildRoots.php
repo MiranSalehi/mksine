@@ -139,6 +139,10 @@ class ReleaseArchiveBuildRoots
             return false;
         }
 
+        if (self::isSecretKeyPath($relativePath)) {
+            return false;
+        }
+
         if (! $includeExtensions && self::isExcludedExtensionPackPath($relativePath)) {
             return false;
         }
@@ -342,6 +346,24 @@ class ReleaseArchiveBuildRoots
                 unlink($file);
             }
         }
+    }
+
+    /**
+     * Signing secrets must never leave the maintainer's machine: any `*.sec` file, and every
+     * file in a `resources/keys/` folder except public keys (`*.pub`).
+     */
+    public static function isSecretKeyPath(string $relativePath): bool
+    {
+        $relativePath = str_replace('\\', '/', $relativePath);
+        $basename = strtolower(basename($relativePath));
+
+        if (str_ends_with($basename, '.sec')) {
+            return true;
+        }
+
+        $inKeysDirectory = str_starts_with($relativePath, 'resources/keys/') || str_contains($relativePath, '/resources/keys/');
+
+        return $inKeysDirectory && ! str_ends_with($basename, '.pub');
     }
 
     private static function isExcludedEnvFile(string $basename): bool

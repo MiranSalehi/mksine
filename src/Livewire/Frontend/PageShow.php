@@ -31,7 +31,7 @@ class PageShow extends Component
             $this->pageModel = Page::where('id', $this->pageId)->published()->firstOrFail();
         } elseif ($this->slug !== null && $this->slug !== '') {
             $this->pageModel = Page::where('slug', $this->slug)
-                ->where('status', 'published')
+                ->published()
                 ->firstOrFail();
         } else {
             abort(404);

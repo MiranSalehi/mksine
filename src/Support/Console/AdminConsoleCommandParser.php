@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Support\Console;
 
+use Illuminate\Support\Facades\Artisan;
 use InvalidArgumentException;
 
 /**
@@ -20,6 +21,25 @@ use InvalidArgumentException;
 final class AdminConsoleCommandParser
 {
     private const MAX_COMMAND_LENGTH = 2000;
+
+    /**
+     * Options that may come before the sub-command. They take no value, so the next token is
+     * always the command; `--env tinker`-style input could otherwise hide the real command
+     * behind an option value.
+     *
+     * @var list<string>
+     */
+    private const LEADING_FLAGS = ['-n', '--no-interaction', '-q', '--quiet', '--ansi', '--no-ansi', '-v', '-vv', '-vvv', '--verbose'];
+
+    /**
+     * Options that change which code a runner loads: another `.env` file, another project.
+     *
+     * @var array<string, list<string>>
+     */
+    private const FORBIDDEN_OPTIONS = [
+        'artisan' => ['--env'],
+        'composer' => ['-d', '--working-dir'],
+    ];
 
     /**
      * @return array{runner: string, display: string, argv: list<string>}
@@ -48,7 +68,7 @@ final class AdminConsoleCommandParser
             }
 
             $tokens = self::tokenize($tail);
-            self::assertAllowed('artisan', $tokens);
+            $tokens = self::assertAllowed('artisan', $tokens);
 
             $argv = array_merge(
                 [AdminConsolePhpBinary::path(), self::artisanPath($projectRoot)],
@@ -69,7 +89,7 @@ final class AdminConsoleCommandParser
             }
 
             $tokens = self::tokenize($tail);
-            self::assertAllowed('composer', $tokens);
+            $tokens = self::assertAllowed('composer', $tokens);
 
             $argv = array_merge(
                 self::composerPrefix($projectRoot),
@@ -117,32 +137,98 @@ final class AdminConsoleCommandParser
     }
 
     /**
+     * Checks the sub-command against the allowlist and returns the tokens to run.
+     *
+     * Artisan resolves abbreviations (`mks:fresh-super` → `mksine:fresh-super-admin`), so the
+     * name must be a registered command or alias, and the token is replaced with the command's
+     * canonical name so the process runs exactly what was checked.
+     *
      * @param  list<string>  $tokens
+     * @return list<string>
      */
-    private static function assertAllowed(string $runner, array $tokens): void
+    private static function assertAllowed(string $runner, array $tokens): array
     {
         if (in_array('*', self::allowlistFor($runner), true)) {
-            return;
+            return $tokens;
         }
 
-        $name = self::subCommandName($tokens);
+        $index = self::subCommandIndex($runner, $tokens);
+        self::assertNoForbiddenOptions($runner, $tokens);
 
-        if ($name === null) {
+        if ($index === null) {
             throw new InvalidArgumentException(
                 sprintf('A %s sub-command is required; bare options are not allowed.', $runner)
             );
         }
 
-        if (self::isAllowed($runner, $name)) {
-            return;
+        $name = strtolower($tokens[$index]);
+
+        if ($runner === 'artisan') {
+            $canonical = self::canonicalArtisanCommand($name);
+
+            if ($canonical === null) {
+                throw new InvalidArgumentException(sprintf(
+                    '"artisan %s" is not a registered command. Use the full command name.',
+                    $name,
+                ));
+            }
+
+            if (! self::isAllowed($runner, $name) || ! self::isAllowed($runner, $canonical)) {
+                throw self::notAllowed($runner, $canonical);
+            }
+
+            $tokens[$index] = $canonical;
+
+            return $tokens;
         }
 
-        throw new InvalidArgumentException(sprintf(
+        if (! self::isAllowed($runner, $name)) {
+            throw self::notAllowed($runner, $name);
+        }
+
+        return $tokens;
+    }
+
+    private static function notAllowed(string $runner, string $name): InvalidArgumentException
+    {
+        return new InvalidArgumentException(sprintf(
             '"%s %s" is not allowed. Add it to config("mksine.console_terminal.allowed_commands.%s") to permit it.',
             $runner,
             $name,
             $runner,
         ));
+    }
+
+    /**
+     * Name of the registered Artisan command (or alias target) the input names exactly.
+     */
+    private static function canonicalArtisanCommand(string $name): ?string
+    {
+        foreach (Artisan::all() as $registeredName => $command) {
+            if (strtolower((string) $registeredName) === $name) {
+                return strtolower((string) $command->getName());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<string>  $tokens
+     */
+    private static function assertNoForbiddenOptions(string $runner, array $tokens): void
+    {
+        foreach ($tokens as $token) {
+            $option = strtolower(explode('=', $token, 2)[0]);
+
+            foreach (self::FORBIDDEN_OPTIONS[$runner] ?? [] as $forbidden) {
+                $isShortWithValue = ! str_starts_with($forbidden, '--') && str_starts_with($option, $forbidden);
+
+                if ($option === $forbidden || $isShortWithValue) {
+                    throw new InvalidArgumentException(sprintf('The %s option is not allowed here.', $forbidden));
+                }
+            }
+        }
     }
 
     /**
@@ -163,15 +249,23 @@ final class AdminConsoleCommandParser
     }
 
     /**
-     * The first non-option token, which is the command both Artisan and Composer dispatch on.
+     * Position of the sub-command: the first token, after value-less flags only.
      *
      * @param  list<string>  $tokens
      */
-    private static function subCommandName(array $tokens): ?string
+    private static function subCommandIndex(string $runner, array $tokens): ?int
     {
-        foreach ($tokens as $token) {
+        foreach ($tokens as $index => $token) {
             if (! str_starts_with($token, '-')) {
-                return strtolower($token);
+                return $index;
+            }
+
+            if (! in_array(strtolower($token), self::LEADING_FLAGS, true)) {
+                throw new InvalidArgumentException(sprintf(
+                    'Put the %s sub-command first; "%s" is not allowed before it.',
+                    $runner,
+                    $token,
+                ));
             }
         }
 

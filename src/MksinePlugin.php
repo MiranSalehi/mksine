@@ -162,7 +162,7 @@ class MksinePlugin implements Plugin
     public static function registerPluginAssets(): void
     {
         try {
-            if (! \Illuminate\Support\Facades\Schema::hasTable('mks_plugins')) {
+            if (! \Miran\Mksine\Support\DatabaseTables::exists('mks_plugins')) {
                 return;
             }
 
@@ -315,7 +315,7 @@ class MksinePlugin implements Plugin
     {
         try {
             // Check if the mks_plugins table exists
-            return \Illuminate\Support\Facades\Schema::hasTable('mks_plugins');
+            return \Miran\Mksine\Support\DatabaseTables::exists('mks_plugins');
         } catch (\Throwable $e) {
             return false;
         }

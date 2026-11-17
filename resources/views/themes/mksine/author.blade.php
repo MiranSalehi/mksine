@@ -59,7 +59,7 @@
                             <a href="{{ route('posts.show', $post->slug) }}">
                                 <div class="h-48 bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
                                     @if($post->featuredImage)
-                                        <img src="{{ $post->featuredImage->full_url }}" alt="{{ $post->title }}" class="w-full h-full object-cover">
+                                        <x-mksine::image :media="$post->featuredImage" :alt="$post->title" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="w-full h-full object-cover" />
                                     @else
                                         <div class="w-full h-full flex items-center justify-center">
                                             <x-heroicon-o-photo class="w-16 h-16 text-gray-400" />

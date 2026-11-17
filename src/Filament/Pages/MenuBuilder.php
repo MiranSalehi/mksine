@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Miran\Mksine\Filament\Pages;
 
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Miran\Mksine\Contracts\MenuItemSourcePaginatedInterface;
 use Miran\Mksine\Core\Hooks\MenuItemSourceManager;
@@ -34,8 +38,13 @@ class MenuBuilder extends Page
     #[Url]
     public ?int $menu = null;
 
+    #[Locked]
     public ?Menu $selectedMenu = null;
 
+    /**
+     * Server-built tree; the browser sends structure changes through {@see self::updateMenuStructure()}.
+     */
+    #[Locked]
     public array $menuItems = [];
 
     public array $sources = [];
@@ -54,14 +63,45 @@ class MenuBuilder extends Page
 
     private const SOURCE_ITEMS_PER_PAGE = 10;
 
+    /**
+     * The builder edits menu items, so it needs the `update` ability of the Menu policy
+     * (Shield's `Update:Menu`). Filament checks this on mount and on every Livewire request.
+     */
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return Gate::forUser($user)->allows('update', new Menu);
+    }
+
     public function mount(): void
     {
         if ($this->menu) {
             $this->selectedMenu = Menu::find($this->menu);
+            $this->authorizeMenuUpdate();
             $this->loadMenuItems();
         }
 
         $this->loadSources();
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    protected function authorizeMenuUpdate(): void
+    {
+        Gate::forUser(Filament::auth()->user())->authorize('update', $this->selectedMenu ?? new Menu);
+    }
+
+    protected function canUpdateSelectedMenu(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('update', $this->selectedMenu ?? new Menu);
     }
 
     public static function getNavigationLabel(): string
@@ -104,6 +144,7 @@ class MenuBuilder extends Page
                 ->action(function (array $data) {
                     $this->menu = $data['menu_id'];
                     $this->selectedMenu = Menu::find($this->menu);
+                    $this->authorizeMenuUpdate();
                     $this->loadMenuItems();
                 }),
 
@@ -112,6 +153,7 @@ class MenuBuilder extends Page
                 ->icon('heroicon-o-check')
                 ->color('primary')
                 ->visible(fn () => $this->selectedMenu !== null)
+                ->authorize(fn (): bool => $this->canUpdateSelectedMenu())
                 ->action(fn () => $this->saveMenu()),
         ];
     }
@@ -314,6 +356,8 @@ class MenuBuilder extends Page
             return;
         }
 
+        $this->authorizeMenuUpdate();
+
         $sourceManager = app(MenuItemSourceManager::class);
         $source = $sourceManager->getSource($sourceKey);
 
@@ -338,7 +382,18 @@ class MenuBuilder extends Page
             $this->sourceFormData[$sourceKey]['selected'] = [];
         } else {
             // Handle custom form (like custom link)
-            $this->createMenuItem($source->toMenuItem($formData));
+            $data = $source->toMenuItem($formData);
+
+            if (! MenuItem::isSafeUrl(isset($data['url']) ? (string) $data['url'] : null)) {
+                Notification::make()
+                    ->title(__('mksine::menu_builder.unsafe_url'))
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
+            $this->createMenuItem($data);
 
             // Clear form
             $this->sourceFormData[$sourceKey] = [
@@ -385,7 +440,9 @@ class MenuBuilder extends Page
 
     public function removeItem(int $itemId): void
     {
-        MenuItem::where('id', $itemId)->delete();
+        $this->authorizeMenuUpdate();
+
+        $this->selectedMenuItemsQuery()->whereKey($itemId)->delete();
 
         $this->menuItems = $this->removeItemFromArray($this->menuItems, $itemId);
 
@@ -413,13 +470,14 @@ class MenuBuilder extends Page
         return Action::make('editItem')
             ->label(__('mksine::menu_builder.edit_item'))
             ->modalWidth('md')
+            ->authorize(fn (): bool => $this->canUpdateSelectedMenu())
             ->fillForm(function (array $arguments) {
-                $item = MenuItem::find($arguments['itemId']);
+                $item = $this->findSelectedMenuItem($arguments['itemId'] ?? null);
 
                 return $item ? $item->toArray() : [];
             })
             ->form(function (array $arguments) {
-                $item = MenuItem::find($arguments['itemId']);
+                $item = $this->findSelectedMenuItem($arguments['itemId'] ?? null);
                 $type = $item?->type;
 
                 $schema = [
@@ -441,18 +499,25 @@ class MenuBuilder extends Page
                     $schema[] = TextInput::make('url')
                         ->label(__('mksine::menu_builder.url'))
                         ->required()
-                        ->url();
+                        ->url()
+                        ->rule(fn (): \Closure => function (string $attribute, mixed $value, \Closure $fail): void {
+                            if (! MenuItem::isSafeUrl(is_string($value) ? $value : null)) {
+                                $fail(__('mksine::menu_builder.unsafe_url'));
+                            }
+                        });
                 }
 
                 return $schema;
             })
             ->action(function (array $data, array $arguments) {
-                $item = MenuItem::find($arguments['itemId']);
+                $this->authorizeMenuUpdate();
+
+                $item = $this->findSelectedMenuItem($arguments['itemId'] ?? null);
                 if (! $item) {
                     return;
                 }
 
-                $item->update($data);
+                $item->update(array_intersect_key($data, array_flip(['label', 'target', 'url'])));
 
                 $this->loadMenuItems();
 
@@ -469,6 +534,8 @@ class MenuBuilder extends Page
      */
     public function indentItem(int $itemId): void
     {
+        $this->authorizeMenuUpdate();
+
         $this->menuItems = $this->indentInTree($this->menuItems, $itemId);
         $this->persistAndReload();
     }
@@ -516,6 +583,8 @@ class MenuBuilder extends Page
      */
     public function outdentItem(int $itemId): void
     {
+        $this->authorizeMenuUpdate();
+
         [$newItems, ] = $this->outdentInTree($this->menuItems, $itemId, null, null);
         $this->menuItems = $newItems;
         $this->persistAndReload();
@@ -568,7 +637,8 @@ class MenuBuilder extends Page
         }
 
         $order = 0;
-        $this->saveStructureRecursive($this->menuItems, null, $order);
+        $seen = [];
+        $this->saveStructureRecursive($this->menuItems, null, $order, $seen);
         $this->loadMenuItems();
     }
 
@@ -578,9 +648,12 @@ class MenuBuilder extends Page
             return;
         }
 
+        $this->authorizeMenuUpdate();
+
         // Update database with new structure
         $order = 0;
-        $this->saveStructureRecursive($structure, null, $order);
+        $seen = [];
+        $this->saveStructureRecursive($structure, null, $order, $seen);
 
         // Reload items from database to ensure we have all fields (type, label, etc.)
         // The structure from JS only contains id and children
@@ -592,19 +665,76 @@ class MenuBuilder extends Page
             ->send();
     }
 
-    protected function saveStructureRecursive(array $items, ?int $parentId, int &$order): void
+    /**
+     * Writes parent and order for items of the selected menu only.
+     *
+     * The structure comes from the browser, so ids of other menus are ignored, an id listed twice
+     * keeps its first position (a repeat could otherwise make two items each other's parent), and
+     * nesting stops at {@see self::MAX_ITEM_DEPTH}.
+     *
+     * @param  array<int, mixed>  $items
+     * @param  array<int, true>  $seen
+     * @param  array<int, true>|null  $menuItemIds
+     */
+    protected function saveStructureRecursive(array $items, ?int $parentId, int &$order, array &$seen, int $depth = 0, ?array $menuItemIds = null): void
     {
+        if ($depth > self::MAX_ITEM_DEPTH) {
+            return;
+        }
+
+        $menuItemIds ??= $this->selectedMenuItemIds();
+
         foreach ($items as $item) {
-            MenuItem::where('id', $item['id'])->update([
+            if (! is_array($item) || ! is_numeric($item['id'] ?? null)) {
+                continue;
+            }
+
+            $itemId = (int) $item['id'];
+
+            if (! isset($menuItemIds[$itemId]) || isset($seen[$itemId])) {
+                continue;
+            }
+
+            $seen[$itemId] = true;
+
+            $this->selectedMenuItemsQuery()->whereKey($itemId)->update([
                 'parent_id' => $parentId,
                 'order' => $order++,
             ]);
 
-            if (! empty($item['children'])) {
+            if (! empty($item['children']) && is_array($item['children'])) {
                 $childOrder = 0;
-                $this->saveStructureRecursive($item['children'], $item['id'], $childOrder);
+                $this->saveStructureRecursive($item['children'], $itemId, $childOrder, $seen, $depth + 1, $menuItemIds);
             }
         }
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<MenuItem>
+     */
+    protected function selectedMenuItemsQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return MenuItem::query()->where('menu_id', $this->selectedMenu?->getKey() ?? 0);
+    }
+
+    /**
+     * @return array<int, true>
+     */
+    protected function selectedMenuItemIds(): array
+    {
+        return array_fill_keys(
+            $this->selectedMenuItemsQuery()->pluck('id')->map(fn (mixed $id): int => (int) $id)->all(),
+            true,
+        );
+    }
+
+    protected function findSelectedMenuItem(mixed $itemId): ?MenuItem
+    {
+        if (! is_numeric($itemId)) {
+            return null;
+        }
+
+        return $this->selectedMenuItemsQuery()->whereKey((int) $itemId)->first();
     }
 
     public function saveMenu(): void
@@ -613,9 +743,12 @@ class MenuBuilder extends Page
             return;
         }
 
+        $this->authorizeMenuUpdate();
+
         // Save the current structure
         $order = 0;
-        $this->saveStructureRecursive($this->menuItems, null, $order);
+        $seen = [];
+        $this->saveStructureRecursive($this->menuItems, null, $order, $seen);
 
         Notification::make()
             ->title(__('mksine::menu_builder.menu_saved'))

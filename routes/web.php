@@ -6,9 +6,10 @@ use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Core\Theme\ThemeManager;
 use Miran\Mksine\Http\Controllers\AdminStylesController;
 use Miran\Mksine\Http\Controllers\PageBuilderPreviewController;
+use Miran\Mksine\Http\Controllers\StorefrontPageController;
+use Miran\Mksine\Http\Middleware\CacheStorefrontPage;
 use Miran\Mksine\Http\Middleware\EnsureActiveThemeDependencies;
 use Miran\Mksine\Http\Responses\ScreenshotResponse;
-use Miran\Mksine\Livewire\Frontend\FrontendResolver;
 use Miran\Mksine\Support\FilesystemPath;
 
 Route::get('/mksine/admin-styles.css', AdminStylesController::class)
@@ -18,7 +19,7 @@ Route::get('/mksine/page-builder/preview/{token}', PageBuilderPreviewController:
     ->middleware(['web', 'auth', 'signed', EnsureActiveThemeDependencies::class])
     ->name('mksine.page-builder.preview');
 
-Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function () {
+Route::middleware(['web', EnsureActiveThemeDependencies::class, CacheStorefrontPage::class])->group(function () {
     // Load active theme's theme.php (overrides + route callbacks)
     theme_bootstrap();
     // Theme screenshot (served from theme path - no publish required)
@@ -90,16 +91,16 @@ Route::middleware(['web', EnsureActiveThemeDependencies::class])->group(function
         ]);
     })->where('type', 'css|js')->name('mksine.theme.custom.asset');
 
-    // Frontend pages (resolved via FrontendResolver: theme override or default component)
-    Route::get('/author/{id}', FrontendResolver::class)->defaults('page', 'author-show')->name('authors.show');
-    Route::get(Permalink::getUri('categories_url'), FrontendResolver::class)->defaults('page', 'category-list')->name('categories.index');
-    Route::get(Permalink::getUri('single_category_url'), FrontendResolver::class)->defaults('page', 'category-show')->where('path', '.*')->name('categories.show');
-    Route::get(Permalink::getUri('tags_url'), FrontendResolver::class)->defaults('page', 'tag-list')->name('tags.index');
-    Route::get(Permalink::getUri('single_tag_url'), FrontendResolver::class)->defaults('page', 'tag-show')->name('tags.show');
-    Route::get(Permalink::getUri('posts_url'), FrontendResolver::class)->defaults('page', 'post-list')->name('posts.index');
-    Route::get(Permalink::getUri('single_post_url'), FrontendResolver::class)->defaults('page', 'post-show')->name('posts.show');
-    Route::get(Permalink::getUri('page_url'), FrontendResolver::class)->defaults('page', 'page-show')->name('pages.show');
-    Route::get(Permalink::getUri('home_page_url'), FrontendResolver::class)->defaults('page', 'home')->name('home');
+    // Frontend pages: plain Blade via StorefrontPageController (theme Livewire overrides still apply)
+    Route::get('/author/{id}', StorefrontPageController::class)->defaults('page', 'author-show')->name('authors.show');
+    Route::get(Permalink::getUri('categories_url'), StorefrontPageController::class)->defaults('page', 'category-list')->name('categories.index');
+    Route::get(Permalink::getUri('single_category_url'), StorefrontPageController::class)->defaults('page', 'category-show')->where('path', '.*')->name('categories.show');
+    Route::get(Permalink::getUri('tags_url'), StorefrontPageController::class)->defaults('page', 'tag-list')->name('tags.index');
+    Route::get(Permalink::getUri('single_tag_url'), StorefrontPageController::class)->defaults('page', 'tag-show')->name('tags.show');
+    Route::get(Permalink::getUri('posts_url'), StorefrontPageController::class)->defaults('page', 'post-list')->name('posts.index');
+    Route::get(Permalink::getUri('single_post_url'), StorefrontPageController::class)->defaults('page', 'post-show')->name('posts.show');
+    Route::get(Permalink::getUri('page_url'), StorefrontPageController::class)->defaults('page', 'page-show')->name('pages.show');
+    Route::get(Permalink::getUri('home_page_url'), StorefrontPageController::class)->defaults('page', 'home')->name('home');
 
     // Theme-registered routes (from theme.php theme_register_routes())
     foreach (app(\Miran\Mksine\Core\Theme\ThemeRegistry::class)->getRouteCallbacks() as $callback) {

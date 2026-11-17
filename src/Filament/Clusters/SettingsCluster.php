@@ -6,6 +6,7 @@ namespace Miran\Mksine\Filament\Clusters;
 
 use Filament\Clusters\Cluster;
 use Filament\Support\Icons\Heroicon;
+use Miran\Mksine\Filament\Pages\Settings\SettingsMenuPage;
 
 class SettingsCluster extends Cluster
 {
@@ -17,6 +18,20 @@ class SettingsCluster extends Cluster
     {
         // Top-level like WordPress Settings — not nested under System.
         return null;
+    }
+
+    /**
+     * Open only when at least one settings page or resource inside the cluster is allowed.
+     * Super admins always qualify through {@see SettingsMenuPage}.
+     */
+    public static function canAccess(): bool
+    {
+        return static::canAccessClusteredComponents();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && static::$shouldRegisterNavigation;
     }
 
     public static function getNavigationLabel(): string

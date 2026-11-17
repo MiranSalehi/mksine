@@ -7,6 +7,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Miran\Mksine\Core\Hooks\TableHookManager;
 
 class UserTable
@@ -14,6 +15,10 @@ class UserTable
     public static function configure(Table $table): Table
     {
         $table = $table
+            // Avatars come from media attachments: load them with the page instead of 2 queries per row.
+            ->modifyQueryUsing(fn (Builder $query): Builder => method_exists($query->getModel(), 'mediaAttachments')
+                ? $query->with('mediaAttachments.media')
+                : $query)
             ->columns([
                 ImageColumn::make('avatar')
                     ->label(__('mksine::users.avatar'))

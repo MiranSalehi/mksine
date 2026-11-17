@@ -24,6 +24,16 @@ trait HasMediaAttachments
      */
     public function getMediaCollection(string $collectionName): Collection
     {
+        // Eager-loaded attachments (e.g. `with('mediaAttachments.media')` on a table) need no query.
+        if ($this->relationLoaded('mediaAttachments')) {
+            return $this->mediaAttachments
+                ->where('collection_name', $collectionName)
+                ->sortBy([['sort_order', 'asc'], ['id', 'asc']])
+                ->pluck('media')
+                ->filter()
+                ->values();
+        }
+
         return $this->mediaAttachments()
             ->where('collection_name', $collectionName)
             ->ordered()

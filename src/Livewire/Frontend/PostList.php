@@ -18,14 +18,14 @@ class PostList extends Component
     public function render()
     {
         $posts = ContentVisibility::constrain(Post::query(), 'post')
-            ->where('status', 'published')
-            ->with(['author', 'featuredImage', 'categories'])
+            ->published()
+            ->with(['author', 'featuredImage', 'categories.parent.parent.parent'])
             ->latest('published_at')
             ->paginate(12);
 
         $categories = Category::query()
             ->with('parent')
-            ->withCount(['posts' => fn ($q) => $q->where('status', 'published')])
+            ->withCount(['posts' => fn ($q) => $q->published()])
             ->orderBy('sort_order')
             ->take(10)
             ->get();

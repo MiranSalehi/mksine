@@ -33,6 +33,39 @@ When adding an entry, copy this skeleton:
 
 - (none)
 
+## 1.25.0 (2026-11-17)
+
+### Action required
+
+- Run migrations (adds `media.conversions`), then `php artisan mksine:media-conversions` once to build WebP copies of existing images. Themes outside core (for example voltech) get the benefit only where they render images with `<x-mksine::image>`.
+
+### Behavior changes (non-breaking, but visible)
+
+- **Storefront pages are plain Blade.** Theme page views no longer run inside a Livewire component: `wire:` directives or `$this` in a page view (not in a nested Livewire component) stop working. Move interactive parts into their own Livewire component, register the page as a Livewire override, or set `MKS_FRONTEND_LIVEWIRE_PAGES=true` while migrating.
+- **New guest page cache, off by default.** Nothing changes until it is turned on in Settings › Performance. Before turning it on for a shop, make every per-visitor fragment (cart badge, mini cart, recently viewed) call `Miran\Mksine\Core\PageCache\PageCache::skip()` when it shows personal data, and register product/price/stock models with `PageCacheInvalidator::watch()`.
+- Super Admins need nothing; other roles need the generated `View:SettingsPerformancePage` permission (run `shield:generate`) to see the new settings page.
+- **Comment moderators need `Update:Comment`** (and `Create:Comment` to reply). Roles that only had `ViewAny:Comment` lose the approve/spam/trash buttons.
+- **Future-dated posts are hidden until their date.** Check posts saved as published with a `published_at` in the future; they disappear from the storefront until then. With the page cache on, a list page shows a newly due post after the cache lifetime or a clear.
+- **Admin terminal:** put options after the command (`php artisan migrate --force`), use full command names, and add `require` back to `mksine.console_terminal.allowed_commands.composer` if you install packages from the browser.
+- **Menu links** with `javascript:` or `data:` URLs now render as `#`.
+
+## 1.24.0 (2026-11-17)
+
+### Action required
+
+- **Delete the leaked marketplace secret** on sites installed from a 1.22.0–1.23.2 zip: `rm vendor/miran/mksine/resources/keys/*.sec` (or `mksine/vendor/...` in the shared-hosting layout). Sign catalog releases with the v2 key from now on; v1 signatures are rejected.
+- Run `php artisan mksine:content-scan` once and review what it lists.
+- Run migrations (`php artisan mksine:update`, or `php artisan migrate`) to add the listing indexes.
+- Recommended on production: `php artisan optimize` after each deploy. Route caching now works with plugins (activation clears it).
+
+### Behavior changes (non-breaking, but visible)
+
+- **HTML saved by non-Super-Admins is sanitised.** Scripts, event handlers and iframes outside `mksine.content.embed_hosts` are removed on save. Editors who need embeds should use iframe embed codes from an allowed host; Super Admins keep raw HTML.
+- **Super Admins no longer need every permission assigned.** Checks that no permission or policy decides pass for them.
+- **Core models are closed without permissions even when `app/Policies` is missing.** If a role relied on the old open behavior, give it the Shield permissions it needs (for example `ViewAny:Post`). Policies in `app/Policies` still win.
+- **The menu builder needs `Update:Menu`.** Roles that could open it with no menu permission now get a 403.
+- **The Settings item hides when no settings page is allowed.** Roles that see settings pages keep it. Check settings page permissions per role: before this release, the first page checked could decide access to all of them.
+
 ## 1.19.0 (2026-11-03)
 
 ### Behavior changes (non-breaking, but visible)

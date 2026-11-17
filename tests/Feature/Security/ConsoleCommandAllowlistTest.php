@@ -16,10 +16,10 @@ it('allows the maintenance commands an operator actually needs', function (strin
     'artisan cache:clear',
     'php artisan migrate --force',
     'php artisan queue:restart',
-    'php artisan mks:plugin:list',
+    'php artisan mks-plugin:list',
     'php artisan filament:assets',
     'composer install --no-dev',
-    'composer require vendor/package',
+    'composer remove vendor/package',
 ]);
 
 it('rejects artisan commands that evaluate arbitrary code', function (string $input): void {
@@ -38,6 +38,7 @@ it('rejects composer sub-commands outside the allowlist', function (string $inpu
     'exec' => 'composer exec phpunit',
     'run script' => 'composer run-script post-install-cmd',
     'global' => 'composer global require vendor/package',
+    'require' => 'composer require attacker/package',
 ])->throws(InvalidArgumentException::class);
 
 it('rejects input that carries options but no sub-command', function (): void {
@@ -101,4 +102,29 @@ it('answers allowlist checks for individual sub-commands', function (): void {
         ->and(AdminConsoleCommandParser::isAllowed('artisan', ''))->toBeFalse()
         ->and(AdminConsoleCommandParser::isAllowed('composer', 'dump-autoload'))->toBeTrue()
         ->and(AdminConsoleCommandParser::isAllowed('composer', 'exec'))->toBeFalse();
+});
+
+it('rejects options that hide the real command behind an option value', function (string $input): void {
+    parseConsoleCommand($input);
+})->with([
+    'env before command' => 'php artisan --env about tinker',
+    'env assignment before command' => 'php artisan --env=local optimize:clear',
+    'env after command' => 'php artisan about --env=testing',
+    'unknown leading option' => 'php artisan --whatever about tinker',
+    'composer working dir' => 'composer --working-dir=/tmp/evil install',
+    'composer working dir after command' => 'composer install -d /tmp/evil',
+])->throws(InvalidArgumentException::class);
+
+it('rejects abbreviated artisan commands that resolve outside the allowlist', function (string $input): void {
+    parseConsoleCommand($input);
+})->with([
+    'namespace abbreviation' => 'php artisan mks:fresh-super-admin',
+    'command abbreviation' => 'php artisan mksine:fresh-super',
+    'unregistered allowlisted pattern' => 'php artisan queue:does-not-exist',
+])->throws(InvalidArgumentException::class);
+
+it('runs the canonical name of the command it checked', function (): void {
+    $argv = parseConsoleCommand('php artisan -n Optimize:Clear')['argv'];
+
+    expect(array_slice($argv, 2))->toBe(['-n', 'optimize:clear']);
 });
