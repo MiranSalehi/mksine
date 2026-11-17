@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Miran\Mksine\Filament\Pages\Settings\Concerns;
 
+use Miran\Mksine\Core\Appearance\AppearanceRepository;
 use Miran\Mksine\Core\Permalink;
 use Miran\Mksine\Models\Setting;
 
@@ -40,7 +41,13 @@ trait InteractsWithStoredSettings
     {
         $this->validate();
 
-        $state = $this->form->getState();
+        // Admin looks are written only by their own actions (validated, per-user): a plugin field
+        // that happens to use one of these keys must not reach them through this generic form.
+        $state = array_filter(
+            $this->form->getState(),
+            static fn (mixed $item, int|string $key): bool => ! AppearanceRepository::isReservedKey((string) $key),
+            ARRAY_FILTER_USE_BOTH,
+        );
 
         foreach ($state as $key => $item) {
             Setting::updateOrCreate(

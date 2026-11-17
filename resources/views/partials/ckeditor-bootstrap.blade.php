@@ -17,7 +17,7 @@
         align-items: center;
         justify-content: center;
         padding: 1rem;
-        background: rgb(0 0 0 / 0.45);
+        background: color-mix(in oklab, black 45%, transparent);
     }
 
     .mksine-shortcode-modal__panel {
@@ -26,15 +26,15 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        border-radius: 0.75rem;
-        border: 1px solid var(--gray-200, #e5e7eb);
-        background: var(--gray-50, #fff);
-        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--gray-200);
+        background: var(--gray-50);
+        box-shadow: 0 25px 50px -12px color-mix(in oklab, black 25%, transparent);
     }
 
     .dark .mksine-shortcode-modal__panel {
-        border-color: var(--gray-700, #374151);
-        background: var(--gray-900, #111827);
+        border-color: var(--gray-700);
+        background: var(--gray-900);
     }
 
     .mksine-shortcode-modal__header {
@@ -43,22 +43,22 @@
         justify-content: space-between;
         gap: 0.75rem;
         padding: 0.875rem 1rem;
-        border-bottom: 1px solid var(--gray-200, #e5e7eb);
+        border-bottom: 1px solid var(--gray-200);
     }
 
     .dark .mksine-shortcode-modal__header {
-        border-bottom-color: var(--gray-700, #374151);
+        border-bottom-color: var(--gray-700);
     }
 
     .mksine-shortcode-modal__title {
         margin: 0;
         font-size: 0.9375rem;
         font-weight: 600;
-        color: var(--gray-950, #030712);
+        color: var(--gray-950);
     }
 
     .dark .mksine-shortcode-modal__title {
-        color: var(--gray-50, #f9fafb);
+        color: var(--gray-50);
     }
 
     .mksine-shortcode-modal__close {
@@ -68,22 +68,22 @@
         width: 2rem;
         height: 2rem;
         border: none;
-        border-radius: 0.375rem;
+        border-radius: var(--radius-md);
         background: transparent;
-        color: var(--gray-500, #6b7280);
+        color: var(--gray-500);
         font-size: 1.25rem;
         line-height: 1;
         cursor: pointer;
     }
 
     .mksine-shortcode-modal__close:hover {
-        background: var(--gray-100, #f3f4f6);
-        color: var(--gray-700, #374151);
+        background: var(--gray-100);
+        color: var(--gray-700);
     }
 
     .dark .mksine-shortcode-modal__close:hover {
-        background: var(--gray-800, #1f2937);
-        color: var(--gray-200, #e5e7eb);
+        background: var(--gray-800);
+        color: var(--gray-200);
     }
 
     .mksine-shortcode-modal__body {
@@ -95,7 +95,7 @@
         margin: 0;
         padding: 1rem;
         text-align: center;
-        color: var(--gray-500, #6b7280);
+        color: var(--gray-500);
         font-size: 0.875rem;
     }
 
@@ -116,57 +116,57 @@
         gap: 0.25rem;
         width: 100%;
         padding: 0.75rem;
-        border: 1px solid var(--gray-200, #e5e7eb);
-        border-radius: 0.5rem;
-        background: #fff;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        background: white;
         text-align: start;
         cursor: pointer;
         transition: border-color 0.15s, background-color 0.15s;
     }
 
     .dark .mksine-shortcode-modal__pick {
-        border-color: var(--gray-700, #374151);
-        background: var(--gray-800, #1f2937);
+        border-color: var(--gray-700);
+        background: var(--gray-800);
     }
 
     .mksine-shortcode-modal__pick:hover {
-        border-color: var(--primary-500, #6366f1);
-        background: var(--primary-50, #eef2ff);
+        border-color: var(--primary-500);
+        background: var(--primary-50);
     }
 
     .dark .mksine-shortcode-modal__pick:hover {
-        border-color: var(--primary-400, #818cf8);
-        background: rgb(99 102 241 / 0.12);
+        border-color: var(--primary-400);
+        background: color-mix(in oklab, var(--primary-500) 12%, transparent);
     }
 
     .mksine-shortcode-modal__label {
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--gray-950, #030712);
+        color: var(--gray-950);
     }
 
     .dark .mksine-shortcode-modal__label {
-        color: var(--gray-50, #f9fafb);
+        color: var(--gray-50);
     }
 
     .mksine-shortcode-modal__desc {
         font-size: 0.8125rem;
-        color: var(--gray-500, #6b7280);
+        color: var(--gray-500);
         line-height: 1.4;
     }
 
     .mksine-shortcode-modal__example {
         margin-top: 0.125rem;
         padding: 0.125rem 0.375rem;
-        border-radius: 0.25rem;
-        background: var(--gray-100, #f3f4f6);
+        border-radius: var(--radius-sm);
+        background: var(--gray-100);
         font-size: 0.75rem;
-        color: var(--gray-700, #374151);
+        color: var(--gray-700);
     }
 
     .dark .mksine-shortcode-modal__example {
-        background: var(--gray-900, #111827);
-        color: var(--gray-300, #d1d5db);
+        background: var(--gray-900);
+        color: var(--gray-300);
     }
 </style>
 <script>
@@ -313,7 +313,7 @@
                 const ButtonViewClass = editor.ui.componentFactory.create('bold').constructor;
                 editor.ui.componentFactory.add('insertMedia', locale => {
                     const view = new ButtonViewClass(locale);
-                    view.set({ label: 'Insert Media', icon: ` <svg xmlns="http://www.w3.org/2000/svg" fill="#000000" width="20px" height="20px" viewBox="0 0 24 24"><path d="M19,13a1,1,0,0,0-1,1v.38L16.52,12.9a2.79,2.79,0,0,0-3.93,0l-.7.7L9.41,11.12a2.85,2.85,0,0,0-3.93,0L4,12.6V7A1,1,0,0,1,5,6h7a1,1,0,0,0,0-2H5A3,3,0,0,0,2,7V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3V14A1,1,0,0,0,19,13ZM5,20a1,1,0,0,1-1-1V15.43l2.9-2.9a.79.79,0,0,1,1.09,0l3.17,3.17,0,0L15.46,20Zm13-1a.89.89,0,0,1-.18.53L13.31,15l.7-.7a.77.77,0,0,1,1.1,0L18,17.21ZM22.71,4.29l-3-3a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,1,1,0,0,0-.33.21l-3,3a1,1,0,0,0,1.42,1.42L18,4.41V10a1,1,0,0,0,2,0V4.41l1.29,1.3a1,1,0,0,0,1.42,0A1,1,0,0,0,22.71,4.29Z"/></svg>`, tooltip: true });
+                    view.set({ label: 'Insert Media', icon: ` <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20px" height="20px" viewBox="0 0 24 24"><path d="M19,13a1,1,0,0,0-1,1v.38L16.52,12.9a2.79,2.79,0,0,0-3.93,0l-.7.7L9.41,11.12a2.85,2.85,0,0,0-3.93,0L4,12.6V7A1,1,0,0,1,5,6h7a1,1,0,0,0,0-2H5A3,3,0,0,0,2,7V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3V14A1,1,0,0,0,19,13ZM5,20a1,1,0,0,1-1-1V15.43l2.9-2.9a.79.79,0,0,1,1.09,0l3.17,3.17,0,0L15.46,20Zm13-1a.89.89,0,0,1-.18.53L13.31,15l.7-.7a.77.77,0,0,1,1.1,0L18,17.21ZM22.71,4.29l-3-3a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,1,1,0,0,0-.33.21l-3,3a1,1,0,0,0,1.42,1.42L18,4.41V10a1,1,0,0,0,2,0V4.41l1.29,1.3a1,1,0,0,0,1.42,0A1,1,0,0,0,22.71,4.29Z"/></svg>`, tooltip: true });
                     view.on('execute', () => window.dispatchEvent(new CustomEvent('open-media-picker', { detail: { statePath: mediaPickerStatePath, multiple: true, acceptedFileTypes: ['image/*', 'video/*', 'audio/*'], currentSelection: [] } })));
                     return view;
                 });

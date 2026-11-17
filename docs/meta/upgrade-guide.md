@@ -31,7 +31,15 @@ When adding an entry, copy this skeleton:
 
 ## Unreleased
 
-- (none)
+### Action required
+
+- Other roles than Super Admin need the generated `View:SettingsAppearancePage` permission (run `shield:generate`) to edit the company appearance. *My appearance* needs no permission.
+- After upgrade: `php artisan optimize:clear`.
+
+### Behavior changes (non-breaking, but visible)
+
+- Custom admin screens that used violet accents (menu builder, page builder, marketplace) now follow the primary colour, blue by default; emerald became Filament's `success` green.
+- When a company or personal look sets the mode, Filament's light/dark switcher in the user menu is hidden.
 
 ## 1.25.0 (2026-11-17)
 

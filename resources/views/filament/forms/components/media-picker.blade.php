@@ -178,8 +178,8 @@
                             </div>
                         </template>
                         <template x-if="media.mime_type && media.mime_type.startsWith('audio/')">
-                            <div class="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-sky-50 to-indigo-100 px-1 dark:from-sky-950 dark:to-indigo-950">
-                                <x-heroicon-o-musical-note class="h-8 w-8 text-sky-500 dark:text-sky-400" />
+                            <div class="flex h-full w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-info-50 to-primary-100 px-1 dark:from-info-950 dark:to-primary-950">
+                                <x-heroicon-o-musical-note class="h-8 w-8 text-info-500 dark:text-info-400" />
                             </div>
                         </template>
                         <template x-if="!media.mime_type || (!media.mime_type.startsWith('image/') && !media.mime_type.startsWith('video/') && !media.mime_type.startsWith('audio/'))">

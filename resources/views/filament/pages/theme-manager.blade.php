@@ -36,7 +36,7 @@
                             >
                             <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent dark:from-black/60"></div>
                         @else
-                            <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-500/20 via-primary-500/10 to-fuchsia-500/20 dark:from-violet-500/30 dark:to-fuchsia-600/20">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-500/20 via-primary-500/10 to-primary-500/20 dark:from-primary-500/30 dark:to-primary-600/20">
                                 <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_start,_var(--tw-gradient-stops))] from-white/50 to-transparent dark:from-white/10 dark:to-transparent"></div>
                                 <div class="relative flex h-20 w-20 items-center justify-center rounded-xl bg-white/70 shadow-lg backdrop-blur-sm dark:bg-white/15">
                                     <x-heroicon-o-paint-brush class="h-10 w-10 text-gray-600 dark:text-gray-300" />
@@ -59,8 +59,8 @@
                             <span
                                 class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium shadow-sm
                                     {{ $theme->isPackageTheme()
-                                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/30 dark:text-blue-200'
-                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/30 dark:text-emerald-200' }}"
+                                        ? 'bg-info-100 text-info-800 dark:bg-info-500/30 dark:text-info-200'
+                                        : 'bg-success-100 text-success-800 dark:bg-success-500/30 dark:text-success-200' }}"
                             >
                                 {{ $theme->isPackageTheme() ? __('mksine::themes.package') : __('mksine::themes.project') }}
                             </span>
@@ -89,7 +89,7 @@
                         @endif
 
                         @if($missingDependencies !== [])
-                            <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                            <div class="mb-4 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-900 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-100">
                                 <span class="font-semibold">{{ __('mksine::themes.missing_dependencies_badge') }}</span>
                                 <span>
                                     {{ __('mksine::themes.missing_dependencies_list', [
@@ -103,7 +103,7 @@
                         @if($theme->hasAssets())
                             <div class="mb-4">
                                 <span class="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700/80 dark:text-gray-300">
-                                    <x-heroicon-s-check-circle class="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
+                                    <x-heroicon-s-check-circle class="h-3.5 w-3.5 text-success-500 dark:text-success-400" />
                                     {{ __('mksine::themes.assets_ready') }}
                                 </span>
                             </div>
@@ -176,7 +176,7 @@
                         <div class="flex flex-col items-center justify-center py-16 text-center">
                             <div class="relative mb-6">
                                 <div class="absolute inset-0 rounded-2xl bg-primary-500/10 blur-2xl"></div>
-                                <div class="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 via-primary-500/20 to-fuchsia-500/20 ring-1 ring-primary-500/20 dark:from-violet-500/30 dark:to-fuchsia-600/20">
+                                <div class="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500/20 via-primary-500/20 to-primary-500/20 ring-1 ring-primary-500/20 dark:from-primary-500/30 dark:to-primary-600/20">
                                     <x-heroicon-o-paint-brush class="h-12 w-12 text-primary-500 dark:text-primary-400" />
                                 </div>
                             </div>

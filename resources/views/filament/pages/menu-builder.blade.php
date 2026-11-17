@@ -2,13 +2,13 @@
     @if(!$selectedMenu)
         {{-- No menu selected state --}}
         <div class="flex flex-col items-center justify-center py-24 text-center">
-            <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20">
+            <div class="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-400 dark:ring-primary-500/20">
                 <x-heroicon-o-bars-3-bottom-left class="h-7 w-7" />
             </div>
-            <h3 class="mb-1.5 text-[15px] font-semibold tracking-tight text-zinc-900 dark:text-white">
+            <h3 class="mb-1.5 text-[15px] font-semibold tracking-tight text-gray-900 dark:text-white">
                 {{ __('mksine::menu_builder.no_menu_selected') }}
             </h3>
-            <p class="max-w-xs text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+            <p class="max-w-xs text-sm leading-relaxed text-gray-500 dark:text-gray-400">
                 {{ __('mksine::menu_builder.select_menu_from_header') }}
             </p>
         </div>
@@ -17,14 +17,14 @@
 
             {{-- ── Left panel: item sources ── --}}
             <div class="space-y-3 lg:col-span-1">
-                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
+                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-[0_1px_3px_0_color-mix(in_oklab,black_6%,transparent)] dark:border-white/[0.07] dark:bg-gray-900">
 
                     {{-- Panel header --}}
-                    <div class="flex items-center gap-3 border-b border-zinc-100 px-4 py-3.5 dark:border-white/[0.06]">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20">
+                    <div class="flex items-center gap-3 border-b border-gray-100 px-4 py-3.5 dark:border-white/[0.06]">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-400 dark:ring-primary-500/20">
                             <x-heroicon-o-plus-circle class="h-4 w-4" />
                         </div>
-                        <h3 class="text-[13px] font-semibold text-zinc-900 dark:text-white">
+                        <h3 class="text-[13px] font-semibold text-gray-900 dark:text-white">
                             {{ __('mksine::menu_builder.add_menu_items') }}
                         </h3>
                     </div>
@@ -34,54 +34,54 @@
                         @foreach($sources as $key => $source)
                             <div
                                 x-data="{ expanded: false }"
-                                class="overflow-hidden rounded-xl border border-zinc-200/80 transition-colors duration-150 dark:border-white/[0.07]"
-                                :class="expanded ? 'border-violet-200 dark:border-violet-500/30' : ''"
+                                class="overflow-hidden rounded-xl border border-gray-200/80 transition-colors duration-150 dark:border-white/[0.07]"
+                                :class="expanded ? 'border-primary-200 dark:border-primary-500/30' : ''"
                             >
                                 {{-- Accordion trigger --}}
                                 <button
                                     @click="expanded = !expanded; if(expanded) $wire.getSourceItems('{{ $key }}')"
                                     type="button"
-                                    class="flex w-full items-center justify-between px-3.5 py-3 text-start transition-colors hover:bg-zinc-50 dark:hover:bg-white/[0.04]"
-                                    :class="expanded ? 'bg-zinc-50 dark:bg-white/[0.03]' : ''"
+                                    class="flex w-full items-center justify-between px-3.5 py-3 text-start transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+                                    :class="expanded ? 'bg-gray-50 dark:bg-white/[0.03]' : ''"
                                 >
                                     <span class="flex items-center gap-2.5">
-                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-white/[0.07] dark:text-zinc-400"
-                                            :class="expanded ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400' : ''"
+                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500 dark:bg-white/[0.07] dark:text-gray-400"
+                                            :class="expanded ? 'bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400' : ''"
                                         >
                                             <x-dynamic-component :component="$source['icon']" class="h-3.5 w-3.5" />
                                         </span>
-                                        <span class="text-[13px] font-semibold text-zinc-800 dark:text-zinc-200">{{ $source['label'] }}</span>
+                                        <span class="text-[13px] font-semibold text-gray-800 dark:text-gray-200">{{ $source['label'] }}</span>
                                     </span>
                                     <x-heroicon-m-chevron-down
-                                        class="h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200 dark:text-zinc-500"
+                                        class="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 dark:text-gray-500"
                                         ::class="{ 'rotate-180': expanded }"
                                     />
                                 </button>
 
                                 {{-- Accordion content --}}
-                                <div x-show="expanded" x-collapse class="border-t border-zinc-100 bg-zinc-50/50 p-3.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
+                                <div x-show="expanded" x-collapse class="border-t border-gray-100 bg-gray-50/50 p-3.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
                                     @if($source['hasCustomForm'])
                                         <div class="space-y-2.5">
                                             <div>
-                                                <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                                <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                                                     {{ __('mksine::menu_builder.url') }}
                                                 </label>
                                                 <input
                                                     type="url"
                                                     wire:model="sourceFormData.{{ $key }}.url"
                                                     placeholder="https://"
-                                                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-none outline-none placeholder:text-zinc-400 transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500"
+                                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-none outline-none placeholder:text-gray-400 transition focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-gray-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                                                <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                                                     {{ __('mksine::menu_builder.link_text') }}
                                                 </label>
                                                 <input
                                                     type="text"
                                                     wire:model="sourceFormData.{{ $key }}.label"
                                                     placeholder="{{ __('mksine::menu_builder.enter_link_text') }}"
-                                                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500"
+                                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 transition focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-gray-500"
                                                 />
                                             </div>
                                         </div>
@@ -89,12 +89,12 @@
                                         <div class="space-y-2.5">
                                             {{-- Search --}}
                                             <div class="relative">
-                                                <x-heroicon-o-magnifying-glass class="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+                                                <x-heroicon-o-magnifying-glass class="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                                                 <input
                                                     type="search"
                                                     value="{{ $sourceSearch[$key] ?? '' }}"
                                                     placeholder="{{ __('mksine::menu_builder.search') }}"
-                                                    class="w-full rounded-lg border border-zinc-200 bg-white py-2 ps-9 pe-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 transition focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500"
+                                                    class="w-full rounded-lg border border-gray-200 bg-white py-2 ps-9 pe-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 transition focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white dark:placeholder:text-gray-500"
                                                     @input.debounce.300ms="$wire.setSourceSearch('{{ $key }}', $event.target.value)"
                                                 />
                                             </div>
@@ -105,7 +105,7 @@
                                                     $items    = $data['items'];
                                                     $isNested = !empty($items) && array_key_exists('children', $items[0] ?? []);
                                                 @endphp
-                                                <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-zinc-200/60 bg-white p-1 dark:border-white/[0.06] dark:bg-zinc-950/40">
+                                                <div class="max-h-48 space-y-0.5 overflow-y-auto rounded-lg border border-gray-200/60 bg-white p-1 dark:border-white/[0.06] dark:bg-gray-950/40">
                                                     @if($isNested)
                                                         @foreach($items as $node)
                                                             @include('mksine::filament.pages.partials.menu-builder-source-item', [
@@ -119,16 +119,16 @@
                                                         @foreach($treeItems as $item)
                                                             @php $depth = (int)($item['depth'] ?? 0); @endphp
                                                             <label
-                                                                class="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 pe-2 transition-colors hover:bg-zinc-50 dark:hover:bg-white/[0.05]"
+                                                                class="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 pe-2 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.05]"
                                                                 style="padding-inline-start: {{ $depth * 16 + 8 }}px;"
                                                             >
                                                                 <input
                                                                     type="checkbox"
                                                                     wire:model="sourceFormData.{{ $key }}.selected"
                                                                     value="{{ $item['id'] }}"
-                                                                    class="size-4 shrink-0 rounded border-zinc-300 text-violet-600 focus:ring-violet-500 dark:border-zinc-600"
+                                                                    class="size-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
                                                                 />
-                                                                <span class="truncate text-xs text-zinc-700 dark:text-zinc-300">{{ $item['label'] }}</span>
+                                                                <span class="truncate text-xs text-gray-700 dark:text-gray-300">{{ $item['label'] }}</span>
                                                             </label>
                                                         @endforeach
                                                     @endif
@@ -144,8 +144,8 @@
                                                         $from     = $total > 0 ? ($cp - 1) * $pp + 1 : 0;
                                                         $to       = min($cp * $pp, $total);
                                                     @endphp
-                                                    <div class="flex items-center justify-between gap-3 border-t border-zinc-100 pt-2.5 dark:border-white/[0.06]">
-                                                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                                                    <div class="flex items-center justify-between gap-3 border-t border-gray-100 pt-2.5 dark:border-white/[0.06]">
+                                                        <span class="text-[11px] text-gray-400 dark:text-gray-500">
                                                             {{ $from }}–{{ $to }} {{ __('mksine::menu_builder.of') }} {{ $total }}
                                                         </span>
                                                         <div class="flex gap-1">
@@ -154,21 +154,21 @@
                                                                 wire:click="setSourcePage('{{ $key }}', {{ $cp - 1 }})"
                                                                 wire:loading.attr="disabled"
                                                                 @disabled($cp <= 1)
-                                                                class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400 dark:hover:bg-white/[0.07]"
+                                                                class="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.07]"
                                                             ><x-heroicon-o-chevron-left class="h-3.5 w-3.5" /></button>
                                                             <button
                                                                 type="button"
                                                                 wire:click="setSourcePage('{{ $key }}', {{ $cp + 1 }})"
                                                                 wire:loading.attr="disabled"
                                                                 @disabled($cp >= $lastPage)
-                                                                class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-400 dark:hover:bg-white/[0.07]"
+                                                                class="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-gray-400 dark:hover:bg-white/[0.07]"
                                                             ><x-heroicon-o-chevron-right class="h-3.5 w-3.5" /></button>
                                                         </div>
                                                     </div>
                                                 @endif
                                             @else
                                                 <div class="flex items-center justify-center py-7">
-                                                    <span class="inline-flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500">
+                                                    <span class="inline-flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                                                         <x-heroicon-o-arrow-path class="h-3.5 w-3.5 animate-spin" />
                                                         {{ __('mksine::menu_builder.loading') }}
                                                     </span>
@@ -176,7 +176,7 @@
                                             @endif
                                         </div>
                                     @else
-                                        <p class="py-5 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                                        <p class="py-5 text-center text-xs text-gray-400 dark:text-gray-500">
                                             {{ __('mksine::menu_builder.no_items_available') }}
                                         </p>
                                     @endif
@@ -185,7 +185,7 @@
                                     <button
                                         type="button"
                                         wire:click="addItemFromSource('{{ $key }}')"
-                                        class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_2px_6px_0_rgb(124_58_237/0.28)] transition-colors hover:bg-violet-700"
+                                        class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-xs font-semibold text-white shadow-[0_2px_6px_0_color-mix(in_oklab,var(--primary-600)_28%,transparent)] transition-colors hover:bg-primary-700"
                                     >
                                         <x-heroicon-m-plus class="h-3.5 w-3.5" />
                                         {{ __('mksine::menu_builder.add_to_menu') }}
@@ -199,24 +199,24 @@
 
             {{-- ── Right panel: menu structure ── --}}
             <div class="lg:col-span-2">
-                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] dark:border-white/[0.07] dark:bg-zinc-900">
+                <div class="mksine-menu-panel overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-[0_1px_3px_0_color-mix(in_oklab,black_6%,transparent)] dark:border-white/[0.07] dark:bg-gray-900">
 
                     {{-- Panel header --}}
-                    <div class="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3.5 dark:border-white/[0.06]">
+                    <div class="flex items-center justify-between gap-4 border-b border-gray-100 px-4 py-3.5 dark:border-white/[0.06]">
                         <div class="flex items-center gap-3">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-400 dark:ring-primary-500/20">
                                 <x-heroicon-o-bars-3 class="h-4 w-4" />
                             </div>
                             <div>
-                                <h3 class="text-[13px] font-semibold text-zinc-900 dark:text-white">
+                                <h3 class="text-[13px] font-semibold text-gray-900 dark:text-white">
                                     {{ __('mksine::menu_builder.menu_structure') }}
                                 </h3>
-                                <p class="text-[11px] text-zinc-400 dark:text-zinc-500">
+                                <p class="text-[11px] text-gray-400 dark:text-gray-500">
                                     {{ __('mksine::menu_builder.drag_to_reorder') }}
                                 </p>
                             </div>
                         </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:border-white/[0.07] dark:bg-white/[0.04] dark:text-zinc-400">
+                        <span class="inline-flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-500 dark:border-white/[0.07] dark:bg-white/[0.04] dark:text-gray-400">
                             {{ trans_choice('mksine::menu_builder.items', count($menuItems)) }}
                         </span>
                     </div>
@@ -224,14 +224,14 @@
                     {{-- Menu items list --}}
                     <div class="min-h-[320px] p-4">
                         @if(count($menuItems) === 0)
-                            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/20 py-16 text-center dark:border-violet-500/25 dark:bg-violet-500/[0.03]">
-                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-500 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-500/20">
+                            <div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-primary-200 bg-primary-50/20 py-16 text-center dark:border-primary-500/25 dark:bg-primary-500/[0.03]">
+                                <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-500 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-400 dark:ring-primary-500/20">
                                     <x-heroicon-o-bars-3-bottom-left class="h-6 w-6" />
                                 </div>
-                                <p class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300">
+                                <p class="text-[13px] font-semibold text-gray-700 dark:text-gray-300">
                                     {{ __('mksine::menu_builder.add_items_from_left') }}
                                 </p>
-                                <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                     {{ __('mksine::menu_builder.drag_to_reorder') }}
                                 </p>
                             </div>
@@ -715,9 +715,9 @@
         /* ─── Sortable drag visuals ─────────────────────────────────────── */
         .sortable-ghost {
             opacity: 0.4;
-            background: rgb(245 243 255);
-            border-radius: 0.75rem;
-            outline: 1.5px dashed rgb(139 92 246 / 0.45);
+            background: var(--primary-50);
+            border-radius: var(--radius-xl);
+            outline: 1.5px dashed color-mix(in oklab, var(--primary-500) 45%, transparent);
             outline-offset: -1.5px;
             box-shadow: none;
         }
@@ -727,27 +727,27 @@
             box-shadow: none !important;
         }
         .dark .sortable-ghost {
-            background: rgb(109 40 217 / 0.1);
-            outline-color: rgb(139 92 246 / 0.35);
+            background: color-mix(in oklab, var(--primary-700) 10%, transparent);
+            outline-color: color-mix(in oklab, var(--primary-500) 35%, transparent);
         }
         .sortable-chosen {
-            box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.1), 0 0 0 2px rgb(124 58 237 / 0.2);
-            border-radius: 0.75rem;
+            box-shadow: 0 6px 20px -6px color-mix(in oklab, black 10%, transparent), 0 0 0 2px color-mix(in oklab, var(--primary-600) 20%, transparent);
+            border-radius: var(--radius-xl);
         }
         .dark .sortable-chosen {
-            box-shadow: 0 10px 28px -8px rgb(0 0 0 / 0.55), 0 0 0 1.5px rgb(139 92 246 / 0.3);
+            box-shadow: 0 10px 28px -8px color-mix(in oklab, black 55%, transparent), 0 0 0 1.5px color-mix(in oklab, var(--primary-500) 30%, transparent);
         }
 
         /* The clone that follows the cursor when forceFallback: true */
         .menu-row-fallback {
             opacity: 0.92;
-            box-shadow: 0 14px 36px -8px rgb(0 0 0 / 0.18), 0 0 0 1px rgb(124 58 237 / 0.25);
+            box-shadow: 0 14px 36px -8px color-mix(in oklab, black 18%, transparent), 0 0 0 1px color-mix(in oklab, var(--primary-600) 25%, transparent);
             cursor: grabbing !important;
             pointer-events: none;
             transition: padding-inline-start 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .dark .menu-row-fallback {
-            box-shadow: 0 18px 40px -10px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(139 92 246 / 0.45);
+            box-shadow: 0 18px 40px -10px color-mix(in oklab, black 60%, transparent), 0 0 0 1px color-mix(in oklab, var(--primary-500) 45%, transparent);
         }
         .menu-row-fallback .menu-row-guide { display: none; }
 
@@ -757,12 +757,12 @@
             opacity: 0.78;
         }
         .menu-row--descendant-of-drag > .menu-row-content {
-            background: rgb(245 243 255 / 0.55);
-            border-color: rgb(139 92 246 / 0.18) !important;
+            background: color-mix(in oklab, var(--primary-50) 55%, transparent);
+            border-color: color-mix(in oklab, var(--primary-500) 18%, transparent) !important;
         }
         .dark .menu-row--descendant-of-drag > .menu-row-content {
-            background: rgb(109 40 217 / 0.07);
-            border-color: rgb(139 92 246 / 0.18) !important;
+            background: color-mix(in oklab, var(--primary-700) 7%, transparent);
+            border-color: color-mix(in oklab, var(--primary-500) 18%, transparent) !important;
         }
 
         /* ─── Flat-list rows ────────────────────────────────────────────── */
@@ -777,25 +777,25 @@
             top: 0;
             bottom: 0;
             width: 1px;
-            border-inline-start: 1.5px dotted rgb(228 228 231);
+            border-inline-start: 1.5px dotted var(--gray-200);
             pointer-events: none;
         }
         .dark .menu-row-guide {
-            border-inline-start-color: rgb(255 255 255 / 0.08);
+            border-inline-start-color: color-mix(in oklab, white 8%, transparent);
         }
         body.dragging-menu-item .menu-row-guide {
-            border-inline-start-color: rgb(139 92 246 / 0.35);
+            border-inline-start-color: color-mix(in oklab, var(--primary-500) 35%, transparent);
         }
         .dark body.dragging-menu-item .menu-row-guide {
-            border-inline-start-color: rgb(139 92 246 / 0.3);
+            border-inline-start-color: color-mix(in oklab, var(--primary-500) 30%, transparent);
         }
 
         /* Subtle depth tint on the row content for clarity */
         .menu-row--nested > .menu-row-content {
-            border-color: rgb(228 228 231 / 0.7);
+            border-color: color-mix(in oklab, var(--gray-200) 70%, transparent);
         }
         .dark .menu-row--nested > .menu-row-content {
-            border-color: rgb(255 255 255 / 0.05);
+            border-color: color-mix(in oklab, white 5%, transparent);
         }
 
         /* While dragging, keep the dragged ghost above guides cleanly */

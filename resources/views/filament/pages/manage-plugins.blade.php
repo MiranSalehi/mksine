@@ -41,17 +41,17 @@
                     </p>
                     <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
                 </div>
-                <div class="mksine-plugin-stat-card rounded-xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white p-4 shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/20 dark:from-emerald-500/10 dark:to-gray-900/40 dark:ring-emerald-500/20">
-                    <p class="text-xs font-medium uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/80">
+                <div class="mksine-plugin-stat-card rounded-xl border border-success-200/60 bg-gradient-to-br from-success-50/80 to-white p-4 shadow-sm ring-1 ring-success-500/10 dark:border-success-500/20 dark:from-success-500/10 dark:to-gray-900/40 dark:ring-success-500/20">
+                    <p class="text-xs font-medium uppercase tracking-wide text-success-700/80 dark:text-success-300/80">
                         {{ __('mksine::plugins.stats_active') }}
                     </p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-200">{{ $stats['active'] }}</p>
+                    <p class="mt-1 text-2xl font-bold tabular-nums text-success-800 dark:text-success-200">{{ $stats['active'] }}</p>
                 </div>
-                <div class="mksine-plugin-stat-card rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white p-4 shadow-sm ring-1 ring-amber-500/10 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-gray-900/40 dark:ring-amber-500/20">
-                    <p class="text-xs font-medium uppercase tracking-wide text-amber-800/80 dark:text-amber-200/80">
+                <div class="mksine-plugin-stat-card rounded-xl border border-warning-200/60 bg-gradient-to-br from-warning-50/80 to-white p-4 shadow-sm ring-1 ring-warning-500/10 dark:border-warning-500/20 dark:from-warning-500/10 dark:to-gray-900/40 dark:ring-warning-500/20">
+                    <p class="text-xs font-medium uppercase tracking-wide text-warning-800/80 dark:text-warning-200/80">
                         {{ __('mksine::plugins.stats_inactive') }}
                     </p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-amber-900 dark:text-amber-100">{{ $stats['inactive'] }}</p>
+                    <p class="mt-1 text-2xl font-bold tabular-nums text-warning-900 dark:text-warning-100">{{ $stats['inactive'] }}</p>
                 </div>
                 <div @class([
                     'mksine-plugin-stat-card rounded-xl border p-4 shadow-sm ring-1',

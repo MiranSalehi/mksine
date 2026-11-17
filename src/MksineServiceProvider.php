@@ -433,6 +433,10 @@ class MksineServiceProvider extends PackageServiceProvider
         // Admin menu overrides: the setting is read at most once per request.
         $this->app->scoped(AdminMenuOverrides::class);
 
+        // Admin look (company + personal): read once per request.
+        $this->app->scoped(\Miran\Mksine\Core\Appearance\AppearanceRepository::class);
+        $this->app->scoped(\Miran\Mksine\Core\Appearance\AppearanceRenderer::class);
+
         // Register ComponentRegistry as singleton for PageBuilder
         $this->app->singleton(ComponentRegistry::class, function () {
             $registry = new ComponentRegistry;
@@ -718,6 +722,7 @@ class MksineServiceProvider extends PackageServiceProvider
 
         $legacyAliases = [
             'mksine::media-picker-modal' => MediaPickerModal::class,
+            'mksine::my-appearance' => \Miran\Mksine\Livewire\MyAppearance::class,
             'mksine::frontend.home' => Home::class,
             'mksine::frontend.category-list' => CategoryList::class,
             'mksine::frontend.category-show' => CategoryShow::class,

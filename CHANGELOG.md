@@ -6,7 +6,19 @@ See [`docs/meta/upgrade-guide.md`](docs/meta/upgrade-guide.md) for migration not
 
 ## Unreleased
 
-- (none)
+### Added
+
+- **Admin appearance.** Settings → Appearance sets the company look (everyone's default); **My appearance** in the user menu lets each admin change any part for themselves only, with *Same as company* to clear it. Parts: primary colour (8 ready colours, picker, hex), light/dark/system mode, sidebar colour (dark/light/brand), corners, text size and density. Ready looks Modern (the current panel), Classic, Minimal, Soft and Bold; the company can save up to 24 named looks. Live preview applies to the current page only and is undone on leave.
+- **Colour engine** (`Miran\Mksine\Core\Appearance\ColorScale`): builds the 50–950 palette in OKLCH with step 600 equal to the chosen colour, darkened only until white text on it reaches 4.5:1 (never below lightness 0.3); tinted greys, an accent at −40°, sRGB gamut mapping, and a warning when the hue is within 14° of the danger red.
+- The look is resolved on the server and written into `<head>` (no flash, also after `wire:navigate`). With no look set nothing is added and the panel is unchanged.
+
+### Changed
+
+- Custom admin Blade and CSS use colour and radius tokens only (`gray`, `primary`, `danger`, `success`, `warning`, `info`, `--radius-*`); violet accents follow the primary colour and emerald follows `success`. `tests/Feature/Appearance/HardcodedColorGuardTest.php` rejects new literal colours outside `resources/css/tokens.css` and print files.
+
+### Security
+
+- The generic settings form (`InteractsWithStoredSettings::saveData()`, including plugin tabs from `SettingsTabManager`) can no longer write `mksine_appearance*` keys; only the appearance actions write them, and every company write re-checks `View:SettingsAppearancePage`.
 
 ## 1.25.0 - 2026-11-17
 

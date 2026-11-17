@@ -450,8 +450,8 @@
                                     ></video>
                                 </template>
                                 <template x-if="detail && detail.is_audio">
-                                    <div class="space-y-3 bg-gradient-to-br from-sky-50 to-indigo-100 p-4 dark:from-sky-950 dark:to-indigo-950">
-                                        <x-heroicon-o-musical-note class="mx-auto h-10 w-10 text-sky-500 dark:text-sky-400" />
+                                    <div class="space-y-3 bg-gradient-to-br from-info-50 to-primary-100 p-4 dark:from-info-950 dark:to-primary-950">
+                                        <x-heroicon-o-musical-note class="mx-auto h-10 w-10 text-info-500 dark:text-info-400" />
                                         <audio :src="detail.url" class="w-full" controls preload="metadata"></audio>
                                     </div>
                                 </template>

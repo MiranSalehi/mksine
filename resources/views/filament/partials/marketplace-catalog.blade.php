@@ -194,7 +194,7 @@
                     @endif
                 </div>
             @elseif (! $listings->ok)
-                <div class="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-2xl border border-amber-200/80 bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                <div class="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-2xl border border-warning-200/80 bg-warning-50 px-5 py-4 text-center text-sm text-warning-900 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-100">
                     <p>{{ $listings->error ?: __('mksine::marketplace.unreachable') }}</p>
                     <x-filament::button
                         size="sm"
@@ -238,8 +238,8 @@
                             @class([
                                 'mksine-marketplace-theme-card overflow-hidden rounded-xl border shadow-sm ring-1',
                                 'border-gray-200 bg-white ring-black/5 dark:border-gray-700 dark:bg-gray-900/20 dark:ring-white/5' => $themeState === 'available',
-                                'is-installed border-emerald-300 bg-emerald-50/70 ring-emerald-500/10 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:ring-emerald-500/20' => $themeState === 'installed',
-                                'is-update border-amber-300 bg-amber-50/80 ring-amber-500/10 dark:border-amber-500/40 dark:bg-amber-500/10 dark:ring-amber-500/20' => $themeState === 'update',
+                                'is-installed border-success-300 bg-success-50/70 ring-success-500/10 dark:border-success-500/40 dark:bg-success-500/10 dark:ring-success-500/20' => $themeState === 'installed',
+                                'is-update border-warning-300 bg-warning-50/80 ring-warning-500/10 dark:border-warning-500/40 dark:bg-warning-500/10 dark:ring-warning-500/20' => $themeState === 'update',
                             ])
                         >
                             @if ($listing->imageUrl)
@@ -256,12 +256,12 @@
                                     <div class="flex items-start justify-between gap-2">
                                         <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $listing->name }}</h4>
                                         @if ($themeState === 'installed')
-                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200" role="status">
+                                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-100 px-2 py-0.5 text-[11px] font-semibold text-success-800 dark:bg-success-500/20 dark:text-success-200" role="status">
                                                 <x-heroicon-s-check class="h-3 w-3" />
                                                 {{ __('mksine::marketplace.installed_badge') }}
                                             </span>
                                         @elseif ($themeState === 'update')
-                                            <span class="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                            <span class="inline-flex shrink-0 items-center rounded-full bg-warning-100 px-2 py-0.5 text-[11px] font-semibold text-warning-800 dark:bg-warning-500/20 dark:text-warning-200">
                                                 {{ __('mksine::marketplace.update') }}
                                             </span>
                                         @endif
@@ -277,7 +277,7 @@
                                     </p>
                                 </div>
                                 @if ($hasUpdate && is_string($localVersion))
-                                    <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+                                    <p class="text-xs font-medium text-warning-700 dark:text-warning-300">
                                         {{ __('mksine::marketplace.version_upgrade', ['from' => $localVersion, 'to' => $listing->version]) }}
                                     </p>
                                 @endif

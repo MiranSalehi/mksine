@@ -9,7 +9,7 @@
             wire:click="cancel"
             wire:loading.attr="disabled"
             wire:target="cancel,save"
-            class="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:bg-white/[0.07]"
+            class="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-gray-300 dark:hover:bg-white/[0.07]"
         >
             <span wire:loading.class="opacity-0" wire:target="cancel">{{ __('mksine::page_builder.cancel') }}</span>
             <span
@@ -25,7 +25,7 @@
             wire:click="save"
             wire:loading.attr="disabled"
             wire:target="save,cancel"
-            class="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_2px_6px_0_rgb(124_58_237/0.3)] transition-colors hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+            class="relative inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_2px_6px_0_color-mix(in_oklab,var(--primary-600)_30%,transparent)] transition-colors hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
         >
             <span wire:loading.class="opacity-0" wire:target="save">{{ __('mksine::page_builder.save_changes') }}</span>
             <span

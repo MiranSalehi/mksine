@@ -21,11 +21,11 @@
     @class([
         'mksine-marketplace-plugin-card flex h-full flex-col overflow-hidden rounded-2xl border bg-white dark:bg-gray-900/30',
         'is-available border-gray-200 dark:border-gray-700' => $state === 'available',
-        'is-installed border-emerald-300 dark:border-emerald-500/40' => $state === 'installed',
-        'is-update border-amber-300 dark:border-amber-500/40' => $state === 'update',
+        'is-installed border-success-300 dark:border-success-500/40' => $state === 'installed',
+        'is-update border-warning-300 dark:border-warning-500/40' => $state === 'update',
     ])
 >
-    <div class="mksine-marketplace-plugin-card-media relative bg-gradient-to-br from-violet-500/15 via-gray-50 to-gray-100 dark:from-violet-500/20 dark:via-gray-900 dark:to-gray-950">
+    <div class="mksine-marketplace-plugin-card-media relative bg-gradient-to-br from-primary-500/15 via-gray-50 to-gray-100 dark:from-primary-500/20 dark:via-gray-900 dark:to-gray-950">
         @if ($listing->imageUrl)
             @if ($listing->url !== '')
                 <a href="{{ $listing->url }}" target="_blank" rel="noopener noreferrer" class="block">
@@ -51,8 +51,8 @@
         @if ($installed)
             <span @class([
                 'absolute end-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm',
-                'bg-emerald-600' => ! $hasUpdate,
-                'bg-amber-500' => $hasUpdate,
+                'bg-success-600' => ! $hasUpdate,
+                'bg-warning-500' => $hasUpdate,
             ])>
                 @if ($hasUpdate)
                     <x-heroicon-s-arrow-path class="h-3 w-3" />
@@ -88,7 +88,7 @@
         @endif
 
         @if ($hasUpdate && is_string($localVersion))
-            <p class="mt-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+            <p class="mt-1.5 text-xs font-medium text-warning-700 dark:text-warning-300">
                 {{ __('mksine::marketplace.version_upgrade', ['from' => $localVersion, 'to' => $listing->version]) }}
             </p>
         @endif
@@ -126,7 +126,7 @@
                     <span class="inline-flex items-center gap-0.5" aria-hidden="true">
                         @foreach ($listing->ratingStarStates() as $starState)
                             @if ($starState === 'full')
-                                <x-heroicon-s-star class="h-3.5 w-3.5 text-amber-400" />
+                                <x-heroicon-s-star class="h-3.5 w-3.5 text-warning-400" />
                             @else
                                 <x-heroicon-o-star class="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
                             @endif
